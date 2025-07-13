@@ -446,8 +446,9 @@ app.post("/api/signals/draft", requireAuth, async (req, res) => {
 ### Backend Architecture
 - **Framework**: Express.js with TypeScript
 - **Session Management**: Express sessions for authentication
-- **Database**: PostgreSQL with Drizzle ORM
+- **Database**: PostgreSQL with Drizzle ORM (direct connection via Replit's built-in database)
 - **External Services**: OpenAI API for content analysis, web scraping for URL content extraction
+- **Future Database Consideration**: Supabase migration possible if real-time features, team collaboration, or advanced analytics become requirements
 
 ### Authentication
 - Session-based authentication using express-session
@@ -962,6 +963,12 @@ This structure follows the natural Post Creative Strategist workflow: Listen →
 - **Client Management**: Separate workspaces for multiple clients
 - **Project Switching**: Session-based context management
 - **Team Collaboration**: Shared workspaces and permissions
+
+### 🔄 **Database Architecture Evolution**:
+- **Current**: Direct PostgreSQL connection via Replit (production-ready, 2ms response time)
+- **Future Option**: Supabase migration when real-time features needed (team collaboration, live notifications, advanced analytics)
+- **Migration Benefits**: Real-time subscriptions, built-in dashboard, edge functions, file storage
+- **Decision Point**: User growth requiring collaborative features or complex reporting
 
 ## GitHub Repository Setup Complete - July 13, 2025
 

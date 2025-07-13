@@ -117,6 +117,8 @@ These APIs are integrated but need credentials to be fully operational:
 - Users, signals, sources, signal_sources
 - user_feed_sources, feed_items, user_topic_profiles
 - No test data or placeholders in schema
+- **Current**: Direct PostgreSQL via Replit (production-ready, 2ms response time)
+- **Future Option**: Supabase migration available if real-time features or team collaboration needed
 
 ### **Authentication System**
 ✅ **Production-ready security**
