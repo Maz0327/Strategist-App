@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strategic Content Capture</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <img src="images/icon48.png" alt="Strategic Content Capture" class="logo">
+            <h1>Capture Content</h1>
+        </header>
+
+        <div class="content">
+            <!-- Page Info Display -->
+            <div class="page-info">
+                <div class="page-title" id="pageTitle">Loading...</div>
+                <div class="page-url" id="pageUrl"></div>
+                <div class="page-meta">
+                    <span id="contentTypeIndicator" class="content-type">webpage</span>
+                    <span id="readingTimeIndicator" class="reading-time"></span>
+                </div>
+            </div>
+
+            <!-- Capture Mode Selection -->
+            <div class="form-group">
+                <label for="captureMode">Capture Mode:</label>
+                <select id="captureMode">
+                    <option value="selection">Selected Text</option>
+                    <option value="page">Full Page</option>
+                    <option value="custom">Custom</option>
+                </select>
+            </div>
+
+            <!-- Selected Text Display -->
+            <div class="selected-text" id="selectedTextContainer" style="display: none;">
+                <label>Selected Text:</label>
+                <div class="text-preview" id="selectedTextPreview"></div>
+            </div>
+
+            <!-- Auto Suggestions -->
+            <div class="auto-suggestions" id="autoSuggestionsContainer" style="display: none;"></div>
+
+            <!-- User Notes -->
+            <div class="form-group">
+                <label for="userNotes">Your Notes:</label>
+                <textarea 
+                    id="userNotes" 
+                    placeholder="Why is this interesting? What insights does this provide?"
+                    rows="4"
+                ></textarea>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions" id="quickActionsContainer">
+                <button type="button" class="btn btn-secondary" id="analyzeButton">
+                    Quick Analyze
+                </button>
+                <button type="button" class="btn btn-secondary" id="tagButton">
+                    Add Tags
+                </button>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="actions">
+                <button id="saveButton" class="btn btn-primary">
+                    <span id="saveButtonText">Save to Drafts</span>
+                </button>
+            </div>
+
+            <!-- Status Messages -->
+            <div id="statusMessage" class="status-message"></div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="popup.js"></script>
+</body>
+</html>
