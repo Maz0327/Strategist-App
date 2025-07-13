@@ -1,6 +1,6 @@
 import { trendsService } from './trends';
 import { createRedditService } from './reddit';
-import { createTwitterService } from './twitter';
+// Removed Twitter API - moved to future integrations due to rate limiting
 import { createNewsService } from './news';
 import { createYouTubeService } from './youtube';
 import { hackerNewsService } from './hackernews';
@@ -18,7 +18,7 @@ import type { TrendingTopic } from './trends';
 
 export class ExternalAPIsService {
   private redditService: ReturnType<typeof createRedditService>;
-  private twitterService: ReturnType<typeof createTwitterService>;
+  // Twitter service removed - moved to future integrations
   private newsService: ReturnType<typeof createNewsService>;
   private youtubeService: ReturnType<typeof createYouTubeService>;
   private spotifyService: ReturnType<typeof createSpotifyService>;
@@ -37,9 +37,7 @@ export class ExternalAPIsService {
       process.env.REDDIT_CLIENT_SECRET
     );
     
-    this.twitterService = createTwitterService(
-      process.env.TWITTER_BEARER_TOKEN
-    );
+    // Twitter service removed - moved to future integrations
 
     this.newsService = createNewsService(
       process.env.NEWS_API_KEY

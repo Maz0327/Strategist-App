@@ -241,7 +241,7 @@ app.post("/api/signals/draft", requireAuth, async (req, res) => {
 - **✅ Reddit API**: Authentic engagement metrics with OAuth authentication
 - **✅ YouTube API**: Video search and trending content fully operational
 - **✅ Multiple News APIs**: NewsAPI, GNews, Currents, MediaStack all configured
-- **⚠️ Twitter API**: Currently rate-limited (may need premium tier for enhanced features)
+- **❌ Twitter API**: Removed from production build due to rate limiting issues (moved to future roadmap)
 - **⚠️ Entertainment APIs**: Spotify, Last.fm may need token refresh for optimal performance
 
 **Production Deployment:**
