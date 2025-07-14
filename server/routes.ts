@@ -35,15 +35,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Session configuration
   const MemoryStoreSession = MemoryStore(session);
   
+  // Log session configuration for debugging
+  debugLogger.debug("Session configuration", { 
+    secure: false, // Always false for Replit deployment compatibility
+    nodeEnv: process.env.NODE_ENV,
+    hasReplitDomain: !!process.env.REPLIT_DEV_DOMAIN
+  });
+  
   // Add CORS headers for credentials (including Chrome extension)
   app.use((req, res, next) => {
     res.header('Access-Control-Allow-Credentials', 'true');
     const origin = req.headers.origin;
+    
     // Allow Chrome extension origins
     if (origin && (origin.startsWith('chrome-extension://') || origin.startsWith('moz-extension://'))) {
       res.header('Access-Control-Allow-Origin', origin);
     } else {
-      res.header('Access-Control-Allow-Origin', origin || 'http://localhost:5000');
+      // Allow both localhost and production domain
+      const allowedOrigins = [
+        'http://localhost:5000',
+        'https://strategist-app-maz0327.replit.app',
+        'https://strategist-app-maz0327.replit.dev'
+      ];
+      
+      if (origin && allowedOrigins.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin);
+      } else {
+        res.header('Access-Control-Allow-Origin', allowedOrigins[0]);
+      }
     }
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -58,10 +77,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       checkPeriod: 86400000 // prune expired entries every 24h
     }),
     cookie: {
-      secure: false, // Set to false for development
+      secure: false, // Set to false for development, will be handled by reverse proxy in production
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: 'lax'
+      sameSite: 'lax',
+      domain: undefined, // Let browser determine domain
+      path: '/' // Ensure cookie is available for all paths
     }
   }));
 
@@ -97,14 +118,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/login", async (req, res) => {
     try {
       const data = loginSchema.parse(req.body);
+      debugLogger.debug("Login attempt", { email: data.email }, req);
+      
       const user = await authService.login(data);
       req.session.userId = user.id;
       
-      res.json({ 
-        success: true, 
-        user: { id: user.id, email: user.email } 
+      // Save session explicitly
+      req.session.save((err) => {
+        if (err) {
+          debugLogger.error("Session save error", { error: err }, req);
+          return res.status(500).json({ message: "Session save failed" });
+        }
+        
+        debugLogger.debug("Login successful", { 
+          userId: user.id, 
+          sessionId: req.sessionID,
+          sessionData: req.session
+        }, req);
+        
+        res.json({ 
+          success: true, 
+          user: { id: user.id, email: user.email } 
+        });
       });
     } catch (error: any) {
+      debugLogger.warn("Login failed", { error: error.message }, req);
       res.status(400).json({ message: error.message });
     }
   });
