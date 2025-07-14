@@ -4,10 +4,10 @@ import { createRedditService } from './reddit';
 import { createNewsService } from './news';
 import { createYouTubeService } from './youtube';
 import { hackerNewsService } from './hackernews';
-import { createSpotifyService } from './spotify';
+import { spotifyService } from './spotify';
 import { createLastFmService } from './lastfm';
-import { createGeniusService } from './genius';
-import { createTMDbService } from './tmdb';
+import { geniusService } from './genius';
+import { tmdbService } from './tmdb';
 import { tvMazeService } from './tvmaze';
 import { createGNewsService } from './gnews';
 import { createNYTimesService } from './nytimes';
@@ -21,10 +21,7 @@ export class ExternalAPIsService {
   // Twitter service removed - moved to future integrations
   private newsService: ReturnType<typeof createNewsService>;
   private youtubeService: ReturnType<typeof createYouTubeService>;
-  private spotifyService: ReturnType<typeof createSpotifyService>;
   private lastfmService: ReturnType<typeof createLastFmService>;
-  private geniusService: ReturnType<typeof createGeniusService>;
-  private tmdbService: ReturnType<typeof createTMDbService>;
   private gnewsService: ReturnType<typeof createGNewsService>;
   private nytimesService: ReturnType<typeof createNYTimesService>;
   private currentsService: ReturnType<typeof createCurrentsService>;
@@ -48,21 +45,8 @@ export class ExternalAPIsService {
     );
 
     // Initialize new music & entertainment services
-    this.spotifyService = createSpotifyService(
-      process.env.SPOTIFY_CLIENT_ID,
-      process.env.SPOTIFY_CLIENT_SECRET
-    );
-
     this.lastfmService = createLastFmService(
       process.env.LASTFM_API_KEY
-    );
-
-    this.geniusService = createGeniusService(
-      process.env.GENIUS_ACCESS_TOKEN
-    );
-
-    this.tmdbService = createTMDbService(
-      process.env.TMDB_API_KEY
     );
 
     // Initialize enhanced news services
@@ -299,12 +283,28 @@ export class ExternalAPIsService {
   // Music & Cultural Intelligence Services
   async getSpotifyTrends(): Promise<TrendingTopic[]> {
     try {
-      if (!this.spotifyService) {
-        return this.getFallbackMusicData('spotify');
-      }
-      const trends = await this.spotifyService.getTrendingTracks('US', 8);
-      return trends;
+      const [featured, newReleases, topTracks] = await Promise.all([
+        spotifyService.getFeaturedPlaylists(),
+        spotifyService.getNewReleases(),
+        spotifyService.getTopTracks()
+      ]);
+      
+      const allTrends = [...featured, ...newReleases, ...topTracks];
+      
+      return allTrends.slice(0, 8).map(item => ({
+        id: item.id,
+        platform: 'Spotify',
+        title: item.title,
+        summary: item.description,
+        url: item.url,
+        score: item.score,
+        fetchedAt: new Date().toISOString(),
+        engagement: item.engagement,
+        source: 'Spotify API',
+        keywords: [item.category.toLowerCase(), 'music', 'streaming']
+      }));
     } catch (error) {
+      console.error('Error fetching Spotify trends:', error);
       return this.getFallbackMusicData('spotify');
     }
   }
@@ -323,12 +323,27 @@ export class ExternalAPIsService {
 
   async getGeniusTrends(): Promise<TrendingTopic[]> {
     try {
-      if (!this.geniusService) {
-        return this.getFallbackMusicData('genius');
-      }
-      const trends = await this.geniusService.getTrendingSongs(8);
-      return trends;
+      const [trending, popular] = await Promise.all([
+        geniusService.getTrendingSongs(),
+        geniusService.getPopularSongs()
+      ]);
+      
+      const allTrends = [...trending, ...popular];
+      
+      return allTrends.slice(0, 8).map(item => ({
+        id: item.id,
+        platform: 'Genius',
+        title: item.title,
+        summary: item.description,
+        url: item.url,
+        score: item.score,
+        fetchedAt: new Date().toISOString(),
+        engagement: item.engagement,
+        source: 'Genius API',
+        keywords: [item.category.toLowerCase(), 'music', 'lyrics', 'analysis']
+      }));
     } catch (error) {
+      console.error('Error fetching Genius trends:', error);
       return this.getFallbackMusicData('genius');
     }
   }
@@ -336,12 +351,28 @@ export class ExternalAPIsService {
   // Entertainment Intelligence Services  
   async getTMDbTrends(): Promise<TrendingTopic[]> {
     try {
-      if (!this.tmdbService) {
-        return this.getFallbackEntertainmentData('tmdb');
-      }
-      const trends = await this.tmdbService.getCombinedTrending(8);
-      return trends;
+      const [movies, tvShows, popular] = await Promise.all([
+        tmdbService.getTrendingMovies(),
+        tmdbService.getTrendingTVShows(),
+        tmdbService.getPopularMovies()
+      ]);
+      
+      const allTrends = [...movies, ...tvShows, ...popular];
+      
+      return allTrends.slice(0, 8).map(item => ({
+        id: item.id,
+        platform: 'TMDB',
+        title: item.title,
+        summary: item.description,
+        url: item.url,
+        score: item.score,
+        fetchedAt: new Date().toISOString(),
+        engagement: item.engagement,
+        source: 'TMDB API',
+        keywords: [item.category.toLowerCase(), 'entertainment', 'movies', 'tv']
+      }));
     } catch (error) {
+      console.error('Error fetching TMDB trends:', error);
       return this.getFallbackEntertainmentData('tmdb');
     }
   }
