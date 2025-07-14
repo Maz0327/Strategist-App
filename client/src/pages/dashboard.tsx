@@ -7,9 +7,11 @@ import { ExploreSignals } from "@/components/explore-signals";
 import { NewSignalCapture } from "@/components/new-signal-capture";
 import { StrategicBriefLab } from "@/components/strategic-brief-lab";
 import { ManageHub } from "@/components/manage-hub";
+import { AdminDashboard } from "@/components/admin-dashboard";
+import { FeedbackWidget } from "@/components/feedback-widget";
 import { authService } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-import { Brain, Bell, User, Home, Search, Plus, Target, Settings, ChevronRight } from "lucide-react";
+import { Brain, Bell, User, Home, Search, Plus, Target, Settings, ChevronRight, BarChart3 } from "lucide-react";
 
 interface DashboardProps {
   user: { id: number; email: string };
@@ -95,6 +97,16 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
         { id: "sources", label: "Sources" },
         { id: "reports", label: "Daily Reports" },
         { id: "insights", label: "Audience Insights" }
+      ]
+    },
+    {
+      id: "admin",
+      label: "Admin Panel",
+      icon: BarChart3,
+      subItems: [
+        { id: "analytics", label: "User Analytics" },
+        { id: "feedback", label: "Feedback Management" },
+        { id: "performance", label: "System Performance" }
       ]
     }
   ];
@@ -220,8 +232,15 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
           {activeTab === "manage" && (
             <ManageHub activeSubTab={activeSubTab} />
           )}
+          
+          {activeTab === "admin" && (
+            <AdminDashboard />
+          )}
         </div>
       </main>
+      
+      {/* Feedback Widget */}
+      <FeedbackWidget />
     </div>
   );
 }

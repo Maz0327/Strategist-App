@@ -19,6 +19,11 @@ import {
 } from "@shared/schema";
 import { debugLogger } from "./services/debug-logger";
 import { performanceMonitor, performanceMiddleware } from "./services/performance-monitor";
+import { analyticsService } from "./services/analytics";
+import { 
+  insertUserFeedbackSchema,
+  insertUserAnalyticsSchema
+} from "../shared/admin-schema";
 
 declare module "express-session" {
   interface SessionData {
@@ -714,6 +719,87 @@ The analyzed signals provide a comprehensive view of current market trends and s
       res.json({ source: updatedSource });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Admin analytics routes
+  app.get("/api/admin/dashboard", requireAuth, async (req, res) => {
+    try {
+      const timeRange = req.query.timeRange as 'day' | 'week' | 'month' || 'week';
+      const dashboardData = await analyticsService.getDashboardData(timeRange);
+      res.json(dashboardData);
+    } catch (error: any) {
+      debugLogger.error("Failed to get admin dashboard data", error, req);
+      res.status(500).json({ message: "Failed to load dashboard data" });
+    }
+  });
+
+  app.get("/api/admin/feedback", requireAuth, async (req, res) => {
+    try {
+      const status = req.query.status as string;
+      const feedback = await analyticsService.getAllFeedback(status !== 'all' ? status : undefined);
+      res.json(feedback);
+    } catch (error: any) {
+      debugLogger.error("Failed to get feedback", error, req);
+      res.status(500).json({ message: "Failed to load feedback" });
+    }
+  });
+
+  app.put("/api/admin/feedback/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { status, adminResponse } = req.body;
+      
+      await analyticsService.updateFeedbackStatus(id, status, adminResponse);
+      res.json({ success: true });
+    } catch (error: any) {
+      debugLogger.error("Failed to update feedback", error, req);
+      res.status(500).json({ message: "Failed to update feedback" });
+    }
+  });
+
+  // User feedback submission
+  app.post("/api/feedback", requireAuth, async (req, res) => {
+    try {
+      const feedbackData = insertUserFeedbackSchema.parse({
+        ...req.body,
+        userId: req.session.userId
+      });
+      
+      const feedback = await analyticsService.submitFeedback(feedbackData);
+      
+      // Track the feedback submission as an analytics event
+      await analyticsService.trackUserAction({
+        userId: req.session.userId!,
+        action: 'feedback_submitted',
+        feature: 'feedback_system',
+        details: { type: feedbackData.type, category: feedbackData.category },
+        userAgent: req.headers['user-agent'] || '',
+        ipAddress: req.ip || ''
+      });
+      
+      res.json(feedback);
+    } catch (error: any) {
+      debugLogger.error("Failed to submit feedback", error, req);
+      res.status(500).json({ message: "Failed to submit feedback" });
+    }
+  });
+
+  // Analytics tracking endpoint
+  app.post("/api/analytics/track", requireAuth, async (req, res) => {
+    try {
+      const analyticsData = insertUserAnalyticsSchema.parse({
+        ...req.body,
+        userId: req.session.userId,
+        userAgent: req.headers['user-agent'] || '',
+        ipAddress: req.ip || ''
+      });
+      
+      await analyticsService.trackUserAction(analyticsData);
+      res.json({ success: true });
+    } catch (error: any) {
+      debugLogger.error("Failed to track analytics", error, req);
+      res.status(500).json({ message: "Failed to track analytics" });
     }
   });
 
