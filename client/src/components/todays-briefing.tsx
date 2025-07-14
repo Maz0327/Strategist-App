@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Brain, TrendingUp, Clock, ArrowRight, RefreshCw, Bookmark, CheckCircle, BarChart3, Rss, Zap, ExternalLink, Settings } from "lucide-react";
+import { Brain, TrendingUp, Clock, ArrowRight, RefreshCw, Bookmark, CheckCircle, BarChart3, Rss, Zap, ExternalLink, Settings, Users, HelpCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Signal } from "@shared/schema";
 import { TopicPreferences } from "./topic-preferences";
@@ -16,9 +16,10 @@ interface TodaysBriefingProps {
   onNavigateToExplore: () => void;
   onNavigateToCapture: () => void;
   onNavigateToBrief: () => void;
+  onNavigate?: (tab: string, subTab?: string) => void;
 }
 
-export function TodaysBriefing({ activeSubTab, onNavigateToExplore, onNavigateToCapture, onNavigateToBrief }: TodaysBriefingProps) {
+export function TodaysBriefing({ activeSubTab, onNavigateToExplore, onNavigateToCapture, onNavigateToBrief, onNavigate }: TodaysBriefingProps) {
   const [refreshing, setRefreshing] = useState(false);
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   const [isSourcesOpen, setIsSourcesOpen] = useState(false);
@@ -531,6 +532,52 @@ export function TodaysBriefing({ activeSubTab, onNavigateToExplore, onNavigateTo
                   </DialogContent>
                 </Dialog>
                 
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <HelpCircle className="h-4 w-4 mr-2" />
+                      Help
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>Getting Started</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-medium mb-2">Today's Briefing</h4>
+                        <p className="text-sm text-gray-600 mb-3">Your daily starting point for strategic intelligence</p>
+                        <ul className="text-sm space-y-1">
+                          <li>• <strong>Client Channels:</strong> Industry updates and competitive intelligence</li>
+                          <li>• <strong>Custom Feeds:</strong> Your RSS feeds and curated sources</li>
+                          <li>• <strong>Project Intelligence:</strong> Market trends and strategic insights</li>
+                        </ul>
+                      </div>
+                      
+                      <div>
+                        <h4 className="font-medium mb-2">Workflow</h4>
+                        <p className="text-sm text-gray-600 mb-3">Follow the natural progression:</p>
+                        <ol className="text-sm space-y-1">
+                          <li>1. <strong>Capture:</strong> Analyze content from URLs or text</li>
+                          <li>2. <strong>Review:</strong> Manage signals in your dashboard</li>
+                          <li>3. <strong>Refine:</strong> Promote signals to insights</li>
+                          <li>4. <strong>Brief:</strong> Create strategic deliverables</li>
+                        </ol>
+                      </div>
+                      
+                      <div>
+                        <h4 className="font-medium mb-2">Tips</h4>
+                        <ul className="text-sm space-y-1">
+                          <li>• Use the collapsible sidebar (←) for more working space</li>
+                          <li>• Chrome extension: Ctrl+Shift+C for quick capture</li>
+                          <li>• Click trending topics to navigate to explore section</li>
+                          <li>• Use "one tool, one place" philosophy - everything has a home</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                
                 <Dialog open={isSourcesOpen} onOpenChange={setIsSourcesOpen}>
                   <DialogTrigger asChild>
                     <Button variant="outline" size="sm">
@@ -607,13 +654,91 @@ export function TodaysBriefing({ activeSubTab, onNavigateToExplore, onNavigateTo
         </Card>
       </div>
 
-      {/* Top Signals */}
+      {/* Daily Intelligence Channels */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        {/* Client Channels */}
+        <Card 
+          className="card-shadow cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => onNavigate?.('briefing', 'client-feeds')}
+        >
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold text-gray-900 flex items-center gap-2">
+              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Users className="h-4 w-4 text-blue-600" />
+              </div>
+              Client Channels
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600 mb-3">
+              Latest updates from your client's industry and competitive landscape
+            </p>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500">
+                {projectData?.feedItems?.length || 0} new updates
+              </span>
+              <ArrowRight className="h-4 w-4 text-gray-400" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Custom Feeds */}
+        <Card 
+          className="card-shadow cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => onNavigate?.('briefing', 'custom-feeds')}
+        >
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold text-gray-900 flex items-center gap-2">
+              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                <Rss className="h-4 w-4 text-green-600" />
+              </div>
+              Custom Feeds
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600 mb-3">
+              Your curated RSS feeds and custom data sources
+            </p>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500">
+                {customFeedData?.feedItems?.length || 0} new articles
+              </span>
+              <ArrowRight className="h-4 w-4 text-gray-400" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Project Intelligence */}
+        <Card 
+          className="card-shadow cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => onNavigate?.('briefing', 'project-intelligence')}
+        >
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold text-gray-900 flex items-center gap-2">
+              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                <TrendingUp className="h-4 w-4 text-purple-600" />
+              </div>
+              Project Intelligence
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600 mb-3">
+              Market intelligence and trending insights for strategic planning
+            </p>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500">
+                {intelligenceData?.feedItems?.length || 0} insights
+              </span>
+              <ArrowRight className="h-4 w-4 text-gray-400" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Quick Actions */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Top Signals</h3>
-          <Button variant="ghost" size="sm" onClick={onNavigateToExplore}>
-            Explore All <ArrowRight className="h-4 w-4 ml-1" />
-          </Button>
+          <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
         </div>
         
         {topSignals.length === 0 ? (

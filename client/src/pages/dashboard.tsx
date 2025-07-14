@@ -234,6 +234,10 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
               onNavigateToExplore={handleNavigateToExplore}
               onNavigateToCapture={handleNavigateToCapture}
               onNavigateToBrief={handleNavigateToBrief}
+              onNavigate={(tab, subTab) => {
+                setActiveTab(tab);
+                if (subTab) setActiveSubTab(subTab);
+              }}
             />
           )}
           

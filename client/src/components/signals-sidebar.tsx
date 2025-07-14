@@ -67,49 +67,12 @@ export function SignalsSidebar({ onNavigateToTrending }: SignalsSidebarProps = {
 
   return (
     <div className="space-y-4">
-      {/* Trending Topics */}
-      <Card className="card-shadow">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-gray-900">
-            Trending Topics
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="space-y-2 max-h-32 overflow-y-auto">
-            {mockTrendingTopics.map((topic, index) => (
-              <div
-                key={index}
-                onClick={() => onNavigateToTrending?.(topic.platform)}
-                className="flex items-center justify-between p-1.5 rounded-md hover:bg-gray-50 cursor-pointer transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 bg-gray-200 rounded-full flex items-center justify-center text-xs">
-                    {topic.platform.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-gray-900 truncate">{topic.title}</p>
-                    <p className="text-xs text-gray-500">{topic.platform}</p>
-                  </div>
-                </div>
-                <span className="text-xs text-gray-500">
-                  {topic.icon}
-                </span>
-              </div>
-            ))}
-          </div>
-          <div className="mt-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="w-full h-7 text-xs"
-              onClick={() => onNavigateToTrending?.()}
-            >
-              <ArrowRight className="h-3 w-3 mr-1" />
-              View All
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Sidebar content removed - trending moved to dedicated section */}
+      <div className="text-center py-4">
+        <p className="text-xs text-gray-500">
+          Navigation focused on core workflow
+        </p>
+      </div>
     </div>
   );
 }
