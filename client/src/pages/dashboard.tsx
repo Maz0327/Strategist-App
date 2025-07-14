@@ -49,6 +49,11 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
   const handleNavigateToCapture = () => setActiveTab("capture");
   const handleNavigateToBrief = () => setActiveTab("brief");
   const handleNavigateToManage = () => setActiveTab("manage");
+  const handleNavigateToTrending = (platform?: string) => {
+    handleTabChange("explore");
+    setActiveSubTab("trending");
+    // TODO: Could add platform filtering here if needed
+  };
 
   // Sidebar navigation items
   const navigationItems = [
@@ -203,7 +208,7 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
           
           {/* Sidebar Footer - Fixed height with scroll */}
           <div className="flex-shrink-0 px-4 py-4 border-t border-gray-200 max-h-80 overflow-y-auto">
-            <SignalsSidebar />
+            <SignalsSidebar onNavigateToTrending={handleNavigateToTrending} />
           </div>
         </div>
 

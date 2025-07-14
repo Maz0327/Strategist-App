@@ -6,7 +6,11 @@ import { ArrowRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Signal } from "@shared/schema";
 
-export function SignalsSidebar() {
+interface SignalsSidebarProps {
+  onNavigateToTrending?: (platform?: string) => void;
+}
+
+export function SignalsSidebar({ onNavigateToTrending }: SignalsSidebarProps = {}) {
   const { data: signalsData, error } = useQuery<{ signals: Signal[] }>({
     queryKey: ["/api/signals"],
     retry: false,
@@ -63,60 +67,6 @@ export function SignalsSidebar() {
 
   return (
     <div className="space-y-4">
-      {/* Recent Signals */}
-      <Card className="card-shadow">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold text-gray-900">
-            Recent Content
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3 max-h-48 overflow-y-auto">
-            {signals.length === 0 ? (
-              <p className="text-sm text-gray-500">No signals yet. Analyze some content to get started!</p>
-            ) : (
-              signals.slice(0, 3).map((signal) => (
-                <div
-                  key={signal.id}
-                  className="p-3 bg-gray-50 rounded-md hover:bg-gray-100 cursor-pointer transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-medium text-gray-900 truncate">
-                      {signal.title || "Untitled Analysis"}
-                    </h4>
-                    <span className="text-xs text-gray-500">
-                      {formatDistanceToNow(new Date(signal.createdAt!), { addSuffix: true })}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                    {signal.summary || "Analysis in progress..."}
-                  </p>
-                  <div className="flex justify-between items-center mt-2">
-                    <Badge
-                      className={getSentimentColor(signal.sentiment || "neutral")}
-                      variant="secondary"
-                    >
-                      {signal.sentiment || "Neutral"}
-                    </Badge>
-                    <div className="flex space-x-1">
-                      <span className="text-xs text-gray-500">
-                        {signal.keywords?.length || 0} keywords
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-          {signals.length > 3 && (
-            <Button variant="ghost" className="w-full mt-4 text-primary hover:text-blue-700">
-              View All Signals
-              <ArrowRight size={16} className="ml-1" />
-            </Button>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Trending Topics */}
       <Card className="card-shadow">
         <CardHeader className="pb-3">
@@ -125,10 +75,11 @@ export function SignalsSidebar() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3 max-h-32 overflow-y-auto">
+          <div className="space-y-3 max-h-48 overflow-y-auto">
             {mockTrendingTopics.map((topic, index) => (
               <div
                 key={index}
+                onClick={() => onNavigateToTrending?.(topic.platform)}
                 className="flex items-center justify-between p-2 rounded-md hover:bg-gray-50 cursor-pointer transition-colors"
               >
                 <div className="flex items-center gap-2">
@@ -145,6 +96,17 @@ export function SignalsSidebar() {
                 </span>
               </div>
             ))}
+          </div>
+          <div className="mt-4">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full"
+              onClick={() => onNavigateToTrending?.()}
+            >
+              <ArrowRight className="h-4 w-4 mr-2" />
+              View All Trending
+            </Button>
           </div>
         </CardContent>
       </Card>
