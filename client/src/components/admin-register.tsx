@@ -57,10 +57,13 @@ export default function AdminRegister() {
         const result = await response.json();
         console.log("Error result:", result);
         
-        // Show detailed validation errors if available
-        if (result.errors && Array.isArray(result.errors)) {
-          const errorMessages = result.errors.map((err: any) => `${err.field}: ${err.message}`).join(", ");
-          setError(`Validation failed: ${errorMessages}`);
+        // Handle validation errors
+        if (result.validationErrors && Array.isArray(result.validationErrors)) {
+          const errorMessages = result.validationErrors.map((err: any) => `${err.field}: ${err.message}`).join(", ");
+          setError(`${result.error.title}: ${errorMessages}`);
+        } else if (result.error) {
+          // Handle structured error messages
+          setError(`${result.error.title}: ${result.error.message}${result.error.solution ? '. ' + result.error.solution : ''}`);
         } else {
           setError(result.message || "Failed to create admin account");
         }

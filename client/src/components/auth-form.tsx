@@ -11,6 +11,8 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { authService } from "@/lib/auth";
 import { loginSchema, registerSchema, type LoginData, type RegisterData } from "@shared/schema";
 import { Brain } from "lucide-react";
+import { useErrorHandling } from "@/hooks/use-error-handling";
+import { ErrorDisplay } from "@/components/ui/error-display";
 
 interface AuthFormProps {
   onAuthSuccess: (user: { id: number; email: string }) => void;
@@ -18,7 +20,10 @@ interface AuthFormProps {
 
 export function AuthForm({ onAuthSuccess }: AuthFormProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [registerError, setRegisterError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { handleApiError } = useErrorHandling();
 
   const loginForm = useForm<LoginData>({
     resolver: zodResolver(loginSchema),
@@ -39,6 +44,7 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
 
   const handleLogin = async (data: LoginData) => {
     setIsLoading(true);
+    setLoginError(null);
     try {
       const response = await authService.login(data);
       onAuthSuccess(response.user);
@@ -47,11 +53,8 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
         description: "Logged in successfully",
       });
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to login",
-        variant: "destructive",
-      });
+      const errorMessage = handleApiError(error);
+      setLoginError(`${errorMessage.title}: ${errorMessage.message}${errorMessage.solution ? '. ' + errorMessage.solution : ''}`);
     } finally {
       setIsLoading(false);
     }
@@ -59,6 +62,7 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
 
   const handleRegister = async (data: RegisterData) => {
     setIsLoading(true);
+    setRegisterError(null);
     try {
       const response = await authService.register(data);
       onAuthSuccess(response.user);
@@ -67,11 +71,8 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
         description: "Account created successfully",
       });
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to register",
-        variant: "destructive",
-      });
+      const errorMessage = handleApiError(error);
+      setRegisterError(`${errorMessage.title}: ${errorMessage.message}${errorMessage.solution ? '. ' + errorMessage.solution : ''}`);
     } finally {
       setIsLoading(false);
     }
@@ -101,6 +102,13 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
               </TabsList>
               
               <TabsContent value="login" className="space-y-4">
+                {loginError && (
+                  <ErrorDisplay 
+                    error={loginError} 
+                    onDismiss={() => setLoginError(null)} 
+                    className="mb-4"
+                  />
+                )}
                 <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="login-email">Email address</Label>
@@ -141,6 +149,13 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
               </TabsContent>
               
               <TabsContent value="register" className="space-y-4">
+                {registerError && (
+                  <ErrorDisplay 
+                    error={registerError} 
+                    onDismiss={() => setRegisterError(null)} 
+                    className="mb-4"
+                  />
+                )}
                 <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="register-email">Email address</Label>

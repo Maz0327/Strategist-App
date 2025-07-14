@@ -10,7 +10,9 @@ export class AuthService {
   async register(data: RegisterData & { role?: string }): Promise<User> {
     const existingUser = await storage.getUserByEmail(data.email);
     if (existingUser) {
-      throw new Error("User already exists");
+      const error = new Error("An account with this email already exists");
+      error.name = "EMAIL_ALREADY_EXISTS";
+      throw error;
     }
 
     // Use stronger hashing with higher salt rounds
@@ -43,13 +45,17 @@ export class AuthService {
     const user = await storage.getUserByEmail(email);
     if (!user) {
       this.recordFailedAttempt(email);
-      throw new Error("Invalid credentials");
+      const error = new Error("The email or password you entered is incorrect");
+      error.name = "INVALID_CREDENTIALS";
+      throw error;
     }
 
     const isValidPassword = await bcrypt.compare(data.password, user.password);
     if (!isValidPassword) {
       this.recordFailedAttempt(email);
-      throw new Error("Invalid credentials");
+      const error = new Error("The email or password you entered is incorrect");
+      error.name = "INVALID_CREDENTIALS";
+      throw error;
     }
 
     // Clear failed attempts on successful login

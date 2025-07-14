@@ -24,6 +24,7 @@ import {
   insertUserFeedbackSchema,
   insertUserAnalyticsSchema
 } from "../shared/admin-schema";
+import { ERROR_MESSAGES, getErrorMessage, matchErrorPattern } from "@shared/error-messages";
 
 declare module "express-session" {
   interface SessionData {
@@ -862,12 +863,19 @@ The analyzed signals provide a comprehensive view of current market trends and s
       const parseResult = registerSchema.safeParse(req.body);
       if (!parseResult.success) {
         debugLogger.error("Validation failed", parseResult.error.issues, req);
+        const validationErrors = parseResult.error.issues.map(issue => ({
+          field: issue.path.join('.'),
+          message: issue.message
+        }));
+        
         return res.status(400).json({ 
-          message: "Validation failed",
-          errors: parseResult.error.issues.map(issue => ({
-            field: issue.path.join('.'),
-            message: issue.message
-          }))
+          error: {
+            title: "Please Fix These Issues",
+            message: "Some fields contain errors that need to be corrected.",
+            solution: "Check the highlighted fields and fix any issues before trying again.",
+            code: "VAL_003"
+          },
+          validationErrors
         });
       }
       
@@ -888,7 +896,19 @@ The analyzed signals provide a comprehensive view of current market trends and s
       });
     } catch (error: any) {
       debugLogger.error("Admin registration failed", error, req);
-      res.status(400).json({ message: error.message });
+      
+      // Handle specific error types
+      if (error.name === "EMAIL_ALREADY_EXISTS") {
+        return res.status(400).json({ 
+          error: ERROR_MESSAGES.EMAIL_ALREADY_EXISTS 
+        });
+      }
+      
+      // Handle generic errors
+      const errorMessage = matchErrorPattern(error.message);
+      res.status(400).json({ 
+        error: errorMessage 
+      });
     }
   });
 
