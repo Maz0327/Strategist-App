@@ -299,17 +299,29 @@ export function TutorialOverlay({ currentPage, isEnabled, onToggle }: TutorialOv
 
   return (
     <>
-      {/* Overlay */}
-      <div className="fixed inset-0 bg-black bg-opacity-30 z-40" />
+      {/* Overlay with cutout effect */}
+      <div 
+        className="fixed inset-0 z-40 pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(
+              circle at ${elementPos.left + elementPos.width / 2}px ${elementPos.top + elementPos.height / 2}px,
+              transparent ${Math.max(elementPos.width, elementPos.height) / 2 + 20}px,
+              rgba(0, 0, 0, 0.4) ${Math.max(elementPos.width, elementPos.height) / 2 + 25}px
+            )
+          `
+        }}
+      />
       
-      {/* Highlight */}
+      {/* Highlight border */}
       <div
-        className="fixed z-41 border-2 border-blue-500 bg-blue-100 bg-opacity-20 rounded-md pointer-events-none"
+        className="fixed z-41 border-2 border-blue-500 rounded-md pointer-events-none animate-pulse"
         style={{
           top: elementPos.top - 4,
           left: elementPos.left - 4,
           width: elementPos.width + 8,
-          height: elementPos.height + 8
+          height: elementPos.height + 8,
+          boxShadow: '0 0 20px rgba(59, 130, 246, 0.5)'
         }}
       />
 
