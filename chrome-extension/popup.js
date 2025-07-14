@@ -324,6 +324,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Send to backend
             await saveToDrafts(captureData);
 
+            // Track extension analytics
+            await trackExtensionEvent('content_captured', {
+                domain: captureData.browser_context.domain,
+                contentType: captureData.browser_context.contentType,
+                hasNotes: captureData.user_notes.length > 0,
+                contentLength: captureData.content.length
+            });
+
             // Notify background script
             chrome.runtime.sendMessage({
                 action: 'captureContent',
@@ -343,6 +351,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         } catch (error) {
             console.error('Error saving content:', error);
+            
+            // Track extension error
+            await trackExtensionEvent('capture_error', {
+                error: error.message,
+                domain: currentPageInfo?.domain || 'unknown'
+            });
+            
             showStatus('Failed to save content: ' + error.message, 'error');
             
             // Show retry option
@@ -386,6 +401,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             setTimeout(() => {
                 statusMessage.style.display = 'none';
             }, type === 'info' ? 3000 : 5000);
+        }
+    }
+
+    // Track extension analytics
+    async function trackExtensionEvent(event, metadata) {
+        try {
+            await fetch(`${currentConfig.backendUrl}${currentConfig.apiPrefix}/analytics/track`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    action: event,
+                    category: 'chrome_extension',
+                    metadata: metadata
+                })
+            });
+        } catch (error) {
+            console.error('Analytics tracking failed:', error);
         }
     }
 });

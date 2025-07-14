@@ -30,6 +30,36 @@ export class AnalyticsService {
     }
   }
 
+  // Track onboarding steps
+  async trackOnboardingStep(userId: number, step: string, completed: boolean, metadata?: any) {
+    try {
+      await db.insert(userAnalytics).values({
+        userId,
+        action: `onboarding_${step}`,
+        category: 'onboarding',
+        metadata: { completed, ...metadata },
+        timestamp: new Date()
+      });
+    } catch (error) {
+      console.error('Error tracking onboarding step:', error);
+    }
+  }
+
+  // Track feature discovery
+  async trackFeatureDiscovery(userId: number, feature: string, discoveryMethod: 'organic' | 'guided' | 'search') {
+    try {
+      await db.insert(userAnalytics).values({
+        userId,
+        action: 'feature_discovery',
+        category: 'engagement',
+        metadata: { feature, discoveryMethod },
+        timestamp: new Date()
+      });
+    } catch (error) {
+      console.error('Error tracking feature discovery:', error);
+    }
+  }
+
   // Track feature usage
   async trackFeatureUsage(feature: string, userId: number, duration?: number) {
     try {
@@ -71,7 +101,7 @@ export class AnalyticsService {
     }
   }
 
-  // Record system performance metrics
+  // Record system performance metrics with alerts
   async recordPerformanceMetric(metric: string, value: number, details?: any) {
     try {
       await db.insert(systemPerformance).values({
@@ -80,8 +110,35 @@ export class AnalyticsService {
         details,
         timestamp: new Date(),
       });
+
+      // Check for performance alerts
+      this.checkPerformanceAlerts(metric, value);
     } catch (error) {
       console.error('Failed to record performance metric:', error);
+    }
+  }
+
+  // Check performance thresholds and log alerts
+  private checkPerformanceAlerts(metric: string, value: number) {
+    const thresholds = {
+      'response_time': 5, // 5ms threshold
+      'error_rate': 1,    // 1% threshold
+      'memory_usage': 80, // 80% threshold
+      'cpu_usage': 90     // 90% threshold
+    };
+
+    const threshold = thresholds[metric as keyof typeof thresholds];
+    if (threshold && value > threshold) {
+      console.warn(`⚠️  PERFORMANCE ALERT: ${metric} (${value}) exceeded threshold (${threshold})`);
+      
+      // Track alert in analytics
+      this.trackUserAction({
+        userId: 0, // System user
+        action: 'performance_alert',
+        category: 'system',
+        metadata: { metric, value, threshold },
+        timestamp: new Date()
+      });
     }
   }
 
