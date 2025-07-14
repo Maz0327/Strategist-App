@@ -826,11 +826,15 @@ The analyzed signals provide a comprehensive view of current market trends and s
   // Analytics tracking endpoint
   app.post("/api/analytics/track", requireAuth, async (req, res) => {
     try {
+      const { event, metadata, ...rest } = req.body;
+      
       const analyticsData = insertUserAnalyticsSchema.parse({
-        ...req.body,
+        action: event, // Map 'event' to 'action'
+        details: metadata, // Map 'metadata' to 'details'
         userId: req.session.userId,
         userAgent: req.headers['user-agent'] || '',
-        ipAddress: req.ip || ''
+        ipAddress: req.ip || '',
+        ...rest
       });
       
       await analyticsService.trackUserAction(analyticsData);

@@ -10,7 +10,7 @@ import {
   type InsertUserFeedback,
   type InsertFeatureUsage,
   type InsertSystemPerformance
-} from "../../shared/admin-schema";
+} from "../../shared/schema";
 import { users } from "../../shared/schema";
 import { eq, desc, count, avg, sql } from "drizzle-orm";
 
