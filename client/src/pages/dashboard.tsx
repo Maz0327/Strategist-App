@@ -11,7 +11,7 @@ import { AdminDashboard } from "@/components/admin-dashboard";
 import { FeedbackWidget } from "@/components/feedback-widget";
 import { authService } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-import { Brain, Bell, User, Home, Search, Plus, Target, Settings, ChevronRight, BarChart3 } from "lucide-react";
+import { Brain, Bell, User, Home, Search, Plus, Target, Settings, ChevronRight, BarChart3, ChevronLeft, Menu } from "lucide-react";
 
 interface DashboardProps {
   user: { id: number; email: string };
@@ -22,6 +22,7 @@ interface DashboardProps {
 export default function Dashboard({ user, onLogout, onPageChange }: DashboardProps) {
   const [activeTab, setActiveTab] = useState("briefing");
   const [activeSubTab, setActiveSubTab] = useState("");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { toast } = useToast();
 
   // Notify parent component of page changes
@@ -118,33 +119,31 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
 
   return (
     <div className="h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
+      {/* Compact Header */}
       <header className="bg-white shadow-sm border-b border-gray-200 flex-shrink-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex justify-between items-center h-12">
             <div className="flex items-center">
-              <div className="h-8 w-8 bg-primary rounded-full flex items-center justify-center">
-                <Brain className="text-white" size={20} />
+              <div className="h-6 w-6 bg-primary rounded-full flex items-center justify-center">
+                <Brain className="text-white" size={14} />
               </div>
-              <h1 className="ml-3 text-xl font-semibold text-gray-900">Strategist</h1>
+              <h1 className="ml-2 text-lg font-semibold text-gray-900">Strategist</h1>
             </div>
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm">
-                <Bell size={20} className="text-gray-500" />
+            <div className="flex items-center space-x-2">
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <Bell size={16} className="text-gray-500" />
               </Button>
-              <div className="relative">
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={handleLogout}
-                  className="flex items-center space-x-2"
-                >
-                  <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
-                    <User size={16} className="text-gray-600" />
-                  </div>
-                  <span className="text-gray-700 font-medium">{user.email}</span>
-                </Button>
-              </div>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={handleLogout}
+                className="flex items-center space-x-2 h-8 px-2"
+              >
+                <div className="h-6 w-6 rounded-full bg-gray-300 flex items-center justify-center">
+                  <User size={12} className="text-gray-600" />
+                </div>
+                <span className="text-sm text-gray-700 font-medium hidden sm:inline">{user.email}</span>
+              </Button>
             </div>
           </div>
         </div>
@@ -152,10 +151,22 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
 
       {/* Main Content */}
       <main className="flex flex-1 overflow-hidden">
-        {/* Sidebar Navigation */}
-        <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-full">
-          <div className="flex-1 overflow-y-auto py-6 px-4">
-            <nav className="space-y-2">
+        {/* Collapsible Sidebar Navigation */}
+        <div className={`${sidebarCollapsed ? 'w-12' : 'w-48'} bg-white border-r border-gray-200 flex flex-col h-full transition-all duration-300`}>
+          {/* Sidebar Toggle */}
+          <div className="flex justify-between items-center p-2 border-b border-gray-200">
+            {!sidebarCollapsed && <span className="text-sm font-medium text-gray-700">Navigation</span>}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="h-8 w-8 p-0"
+            >
+              {sidebarCollapsed ? <Menu size={16} /> : <ChevronLeft size={16} />}
+            </Button>
+          </div>
+          <div className="flex-1 overflow-y-auto py-4 px-3">
+            <nav className="space-y-1">
               {navigationItems.map((item) => (
                 <div key={item.id}>
                   <button
@@ -163,17 +174,18 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
                       handleTabChange(item.id);
                       setActiveSubTab("");
                     }}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-left rounded-md text-sm font-medium transition-colors ${
+                    className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} px-2 py-1.5 text-left rounded-md text-sm font-medium transition-colors ${
                       activeTab === item.id 
                         ? 'bg-primary text-primary-foreground' 
                         : 'text-gray-700 hover:bg-gray-100'
                     }`}
+                    title={sidebarCollapsed ? item.label : undefined}
                   >
-                    <div className="flex items-center space-x-2">
+                    <div className={`flex items-center ${sidebarCollapsed ? '' : 'space-x-2'}`}>
                       <item.icon className="h-4 w-4" />
-                      <span>{item.label}</span>
+                      {!sidebarCollapsed && <span>{item.label}</span>}
                     </div>
-                    {item.subItems.length > 0 && (
+                    {!sidebarCollapsed && item.subItems.length > 0 && (
                       <ChevronRight className={`h-4 w-4 transition-transform ${
                         activeTab === item.id ? 'rotate-90' : ''
                       }`} />
@@ -181,16 +193,16 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
                   </button>
                   
                   {/* Sub-navigation */}
-                  {activeTab === item.id && item.subItems.length > 0 && (
+                  {!sidebarCollapsed && activeTab === item.id && item.subItems.length > 0 && (
                     <div 
-                      className="ml-6 mt-2 space-y-1"
+                      className="ml-4 mt-1 space-y-0.5"
                       data-tutorial={item.id === "briefing" ? "briefing-tabs" : undefined}
                     >
                       {item.subItems.map((subItem) => (
                         <button
                           key={subItem.id}
                           onClick={() => setActiveSubTab(subItem.id)}
-                          className={`w-full text-left px-3 py-2 text-sm rounded-md transition-colors ${
+                          className={`w-full text-left px-2 py-1 text-xs rounded-md transition-colors ${
                             activeSubTab === subItem.id
                               ? 'bg-primary/10 text-primary'
                               : 'text-gray-600 hover:bg-gray-50'
@@ -206,14 +218,16 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
             </nav>
           </div>
           
-          {/* Sidebar Footer - Fixed height with scroll */}
-          <div className="flex-shrink-0 px-4 py-4 border-t border-gray-200 max-h-80 overflow-y-auto">
-            <SignalsSidebar onNavigateToTrending={handleNavigateToTrending} />
-          </div>
+          {/* Compact Sidebar Footer */}
+          {!sidebarCollapsed && (
+            <div className="flex-shrink-0 px-2 py-2 border-t border-gray-200 max-h-48 overflow-y-auto">
+              <SignalsSidebar onNavigateToTrending={handleNavigateToTrending} />
+            </div>
+          )}
         </div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 overflow-y-auto bg-gray-50 p-8">
+        {/* Main Content Area - Maximized */}
+        <div className="flex-1 overflow-y-auto bg-gray-50 p-4">
           {activeTab === "briefing" && (
             <TodaysBriefing 
               activeSubTab={activeSubTab}

@@ -69,43 +69,43 @@ export function SignalsSidebar({ onNavigateToTrending }: SignalsSidebarProps = {
     <div className="space-y-4">
       {/* Trending Topics */}
       <Card className="card-shadow">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold text-gray-900">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold text-gray-900">
             Trending Topics
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-3 max-h-48 overflow-y-auto">
+        <CardContent className="pt-0">
+          <div className="space-y-2 max-h-32 overflow-y-auto">
             {mockTrendingTopics.map((topic, index) => (
               <div
                 key={index}
                 onClick={() => onNavigateToTrending?.(topic.platform)}
-                className="flex items-center justify-between p-2 rounded-md hover:bg-gray-50 cursor-pointer transition-colors"
+                className="flex items-center justify-between p-1.5 rounded-md hover:bg-gray-50 cursor-pointer transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-xs">
+                  <div className="w-5 h-5 bg-gray-200 rounded-full flex items-center justify-center text-xs">
                     {topic.platform.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{topic.title}</p>
+                    <p className="text-xs font-medium text-gray-900 truncate">{topic.title}</p>
                     <p className="text-xs text-gray-500">{topic.platform}</p>
                   </div>
                 </div>
                 <span className="text-xs text-gray-500">
-                  {topic.icon} {topic.status}
+                  {topic.icon}
                 </span>
               </div>
             ))}
           </div>
-          <div className="mt-4">
+          <div className="mt-2">
             <Button 
               variant="outline" 
               size="sm" 
-              className="w-full"
+              className="w-full h-7 text-xs"
               onClick={() => onNavigateToTrending?.()}
             >
-              <ArrowRight className="h-4 w-4 mr-2" />
-              View All Trending
+              <ArrowRight className="h-3 w-3 mr-1" />
+              View All
             </Button>
           </div>
         </CardContent>
