@@ -48,14 +48,213 @@ export class OpenAIService {
   async analyzeContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number) => void): Promise<EnhancedAnalysisResult> {
     debugLogger.info('Starting OpenAI content analysis', { title: data.title, hasUrl: !!data.url, contentLength: data.content?.length, lengthPreference });
     
-    // Prevent timeouts by limiting content length
-    const maxContentLength = 12000; // ~3000 tokens to stay well under limits
-    let processedContent = data.content || '';
+    const maxChunkLength = 10000; // ~2500 tokens per chunk for safety
+    const content = data.content || '';
     
-    if (processedContent.length > maxContentLength) {
-      debugLogger.info('Content too long, truncating', { originalLength: processedContent.length, maxLength: maxContentLength });
-      processedContent = processedContent.substring(0, maxContentLength) + '... [Content truncated for analysis]';
+    // Check if content needs chunking
+    if (content.length > maxChunkLength) {
+      debugLogger.info('Content requires chunking', { originalLength: content.length, maxChunkLength });
+      return await this.analyzeContentInChunks(data, lengthPreference, onProgress);
     }
+    
+    // Process normally for shorter content
+    return await this.analyzeSingleContent(data, lengthPreference, onProgress);
+  }
+
+  private async analyzeContentInChunks(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number) => void): Promise<EnhancedAnalysisResult> {
+    const content = data.content || '';
+    const maxChunkLength = 10000;
+    
+    // Split content into chunks intelligently (by paragraphs when possible)
+    const chunks = this.splitContentIntoChunks(content, maxChunkLength);
+    debugLogger.info('Processing content in chunks', { totalChunks: chunks.length, originalLength: content.length });
+    
+    if (onProgress) {
+      onProgress('Processing large content in segments', 10);
+    }
+    
+    // Process each chunk
+    const chunkResults: EnhancedAnalysisResult[] = [];
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      const chunkData = { ...data, content: chunk };
+      
+      if (onProgress) {
+        const progress = 10 + (i / chunks.length) * 70; // 10% to 80%
+        onProgress(`Analyzing segment ${i + 1} of ${chunks.length}`, progress);
+      }
+      
+      debugLogger.info(`Processing chunk ${i + 1}/${chunks.length}`, { chunkLength: chunk.length });
+      
+      try {
+        const result = await this.analyzeSingleContent(chunkData, lengthPreference);
+        chunkResults.push(result);
+        
+        // Small delay between chunks to prevent rate limiting
+        if (i < chunks.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      } catch (error) {
+        debugLogger.error(`Failed to analyze chunk ${i + 1}`, error);
+        // Continue with other chunks even if one fails
+      }
+    }
+    
+    if (onProgress) {
+      onProgress('Combining analysis results', 85);
+    }
+    
+    // Combine all chunk results into unified analysis
+    const combinedResult = this.combineChunkResults(chunkResults, data);
+    
+    if (onProgress) {
+      onProgress('Analysis complete', 100);
+    }
+    
+    return combinedResult;
+  }
+
+  private splitContentIntoChunks(content: string, maxLength: number): string[] {
+    const chunks: string[] = [];
+    
+    // First, try to split by paragraphs
+    const paragraphs = content.split(/\n\s*\n/);
+    let currentChunk = '';
+    
+    for (const paragraph of paragraphs) {
+      if (currentChunk.length + paragraph.length + 2 <= maxLength) {
+        currentChunk += (currentChunk ? '\n\n' : '') + paragraph;
+      } else {
+        if (currentChunk) {
+          chunks.push(currentChunk);
+          currentChunk = '';
+        }
+        
+        // If single paragraph is too long, split by sentences
+        if (paragraph.length > maxLength) {
+          const sentences = paragraph.split(/[.!?]+\s+/);
+          let sentenceChunk = '';
+          
+          for (const sentence of sentences) {
+            if (sentenceChunk.length + sentence.length + 2 <= maxLength) {
+              sentenceChunk += (sentenceChunk ? '. ' : '') + sentence;
+            } else {
+              if (sentenceChunk) {
+                chunks.push(sentenceChunk + '.');
+                sentenceChunk = '';
+              }
+              
+              // If single sentence is still too long, force split
+              if (sentence.length > maxLength) {
+                const words = sentence.split(' ');
+                let wordChunk = '';
+                
+                for (const word of words) {
+                  if (wordChunk.length + word.length + 1 <= maxLength) {
+                    wordChunk += (wordChunk ? ' ' : '') + word;
+                  } else {
+                    if (wordChunk) {
+                      chunks.push(wordChunk);
+                      wordChunk = '';
+                    }
+                    wordChunk = word;
+                  }
+                }
+                
+                if (wordChunk) {
+                  sentenceChunk = wordChunk;
+                }
+              } else {
+                sentenceChunk = sentence;
+              }
+            }
+          }
+          
+          if (sentenceChunk) {
+            currentChunk = sentenceChunk + '.';
+          }
+        } else {
+          currentChunk = paragraph;
+        }
+      }
+    }
+    
+    if (currentChunk) {
+      chunks.push(currentChunk);
+    }
+    
+    return chunks;
+  }
+
+  private combineChunkResults(chunkResults: EnhancedAnalysisResult[], originalData: AnalyzeContentData): EnhancedAnalysisResult {
+    if (chunkResults.length === 0) {
+      throw new Error('No successful chunk analysis results to combine');
+    }
+    
+    if (chunkResults.length === 1) {
+      return chunkResults[0];
+    }
+    
+    // Combine summaries
+    const combinedSummary = `Comprehensive analysis of ${originalData.title || 'content'}: ${chunkResults.map(r => r.summary).join(' ')}`;
+    
+    // Aggregate sentiment (most common)
+    const sentiments = chunkResults.map(r => r.sentiment);
+    const sentimentCounts = sentiments.reduce((acc, s) => ({ ...acc, [s]: (acc[s] || 0) + 1 }), {});
+    const dominantSentiment = Object.entries(sentimentCounts).sort(([,a], [,b]) => b - a)[0][0];
+    
+    // Combine tone (most professional approach)
+    const tones = chunkResults.map(r => r.tone);
+    const toneCounts = tones.reduce((acc, t) => ({ ...acc, [t]: (acc[t] || 0) + 1 }), {});
+    const dominantTone = Object.entries(toneCounts).sort(([,a], [,b]) => b - a)[0][0];
+    
+    // Merge and deduplicate keywords
+    const allKeywords = chunkResults.flatMap(r => r.keywords);
+    const uniqueKeywords = [...new Set(allKeywords)].slice(0, 7); // Top 7 unique keywords
+    
+    // Combine truth analysis (take most comprehensive)
+    const truthAnalyses = chunkResults.map(r => r.truthAnalysis);
+    const combinedTruthAnalysis = {
+      fact: truthAnalyses.map(t => t.fact).join(' '),
+      observation: truthAnalyses.map(t => t.observation).join(' '),
+      insight: truthAnalyses.map(t => t.insight).join(' '),
+      humanTruth: truthAnalyses.map(t => t.humanTruth).join(' '),
+      culturalMoment: truthAnalyses.map(t => t.culturalMoment).join(' '),
+      attentionValue: truthAnalyses.filter(t => t.attentionValue === 'high').length > 0 ? 'high' : 
+                     truthAnalyses.filter(t => t.attentionValue === 'medium').length > 0 ? 'medium' : 'low',
+      platform: truthAnalyses[0].platform,
+      cohortOpportunities: [...new Set(truthAnalyses.flatMap(t => t.cohortOpportunities))].slice(0, 5)
+    };
+    
+    // Combine other arrays and deduplicate
+    const combinedCohortSuggestions = [...new Set(chunkResults.flatMap(r => r.cohortSuggestions))].slice(0, 5);
+    const combinedCompetitiveInsights = [...new Set(chunkResults.flatMap(r => r.competitiveInsights))].slice(0, 5);
+    const combinedStrategicInsights = [...new Set(chunkResults.flatMap(r => r.strategicInsights))].slice(0, 5);
+    const combinedStrategicActions = [...new Set(chunkResults.flatMap(r => r.strategicActions))].slice(0, 5);
+    
+    // Determine overall viral potential
+    const viralPotentials = chunkResults.map(r => r.viralPotential);
+    const viralPotential = viralPotentials.filter(v => v === 'high').length > 0 ? 'high' : 
+                          viralPotentials.filter(v => v === 'medium').length > 0 ? 'medium' : 'low';
+    
+    return {
+      summary: combinedSummary,
+      sentiment: dominantSentiment,
+      tone: dominantTone,
+      keywords: uniqueKeywords,
+      confidence: `${Math.round(chunkResults.reduce((acc, r) => acc + parseInt(r.confidence), 0) / chunkResults.length)}%`,
+      truthAnalysis: combinedTruthAnalysis as TruthAnalysis,
+      cohortSuggestions: combinedCohortSuggestions,
+      platformContext: `Multi-segment analysis combining insights from ${chunkResults.length} content sections`,
+      viralPotential: viralPotential as 'high' | 'medium' | 'low',
+      competitiveInsights: combinedCompetitiveInsights,
+      strategicInsights: combinedStrategicInsights,
+      strategicActions: combinedStrategicActions
+    };
+  }
+
+  private async analyzeSingleContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number) => void): Promise<EnhancedAnalysisResult> {
+    const processedContent = data.content || '';
     
     const getLengthInstructions = (preference: string) => {
       switch (preference) {
