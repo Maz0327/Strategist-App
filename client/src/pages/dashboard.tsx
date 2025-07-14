@@ -148,7 +148,7 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
       {/* Main Content */}
       <main className="flex flex-1 overflow-hidden">
         {/* Sidebar Navigation */}
-        <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
+        <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-full">
           <div className="flex-1 overflow-y-auto py-6 px-4">
             <nav className="space-y-2">
               {navigationItems.map((item) => (
@@ -201,8 +201,8 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
             </nav>
           </div>
           
-          {/* Sidebar Footer */}
-          <div className="px-4 py-4 border-t border-gray-200">
+          {/* Sidebar Footer - Fixed height with scroll */}
+          <div className="flex-shrink-0 px-4 py-4 border-t border-gray-200 max-h-80 overflow-y-auto">
             <SignalsSidebar />
           </div>
         </div>

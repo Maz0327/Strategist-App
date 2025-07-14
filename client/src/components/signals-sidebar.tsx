@@ -62,16 +62,16 @@ export function SignalsSidebar() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Recent Signals */}
       <Card className="card-shadow">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold text-gray-900">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold text-gray-900">
             Recent Content
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
+          <div className="space-y-3 max-h-48 overflow-y-auto">
             {signals.length === 0 ? (
               <p className="text-sm text-gray-500">No signals yet. Analyze some content to get started!</p>
             ) : (
@@ -119,13 +119,13 @@ export function SignalsSidebar() {
 
       {/* Trending Topics */}
       <Card className="card-shadow">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold text-gray-900">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold text-gray-900">
             Trending Topics
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
+          <div className="space-y-3 max-h-32 overflow-y-auto">
             {mockTrendingTopics.map((topic, index) => (
               <div
                 key={index}
