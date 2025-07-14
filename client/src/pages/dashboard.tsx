@@ -177,7 +177,10 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
                   
                   {/* Sub-navigation */}
                   {activeTab === item.id && item.subItems.length > 0 && (
-                    <div className="ml-6 mt-2 space-y-1">
+                    <div 
+                      className="ml-6 mt-2 space-y-1"
+                      data-tutorial={item.id === "briefing" ? "briefing-tabs" : undefined}
+                    >
                       {item.subItems.map((subItem) => (
                         <button
                           key={subItem.id}
