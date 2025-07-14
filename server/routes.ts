@@ -25,6 +25,7 @@ import {
   insertUserAnalyticsSchema
 } from "../shared/admin-schema";
 import { ERROR_MESSAGES, getErrorMessage, matchErrorPattern } from "@shared/error-messages";
+import { sql } from "./storage";
 
 declare module "express-session" {
   interface SessionData {
@@ -851,6 +852,56 @@ The analyzed signals provide a comprehensive view of current market trends and s
       res.json({ source: updatedSource });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Admin password reset route (temporary - for development)
+  app.post("/api/auth/reset-admin-password", async (req, res) => {
+    try {
+      const { email, newPassword } = req.body;
+      
+      if (!email || !newPassword) {
+        return res.status(400).json({ 
+          error: { 
+            title: "Missing Information", 
+            message: "Email and new password are required" 
+          } 
+        });
+      }
+      
+      // Validate password strength
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      if (!passwordRegex.test(newPassword)) {
+        return res.status(400).json({ 
+          error: { 
+            title: "Password Too Weak", 
+            message: "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (minimum 8 characters)" 
+          } 
+        });
+      }
+      
+      // Hash the new password
+      const hashedPassword = await bcrypt.hash(newPassword, 12);
+      
+      // Update the password in database
+      await sql`
+        UPDATE users 
+        SET password = ${hashedPassword} 
+        WHERE email = ${email.toLowerCase()}
+      `;
+      
+      res.json({ 
+        success: true, 
+        message: `Password reset successfully for ${email}` 
+      });
+      
+    } catch (error: any) {
+      res.status(500).json({ 
+        error: { 
+          title: "Reset Failed", 
+          message: error.message || "Failed to reset password" 
+        } 
+      });
     }
   });
 

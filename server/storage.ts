@@ -6,6 +6,8 @@ import postgres from "postgres";
 const sql = postgres(process.env.DATABASE_URL!);
 const db = drizzle(sql);
 
+export { sql };
+
 export interface IStorage {
   // Users
   getUser(id: number): Promise<User | undefined>;
