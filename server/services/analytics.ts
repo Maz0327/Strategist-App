@@ -6,11 +6,15 @@ import {
   featureUsage, 
   systemPerformance,
   abTestResults,
+  apiCalls,
+  externalApiCalls,
   type InsertUserAnalytics,
   type InsertUserFeedback,
   type InsertFeatureUsage,
-  type InsertSystemPerformance
-} from "../../shared/schema";
+  type InsertSystemPerformance,
+  type InsertApiCalls,
+  type InsertExternalApiCalls
+} from "../../shared/admin-schema";
 import { users } from "../../shared/schema";
 import { eq, desc, count, avg, sql } from "drizzle-orm";
 
@@ -314,6 +318,100 @@ export class AnalyticsService {
     } catch (error) {
       console.error('Failed to update feedback status:', error);
       throw error;
+    }
+  }
+
+  // Track API calls
+  async trackApiCall(data: InsertApiCalls) {
+    try {
+      await db.insert(apiCalls).values({
+        ...data,
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      console.error('Failed to track API call:', error);
+    }
+  }
+
+  // Track external API calls (OpenAI, Google Trends, etc.)
+  async trackExternalApiCall(data: InsertExternalApiCalls) {
+    try {
+      await db.insert(externalApiCalls).values({
+        ...data,
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      console.error('Failed to track external API call:', error);
+    }
+  }
+
+  // Get API call statistics
+  async getApiCallStats(timeRange: 'day' | 'week' | 'month' = 'week') {
+    try {
+      const timeCondition = this.getTimeCondition(timeRange);
+      
+      // Internal API calls stats
+      const internalStats = await db
+        .select({
+          endpoint: apiCalls.endpoint,
+          method: apiCalls.method,
+          totalCalls: count(),
+          avgResponseTime: avg(apiCalls.responseTime),
+          successRate: sql<number>`(COUNT(CASE WHEN status_code < 400 THEN 1 END) * 100.0 / COUNT(*))`,
+          totalErrors: sql<number>`COUNT(CASE WHEN status_code >= 400 THEN 1 END)`,
+        })
+        .from(apiCalls)
+        .where(timeCondition)
+        .groupBy(apiCalls.endpoint, apiCalls.method)
+        .orderBy(desc(count()));
+
+      // External API calls stats
+      const externalStats = await db
+        .select({
+          service: externalApiCalls.service,
+          totalCalls: count(),
+          avgResponseTime: avg(externalApiCalls.responseTime),
+          totalTokens: sql<number>`COALESCE(SUM(tokens_used), 0)`,
+          totalCost: sql<number>`COALESCE(SUM(cost), 0)`,
+          successRate: sql<number>`(COUNT(CASE WHEN status_code < 400 THEN 1 END) * 100.0 / COUNT(*))`,
+        })
+        .from(externalApiCalls)
+        .where(timeCondition)
+        .groupBy(externalApiCalls.service)
+        .orderBy(desc(count()));
+
+      return {
+        internal: internalStats,
+        external: externalStats,
+      };
+    } catch (error) {
+      console.error('Failed to get API call stats:', error);
+      return { internal: [], external: [] };
+    }
+  }
+
+  // Get recent API calls for debugging
+  async getRecentApiCalls(limit: number = 100, service?: string) {
+    try {
+      if (service) {
+        // For external API calls
+        return await db
+          .select()
+          .from(externalApiCalls)
+          .where(eq(externalApiCalls.service, service))
+          .orderBy(desc(externalApiCalls.timestamp))
+          .limit(limit);
+      } else {
+        // For internal API calls
+        return await db
+          .select()
+          .from(apiCalls)
+          .orderBy(desc(apiCalls.timestamp))
+          .limit(limit);
+      }
+    } catch (error) {
+      console.error('Failed to get recent API calls:', error);
+      return [];
     }
   }
 

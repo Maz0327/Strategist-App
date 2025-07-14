@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import type { AnalyzeContentData } from "@shared/schema";
 import { debugLogger } from "./debug-logger";
+import { analyticsService } from "./analytics";
 
 // Using gpt-4o-mini for cost-efficient testing phase, can upgrade to gpt-4o later
 const openai = new OpenAI({ 
@@ -344,17 +345,56 @@ Provide JSON with these fields:
       return this.processOpenAIResponse(response, startTime);
     } catch (error: any) {
       debugLogger.error('OpenAI analysis failed', error);
+      
+      // Track failed API call
+      analyticsService.trackExternalApiCall({
+        userId: 0, // System user for now, will be updated with actual user context
+        service: 'openai',
+        endpoint: 'chat/completions',
+        method: 'POST',
+        statusCode: 500,
+        responseTime: Date.now() - startTime,
+        errorMessage: error.message,
+        metadata: {
+          model: 'gpt-4o-mini',
+          promptLength: prompt.length,
+          contentLength: processedContent.length
+        }
+      });
+      
       throw new Error(`Failed to analyze content: ${error.message}`);
     }
   }
 
   private processOpenAIResponse(response: any, startTime: number): EnhancedAnalysisResult {
     const responseTime = Date.now() - startTime;
+    const tokensUsed = response.usage?.total_tokens || 0;
+    const promptTokens = response.usage?.prompt_tokens || 0;
+    const completionTokens = response.usage?.completion_tokens || 0;
+    
     debugLogger.info('OpenAI API response received', { 
       responseTime, 
-      tokensUsed: response.usage?.total_tokens,
-      promptTokens: response.usage?.prompt_tokens,
-      completionTokens: response.usage?.completion_tokens
+      tokensUsed,
+      promptTokens,
+      completionTokens
+    });
+
+    // Track successful API call
+    analyticsService.trackExternalApiCall({
+      userId: 0, // System user for now, will be updated with actual user context
+      service: 'openai',
+      endpoint: 'chat/completions',
+      method: 'POST',
+      statusCode: 200,
+      responseTime,
+      tokensUsed,
+      cost: Math.round(tokensUsed * 0.00015 * 100), // Cost in cents ($0.00015 per token for gpt-4o-mini)
+      metadata: {
+        model: 'gpt-4o-mini',
+        promptTokens,
+        completionTokens,
+        finishReason: response.choices[0]?.finish_reason
+      }
     });
 
     const result = JSON.parse(response.choices[0].message.content || "{}");

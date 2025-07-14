@@ -89,6 +89,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add performance monitoring middleware
   app.use(performanceMiddleware);
 
+  // API call tracking middleware
+  app.use((req, res, next) => {
+    const startTime = Date.now();
+    
+    // Track response time and API calls
+    res.on('finish', () => {
+      const duration = Date.now() - startTime;
+      
+      // Track API calls for internal endpoints
+      if (req.path.startsWith('/api/') && req.session?.userId) {
+        const requestSize = req.get('Content-Length') ? parseInt(req.get('Content-Length') || '0') : 0;
+        const responseSize = res.get('Content-Length') ? parseInt(res.get('Content-Length') || '0') : 0;
+        
+        analyticsService.trackApiCall({
+          userId: req.session.userId,
+          endpoint: req.path,
+          method: req.method,
+          statusCode: res.statusCode,
+          responseTime: duration,
+          requestSize,
+          responseSize,
+          userAgent: req.get('User-Agent') || '',
+          ipAddress: req.ip || '',
+          errorMessage: res.statusCode >= 400 ? res.statusMessage : null,
+          metadata: {
+            query: req.query,
+            sessionId: req.sessionID,
+          }
+        });
+      }
+    });
+    
+    next();
+  });
+
   // Auth middleware
   const requireAuth = (req: any, res: any, next: any) => {
     debugLogger.debug("Session check", { userId: req.session?.userId, sessionId: req.sessionID }, req);
@@ -889,6 +924,31 @@ The analyzed signals provide a comprehensive view of current market trends and s
     } catch (error: any) {
       debugLogger.error("Failed to track analytics", error, req);
       res.status(500).json({ message: "Failed to track analytics" });
+    }
+  });
+
+  // API call statistics endpoint
+  app.get("/api/admin/api-stats", requireAuth, async (req, res) => {
+    try {
+      const timeRange = req.query.timeRange as 'day' | 'week' | 'month' || 'week';
+      const stats = await analyticsService.getApiCallStats(timeRange);
+      res.json(stats);
+    } catch (error: any) {
+      debugLogger.error("Failed to get API call stats", error, req);
+      res.status(500).json({ message: "Failed to load API statistics" });
+    }
+  });
+
+  // Recent API calls endpoint
+  app.get("/api/admin/recent-calls", requireAuth, async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 100;
+      const service = req.query.service as string;
+      const calls = await analyticsService.getRecentApiCalls(limit, service);
+      res.json(calls);
+    } catch (error: any) {
+      debugLogger.error("Failed to get recent API calls", error, req);
+      res.status(500).json({ message: "Failed to load recent API calls" });
     }
   });
 

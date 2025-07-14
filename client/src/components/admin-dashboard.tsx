@@ -25,8 +25,11 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Activity
+  Activity,
+  Database,
+  ExternalLink
 } from "lucide-react";
+import ApiMonitoring from "./admin/api-monitoring";
 
 interface DashboardData {
   activeUsers: number;
@@ -192,11 +195,12 @@ export function AdminDashboard() {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="features">Feature Usage</TabsTrigger>
           <TabsTrigger value="users">User Behavior</TabsTrigger>
           <TabsTrigger value="feedback">Feedback</TabsTrigger>
+          <TabsTrigger value="api-monitoring">API Monitoring</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -407,6 +411,10 @@ export function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="api-monitoring" className="space-y-4">
+          <ApiMonitoring />
         </TabsContent>
       </Tabs>
     </div>

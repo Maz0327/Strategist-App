@@ -53,6 +53,39 @@ export const systemPerformance = pgTable("system_performance", {
   details: jsonb("details"),
 });
 
+// API Calls Tracking Table
+export const apiCalls = pgTable("api_calls", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  endpoint: text("endpoint").notNull(), // '/api/analyze', '/api/signals', etc.
+  method: text("method").notNull(), // 'GET', 'POST', 'PUT', 'DELETE'
+  statusCode: integer("status_code").notNull(),
+  responseTime: integer("response_time").notNull(), // in milliseconds
+  requestSize: integer("request_size"), // in bytes
+  responseSize: integer("response_size"), // in bytes
+  userAgent: text("user_agent"),
+  ipAddress: text("ip_address"),
+  timestamp: timestamp("timestamp").defaultNow(),
+  errorMessage: text("error_message"), // for failed requests
+  metadata: jsonb("metadata"), // additional context (OpenAI tokens, etc.)
+});
+
+// External API Calls Table (OpenAI, Google Trends, etc.)
+export const externalApiCalls = pgTable("external_api_calls", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  service: text("service").notNull(), // 'openai', 'google_trends', 'reddit', etc.
+  endpoint: text("endpoint"), // specific API endpoint called
+  method: text("method").notNull(),
+  statusCode: integer("status_code"),
+  responseTime: integer("response_time").notNull(),
+  tokensUsed: integer("tokens_used"), // for OpenAI calls
+  cost: integer("cost"), // cost in cents
+  timestamp: timestamp("timestamp").defaultNow(),
+  errorMessage: text("error_message"),
+  metadata: jsonb("metadata"),
+});
+
 // A/B Test Results Table
 export const abTestResults = pgTable("ab_test_results", {
   id: serial("id").primaryKey(),
@@ -87,6 +120,16 @@ export const insertSystemPerformanceSchema = createInsertSchema(systemPerformanc
   timestamp: true,
 });
 
+export const insertApiCallsSchema = createInsertSchema(apiCalls).omit({
+  id: true,
+  timestamp: true,
+});
+
+export const insertExternalApiCallsSchema = createInsertSchema(externalApiCalls).omit({
+  id: true,
+  timestamp: true,
+});
+
 export const insertAbTestResultsSchema = createInsertSchema(abTestResults).omit({
   id: true,
   timestamp: true,
@@ -107,6 +150,12 @@ export type InsertSystemPerformance = z.infer<typeof insertSystemPerformanceSche
 
 export type AbTestResults = typeof abTestResults.$inferSelect;
 export type InsertAbTestResults = z.infer<typeof insertAbTestResultsSchema>;
+
+export type ApiCalls = typeof apiCalls.$inferSelect;
+export type InsertApiCalls = z.infer<typeof insertApiCallsSchema>;
+
+export type ExternalApiCalls = typeof externalApiCalls.$inferSelect;
+export type InsertExternalApiCalls = z.infer<typeof insertExternalApiCallsSchema>;
 
 // Import users table reference
 import { users } from "./schema";
