@@ -56,7 +56,14 @@ export default function AdminRegister() {
       } else {
         const result = await response.json();
         console.log("Error result:", result);
-        setError(result.message || "Failed to create admin account");
+        
+        // Show detailed validation errors if available
+        if (result.errors && Array.isArray(result.errors)) {
+          const errorMessages = result.errors.map((err: any) => `${err.field}: ${err.message}`).join(", ");
+          setError(`Validation failed: ${errorMessages}`);
+        } else {
+          setError(result.message || "Failed to create admin account");
+        }
       }
     } catch (error) {
       console.error("Network error:", error);
@@ -127,6 +134,9 @@ export default function AdminRegister() {
                 required
                 placeholder="Minimum 8 characters"
               />
+              <p className="text-xs text-gray-500">
+                Must contain uppercase, lowercase, number, and special character
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm Password</Label>

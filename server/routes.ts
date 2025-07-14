@@ -857,7 +857,21 @@ The analyzed signals provide a comprehensive view of current market trends and s
   app.post("/api/auth/register-admin", async (req, res) => {
     try {
       debugLogger.info("Admin registration attempt", { body: req.body }, req);
-      const data = registerSchema.parse(req.body);
+      
+      // Validate the request body
+      const parseResult = registerSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        debugLogger.error("Validation failed", parseResult.error.issues, req);
+        return res.status(400).json({ 
+          message: "Validation failed",
+          errors: parseResult.error.issues.map(issue => ({
+            field: issue.path.join('.'),
+            message: issue.message
+          }))
+        });
+      }
+      
+      const data = parseResult.data;
       
       // Create admin user
       const adminData = { ...data, role: 'admin' };
