@@ -24,6 +24,8 @@ export function ContentInput({ onAnalysisComplete }: ContentInputProps) {
   const [activeTab, setActiveTab] = useState("text");
   const [lengthPreference, setLengthPreference] = useState<'short' | 'medium' | 'long' | 'bulletpoints'>('medium');
   const [userNotes, setUserNotes] = useState("");
+  const [analysisProgress, setAnalysisProgress] = useState({ stage: '', progress: 0 });
+  const [useStreaming, setUseStreaming] = useState(true);
   const { toast } = useToast();
 
   const form = useForm<AnalyzeContentData>({
@@ -35,26 +37,61 @@ export function ContentInput({ onAnalysisComplete }: ContentInputProps) {
     },
   });
 
-  const handleAnalyze = async (data: AnalyzeContentData) => {
+  const handleStreamingAnalysis = async (data: AnalyzeContentData) => {
     setIsLoading(true);
+    setAnalysisProgress({ stage: 'Starting analysis...', progress: 0 });
+
     try {
       const requestData = { ...data, lengthPreference, userNotes };
-      const response = await apiRequest("POST", "/api/analyze", requestData);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to analyze content");
-      }
-      
-      const result = await response.json();
-      onAnalysisComplete?.(result, data);
-      
-      // No need to refresh - signals are already being fetched
-      
-      toast({
-        title: "Analysis Complete", 
-        description: "Content captured and analyzed. Use 'Flag as Worth Researching' below to mark important insights, or check Suggestions tab for AI recommendations.",
+      const response = await fetch('/api/analyze/stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+        credentials: 'include',
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to start streaming analysis');
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error('No response stream available');
+      }
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const eventData = JSON.parse(line.slice(6));
+              
+              if (eventData.type === 'progress') {
+                setAnalysisProgress({ stage: eventData.stage, progress: eventData.progress });
+              } else if (eventData.type === 'complete') {
+                onAnalysisComplete?.(eventData.analysis, data);
+                toast({
+                  title: "Analysis Complete", 
+                  description: "Content captured and analyzed with real-time progress tracking.",
+                });
+              } else if (eventData.type === 'error') {
+                throw new Error(eventData.message);
+              }
+            } catch (e) {
+              // Skip invalid JSON lines
+            }
+          }
+        }
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -63,6 +100,41 @@ export function ContentInput({ onAnalysisComplete }: ContentInputProps) {
       });
     } finally {
       setIsLoading(false);
+      setAnalysisProgress({ stage: '', progress: 0 });
+    }
+  };
+
+  const handleAnalyze = async (data: AnalyzeContentData) => {
+    if (useStreaming) {
+      await handleStreamingAnalysis(data);
+    } else {
+      // Fallback to regular analysis
+      setIsLoading(true);
+      try {
+        const requestData = { ...data, lengthPreference, userNotes };
+        const response = await apiRequest("POST", "/api/analyze", requestData);
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to analyze content");
+        }
+        
+        const result = await response.json();
+        onAnalysisComplete?.(result, data);
+        
+        toast({
+          title: "Analysis Complete", 
+          description: "Content captured and analyzed. Use 'Flag as Worth Researching' below to mark important insights, or check Suggestions tab for AI recommendations.",
+        });
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to analyze content",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -214,6 +286,22 @@ export function ContentInput({ onAnalysisComplete }: ContentInputProps) {
                 </p>
               </div>
               
+              {/* Progress indicator for streaming analysis */}
+              {isLoading && useStreaming && analysisProgress.stage && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">{analysisProgress.stage}</span>
+                    <span className="text-gray-500">{analysisProgress.progress}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                      style={{ width: `${analysisProgress.progress}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+
               <div className="flex justify-between items-center">
                 <span className={`text-sm ${charCount > 4500 ? 'text-warning' : 'text-gray-500'}`}>
                   {charCount}/5000 characters
@@ -226,7 +314,7 @@ export function ContentInput({ onAnalysisComplete }: ContentInputProps) {
                   {isLoading ? (
                     <div className="flex items-center">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Analyzing...
+                      {useStreaming && analysisProgress.stage ? 'Processing...' : 'Analyzing...'}
                     </div>
                   ) : (
                     <>

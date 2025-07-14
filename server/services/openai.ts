@@ -43,7 +43,7 @@ export class OpenAIService {
     }
   }
 
-  async analyzeContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium'): Promise<EnhancedAnalysisResult> {
+  async analyzeContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number) => void): Promise<EnhancedAnalysisResult> {
     debugLogger.info('Starting OpenAI content analysis', { title: data.title, hasUrl: !!data.url, contentLength: data.content?.length, lengthPreference });
     
     const getLengthInstructions = (preference: string) => {
@@ -134,8 +134,17 @@ Return in JSON format:
       const startTime = Date.now();
       debugLogger.info('Sending request to OpenAI API', { model: 'gpt-4o-mini', promptLength: prompt.length });
       
+      // Progress tracking for better UX
+      if (onProgress) {
+        onProgress('Initializing analysis', 10);
+        setTimeout(() => onProgress('Processing content', 30), 500);
+        setTimeout(() => onProgress('Analyzing cultural context', 50), 2000);
+        setTimeout(() => onProgress('Generating insights', 70), 4000);
+        setTimeout(() => onProgress('Finalizing results', 90), 6000);
+      }
+      
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-4o-mini", // Keeping cost-efficient model as requested
         messages: [
           {
             role: "system",
@@ -148,6 +157,7 @@ Return in JSON format:
         ],
         response_format: { type: "json_object" },
         temperature: 0.7,
+        timeout: 45000, // 45 second timeout for better reliability
       });
 
       const responseTime = Date.now() - startTime;

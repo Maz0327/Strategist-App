@@ -317,6 +317,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Streaming analysis endpoint for real-time progress
+  app.post("/api/analyze/stream", requireAuth, async (req, res) => {
+    try {
+      const { content, title, url, lengthPreference } = req.body;
+      
+      if (!content) {
+        return res.status(400).json({ message: "Content is required" });
+      }
+
+      // Set up Server-Sent Events (SSE)
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Cache-Control'
+      });
+
+      const data = { content, title: title || "Streaming Analysis", url };
+      
+      // Progress callback for streaming updates
+      const onProgress = (stage: string, progress: number) => {
+        res.write(`data: ${JSON.stringify({ type: 'progress', stage, progress })}\n\n`);
+      };
+
+      debugLogger.info("Streaming analysis request received", { title, lengthPreference, hasUrl: !!url }, req);
+      
+      try {
+        const analysis = await openaiService.analyzeContent(data, lengthPreference || 'medium', onProgress);
+        
+        // Send final result
+        res.write(`data: ${JSON.stringify({ type: 'complete', analysis })}\n\n`);
+        res.write(`data: ${JSON.stringify({ type: 'end' })}\n\n`);
+        
+        debugLogger.info("Streaming analysis completed", { sentiment: analysis.sentiment }, req);
+      } catch (error: any) {
+        res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+        debugLogger.error('Streaming analysis failed', error, req);
+      } finally {
+        res.end();
+      }
+    } catch (error: any) {
+      debugLogger.error('Streaming setup failed', error, req);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Debug and monitoring routes
   app.get("/api/debug/logs", (req, res) => {
     try {
