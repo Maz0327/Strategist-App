@@ -12,13 +12,16 @@ import { useToast } from "@/hooks/use-toast";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { apiRequest } from "@/lib/queryClient";
 import { analyzeContentSchema, type AnalyzeContentData } from "@shared/schema";
-import { Edit, Link, Highlighter, Brain, Download, Info } from "lucide-react";
+import { Edit, Link, Highlighter, Brain, Download, Info, Sparkles } from "lucide-react";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
+import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 
 interface ContentInputProps {
   onAnalysisComplete?: (analysis: any, content?: any) => void;
+  onAnalysisStart?: () => void;
 }
 
-export function ContentInput({ onAnalysisComplete }: ContentInputProps) {
+export function ContentInput({ onAnalysisComplete, onAnalysisStart }: ContentInputProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [charCount, setCharCount] = useState(0);
   const [activeTab, setActiveTab] = useState("text");
@@ -27,6 +30,21 @@ export function ContentInput({ onAnalysisComplete }: ContentInputProps) {
   const [analysisProgress, setAnalysisProgress] = useState({ stage: '', progress: 0 });
   const [useStreaming, setUseStreaming] = useState(true);
   const { toast } = useToast();
+
+  // Example content for quick demo
+  const exampleContent = `The rise of AI-generated content is creating new challenges for content creators. While tools like ChatGPT can produce text at scale, the real value lies in understanding audience psychology and cultural moments. Brands that win will combine AI efficiency with human insight to create content that resonates authentically. The key is not just what you say, but when and how you say it.`;
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    'ctrl+enter': () => {
+      if (!isLoading && form.watch("content")?.trim()) {
+        form.handleSubmit(handleAnalyze)();
+      }
+    },
+    'ctrl+s': () => {
+      // Quick save functionality could be added here
+    }
+  });
 
   const form = useForm<AnalyzeContentData>({
     resolver: zodResolver(analyzeContentSchema),
@@ -40,6 +58,7 @@ export function ContentInput({ onAnalysisComplete }: ContentInputProps) {
   const handleStreamingAnalysis = async (data: AnalyzeContentData) => {
     setIsLoading(true);
     setAnalysisProgress({ stage: 'Starting analysis...', progress: 0 });
+    onAnalysisStart?.();
 
     try {
       const requestData = { ...data, lengthPreference, userNotes };
@@ -108,18 +127,23 @@ export function ContentInput({ onAnalysisComplete }: ContentInputProps) {
     if (useStreaming) {
       await handleStreamingAnalysis(data);
     } else {
-      // Fallback to regular analysis
+      // Fallback to regular analysis with auto-retry
       setIsLoading(true);
+      onAnalysisStart?.();
       try {
         const requestData = { ...data, lengthPreference, userNotes };
-        const response = await apiRequest("POST", "/api/analyze", requestData);
         
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to analyze content");
-        }
+        const result = await retryRequest(async () => {
+          const response = await apiRequest("POST", "/api/analyze", requestData);
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to analyze content");
+          }
+          
+          return await response.json();
+        });
         
-        const result = await response.json();
         onAnalysisComplete?.(result, data);
         
         toast({
@@ -205,6 +229,38 @@ export function ContentInput({ onAnalysisComplete }: ContentInputProps) {
     await handleAnalyze(analysisData);
   };
 
+  const handleTryExample = () => {
+    form.setValue("content", exampleContent);
+    form.setValue("title", "Example Analysis");
+    setCharCount(exampleContent.length);
+    toast({
+      title: "Example Loaded",
+      description: "Try analyzing this example to see how the system works",
+    });
+  };
+
+  // Auto-retry utility for failed requests
+  const retryRequest = async (requestFn: () => Promise<any>, maxRetries = 2, delay = 1000) => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await requestFn();
+      } catch (error: any) {
+        if (attempt === maxRetries) {
+          throw error;
+        }
+        
+        // Check if it's a rate limit error
+        if (error.message?.includes('rate limit') || error.message?.includes('429')) {
+          await new Promise(resolve => setTimeout(resolve, delay * attempt));
+          continue;
+        }
+        
+        // For other errors, don't retry
+        throw error;
+      }
+    }
+  };
+
   return (
     <Card className="card-shadow">
       <CardHeader>
@@ -219,6 +275,7 @@ export function ContentInput({ onAnalysisComplete }: ContentInputProps) {
         </div>
         <div className="mt-3 flex items-center gap-2">
           <Label htmlFor="analysis-length" className="text-sm font-medium">Truth Analysis Length:</Label>
+          <InfoTooltip content="Choose how detailed you want the strategic insights to be. Short for quick overviews, Long for comprehensive analysis." />
           <Select value={lengthPreference} onValueChange={(value: any) => setLengthPreference(value)}>
             <SelectTrigger className="w-32">
               <SelectValue />
@@ -259,7 +316,22 @@ export function ContentInput({ onAnalysisComplete }: ContentInputProps) {
               })(e);
             }} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="manual-text">Enter content to analyze</Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="manual-text">Enter content to analyze</Label>
+                  <InfoTooltip content="Paste any text content here for AI analysis. The system will analyze sentiment, tone, keywords, and provide strategic insights." />
+                </div>
+                <div className="flex gap-2 mb-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleTryExample}
+                    className="flex items-center gap-2"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Try Example
+                  </Button>
+                </div>
                 <Textarea
                   id="manual-text"
                   rows={8}
@@ -306,23 +378,26 @@ export function ContentInput({ onAnalysisComplete }: ContentInputProps) {
                 <span className={`text-sm ${charCount > 4500 ? 'text-warning' : 'text-gray-500'}`}>
                   {charCount}/5000 characters
                 </span>
-                <Button 
-                  type="submit" 
-                  disabled={isLoading || !form.watch("content")?.trim()}
-                  data-tutorial="analyze-button"
-                >
-                  {isLoading ? (
-                    <div className="flex items-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      {useStreaming && analysisProgress.stage ? 'Processing...' : 'Analyzing...'}
-                    </div>
-                  ) : (
-                    <>
-                      <Brain size={16} className="mr-2" />
-                      Analyze Content
-                    </>
-                  )}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <InfoTooltip content="Keyboard shortcut: Ctrl+Enter to analyze" />
+                  <Button 
+                    type="submit" 
+                    disabled={isLoading || !form.watch("content")?.trim()}
+                    data-tutorial="analyze-button"
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        {useStreaming && analysisProgress.stage ? 'Processing...' : 'Analyzing...'}
+                      </div>
+                    ) : (
+                      <>
+                        <Brain size={16} className="mr-2" />
+                        Analyze Content
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             </form>
           </TabsContent>
