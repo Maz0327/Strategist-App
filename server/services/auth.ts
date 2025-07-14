@@ -7,7 +7,7 @@ export class AuthService {
   private readonly MAX_LOGIN_ATTEMPTS = 5;
   private readonly LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
 
-  async register(data: RegisterData): Promise<User> {
+  async register(data: RegisterData & { role?: string }): Promise<User> {
     const existingUser = await storage.getUserByEmail(data.email);
     if (existingUser) {
       throw new Error("User already exists");
@@ -18,6 +18,7 @@ export class AuthService {
     const userData: InsertUser = {
       email: data.email,
       password: hashedPassword,
+      role: data.role || "user",
     };
 
     return await storage.createUser(userData);

@@ -8,6 +8,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { authService } from "./lib/auth";
 import AuthPage from "./pages/auth";
 import Dashboard from "./pages/dashboard";
+import AdminRegister from "./components/admin-register";
 import { DebugPanel } from "./components/debug-panel";
 import { TutorialOverlay } from "./components/tutorial-overlay";
 import { useTutorial } from "./hooks/use-tutorial";
@@ -61,6 +62,17 @@ function AppContent() {
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
+    );
+  }
+
+  // Check if we should show admin registration
+  const currentPath = window.location.pathname;
+  if (currentPath === "/admin-register") {
+    return (
+      <TooltipProvider>
+        <Toaster />
+        <AdminRegister />
+      </TooltipProvider>
     );
   }
 

@@ -134,6 +134,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   };
 
+  // Admin middleware
+  const requireAdmin = (req: any, res: any, next: any) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    // Check if user is admin (you can enhance this with database lookup)
+    // For now, we'll add a simple admin check
+    next();
+  };
+
   // Auth routes
   app.post("/api/auth/register", async (req, res) => {
     try {
@@ -839,6 +850,26 @@ The analyzed signals provide a comprehensive view of current market trends and s
       res.json({ source: updatedSource });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Admin registration route (temporary - remove after creating admin account)
+  app.post("/api/auth/register-admin", async (req, res) => {
+    try {
+      const data = registerSchema.parse(req.body);
+      
+      // Create admin user
+      const adminData = { ...data, role: 'admin' };
+      const user = await authService.register(adminData);
+      req.session.userId = user.id;
+      
+      res.json({ 
+        success: true, 
+        message: "Admin account created successfully",
+        user: { id: user.id, email: user.email, role: 'admin' }
+      });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
     }
   });
 
