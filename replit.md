@@ -396,6 +396,33 @@ app.post("/api/signals/draft", requireAuth, async (req, res) => {
 - **Content Chunking System**: ✅ Multi-request processing for unlimited content length implemented with intelligent result combination
 - **API Monitoring System**: ✅ Comprehensive tracking of all internal and external API calls with cost analysis and performance metrics
 - **User-Friendly Error System**: ✅ Complete error handling system with clear explanations and solutions implemented across all components
+- **Rate Limiting System**: ✅ Comprehensive rate limiting implemented for cost protection and system stability
+
+### Rate Limiting Implementation - July 14, 2025
+
+#### ✅ **Production-Ready Rate Limiting System**:
+Successfully implemented comprehensive rate limiting with generous limits that won't impact normal usage while providing crucial protection:
+
+**OpenAI Analysis Endpoints:**
+- **Per-minute limit**: 20 requests per minute per user
+- **Daily limit**: 500 analyses per day per user
+- **Protected endpoints**: `/api/analyze`, `/api/reanalyze`, `/api/analyze/stream`
+- **Cost protection**: Prevents runaway OpenAI API costs
+
+**Authentication Endpoints:**
+- **Login/Register**: 10 attempts per 15 minutes per IP
+- **Brute force protection**: Prevents automated attacks
+
+**General API Endpoints:**
+- **All endpoints**: 100 requests per minute per user
+- **System stability**: Protects against DoS attacks
+
+**Technical Features:**
+- **User-based tracking**: Uses session userId for authenticated users
+- **IP fallback**: Falls back to IP address for unauthenticated requests
+- **Informative responses**: Clear error messages with retry guidance
+- **Standard headers**: Proper rate limit headers for client handling
+- **Graceful degradation**: System continues operating under rate limits
 
 ### Admin Panel & Analytics Implementation - July 14, 2025
 - **Admin Dashboard**: ✅ Complete analytics dashboard with user behavior tracking, feature usage metrics, and system performance monitoring
