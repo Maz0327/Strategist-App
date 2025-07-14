@@ -341,17 +341,17 @@ export function SignalMiningDashboard() {
               <Card key={signal.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
-                        <CardTitle className="text-lg">{signal.title}</CardTitle>
+                        <CardTitle className="text-lg break-words leading-tight">{signal.title}</CardTitle>
                         {signal.bridgeWorthy && (
-                          <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+                          <Badge variant="secondary" className="bg-purple-100 text-purple-800 flex-shrink-0">
                             <Zap className="h-3 w-3 mr-1" />
                             Bridge-Worthy
                           </Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <div className="flex items-center gap-2 text-sm text-gray-600 flex-wrap">
                         <Badge variant="outline">{signal.platform}</Badge>
                         <Badge className={getUrgencyColor(signal.urgency)}>
                           {signal.urgency.charAt(0).toUpperCase() + signal.urgency.slice(1)}
@@ -362,23 +362,23 @@ export function SignalMiningDashboard() {
                         </span>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex-shrink-0">
                       <div className="text-2xl font-bold text-blue-600">{signal.attentionScore}</div>
                       <div className="text-xs text-gray-500">Attention Score</div>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <p className="text-sm text-gray-700">{signal.description}</p>
+                  <p className="text-sm text-gray-700 break-words leading-relaxed">{signal.description}</p>
                   
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
+                    <div className="min-w-0">
                       <h4 className="font-medium text-sm mb-1">Cultural Moment</h4>
-                      <p className="text-xs text-gray-600">{signal.culturalMoment}</p>
+                      <p className="text-xs text-gray-600 break-words">{signal.culturalMoment}</p>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <h4 className="font-medium text-sm mb-1">Cohort Opportunity</h4>
-                      <p className="text-xs text-gray-600">{signal.cohortOpportunity}</p>
+                      <p className="text-xs text-gray-600 break-words">{signal.cohortOpportunity}</p>
                     </div>
                   </div>
 

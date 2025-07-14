@@ -175,34 +175,60 @@ export function TutorialOverlay({ currentPage, isEnabled, onToggle }: TutorialOv
 
   const getTooltipPosition = (step: TutorialStep) => {
     const elementPos = getElementPosition(step.target);
-    const tooltipWidth = 320;
-    const tooltipHeight = 200;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const tooltipWidth = Math.min(320, viewportWidth - 40);
+    const tooltipHeight = Math.min(200, viewportHeight - 40);
     const padding = 12;
 
+    let position = { top: 0, left: 0 };
+
+    // Calculate initial position based on preferred direction
     switch (step.position) {
       case 'top':
-        return {
+        position = {
           top: elementPos.top - tooltipHeight - padding,
           left: elementPos.left + (elementPos.width / 2) - (tooltipWidth / 2)
         };
+        break;
       case 'bottom':
-        return {
+        position = {
           top: elementPos.top + elementPos.height + padding,
           left: elementPos.left + (elementPos.width / 2) - (tooltipWidth / 2)
         };
+        break;
       case 'left':
-        return {
+        position = {
           top: elementPos.top + (elementPos.height / 2) - (tooltipHeight / 2),
           left: elementPos.left - tooltipWidth - padding
         };
+        break;
       case 'right':
-        return {
+        position = {
           top: elementPos.top + (elementPos.height / 2) - (tooltipHeight / 2),
           left: elementPos.left + elementPos.width + padding
         };
+        break;
       default:
-        return { top: 0, left: 0 };
+        position = { top: 0, left: 0 };
     }
+
+    // Adjust for viewport boundaries
+    // Keep tooltip within horizontal bounds
+    if (position.left < padding) {
+      position.left = padding;
+    } else if (position.left + tooltipWidth > viewportWidth - padding) {
+      position.left = viewportWidth - tooltipWidth - padding;
+    }
+
+    // Keep tooltip within vertical bounds
+    if (position.top < padding) {
+      position.top = padding;
+    } else if (position.top + tooltipHeight > viewportHeight - padding) {
+      position.top = viewportHeight - tooltipHeight - padding;
+    }
+
+    return position;
   };
 
   if (!isEnabled) {
@@ -289,24 +315,26 @@ export function TutorialOverlay({ currentPage, isEnabled, onToggle }: TutorialOv
 
       {/* Tooltip */}
       <Card
-        className="fixed z-50 w-80 shadow-xl"
+        className="fixed z-50 shadow-xl max-w-sm"
         style={{
           top: tooltipPos.top,
-          left: tooltipPos.left
+          left: tooltipPos.left,
+          width: `${Math.min(320, window.innerWidth - 40)}px`
         }}
       >
         <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="font-semibold text-sm">{step.title}</h4>
+          <div className="flex items-start justify-between mb-2">
+            <h4 className="font-semibold text-sm break-words pr-2 flex-1">{step.title}</h4>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => onToggle(false)}
+              className="flex-shrink-0"
             >
               <X className="h-4 w-4" />
             </Button>
           </div>
-          <p className="text-sm text-gray-600 mb-4">{step.content}</p>
+          <p className="text-sm text-gray-600 mb-4 break-words leading-relaxed">{step.content}</p>
           
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-500">

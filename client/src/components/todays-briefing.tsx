@@ -217,16 +217,16 @@ export function TodaysBriefing({ activeSubTab, onNavigateToExplore, onNavigateTo
                   <Card key={item.id} className="border-l-4 border-blue-500">
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-gray-900 mb-1">{item.title}</h4>
-                          <p className="text-sm text-gray-600 mb-2">{item.summary}</p>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-gray-900 mb-1 break-words leading-tight">{item.title}</h4>
+                          <p className="text-sm text-gray-600 mb-2 break-words leading-relaxed">{item.summary}</p>
                           <div className="flex items-center gap-2 text-xs text-gray-500">
                             <Badge variant="outline">{item.urgencyLevel}</Badge>
                             <span>•</span>
                             <span>{formatDistanceToNow(new Date(item.publishedAt))} ago</span>
                           </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-shrink-0">
                           <Button 
                             variant="ghost" 
                             size="sm" 
@@ -313,9 +313,9 @@ export function TodaysBriefing({ activeSubTab, onNavigateToExplore, onNavigateTo
                   <Card key={item.id} className="border-l-4 border-green-500">
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-gray-900 mb-1">{item.title}</h4>
-                          <p className="text-sm text-gray-600 mb-2">{item.summary}</p>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-gray-900 mb-1 break-words leading-tight">{item.title}</h4>
+                          <p className="text-sm text-gray-600 mb-2 break-words leading-relaxed">{item.summary}</p>
                           <div className="flex items-center gap-2 text-xs text-gray-500">
                             <Badge variant="outline">{item.urgencyLevel}</Badge>
                             <span>•</span>
@@ -331,7 +331,7 @@ export function TodaysBriefing({ activeSubTab, onNavigateToExplore, onNavigateTo
                             )}
                           </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-shrink-0">
                           <Button 
                             variant="ghost" 
                             size="sm" 
@@ -421,9 +421,9 @@ export function TodaysBriefing({ activeSubTab, onNavigateToExplore, onNavigateTo
                   <Card key={item.id} className="border-l-4 border-purple-500">
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-gray-900 mb-1">{item.title}</h4>
-                          <p className="text-sm text-gray-600 mb-2">{item.summary}</p>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-gray-900 mb-1 break-words leading-tight">{item.title}</h4>
+                          <p className="text-sm text-gray-600 mb-2 break-words leading-relaxed">{item.summary}</p>
                           <div className="flex items-center gap-2 text-xs text-gray-500">
                             <Badge variant="outline">{item.urgencyLevel}</Badge>
                             <span>•</span>
@@ -436,7 +436,7 @@ export function TodaysBriefing({ activeSubTab, onNavigateToExplore, onNavigateTo
                             )}
                           </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-shrink-0">
                           <Button 
                             variant="ghost" 
                             size="sm" 

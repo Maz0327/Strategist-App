@@ -225,10 +225,10 @@ export function SignalsDashboard() {
           <Card key={signal.id} className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
-                <CardTitle className="text-lg font-semibold text-gray-900 line-clamp-2">
+                <CardTitle className="text-lg font-semibold text-gray-900 line-clamp-2 break-words leading-tight flex-1 min-w-0">
                   {signal.title || "Untitled Signal"}
                 </CardTitle>
-                <div className="flex space-x-1">
+                <div className="flex space-x-1 flex-shrink-0">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -245,7 +245,7 @@ export function SignalsDashboard() {
                   </Button>
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="flex items-center gap-2 text-sm text-gray-500 flex-wrap">
                 <Calendar size={12} />
                 {formatDistanceToNow(new Date(signal.createdAt!), { addSuffix: true })}
                 {signal.url && (
@@ -258,7 +258,7 @@ export function SignalsDashboard() {
             </CardHeader>
             
             <CardContent className="space-y-4">
-              <p className="text-sm text-gray-700 line-clamp-3">
+              <p className="text-sm text-gray-700 line-clamp-3 break-words leading-relaxed">
                 {signal.summary || "No summary available"}
               </p>
 
@@ -283,7 +283,7 @@ export function SignalsDashboard() {
               {signal.keywords && signal.keywords.length > 0 && (
                 <div className="flex flex-wrap gap-1">
                   {signal.keywords.slice(0, 3).map((keyword, index) => (
-                    <Badge key={index} variant="secondary" className="text-xs bg-blue-100 text-blue-800">
+                    <Badge key={index} variant="secondary" className="text-xs bg-blue-100 text-blue-800 break-words">
                       {keyword}
                     </Badge>
                   ))}

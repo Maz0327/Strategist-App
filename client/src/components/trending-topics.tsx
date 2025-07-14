@@ -317,7 +317,7 @@ export function TrendingTopics() {
                   <TrendingUp className="text-green-500" size={16} />
                 </div>
               </div>
-              <CardTitle className="text-lg font-semibold text-gray-900 mt-2">
+              <CardTitle className="text-lg font-semibold text-gray-900 mt-2 break-words leading-tight">
                 {topic.title}
               </CardTitle>
               <div className="flex items-center space-x-4 text-sm text-gray-500">
@@ -335,7 +335,7 @@ export function TrendingTopics() {
             </CardHeader>
             
             <CardContent className="space-y-4">
-              <p className="text-sm text-gray-700 line-clamp-3">
+              <p className="text-sm text-gray-700 line-clamp-3 break-words leading-relaxed">
                 {topic.summary || "No summary available"}
               </p>
 
