@@ -856,12 +856,16 @@ The analyzed signals provide a comprehensive view of current market trends and s
   // Admin registration route (temporary - remove after creating admin account)
   app.post("/api/auth/register-admin", async (req, res) => {
     try {
+      debugLogger.info("Admin registration attempt", { body: req.body }, req);
       const data = registerSchema.parse(req.body);
       
       // Create admin user
       const adminData = { ...data, role: 'admin' };
+      debugLogger.info("Creating admin user", { email: adminData.email, role: adminData.role }, req);
       const user = await authService.register(adminData);
       req.session.userId = user.id;
+      
+      debugLogger.info("Admin user created successfully", { userId: user.id, email: user.email }, req);
       
       res.json({ 
         success: true, 
@@ -869,6 +873,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
         user: { id: user.id, email: user.email, role: 'admin' }
       });
     } catch (error: any) {
+      debugLogger.error("Admin registration failed", error, req);
       res.status(400).json({ message: error.message });
     }
   });

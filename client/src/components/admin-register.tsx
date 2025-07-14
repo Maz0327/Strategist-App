@@ -28,6 +28,7 @@ export default function AdminRegister() {
     }
 
     try {
+      console.log("Attempting admin registration for:", email);
       const response = await fetch("/api/auth/register-admin", {
         method: "POST",
         headers: {
@@ -41,8 +42,12 @@ export default function AdminRegister() {
         }),
       });
 
+      console.log("Response status:", response.status);
+      console.log("Response headers:", response.headers);
+
       if (response.ok) {
         const result = await response.json();
+        console.log("Success result:", result);
         setSuccess(true);
         toast({
           title: "Admin Account Created",
@@ -50,9 +55,11 @@ export default function AdminRegister() {
         });
       } else {
         const result = await response.json();
+        console.log("Error result:", result);
         setError(result.message || "Failed to create admin account");
       }
     } catch (error) {
+      console.error("Network error:", error);
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);
