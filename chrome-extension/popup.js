@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Configuration with environment detection
     const config = {
         production: {
-            backendUrl: 'https://strategist-app.replit.app',
+            backendUrl: 'https://strategist-app-maz0327.replit.app',
             apiPrefix: '/api'
         },
         development: {
