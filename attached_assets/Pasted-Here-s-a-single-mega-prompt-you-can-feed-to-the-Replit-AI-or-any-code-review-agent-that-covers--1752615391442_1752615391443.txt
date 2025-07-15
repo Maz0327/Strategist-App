@@ -1,0 +1,35 @@
+Here’s a single, “mega-prompt” you can feed to the Replit AI (or any code-review agent) that covers every angle in one shot—so you won’t need to ask twice:
+
+“Perform a full end-to-end system audit of this Strategist-App codebase.
+	1.	Database & Schema
+	•	Validate table definitions, column types, indexes, relations, migrations, and seed data.
+	•	Check naming conventions for consistency (snake_case vs. camelCase).
+	2.	Backend Logic & Services
+	•	Verify each Express route handler, middleware, and service layer function is wired correctly.
+	•	Confirm that environment variables (.env), secret management, and config loading (dotenv, Replit secrets) are secure and used everywhere.
+	3.	API Calls & Integrations
+	•	Ensure external API clients (OpenAI, Google Trends, Reddit, YouTube, etc.) correctly handle errors, rate-limits, retries, and JSON schemas.
+	•	Check that any web-scraping or Cheerio logic sanitizes HTML before sending to the client or database.
+	4.	Frontend Components & UX Flows
+	•	Walk through every React page/component: routing, state management (React Query), lazy-loading, and component props/types.
+	•	Validate Tailwind classes are purged, accessible (ARIA labels), and consistent with the design system.
+	5.	Data Flow & State
+	•	Trace data from user action → API call → database → UI render. Confirm no gaps, mismatches, or stale-state issues.
+	6.	Security & Performance
+	•	Audit CORS, Helmet headers, session store, rate-limiting, and injection protections (SQL, XSS).
+	•	Spotlight expensive operations (bulk API pulls, large React bundles) and recommend caching or queueing where needed.
+	7.	Testing & CI/CD
+	•	Verify presence and coverage of unit, integration, and end-to-end tests (Jest/Vitest, Supertest, pytest).
+	•	Check that GitHub Actions (or Replit deploy) run lint, type-check, build, and tests on every PR.
+	8.	DevOps & Environment
+	•	Review Docker/Nix configs, .replit, replit.nix, and scripts/bootstrap.sh for reproducible setup.
+	•	Confirm migrations, seed scripts, and lockfiles (package-lock.json, requirements.txt) are up-to-date.
+	9.	Observability & Monitoring
+	•	Ensure health-check and metrics endpoints exist, logs are structured, and error handlers capture context.
+	10.	User Experience & Documentation
+
+	•	Walk the beta onboarding guide against the actual UI/flows—confirm every step in docs matches the live app.
+
+Summarize any mismatches, missing pieces, security holes, or performance hot spots in a prioritized list, and suggest precise code or config changes to fix them.“
+
+That one prompt hits all the systems, components, and workflows—so your agent can give you a comprehensive, single-pass audit.
