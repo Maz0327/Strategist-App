@@ -3,7 +3,13 @@ import { eq, desc, and, or, sql as drizzleSql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
-const sql = postgres(process.env.DATABASE_URL!);
+// Database connection with connection pooling
+const sql = postgres(process.env.DATABASE_URL!, {
+  max: 20,          // Maximum number of connections
+  idle_timeout: 20, // Idle connection timeout in seconds
+  connect_timeout: 10, // Connection timeout in seconds
+  ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+});
 const db = drizzle(sql);
 
 export { sql };

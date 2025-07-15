@@ -1,55 +1,43 @@
-import { lazy, Suspense } from 'react';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { lazy } from 'react';
 
-/**
- * PERFORMANCE OPTIMIZATION: Lazy loaded components with loading states
- * Reduces initial bundle size and improves app startup performance
- */
+// Lazy load heavy components to improve initial bundle size
+export const LazyTodaysBriefing = lazy(() => import('./todays-briefing'));
+export const LazyExploreSignals = lazy(() => import('./explore-signals'));
+export const LazyStrategicBriefLab = lazy(() => import('./strategic-brief-lab'));
+export const LazyManageHub = lazy(() => import('./manage-hub'));
+export const LazyAdminDashboard = lazy(() => import('./admin-dashboard'));
+export const LazyTrendingTopics = lazy(() => import('./trending-topics'));
+export const LazyAudienceInsights = lazy(() => import('./audience-insights'));
+export const LazySignalAnalytics = lazy(() => import('./signal-analytics'));
+export const LazyCustomFeedBuilder = lazy(() => import('./custom-feed-builder'));
+export const LazyProjectIntelligence = lazy(() => import('./project-intelligence'));
 
-const LazyWrapper = ({ children }: { children: React.ReactNode }) => (
-  <Suspense fallback={
-    <div className="flex items-center justify-center p-8">
-      <LoadingSpinner size="md" />
+// Loading fallback component
+export const ComponentLoader = () => (
+  <div className="flex items-center justify-center min-h-[400px]">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    <span className="ml-3 text-gray-600">Loading...</span>
+  </div>
+);
+
+// Error boundary for lazy components
+export const LazyErrorBoundary = ({ children }: { children: React.ReactNode }) => (
+  <div className="min-h-[400px] p-8">
+    <div className="text-center">
+      <div className="text-red-500 mb-4">
+        <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to load component</h3>
+      <p className="text-gray-600 mb-4">Please try refreshing the page.</p>
+      <button 
+        onClick={() => window.location.reload()}
+        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+      >
+        Refresh Page
+      </button>
     </div>
-  }>
     {children}
-  </Suspense>
-);
-
-// Lazy load heavy dashboard components
-export const LazyDashboard = lazy(() => import('../pages/dashboard'));
-export const LazySignalDetails = lazy(() => import('../pages/signal-details'));
-export const LazyBriefEditor = lazy(() => import('../pages/brief-editor'));
-export const LazyAdminDashboard = lazy(() => import('../pages/admin-dashboard'));
-export const LazyAnalytics = lazy(() => import('../pages/analytics'));
-
-// Wrapped components with loading states
-export const Dashboard = ({ ...props }) => (
-  <LazyWrapper>
-    <LazyDashboard {...props} />
-  </LazyWrapper>
-);
-
-export const SignalDetails = ({ ...props }) => (
-  <LazyWrapper>
-    <LazySignalDetails {...props} />
-  </LazyWrapper>
-);
-
-export const BriefEditor = ({ ...props }) => (
-  <LazyWrapper>
-    <LazyBriefEditor {...props} />
-  </LazyWrapper>
-);
-
-export const AdminDashboard = ({ ...props }) => (
-  <LazyWrapper>
-    <LazyAdminDashboard {...props} />
-  </LazyWrapper>
-);
-
-export const Analytics = ({ ...props }) => (
-  <LazyWrapper>
-    <LazyAnalytics {...props} />
-  </LazyWrapper>
+  </div>
 );
