@@ -60,7 +60,7 @@ export const generalRateLimit = rateLimit({
 // Chat-specific rate limiting (more permissive for interactive chat)
 export const chatRateLimit = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 30, // 30 chat messages per minute per user
+  max: 50, // 50 chat messages per minute per user (increased for smoother interaction)
   message: {
     error: 'Too many chat messages. Please wait a moment before sending another message.',
     code: 'CHAT_RATE_LIMIT_EXCEEDED',
@@ -77,7 +77,7 @@ export const chatRateLimit = rateLimit({
 // Daily chat rate limiting (prevents excessive AI usage)
 export const dailyChatRateLimit = rateLimit({
   windowMs: 24 * 60 * 60 * 1000, // 24 hours
-  max: 200, // 200 chat messages per day per user
+  max: 300, // 300 chat messages per day per user (increased for better UX)
   message: {
     error: 'Daily chat limit reached. Your limit will reset tomorrow.',
     code: 'DAILY_CHAT_LIMIT_EXCEEDED',
