@@ -40,9 +40,10 @@ export class AnalyticsService {
       await db.insert(userAnalytics).values({
         userId,
         action: `onboarding_${step}`,
-        category: 'onboarding',
-        metadata: { completed, ...metadata },
-        timestamp: new Date()
+        feature: 'onboarding',
+        details: { completed, ...metadata },
+        userAgent: 'system',
+        ipAddress: 'system'
       });
     } catch (error) {
       console.error('Error tracking onboarding step:', error);
@@ -55,9 +56,10 @@ export class AnalyticsService {
       await db.insert(userAnalytics).values({
         userId,
         action: 'feature_discovery',
-        category: 'engagement',
-        metadata: { feature, discoveryMethod },
-        timestamp: new Date()
+        feature: 'engagement',
+        details: { feature, discoveryMethod },
+        userAgent: 'system',
+        ipAddress: 'system'
       });
     } catch (error) {
       console.error('Error tracking feature discovery:', error);
@@ -139,23 +141,24 @@ export class AnalyticsService {
       this.trackUserAction({
         userId: 0, // System user
         action: 'performance_alert',
-        category: 'system',
-        metadata: { metric, value, threshold },
-        timestamp: new Date()
+        feature: 'system',
+        details: { metric, value, threshold },
+        userAgent: 'system',
+        ipAddress: 'system'
       });
     }
   }
 
   // Get user analytics dashboard data
   async getDashboardData(timeRange: 'day' | 'week' | 'month' = 'week') {
-    const timeCondition = this.getTimeCondition(timeRange);
+    const timeAgo = this.getTimeAgo(timeRange);
     
     try {
       // Active users
       const activeUsers = await db
         .select({ count: count() })
         .from(userAnalytics)
-        .where(timeCondition);
+        .where(sql`${userAnalytics.timestamp} >= ${timeAgo.toISOString()}`);
 
       // Most used features
       const topFeatures = await db
@@ -166,7 +169,7 @@ export class AnalyticsService {
           avgDuration: sql<number>`avg(${featureUsage.avgSessionDuration})`,
         })
         .from(featureUsage)
-        .where(timeCondition)
+        .where(sql`${featureUsage.date} >= ${timeAgo.toISOString()}`)
         .groupBy(featureUsage.feature)
         .orderBy(sql`sum(${featureUsage.usageCount}) desc`)
         .limit(10);
@@ -180,7 +183,7 @@ export class AnalyticsService {
           avgSessionDuration: sql<number>`avg(${userAnalytics.duration})`,
         })
         .from(userAnalytics)
-        .where(timeCondition)
+        .where(sql`${userAnalytics.timestamp} >= ${timeAgo.toISOString()}`)
         .groupBy(userAnalytics.userId)
         .orderBy(sql`count(*) desc`)
         .limit(20);
@@ -190,7 +193,7 @@ export class AnalyticsService {
         .select({ value: avg(systemPerformance.value) })
         .from(systemPerformance)
         .where(eq(systemPerformance.metric, 'response_time'))
-        .where(timeCondition);
+        .where(sql`${systemPerformance.timestamp} >= ${timeAgo.toISOString()}`);
 
       // Recent feedback
       const recentFeedback = await db
@@ -204,7 +207,7 @@ export class AnalyticsService {
           createdAt: userFeedback.createdAt,
         })
         .from(userFeedback)
-        .where(timeCondition)
+        .where(sql`${userFeedback.createdAt} >= ${timeAgo.toISOString()}`)
         .orderBy(desc(userFeedback.createdAt))
         .limit(10);
 
@@ -229,21 +232,21 @@ export class AnalyticsService {
 
   // Get detailed user behavior
   async getUserBehavior(userId: number, timeRange: 'day' | 'week' | 'month' = 'week') {
-    const timeCondition = this.getTimeCondition(timeRange);
+    const timeAgo = this.getTimeAgo(timeRange);
     
     try {
       const userActions = await db
         .select()
         .from(userAnalytics)
         .where(eq(userAnalytics.userId, userId))
-        .where(timeCondition)
+        .where(sql`${userAnalytics.timestamp} >= ${timeAgo.toISOString()}`)
         .orderBy(desc(userAnalytics.timestamp));
 
       const userFeatureUsage = await db
         .select()
         .from(featureUsage)
         .where(eq(featureUsage.userId, userId))
-        .where(timeCondition)
+        .where(sql`${featureUsage.date} >= ${timeAgo.toISOString()}`)
         .orderBy(desc(featureUsage.lastUsed));
 
       return {
@@ -348,7 +351,7 @@ export class AnalyticsService {
   // Get API call statistics
   async getApiCallStats(timeRange: 'day' | 'week' | 'month' = 'week') {
     try {
-      const timeCondition = this.getTimeCondition(timeRange);
+      const timeAgo = this.getTimeAgo(timeRange);
       
       // Internal API calls stats
       const internalStats = await db
@@ -361,7 +364,7 @@ export class AnalyticsService {
           totalErrors: sql<number>`COUNT(CASE WHEN status_code >= 400 THEN 1 END)`,
         })
         .from(apiCalls)
-        .where(timeCondition)
+        .where(sql`${apiCalls.timestamp} >= ${timeAgo.toISOString()}`)
         .groupBy(apiCalls.endpoint, apiCalls.method)
         .orderBy(desc(count()));
 
@@ -376,7 +379,7 @@ export class AnalyticsService {
           successRate: sql<number>`(COUNT(CASE WHEN status_code < 400 THEN 1 END) * 100.0 / COUNT(*))`,
         })
         .from(externalApiCalls)
-        .where(timeCondition)
+        .where(sql`${externalApiCalls.timestamp} >= ${timeAgo.toISOString()}`)
         .groupBy(externalApiCalls.service)
         .orderBy(desc(count()));
 
@@ -415,8 +418,8 @@ export class AnalyticsService {
     }
   }
 
-  // Helper method to get time condition
-  private getTimeCondition(timeRange: 'day' | 'week' | 'month') {
+  // Helper method to get time ago date
+  private getTimeAgo(timeRange: 'day' | 'week' | 'month') {
     const now = new Date();
     const timeAgo = new Date();
     
@@ -432,7 +435,7 @@ export class AnalyticsService {
         break;
     }
     
-    return sql`${userAnalytics.timestamp} >= ${timeAgo.toISOString()}`;
+    return timeAgo;
   }
 }
 
