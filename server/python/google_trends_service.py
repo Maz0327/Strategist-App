@@ -1,40 +1,102 @@
 #!/usr/bin/env python3
 """
 Google Trends Service using pytrends
-Provides reliable access to Google Trends data
+Provides reliable access to Google Trends data with anti-blocking measures
 """
 
 import json
 import sys
 import time
 import random
+import requests
 from datetime import datetime, timedelta
 from pytrends.request import TrendReq
 import pandas as pd
 
 class GoogleTrendsService:
     def __init__(self):
-        # Initialize with random timezone and retries to avoid detection
+        # List of realistic user agents to rotate through
+        self.user_agents = [
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15'
+        ]
+        
+        # Initialize with a custom session for better control
+        self.session = requests.Session()
+        self.session.headers.update({
+            'User-Agent': random.choice(self.user_agents),
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1'
+        })
+        
+        # Initialize pytrends with timeout - no retries parameter due to library compatibility
         self.pytrends = TrendReq(
             hl='en-US', 
             tz=random.randint(300, 500),
-            timeout=(10, 25),
-            retries=2,
-            backoff_factor=0.1
+            timeout=(10, 25)
         )
         
+        # Track request timing to implement proper delays
+        self.last_request_time = 0
+        
+    def _smart_delay(self, min_delay=3, max_delay=8):
+        """Implement intelligent delays to avoid detection"""
+        # Ensure minimum time between requests
+        current_time = time.time()
+        time_since_last = current_time - self.last_request_time
+        
+        if time_since_last < min_delay:
+            additional_delay = min_delay - time_since_last
+            time.sleep(additional_delay)
+        
+        # Add random delay to mimic human behavior
+        random_delay = random.uniform(min_delay, max_delay)
+        time.sleep(random_delay)
+        
+        self.last_request_time = time.time()
+    
+    def _rotate_user_agent(self):
+        """Rotate user agent to avoid detection"""
+        new_user_agent = random.choice(self.user_agents)
+        self.session.headers.update({'User-Agent': new_user_agent})
+    
+    def _retry_with_backoff(self, func, *args, max_retries=3, **kwargs):
+        """Retry a function with exponential backoff"""
+        for attempt in range(max_retries):
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    raise e
+                
+                # Exponential backoff with jitter
+                delay = (2 ** attempt) + random.uniform(0, 1)
+                print(f"Attempt {attempt + 1} failed, retrying in {delay:.2f}s: {e}", file=sys.stderr)
+                time.sleep(delay)
+                
+                # Rotate user agent on retry
+                self._rotate_user_agent()
+    
     def get_trending_searches(self, country='US', limit=10):
         """Get trending searches for a specific country"""
         try:
-            # Add longer delay to avoid rate limiting
-            time.sleep(random.uniform(3, 7))
+            self._smart_delay()
             
             # Try different country codes if US fails
             country_codes = [country.lower(), 'us', 'united_states']
             
+            def attempt_trending_search(country_code):
+                return self.pytrends.trending_searches(pn=country_code)
+            
             for country_code in country_codes:
                 try:
-                    trending_df = self.pytrends.trending_searches(pn=country_code)
+                    trending_df = self._retry_with_backoff(attempt_trending_search, country_code)
                     break
                 except Exception as e:
                     print(f"Failed with country code {country_code}: {e}", file=sys.stderr)
@@ -67,20 +129,22 @@ class GoogleTrendsService:
     def get_interest_over_time(self, keywords, timeframe='today 3-m', geo='US'):
         """Get interest over time for specific keywords"""
         try:
-            # Add random delay
-            time.sleep(random.uniform(1, 3))
+            self._smart_delay()
             
-            # Build payload
-            self.pytrends.build_payload(
-                kw_list=keywords,
-                cat=0,
-                timeframe=timeframe,
-                geo=geo,
-                gprop=''
-            )
+            def build_and_fetch():
+                # Build payload
+                self.pytrends.build_payload(
+                    kw_list=keywords,
+                    cat=0,
+                    timeframe=timeframe,
+                    geo=geo,
+                    gprop=''
+                )
+                # Get interest over time
+                return self.pytrends.interest_over_time()
             
-            # Get interest over time
-            interest_df = self.pytrends.interest_over_time()
+            # Use retry mechanism
+            interest_df = self._retry_with_backoff(build_and_fetch)
             
             trends = []
             for i, keyword in enumerate(keywords):
@@ -112,20 +176,22 @@ class GoogleTrendsService:
     def get_related_queries(self, keyword, geo='US'):
         """Get related queries for a specific keyword"""
         try:
-            # Add random delay
-            time.sleep(random.uniform(1, 3))
+            self._smart_delay()
             
-            # Build payload for single keyword
-            self.pytrends.build_payload(
-                kw_list=[keyword],
-                cat=0,
-                timeframe='today 3-m',
-                geo=geo,
-                gprop=''
-            )
+            def build_and_fetch_related():
+                # Build payload for single keyword
+                self.pytrends.build_payload(
+                    kw_list=[keyword],
+                    cat=0,
+                    timeframe='today 3-m',
+                    geo=geo,
+                    gprop=''
+                )
+                # Get related queries
+                return self.pytrends.related_queries()
             
-            # Get related queries
-            related_queries = self.pytrends.related_queries()
+            # Use retry mechanism
+            related_queries = self._retry_with_backoff(build_and_fetch_related)
             
             trends = []
             if keyword in related_queries:
@@ -155,25 +221,26 @@ class GoogleTrendsService:
     def get_business_trends(self):
         """Get business and marketing related trends"""
         try:
-            # Try a conservative approach - just get a few key trends
-            business_keywords = ['AI marketing', 'digital transformation', 'customer experience']
+            print("Starting business trends collection with anti-blocking measures", file=sys.stderr)
             
-            # Add longer delay before starting
-            time.sleep(random.uniform(2, 5))
+            # Conservative approach - fewer keywords to reduce API calls
+            business_keywords = ['AI marketing', 'digital transformation']
             
-            # Try to get interest over time for just 3 keywords
+            # Try to get interest over time for just 2 keywords
             business_trends = self.get_interest_over_time(
                 keywords=business_keywords,
                 timeframe='today 1-m',
                 geo='US'
             )
             
-            # If that fails, just return fallback data
-            if not business_trends:
-                return self.get_fallback_business_trends()
+            # If we got some real data, return it
+            if business_trends:
+                print(f"Successfully fetched {len(business_trends)} real Google Trends", file=sys.stderr)
+                return business_trends
             
-            # Don't try additional calls if we're getting rate limited
-            return business_trends[:10]
+            # If no real data, return fallback
+            print("No real data available, using fallback trends", file=sys.stderr)
+            return self.get_fallback_business_trends()
             
         except Exception as e:
             print(f"Error fetching business trends: {e}", file=sys.stderr)
