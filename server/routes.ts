@@ -10,6 +10,7 @@ import { scraperService } from "./services/scraper";
 import { sourceManagerService } from "./services/source-manager";
 import { dailyReportsService } from "./services/daily-reports";
 import { feedManagerService } from "./services/feed-manager";
+import { chatService } from "./services/chat";
 import { 
   loginSchema, 
   registerSchema, 
@@ -1234,6 +1235,76 @@ The analyzed signals provide a comprehensive view of current market trends and s
       res.json({ success: true });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Chat API routes
+  app.post("/api/chat/message", generalRateLimit, async (req, res) => {
+    try {
+      const { message, sessionId } = req.body;
+      
+      if (!message || typeof message !== 'string') {
+        return res.status(400).json({ 
+          error: { 
+            title: "Invalid Message", 
+            message: "Message is required and must be a string" 
+          } 
+        });
+      }
+      
+      // Use existing session or create new one
+      const userId = req.session.userId;
+      const result = await chatService.sendMessage(
+        sessionId || '',
+        message,
+        userId
+      );
+      
+      res.json(result);
+    } catch (error: any) {
+      debugLogger.error("Chat message failed", error);
+      res.status(500).json({ 
+        error: { 
+          title: "Chat Error", 
+          message: "Failed to process chat message. Please try again." 
+        } 
+      });
+    }
+  });
+
+  app.get("/api/chat/history/:sessionId", generalRateLimit, async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const limit = parseInt(req.query.limit as string) || 50;
+      
+      const history = await chatService.getChatHistory(sessionId, limit);
+      res.json({ history });
+    } catch (error: any) {
+      debugLogger.error("Get chat history failed", error);
+      res.status(500).json({ 
+        error: { 
+          title: "History Error", 
+          message: "Failed to retrieve chat history" 
+        } 
+      });
+    }
+  });
+
+  app.delete("/api/chat/session/:sessionId", generalRateLimit, async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const userId = req.session.userId;
+      
+      await chatService.deleteChatSession(sessionId, userId);
+      res.json({ success: true });
+    } catch (error: any) {
+      debugLogger.error("Delete chat session failed", error);
+      res.status(500).json({ 
+        error: { 
+          title: "Delete Error", 
+          message: "Failed to delete chat session" 
+        } 
+      });
     }
   });
 

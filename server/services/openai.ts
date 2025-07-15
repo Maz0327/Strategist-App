@@ -476,6 +476,63 @@ Provide JSON with these fields:
       historicalContext: historicalContext || undefined
     };
   }
+
+  async generateChatResponse(
+    message: string,
+    systemContext: string,
+    conversationHistory: Array<{role: 'user' | 'assistant', content: string}> = []
+  ): Promise<string> {
+    try {
+      // Track API call for monitoring
+      await analyticsService.trackExternalApiCall('openai', 'chat', 'POST', 0, 'pending');
+      
+      const messages: Array<{role: 'system' | 'user' | 'assistant', content: string}> = [
+        { role: 'system', content: systemContext },
+        ...conversationHistory,
+        { role: 'user', content: message }
+      ];
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini", // Cost-efficient model for chat responses
+        messages,
+        max_tokens: 500, // Limit response length for chat
+        temperature: 0.7, // Slightly more conversational
+      });
+
+      const content = response.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error('No response content from OpenAI');
+      }
+
+      // Track successful API call
+      const tokensUsed = response.usage?.total_tokens || 0;
+      const cost = tokensUsed * 0.00015; // Approximate cost per token
+      await analyticsService.trackExternalApiCall('openai', 'chat', 'POST', cost, 'success', {
+        tokensUsed,
+        model: 'gpt-4o-mini',
+        messageLength: message.length,
+        responseLength: content.length
+      });
+
+      debugLogger.info('Chat response generated successfully', {
+        messageLength: message.length,
+        responseLength: content.length,
+        tokensUsed,
+        cost
+      });
+
+      return content;
+    } catch (error: any) {
+      // Track failed API call
+      await analyticsService.trackExternalApiCall('openai', 'chat', 'POST', 0, 'error', {
+        error: error.message,
+        messageLength: message.length
+      });
+
+      debugLogger.error('Failed to generate chat response', error);
+      throw new Error(`Chat response generation failed: ${error.message}`);
+    }
+  }
 }
 
 export const openaiService = new OpenAIService();

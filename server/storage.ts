@@ -1,4 +1,4 @@
-import { users, signals, sources, signalSources, userFeedSources, userTopicProfiles, feedItems, type User, type InsertUser, type Signal, type InsertSignal, type Source, type InsertSource, type SignalSource, type InsertSignalSource, type UserFeedSource, type InsertUserFeedSource, type UserTopicProfile, type InsertUserTopicProfile, type FeedItem, type InsertFeedItem } from "@shared/schema";
+import { users, signals, sources, signalSources, userFeedSources, userTopicProfiles, feedItems, chatSessions, chatMessages, type User, type InsertUser, type Signal, type InsertSignal, type Source, type InsertSource, type SignalSource, type InsertSignalSource, type UserFeedSource, type InsertUserFeedSource, type UserTopicProfile, type InsertUserTopicProfile, type FeedItem, type InsertFeedItem, type ChatSession, type InsertChatSession, type ChatMessage, type InsertChatMessage } from "@shared/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -50,6 +50,16 @@ export interface IStorage {
   createFeedItem(feedItem: InsertFeedItem): Promise<FeedItem>;
   updateFeedItem(id: number, updates: Partial<InsertFeedItem>): Promise<FeedItem | undefined>;
   deleteFeedItem(id: number): Promise<void>;
+  
+  // Chat System
+  getChatSessionBySessionId(sessionId: string): Promise<ChatSession | undefined>;
+  createChatSession(session: InsertChatSession): Promise<ChatSession>;
+  deleteChatSession(sessionId: number): Promise<void>;
+  getChatMessagesBySessionId(sessionId: number, limit?: number): Promise<ChatMessage[]>;
+  createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
+  
+  // Analytics helpers
+  getUserSignalStats(userId: number): Promise<{total: number, captures: number, potentialSignals: number, signals: number}>;
 }
 
 export class DbStorage implements IStorage {
@@ -306,6 +316,57 @@ export class DbStorage implements IStorage {
 
   async deleteFeedItem(id: number): Promise<void> {
     await db.delete(feedItems).where(eq(feedItems.id, id));
+  }
+
+  // Chat System implementation
+  async getChatSessionBySessionId(sessionId: string): Promise<ChatSession | undefined> {
+    const result = await db.select().from(chatSessions)
+      .where(eq(chatSessions.sessionId, sessionId))
+      .limit(1);
+    return result[0];
+  }
+
+  async createChatSession(session: InsertChatSession): Promise<ChatSession> {
+    const result = await db.insert(chatSessions).values(session).returning();
+    return result[0];
+  }
+
+  async deleteChatSession(sessionId: number): Promise<void> {
+    // Delete all messages first
+    await db.delete(chatMessages).where(eq(chatMessages.sessionId, sessionId));
+    // Then delete the session
+    await db.delete(chatSessions).where(eq(chatSessions.id, sessionId));
+  }
+
+  async getChatMessagesBySessionId(sessionId: number, limit: number = 50): Promise<ChatMessage[]> {
+    const result = await db.select().from(chatMessages)
+      .where(eq(chatMessages.sessionId, sessionId))
+      .orderBy(desc(chatMessages.createdAt))
+      .limit(limit);
+    return result;
+  }
+
+  async createChatMessage(message: InsertChatMessage): Promise<ChatMessage> {
+    const result = await db.insert(chatMessages).values(message).returning();
+    return result[0];
+  }
+
+  // Analytics helpers
+  async getUserSignalStats(userId: number): Promise<{total: number, captures: number, potentialSignals: number, signals: number}> {
+    const result = await db.select().from(signals)
+      .where(eq(signals.userId, userId));
+    
+    const total = result.length;
+    const captures = result.filter(s => s.status === 'capture').length;
+    const potentialSignals = result.filter(s => s.status === 'potential_signal').length;
+    const signalCount = result.filter(s => s.status === 'signal').length;
+    
+    return {
+      total,
+      captures,
+      potentialSignals,
+      signals: signalCount
+    };
   }
 }
 

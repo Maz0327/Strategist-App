@@ -12,6 +12,7 @@ import { FeedbackWidget } from "@/components/feedback-widget";
 import { authService } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Brain, Bell, User, Home, Search, Plus, Target, Settings, ChevronRight, BarChart3, ChevronLeft, Menu } from "lucide-react";
+import { HelpButton } from "@/components/help-button";
 
 interface DashboardProps {
   user: { id: number; email: string };
@@ -130,6 +131,7 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
               <h1 className="ml-2 text-lg font-semibold text-gray-900">Strategist</h1>
             </div>
             <div className="flex items-center space-x-2">
+              <HelpButton />
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                 <Bell size={16} className="text-gray-500" />
               </Button>

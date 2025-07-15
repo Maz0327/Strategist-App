@@ -101,6 +101,25 @@ export const userTopicProfiles = pgTable("user_topic_profiles", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Chat system tables
+export const chatSessions = pgTable("chat_sessions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  sessionId: text("session_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const chatMessages = pgTable("chat_messages", {
+  id: serial("id").primaryKey(),
+  sessionId: integer("session_id").notNull().references(() => chatSessions.id),
+  userId: integer("user_id").references(() => users.id),
+  message: text("message").notNull(),
+  response: text("response"),
+  messageType: text("message_type").default("user"), // 'user', 'assistant', 'system'
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const feedItems = pgTable("feed_items", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
@@ -155,6 +174,16 @@ export const insertFeedItemSchema = createInsertSchema(feedItems).omit({
   id: true,
   createdAt: true,
   fetchedAt: true,
+});
+
+export const insertChatSessionSchema = createInsertSchema(chatSessions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
+  id: true,
+  createdAt: true,
 });
 
 // Admin Analytics Tables
@@ -294,6 +323,10 @@ export type InsertUserFeedSource = z.infer<typeof insertUserFeedSourceSchema>;
 export type UserFeedSource = typeof userFeedSources.$inferSelect;
 export type InsertUserTopicProfile = z.infer<typeof insertUserTopicProfileSchema>;
 export type UserTopicProfile = typeof userTopicProfiles.$inferSelect;
+export type InsertChatSession = z.infer<typeof insertChatSessionSchema>;
+export type ChatSession = typeof chatSessions.$inferSelect;
+export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
+export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertFeedItem = z.infer<typeof insertFeedItemSchema>;
 export type FeedItem = typeof feedItems.$inferSelect;
 export type LoginData = z.infer<typeof loginSchema>;
