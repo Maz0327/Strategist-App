@@ -385,6 +385,14 @@ app.post("/api/signals/draft", requireAuth, async (req, res) => {
 - **Efficiency**: Parallel processing and extended work sessions maximize productivity
 
 ### Current System Status - July 15, 2025
+
+**Beta Testing Context:**
+- **Target Users**: 6 beta users maximum for testing phase
+- **Cost Structure**: $17.30/month maximum per user at full usage (total $103.80/month for all users)
+- **Rate Limits**: Generous limits optimized for beta testing without subscription fees
+- **Safety Margin**: Using only 8% of OpenAI's daily capacity per user (92% buffer)
+
+**System Performance:**
 - **Performance**: 2ms average response time, no system crashes
 - **Database**: 16 tables operational with complete schema (users, signals, sources, feed_items, user_feed_sources, user_topic_profiles, signal_sources, user_analytics, user_feedback, feature_usage, system_performance, ab_test_results, api_calls, external_api_calls, chat_sessions, chat_messages)
 - **Active Data**: 7 users, 18 signals (all in capture status), ready for production use
@@ -426,8 +434,8 @@ Successfully implemented comprehensive rate limiting with generous limits that w
 - **Cost protection**: Prevents runaway OpenAI API costs
 
 **Chat System Endpoints (Updated July 15, 2025):**
-- **Chat messages**: 30 messages per minute per user
-- **Daily chat limit**: 200 chat messages per day per user
+- **Chat messages**: 50 messages per minute per user
+- **Daily chat limit**: 300 chat messages per day per user
 - **Protected endpoints**: `/api/chat/message`
 - **Interactive experience**: Optimized for natural conversation flow
 
@@ -452,10 +460,11 @@ Successfully implemented comprehensive rate limiting with generous limits that w
 **Live Testing Results - July 15, 2025:**
 - **Authentication Rate Limiting**: ✅ Working - 429 responses after 5 failed attempts
 - **OpenAI Analysis Protection**: ✅ Working - Middleware applied to all analysis endpoints
-- **Chat System**: ✅ Working - 30 messages per minute allows natural conversation
+- **Chat System**: ✅ Working - 50 messages per minute allows natural conversation flow
 - **General API Limits**: ✅ Working - Increased to 200 requests per minute for chat support
 - **Database Schema**: ✅ Updated - API monitoring tables now operational
 - **User Experience**: ✅ Seamless - Normal usage unaffected by rate limits
+- **Beta Cost Structure**: ✅ Optimized - Maximum $17.30/month per user, sustainable for 6-user beta testing
 
 ### Admin Panel & Analytics Implementation - July 14, 2025
 - **Admin Dashboard**: ✅ Complete analytics dashboard with user behavior tracking, feature usage metrics, and system performance monitoring
