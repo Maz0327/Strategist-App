@@ -398,7 +398,12 @@ export function TrendingTopics() {
               <div className="flex items-center space-x-4 text-sm text-gray-500">
                 <div className="flex items-center space-x-1">
                   <Calendar size={12} />
-                  <span>{formatDistanceToNow(new Date(topic.fetchedAt), { addSuffix: true })}</span>
+                  <span>
+                    {topic.fetchedAt 
+                      ? formatDistanceToNow(new Date(topic.fetchedAt), { addSuffix: true })
+                      : 'Recently'
+                    }
+                  </span>
                 </div>
                 {topic.engagement && (
                   <div className="flex items-center space-x-1">

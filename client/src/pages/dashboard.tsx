@@ -133,9 +133,7 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
               <h1 className="ml-2 text-lg font-semibold text-gray-900">Strategist</h1>
             </div>
             <div className="flex items-center space-x-2">
-              <HelpButton />
-              
-              {/* Chat Button */}
+              {/* Chat Button - AI Assistant */}
               <Button
                 variant="ghost"
                 size="sm"
@@ -146,19 +144,25 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
                 <MessageCircle size={16} className="text-gray-500" />
               </Button>
               
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+              {/* Notifications */}
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Notifications">
                 <Bell size={16} className="text-gray-500" />
               </Button>
+              
+              {/* User Profile */}
               <Button 
                 variant="ghost" 
                 size="sm"
                 onClick={handleLogout}
                 className="flex items-center space-x-2 h-8 px-2"
+                title="Click to logout"
               >
                 <div className="h-6 w-6 rounded-full bg-gray-300 flex items-center justify-center">
                   <User size={12} className="text-gray-600" />
                 </div>
-                <span className="text-sm text-gray-700 font-medium hidden sm:inline">{user.email}</span>
+                <span className="text-sm text-gray-700 font-medium hidden sm:inline">
+                  {user.email.split('@')[0]}
+                </span>
               </Button>
             </div>
           </div>

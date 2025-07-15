@@ -96,46 +96,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add general rate limiting to all API endpoints
   app.use('/api/', generalRateLimit);
 
-  // API call tracking middleware
+  // Optimized API call tracking middleware - reduced tracking to prevent spam
   app.use((req, res, next) => {
     const startTime = Date.now();
     
-    // Track response time and API calls
+    // Only track specific important endpoints to reduce noise
+    const trackedEndpoints = ['/api/analyze', '/api/signals', '/api/trending'];
+    
     res.on('finish', () => {
       const duration = Date.now() - startTime;
       
-      // Track API calls for internal endpoints
-      if (req.path.startsWith('/api/') && req.session?.userId) {
-        const requestSize = req.get('Content-Length') ? parseInt(req.get('Content-Length') || '0') : 0;
-        const responseSize = res.get('Content-Length') ? parseInt(res.get('Content-Length') || '0') : 0;
-        
-        analyticsService.trackApiCall({
-          userId: req.session.userId,
-          endpoint: req.path,
-          method: req.method,
-          statusCode: res.statusCode,
-          responseTime: duration,
-          requestSize,
-          responseSize,
-          userAgent: req.get('User-Agent') || '',
-          ipAddress: req.ip || '',
-          errorMessage: res.statusCode >= 400 ? res.statusMessage : null,
-          metadata: {
-            query: req.query,
-            sessionId: req.sessionID,
-          }
-        });
+      // Only track important API calls to reduce database noise
+      if (trackedEndpoints.some(endpoint => req.path.startsWith(endpoint)) && req.session?.userId) {
+        try {
+          analyticsService.trackApiCall({
+            userId: req.session.userId,
+            endpoint: req.path,
+            method: req.method,
+            statusCode: res.statusCode,
+            responseTime: duration,
+            requestSize: req.get('Content-Length') ? parseInt(req.get('Content-Length') || '0') : 0,
+            responseSize: res.get('Content-Length') ? parseInt(res.get('Content-Length') || '0') : 0,
+            userAgent: req.get('User-Agent') || '',
+            ipAddress: req.ip || '',
+            errorMessage: res.statusCode >= 400 ? res.statusMessage : null,
+            metadata: {
+              query: req.query,
+              sessionId: req.sessionID,
+            }
+          });
+        } catch (error) {
+          // Silently fail tracking to prevent disruption
+        }
       }
     });
     
     next();
   });
 
-  // Auth middleware
+  // Optimized Auth middleware - reduced logging for better UX
   const requireAuth = (req: any, res: any, next: any) => {
-    debugLogger.debug("Session check", { userId: req.session?.userId, sessionId: req.sessionID }, req);
     if (!req.session?.userId) {
-      debugLogger.warn("Authentication required - no session userId", { sessionId: req.sessionID }, req);
       return res.status(401).json({ message: "Not authenticated" });
     }
     next();
@@ -171,7 +172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/login", authRateLimit, async (req, res) => {
     try {
       const data = loginSchema.parse(req.body);
-      debugLogger.debug("Login attempt", { email: data.email }, req);
+      // Removed excessive debug logging for better UX
       
       const user = await authService.login(data);
       req.session.userId = user.id;
@@ -183,11 +184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(500).json({ message: "Session save failed" });
         }
         
-        debugLogger.debug("Login successful", { 
-          userId: user.id, 
-          sessionId: req.sessionID,
-          sessionData: req.session
-        }, req);
+        // Login successful - reduced logging for better UX
         
         res.json({ 
           success: true, 
@@ -195,7 +192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       });
     } catch (error: any) {
-      debugLogger.warn("Login failed", { error: error.message }, req);
+      // Login failed - reduced logging
       res.status(400).json({ message: error.message });
     }
   });

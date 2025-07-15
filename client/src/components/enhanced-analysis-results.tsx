@@ -227,8 +227,8 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
                   <Info size={14} className="text-gray-400" />
                 </Button>
               </div>
-              <Badge className={getSentimentColor(data.sentiment)} variant="secondary">
-                {data.sentiment}
+              <Badge className={getSentimentColor(data?.sentiment)} variant="secondary">
+                {data?.sentiment || 'Unknown'}
               </Badge>
             </div>
             <div className="text-center">
@@ -238,8 +238,8 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
                   <Info size={14} className="text-gray-400" />
                 </Button>
               </div>
-              <Badge className={getAttentionColor(data.truthAnalysis.attentionValue)} variant="secondary">
-                {data.truthAnalysis.attentionValue}
+              <Badge className={getAttentionColor(data?.truthAnalysis?.attentionValue)} variant="secondary">
+                {data?.truthAnalysis?.attentionValue || 'Unknown'}
               </Badge>
             </div>
             <div className="text-center">
@@ -249,14 +249,14 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
                   <Info size={14} className="text-gray-400" />
                 </Button>
               </div>
-              <Badge className={getViralColor(data.viralPotential)} variant="secondary">
-                {data.viralPotential}
+              <Badge className={getViralColor(data?.viralPotential)} variant="secondary">
+                {data?.viralPotential || 'Unknown'}
               </Badge>
             </div>
           </div>
           <Separator className="my-4" />
           <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-700 flex-1">{data.summary}</p>
+            <p className="text-sm text-gray-700 flex-1">{data?.summary || 'No summary available'}</p>
             <div className="flex items-center gap-2 ml-4">
               <Button 
                 size="sm" 
