@@ -139,6 +139,18 @@ export function TrendingTopics() {
         return <Globe className="text-indigo-500" size={16} />;
       case 'glasp':
         return <Globe className="text-teal-500" size={16} />;
+      case 'knowyourmeme':
+        return <Globe className="text-pink-500" size={16} />;
+      case 'urbandictionary':
+        return <Globe className="text-yellow-500" size={16} />;
+      case 'youtube-trending':
+        return <Globe className="text-red-600" size={16} />;
+      case 'reddit-cultural':
+        return <MessageSquare className="text-orange-600" size={16} />;
+      case 'tiktok-trends':
+        return <Globe className="text-black" size={16} />;
+      case 'instagram-trends':
+        return <Globe className="text-pink-600" size={16} />;
       default:
         return <Globe className="text-gray-500" size={16} />;
     }
@@ -178,6 +190,18 @@ export function TrendingTopics() {
         return 'bg-indigo-100 text-indigo-800 border-indigo-200';
       case 'glasp':
         return 'bg-teal-100 text-teal-800 border-teal-200';
+      case 'knowyourmeme':
+        return 'bg-pink-100 text-pink-800 border-pink-200';
+      case 'urbandictionary':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'youtube-trending':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'reddit-cultural':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'tiktok-trends':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'instagram-trends':
+        return 'bg-pink-100 text-pink-800 border-pink-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -214,6 +238,13 @@ export function TrendingTopics() {
         return 'entertainment';
       case 'glasp':
         return 'knowledge';
+      case 'knowyourmeme':
+      case 'urbandictionary':
+      case 'youtube-trending':
+      case 'reddit-cultural':
+      case 'tiktok-trends':
+      case 'instagram-trends':
+        return 'cultural';
       default:
         return 'other';
     }
@@ -283,6 +314,12 @@ export function TrendingTopics() {
             <SelectItem value="currents">📊 Currents</SelectItem>
             <SelectItem value="mediastack">📡 MediaStack</SelectItem>
             <SelectItem value="glasp">💡 Glasp</SelectItem>
+            <SelectItem value="knowyourmeme">🔥 Know Your Meme</SelectItem>
+            <SelectItem value="urbandictionary">📖 Urban Dictionary</SelectItem>
+            <SelectItem value="youtube-trending">🔥 YouTube Trending</SelectItem>
+            <SelectItem value="reddit-cultural">🎭 Reddit Cultural</SelectItem>
+            <SelectItem value="tiktok-trends">🎵 TikTok Trends</SelectItem>
+            <SelectItem value="instagram-trends">📸 Instagram Trends</SelectItem>
           </SelectContent>
         </Select>
       </div>
