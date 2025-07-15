@@ -2,6 +2,7 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { TrendingTopic } from './trends';
 import { debugLogger } from './debug-logger';
+import { bypassManager } from './bypass-manager';
 
 export interface KnowYourMemeEntry {
   id: string;
@@ -24,17 +25,10 @@ export class KnowYourMemeService {
     try {
       debugLogger.info('Fetching trending memes from Know Your Meme');
       
-      const response = await axios.get(`${this.baseUrl}/memes/trending`, {
-        headers: {
-          'User-Agent': this.userAgent,
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.5',
-          'Accept-Encoding': 'gzip, deflate, br',
-          'Connection': 'keep-alive',
-          'Upgrade-Insecure-Requests': '1',
-        },
-        timeout: 10000
-      });
+      // Add random delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 1000));
+      
+      const response = await bypassManager.makeRequest(`${this.baseUrl}/memes/trending`);
 
       const $ = cheerio.load(response.data);
       const memes: TrendingTopic[] = [];

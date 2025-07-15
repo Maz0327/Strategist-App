@@ -492,6 +492,7 @@ export class ExternalAPIsService {
       const allTrends = [...trending, ...popular, ...deadpools];
       return allTrends.slice(0, 10);
     } catch (error) {
+      debugLogger.warn('Know Your Meme blocked - using fallback data');
       return [];
     }
   }

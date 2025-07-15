@@ -23,15 +23,29 @@ export class YouTubeTrendingService {
     try {
       debugLogger.info('Fetching trending videos from YouTube');
       
+      // Add random delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 1000));
+      
       const response = await axios.get(`${this.baseUrl}/feed/trending`, {
         headers: {
-          'User-Agent': this.userAgent,
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.5',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
           'Accept-Encoding': 'gzip, deflate, br',
           'Connection': 'keep-alive',
+          'Upgrade-Insecure-Requests': '1',
+          'Sec-Fetch-Dest': 'document',
+          'Sec-Fetch-Mode': 'navigate',
+          'Sec-Fetch-Site': 'none',
+          'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+          'Sec-Ch-Ua-Mobile': '?0',
+          'Sec-Ch-Ua-Platform': '"Windows"',
+          'Cache-Control': 'max-age=0',
+          'Referer': 'https://google.com/',
         },
-        timeout: 15000
+        timeout: 15000,
+        maxRedirects: 5,
+        validateStatus: (status) => status < 500
       });
 
       const videos = this.parseVideosFromHTML(response.data, limit);
