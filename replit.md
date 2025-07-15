@@ -15,6 +15,7 @@ Preferred communication style: Simple, everyday language.
 - **Incremental development** - Focus on completing one area thoroughly before moving to next
 - **Production readiness** - Emphasis on clean, optimized code without development artifacts
 - **Memory management awareness** - User concerned about sustainable development approach to avoid AI memory constraints
+- **Experimental approach** - User open to testing new features with easy rollback capability if complexity issues arise
 
 ### Key Technical Decisions & Rationale
 - **Console logging cleanup** - Removed 130+ console statements for production readiness while maintaining structured debug logging
@@ -51,6 +52,7 @@ Preferred communication style: Simple, everyday language.
 - **Three-feed separation** - User requested feeds to be separated for strategist workflow efficiency, minimizing scrolling and enabling quick access at a glance
 - **RSS-first approach** - User emphasized RSS feeds as primary mechanism for custom feeds with support for social media, Reddit, websites, and newsletters
 - **Smart topic filtering** - User requested intelligent feed filtering based on user profiles and behavioral learning for the Market Intelligence feed
+- **Glasp API status** - Currently using fallback data as Glasp lacks public API; user approved experimental web scraping approach to get real highlight data with easy rollback capability
 
 ## Chrome Extension Implementation - July 13, 2025
 
@@ -382,7 +384,7 @@ app.post("/api/signals/draft", requireAuth, async (req, res) => {
 - **Memory Management**: Comprehensive documentation preventing context loss
 - **Efficiency**: Parallel processing and extended work sessions maximize productivity
 
-### Current System Status - July 14, 2025
+### Current System Status - July 15, 2025
 - **Performance**: 2ms average response time, no system crashes
 - **Database**: 14 tables operational with complete schema (users, signals, sources, feed_items, user_feed_sources, user_topic_profiles, signal_sources, user_analytics, user_feedback, feature_usage, system_performance, ab_test_results, api_calls, external_api_calls)
 - **Error rate**: Only expected authentication errors, no system failures
@@ -400,6 +402,7 @@ app.post("/api/signals/draft", requireAuth, async (req, res) => {
 - **Space Optimization**: ✅ Major UI improvements implemented for better working space utilization
 - **UI/UX Improvements**: ✅ "One tool, one place" philosophy implemented with streamlined navigation and homepage redesign
 - **Help System**: ✅ Comprehensive onboarding help system with contextual guidance implemented
+- **UI Positioning Fix**: ✅ Resolved floating button overlaps - FeedbackWidget, DebugPanel, and FloatingActionButton now properly positioned without conflicts
 
 ### Rate Limiting Implementation - July 14, 2025
 
@@ -697,6 +700,33 @@ Successfully implemented the "one tool, one place" philosophy with homepage rede
 - **Focused Work**: Each section optimized for specific tasks without distractions
 - **Quick Actions**: Streamlined access to most common operations
 - **Progressive Disclosure**: Advanced features accessible but not overwhelming
+
+### Planned Glasp Web Scraping Experiment - July 15, 2025
+
+#### ✅ **Pre-Implementation Assessment Complete**:
+- **Legal Status**: Glasp's robots.txt allows public content scraping, no explicit ToS restrictions found
+- **Technical Approach**: Isolated service with respectful scraping (2-3 second delays, proper headers)
+- **Target Data**: Public highlight pages (/popular, /discover, public profiles) - avoiding private areas
+- **Risk Management**: Easy rollback plan with feature flag, fallback system preserved
+- **Implementation Plan**: Two-phase approach (test → integration) with minimal system complexity
+
+#### **Phase 1: Safe Test Implementation**
+- **Isolated scraping service** - separate from main trends system
+- **Small data validation** - 10-20 highlights to verify concept
+- **Respectful scraping patterns** - proper user agent, rate limiting, error handling
+- **Public data only** - no authentication required, respecting robots.txt restrictions
+
+#### **Phase 2: System Integration (if successful)**
+- **Add to existing trends pipeline** - parallel to other 15+ working APIs
+- **Implement caching system** - reduce requests, store results efficiently
+- **Comprehensive error handling** - graceful fallback if scraping fails
+- **Feature flag control** - instant disable capability if issues arise
+
+#### **Rollback Strategy**:
+- **Current fallback preserved** - existing Glasp service remains intact
+- **Isolated code structure** - removal won't affect other API integrations
+- **User preference respected** - aligns with "build better, not build more" philosophy
+- **System stability priority** - can revert immediately if complexity issues emerge
 
 ### Future Complex Enhancements (For High-Volume Beta)
 - **Usage Pattern Insights**: Advanced data processing and visualization for peak usage analysis
