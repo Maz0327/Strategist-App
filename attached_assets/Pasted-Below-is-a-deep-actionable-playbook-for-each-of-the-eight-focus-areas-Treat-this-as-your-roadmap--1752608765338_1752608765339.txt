@@ -1,0 +1,543 @@
+Below is a deep, actionable playbook for each of the eight focus areas. Treat this as your roadmap: for each section you’ll find **why** it matters, **what** exactly to do, and **how**—with config snippets, code examples, and recommended tools.
+
+---
+
+## 1. Project Structure & Repository Hygiene
+
+### Why
+
+A clean structure accelerates onboarding, prevents “lost file” confusion, and makes CI/CD straightforward.
+
+### What & How
+
+1. **Move docs to `docs/`**
+
+   * Create `docs/` at repo root.
+   * Relocate all `*.md` (e.g. `Replit.md`, status reports) into it.
+   * Update links in your README to point to `docs/…`.
+
+2. **Clean out build artifacts & jars**
+
+   * In your shell:
+
+     ```bash
+     git rm --cached **/*.jar uv.lock
+     echo "*.jar" >> .gitignore
+     echo "uv.lock" >> .gitignore
+     git commit -m "Remove jars and lock files; ignore them"
+     ```
+   * To purge them from history (one‑time):
+
+     ```bash
+     git filter-branch --force \
+       --index-filter 'git rm --cached --ignore-unmatch **/*.jar uv.lock' \
+       --prune-empty --tag-name-filter cat -- --all
+     rm -rf .git/refs/original/
+     git reflog expire --expire=now --all
+     git gc --prune=now --aggressive
+     git push --force
+     ```
+
+3. **Adopt a monorepo workspace tool**
+
+   * Install and configure Yarn Workspaces (example `package.json`):
+
+     ```jsonc
+     {
+       "private": true,
+       "workspaces": ["client", "server", "shared"]
+     }
+     ```
+   * Move shared types/util into `shared/`, then from `client/` and `server/` import via:
+
+     ```ts
+     import { Signal, User } from "@shared/types";
+     ```
+   * In `tsconfig.json` add:
+
+     ```jsonc
+     {
+       "compilerOptions": {
+         "baseUrl": ".",
+         "paths": { "@shared/*": ["shared/*"] }
+       }
+     }
+     ```
+
+---
+
+## 2. Security & Secret Management
+
+### Why
+
+Hard‑coded secrets are a vector for breaches; unsanitized HTML invites XSS.
+
+### What & How
+
+1. **Environment variables**
+
+   * Create `.env`:
+
+     ```
+     OPENAI_API_KEY=…
+     REDDIT_CLIENT_ID=…
+     ```
+   * In `server/index.ts` (or entrypoint):
+
+     ```ts
+     import "dotenv/config";
+     const redditClientId = process.env.REDDIT_CLIENT_ID!;
+     ```
+   * Add `.env` to `.gitignore`.
+
+2. **Sanitize scraped HTML**
+
+   * Install:
+
+     ```bash
+     npm install sanitize-html
+     ```
+   * Usage in your React renderer:
+
+     ```ts
+     import sanitizeHtml from "sanitize-html";
+     const clean = sanitizeHtml(rawHtml, { allowedTags: [], allowedAttributes: {} });
+     ```
+
+3. **Harden headers & CORS**
+
+   * Install Helmet & CORS:
+
+     ```bash
+     npm install helmet cors
+     ```
+   * In Express:
+
+     ```ts
+     import helmet from "helmet";
+     import cors from "cors";
+     app.use(helmet());
+     app.use(cors({ origin: process.env.FRONTEND_URL }));
+     ```
+
+---
+
+## 3. Code Quality & Maintainability
+
+### Why
+
+DRY code bases are easier to debug and extend; consistent style prevents bikeshedding.
+
+### What & How
+
+1. **Consolidate shared logic**
+
+   * Move common utilities (e.g. `buildPrompt()`, `fetchWithTimeout()`) into `/shared/utils.ts`.
+   * Import from both sides:
+
+     ```ts
+     import { buildPrompt } from "@shared/utils";
+     ```
+
+2. **Unify service languages**
+
+   * If Python scripts under `server/python/` can be ported to TS, do so using Node libs (e.g. `node-fetch` instead of `requests`).
+   * Otherwise containerize the Python microservice with a `Dockerfile` and orchestrate via `docker-compose`.
+
+3. **Linting & Formatting**
+
+   * **TS/JS**:
+
+     ```bash
+     npm install --save-dev eslint prettier eslint-config-prettier eslint-plugin-prettier
+     ```
+
+     Add `.eslintrc.js`:
+
+     ```js
+     module.exports = {
+       extends: ["eslint:recommended", "plugin:react/recommended", "prettier"],
+       plugins: ["prettier"],
+       rules: { "prettier/prettier": "error" },
+     };
+     ```
+   * **Python**: Add `flake8` & `black`:
+
+     ```bash
+     pip install flake8 black
+     ```
+
+     Add `setup.cfg`:
+
+     ```ini
+     [flake8]
+     max-line-length = 88
+     [tool.black]
+     line-length = 88
+     ```
+
+---
+
+## 4. Backend Performance & Scalability
+
+### Why
+
+Caching slashes API costs; queues prevent request timeouts and UI hangs.
+
+### What & How
+
+1. **Cache external API calls**
+
+   * In-memory (for simplicity):
+
+     ```ts
+     import NodeCache from "node-cache";
+     const cache = new NodeCache({ stdTTL: 60 }); // 1 minute
+     async function getTrends(key: string) {
+       const cached = cache.get(key);
+       if (cached) return cached;
+       const data = await fetchTrends();
+       cache.set(key, data);
+       return data;
+     }
+     ```
+   * Or use Redis:
+
+     ```bash
+     npm install ioredis
+     ```
+
+     ```ts
+     const redis = new Redis(process.env.REDIS_URL);
+     async function getTrends(key: string) {
+       const cached = await redis.get(key);
+       if (cached) return JSON.parse(cached);
+       const data = await fetchTrends();
+       await redis.set(key, JSON.stringify(data), "EX", 60);
+       return data;
+     }
+     ```
+
+2. **Rate limiting**
+
+   ```bash
+   npm install express-rate-limit
+   ```
+
+   ```ts
+   import rateLimit from "express-rate-limit";
+   app.use(
+     rateLimit({
+       windowMs: 60_000, // 1 minute
+       max: 30, // limit each IP to 30 requests per windowMs
+     })
+   );
+   ```
+
+3. **Job queue for bulk work**
+
+   * Install BullMQ:
+
+     ```bash
+     npm install bullmq ioredis
+     ```
+   * Producer (enqueue):
+
+     ```ts
+     import { Queue } from "bullmq";
+     const trendQueue = new Queue("trends", { connection: redis });
+     await trendQueue.add("fetch-trends", { platforms: ["youtube", "reddit"] });
+     ```
+   * Consumer (worker):
+
+     ```ts
+     import { Worker } from "bullmq";
+     new Worker(
+       "trends",
+       async job => {
+         const { platforms } = job.data;
+         await fetchAndStore(platforms);
+       },
+       { connection: redis }
+     );
+     ```
+
+---
+
+## 5. Frontend Optimizations & UX
+
+### Why
+
+Faster loads and clearer interfaces keep users engaged and productive.
+
+### What & How
+
+1. **Lazy‑load heavy pages**
+
+   ```ts
+   const BriefBuilder = React.lazy(() => import("./BriefBuilder"));
+   // In your router
+   <Route
+     path="/briefs"
+     element={
+       <Suspense fallback={<Spinner />}>
+         <BriefBuilder />
+       </Suspense>
+     }
+   />
+   ```
+
+2. **Purge unused Tailwind CSS**
+   In `tailwind.config.js`:
+
+   ```js
+   module.exports = {
+     purge: ["./client/src/**/*.{js,ts,jsx,tsx}", "./public/index.html"],
+     // ...
+   };
+   ```
+
+3. **Floating chat widget**
+
+   * Create `ChatWidget.tsx` with `position: fixed; bottom: 1rem; right: 1rem;`.
+   * Use a badge to indicate new messages.
+   * Toggle a chat panel when clicked.
+
+---
+
+## 6. Testing & Continuous Integration
+
+### Why
+
+Automated tests catch regressions; CI ensures every PR meets quality gates.
+
+### What & How
+
+1. **Frontend tests (Vitest + RTL)**
+
+   ```bash
+   npm install --save-dev vitest @testing-library/react @testing-library/jest-dom
+   ```
+
+   In `client/vite.config.ts`:
+
+   ```ts
+   test: {
+     globals: true,
+     environment: "jsdom",
+   },
+   ```
+
+   Example test `AnalysisResults.test.tsx`:
+
+   ```ts
+   import { render, screen } from "@testing-library/react";
+   import AnalysisResults from "./AnalysisResults";
+
+   test("shows sentiment", () => {
+     render(<AnalysisResults sentiment="Positive" />);
+     expect(screen.getByText(/Positive/)).toBeInTheDocument();
+   });
+   ```
+
+2. **Backend tests (`supertest`)**
+
+   ```bash
+   npm install --save-dev supertest jest ts-jest @types/jest
+   ```
+
+   `jest.config.js`:
+
+   ```js
+   module.exports = {
+     preset: "ts-jest",
+     testEnvironment: "node",
+   };
+   ```
+
+   Example `routes.test.ts`:
+
+   ```ts
+   import request from "supertest";
+   import app from "./index";
+
+   test("GET /healthz returns 200", async () => {
+     const res = await request(app).get("/healthz");
+     expect(res.status).toBe(200);
+   });
+   ```
+
+3. **Python tests (`pytest`)**
+   In `server/python/`:
+
+   ```bash
+   pip install pytest
+   ```
+
+   `test_scraper.py`:
+
+   ```py
+   from scraper_service import extract_text
+
+   def test_extract_text():
+       html = "<p>Hello</p>"
+       assert extract_text(html) == "Hello"
+   ```
+
+4. **GitHub Actions workflow** (`.github/workflows/ci.yml`):
+
+   ```yaml
+   name: CI
+   on: [push, pull_request]
+   jobs:
+     build-and-test:
+       runs-on: ubuntu-latest
+       services:
+         redis:
+           image: redis
+           ports: ["6379:6379"]
+       steps:
+         - uses: actions/checkout@v3
+         - name: Set up Node
+           uses: actions/setup-node@v3
+           with: node-version: "18"
+         - run: yarn install --frozen-lockfile
+         - run: yarn lint
+         - run: yarn test
+         - name: Set up Python
+           uses: actions/setup-python@v4
+           with: python-version: "3.10"
+         - run: pip install -r server/python/requirements.txt
+         - run: pytest server/python
+   ```
+
+---
+
+## 7. Observability & Monitoring
+
+### Why
+
+Visibility into production issues and performance prevents outages and costly surprises.
+
+### What & How
+
+1. **Structured logging with Pino**
+
+   ```bash
+   npm install pino pino-pretty
+   ```
+
+   ```ts
+   import pino from "pino";
+   export const logger = pino({ prettyPrint: true });
+   logger.info("Server started");
+   ```
+
+2. **Health check endpoint**
+
+   ```ts
+   app.get("/healthz", (_req, res) => res.sendStatus(200));
+   ```
+
+3. **Prometheus metrics**
+
+   ```bash
+   npm install prom-client
+   ```
+
+   ```ts
+   import client from "prom-client";
+   const collectDefaultMetrics = client.collectDefaultMetrics;
+   collectDefaultMetrics();
+   app.get("/metrics", (_req, res) => {
+     res.set("Content-Type", client.register.contentType);
+     res.end(client.register.metrics());
+   });
+   ```
+
+4. **Alerts**
+
+   * Use Grafana + Prometheus or a SaaS like DataDog.
+   * Alert on `/healthz` failure or high error-rate (HTTP 5xx > 5% for 1 min).
+
+---
+
+## 8. DevOps & Deployment
+
+### Why
+
+Reproducible builds and environments reduce “works on my machine” bugs.
+
+### What & How
+
+1. **Dockerize services**
+
+   * **Node service** `Dockerfile`:
+
+     ```dockerfile
+     FROM node:18-alpine
+     WORKDIR /app
+     COPY package*.json ./
+     RUN npm ci --production
+     COPY . .
+     CMD ["node", "dist/index.js"]
+     ```
+
+   * **Python service** `Dockerfile`:
+
+     ```dockerfile
+     FROM python:3.10-slim
+     WORKDIR /app
+     COPY requirements.txt ./
+     RUN pip install -r requirements.txt
+     COPY . .
+     CMD ["python", "scraper_service.py"]
+     ```
+
+   * **`docker-compose.yml`**:
+
+     ```yaml
+     version: '3.8'
+     services:
+       server:
+         build: ./server
+         ports: ["3000:3000"]
+         environment:
+           - REDIS_URL=redis://redis:6379
+       python:
+         build: ./server/python
+       redis:
+         image: redis:6-alpine
+       client:
+         build: ./client
+         ports: ["5173:5173"]
+     ```
+
+2. **Environment promotion**
+
+   * Use separate `.env.development`, `.env.staging`, `.env.production`.
+   * In CI/CD, load the correct file via:
+
+     ```bash
+     cp .env.$ENVIRONMENT .env
+     ```
+
+3. **Database migrations**
+
+   * If using Drizzle ORM:
+
+     ```bash
+     npx drizzle-kit generate:migration --name init
+     npx drizzle-kit apply:migrations
+     ```
+   * Include migrations step in CI or Docker entrypoint.
+
+---
+
+### Next Moves
+
+1. **Pick two “low‑hanging fruit”** (e.g., caching + rate‑limit) and implement them in the next sprint.
+2. **Add CI** to prevent regressions from creeping back in.
+3. **Dockerize** locally to ensure parity with staging/production.
+
+Let me know which section you’d like live code samples or pair‑programming on first!
