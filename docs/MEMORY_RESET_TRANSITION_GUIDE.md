@@ -113,7 +113,7 @@ Use this guide when:
    - Backend: http://localhost:5000
 
 3. **Test basic functionality:**
-   - Try logging in with: `admin@strategist.app` / `AdminSecure123!`
+   - Try logging in with: `admin@strategist.app` / `Ma.920707` (or username: `admin` / `Ma.920707`)
    - Check if trending topics are loading
    - Test the chat system
 
@@ -144,6 +144,7 @@ Use this guide when:
 - **Cost Structure**: $17.30/month max per user, realistic $30-50/month for 6 beta users
 - **Rate Limits**: 50 chat messages/minute, 300/day per user
 - **Architecture**: React frontend, Express backend, Chrome extension complete
+- **Admin Login**: admin@strategist.app / Ma.920707 (username: admin / Ma.920707, case-insensitive)
 
 Please read the `docs/replit.md` file for complete project context and user preferences. The system is deployment-ready and optimized for beta testing."
 

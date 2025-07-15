@@ -32,6 +32,13 @@ Your app will be available at:
 - **Frontend**: http://localhost:5173
 - **Backend**: http://localhost:5000
 
+## Admin Login
+
+Default admin credentials:
+- **Username**: admin (case-insensitive)
+- **Password**: Ma.920707
+- **Email**: admin@strategist.app
+
 ## Replit Import
 
 1. In Replit, choose **Import from GitHub**
