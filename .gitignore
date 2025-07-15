@@ -65,12 +65,31 @@ session.jar
 cookies.txt
 headers.txt
 
-# Generated files
+# Generated files and archives
 generated-icon.png
-frontend-code-export.tar.gz
-strategic-content-analysis-platform.tar.gz
-*.tar.gzstrategic-content-analysis-platform.tar.gz
-strategic-content-analysis-platform.tar.gz
+*.tar.gz
+*.zip
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# UV lock files
+uv.lock
 # Replit Agent State Files
 .local/state/replit/agent/
 .local/
