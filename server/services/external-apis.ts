@@ -1,4 +1,5 @@
 import { trendsService } from './trends';
+import { googleTrendsPythonService } from './google-trends-python';
 import { createRedditService } from './reddit';
 // Removed Twitter API - moved to future integrations due to rate limiting
 import { createNewsService } from './news';
@@ -235,14 +236,15 @@ export class ExternalAPIsService {
 
   async getGoogleTrends(): Promise<TrendingTopic[]> {
     try {
-      const trends = await trendsService.getGoogleTrends();
+      debugLogger.info('Fetching Google Trends data using Python service');
       
-      // Also get some business-related trends
-      const businessTrends = await trendsService.getRelatedTopics('business strategy');
-      const marketingTrends = await trendsService.getRelatedTopics('digital marketing');
+      // Use the new Python-based Google Trends service
+      const trends = await googleTrendsPythonService.getAllGoogleTrends();
       
-      return [...trends, ...businessTrends.slice(0, 3), ...marketingTrends.slice(0, 3)];
+      debugLogger.info(`Successfully fetched ${trends.length} Google Trends topics`);
+      return trends;
     } catch (error) {
+      debugLogger.error('Failed to fetch Google Trends data:', error);
       return [];
     }
   }
