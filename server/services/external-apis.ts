@@ -15,6 +15,8 @@ import { createNYTimesService } from './nytimes';
 import { createCurrentsService } from './currents';
 import { createMediaStackService } from './mediastack';
 import { glaspService } from './glasp';
+import { googleKnowledgeGraphService } from './google-knowledge-graph';
+import { perspectiveAPIService } from './perspective-api';
 import { knowYourMemeService } from './knowyourmeme';
 import { urbanDictionaryService } from './urbandictionary';
 import { youtubeTrendingService } from './youtube-trending';
@@ -33,6 +35,8 @@ export class ExternalAPIsService {
   private nytimesService: ReturnType<typeof createNYTimesService>;
   private currentsService: ReturnType<typeof createCurrentsService>;
   private mediastackService: ReturnType<typeof createMediaStackService>;
+  private knowledgeGraphService: typeof googleKnowledgeGraphService;
+  private perspectiveService: typeof perspectiveAPIService;
 
   constructor() {
     // Initialize existing services
@@ -72,6 +76,10 @@ export class ExternalAPIsService {
     this.mediastackService = createMediaStackService(
       process.env.MEDIASTACK_API_KEY
     );
+
+    // Initialize Google enhancement services
+    this.knowledgeGraphService = googleKnowledgeGraphService;
+    this.perspectiveService = perspectiveAPIService;
   }
 
   async getAllTrendingTopics(platform?: string): Promise<TrendingTopic[]> {
@@ -190,7 +198,12 @@ export class ExternalAPIsService {
         balancedResults.push(...topFromPlatform);
       });
       
-      return balancedResults.sort((a, b) => (b.score || 0) - (a.score || 0));
+      // Enhance results with Google Knowledge Graph context
+      const enhancedResults = await this.enhanceWithKnowledgeGraph(
+        balancedResults.sort((a, b) => (b.score || 0) - (a.score || 0))
+      );
+      
+      return enhancedResults;
     } catch (error) {
       return [];
     }
@@ -959,6 +972,65 @@ export class ExternalAPIsService {
         keywords: ['glasp', 'knowledge', 'highlighting', 'curation', 'social']
       }
     ];
+  }
+}
+
+  // Google Knowledge Graph enhancement
+  async enhanceWithKnowledgeGraph(topics: TrendingTopic[]): Promise<TrendingTopic[]> {
+    try {
+      // Only enhance top 10 topics to avoid API quota issues
+      const topTopics = topics.slice(0, 10);
+      const enhancedTopics = await this.knowledgeGraphService.analyzeTrendingTopics(topTopics);
+      
+      // Return enhanced topics plus remaining unenhanced ones
+      return [...enhancedTopics, ...topics.slice(10)];
+    } catch (error) {
+      console.error('Knowledge Graph enhancement failed:', error);
+      return topics;
+    }
+  }
+
+  // Perspective API content safety analysis
+  async analyzeSentimentSafety(content: string): Promise<any> {
+    try {
+      const analysis = await this.perspectiveService.analyzeText(content);
+      return analysis;
+    } catch (error) {
+      console.error('Perspective API analysis failed:', error);
+      return null;
+    }
+  }
+
+  // Enhanced trend analysis with safety and context
+  async getEnhancedTrendAnalysis(topics: TrendingTopic[]): Promise<TrendingTopic[]> {
+    try {
+      // First enhance with Knowledge Graph for context
+      const contextEnhanced = await this.enhanceWithKnowledgeGraph(topics);
+      
+      // Then analyze content safety for user-generated content
+      const safetyEnhanced = await Promise.all(
+        contextEnhanced.map(async (topic) => {
+          if (topic.description) {
+            const safetyAnalysis = await this.analyzeSentimentSafety(topic.description);
+            if (safetyAnalysis) {
+              return {
+                ...topic,
+                metadata: {
+                  ...topic.metadata,
+                  safety: safetyAnalysis
+                }
+              };
+            }
+          }
+          return topic;
+        })
+      );
+      
+      return safetyEnhanced;
+    } catch (error) {
+      console.error('Enhanced trend analysis failed:', error);
+      return topics;
+    }
   }
 }
 

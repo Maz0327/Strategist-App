@@ -67,6 +67,13 @@ This document tracks services that were attempted but removed due to reliability
     - **Value**: Entertainment industry insights
     - **Revisit**: If entertainment focus becomes priority
 
+11. **Google Books Ngram Viewer** - Historical analysis service
+    - **Issue**: No official API, would require scraping approach
+    - **Attempted**: Language evolution analysis over centuries
+    - **Value**: Historical context for cultural terms and concepts
+    - **Revisit**: If historical linguistic analysis becomes strategically important
+    - **Note**: Would go against optimization approach of using official APIs only
+
 ## ✅ **WORKING SERVICES (Kept)**
 
 ### **High-Value Content Sources (12 platforms):**
