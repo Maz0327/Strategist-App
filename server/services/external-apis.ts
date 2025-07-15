@@ -23,6 +23,8 @@ import { urbanDictionaryService } from './urbandictionary';
 import { youtubeTrendingService } from './youtube-trending';
 import { redditCulturalService } from './reddit-cultural';
 import { tikTokTrendsService } from './tiktok-trends';
+import { giphyService } from './giphy';
+import { imgurService } from './imgur';
 // Instagram trends service removed - causing 429 errors
 import type { TrendingTopic } from './trends';
 
@@ -39,6 +41,8 @@ export class ExternalAPIsService {
   private knowledgeGraphService: typeof googleKnowledgeGraphService;
   private perspectiveService: typeof perspectiveAPIService;
   private ngramService: typeof googleNgramService;
+  private giphyService: typeof giphyService;
+  private imgurService: typeof imgurService;
 
   constructor() {
     // Initialize existing services
@@ -83,6 +87,10 @@ export class ExternalAPIsService {
     this.knowledgeGraphService = googleKnowledgeGraphService;
     this.perspectiveService = perspectiveAPIService;
     this.ngramService = googleNgramService;
+    
+    // Initialize visual content services
+    this.giphyService = giphyService;
+    this.imgurService = imgurService;
   }
 
   async getAllTrendingTopics(platform?: string): Promise<TrendingTopic[]> {
@@ -94,7 +102,8 @@ export class ExternalAPIsService {
         const [
           googleTrends, redditTrends, newsTrends, youtubeTrends, hackerNewsTrends,
           spotifyTrends, lastfmTrends, geniusTrends, tmdbTrends,
-          gnewsTrends, currentsTrends, mediastackTrends, instagramTrends
+          gnewsTrends, currentsTrends, mediastackTrends, instagramTrends,
+          giphyTrends, imgurTrends
         ] = await Promise.allSettled([
           this.getGoogleTrends(),
           this.getRedditTrends(),
@@ -108,21 +117,25 @@ export class ExternalAPIsService {
           this.getGNewsTrends(),
           this.getCurrentsTrends(),
           this.getMediaStackTrends(),
-          this.getInstagramTrends()
+          this.getInstagramTrends(),
+          this.getGiphyTrends(),
+          this.getImgurTrends()
         ]);
 
         // Process all fulfilled results
         const allPromises = [
           googleTrends, redditTrends, newsTrends, youtubeTrends, hackerNewsTrends,
           spotifyTrends, lastfmTrends, geniusTrends, tmdbTrends,
-          gnewsTrends, currentsTrends, mediastackTrends, instagramTrends
+          gnewsTrends, currentsTrends, mediastackTrends, instagramTrends,
+          giphyTrends, imgurTrends
         ];
 
         allPromises.forEach((promise, index) => {
           const platformNames = [
             'google', 'reddit', 'news', 'youtube', 'hackernews',
             'spotify', 'lastfm', 'genius', 'tmdb',
-            'gnews', 'currents', 'mediastack', 'instagram'
+            'gnews', 'currents', 'mediastack', 'instagram',
+            'giphy', 'imgur'
           ];
           
           if (promise.status === 'fulfilled') {
@@ -175,6 +188,12 @@ export class ExternalAPIsService {
 
           case 'instagram':
             results.push(...await this.getInstagramTrends());
+            break;
+          case 'giphy':
+            results.push(...await this.getGiphyTrends());
+            break;
+          case 'imgur':
+            results.push(...await this.getImgurTrends());
             break;
         }
         
@@ -789,7 +808,73 @@ export class ExternalAPIsService {
       message: 'Glasp integration ready (API under development)'
     });
 
+    // Visual Content Intelligence APIs
+    results.push({
+      platform: 'giphy',
+      status: this.giphyService ? 'available' : 'unavailable',
+      message: this.giphyService ? 'Giphy API integration ready' : 'Giphy API key not configured'
+    });
+
+    results.push({
+      platform: 'imgur',
+      status: this.imgurService ? 'available' : 'unavailable',
+      message: this.imgurService ? 'Imgur API integration ready' : 'Imgur client ID not configured'
+    });
+
     return results;
+  }
+
+  async getGiphyTrends(): Promise<TrendingTopic[]> {
+    try {
+      const giphyData = await this.giphyService.getTrendingGifs();
+      
+      return giphyData.map(gif => ({
+        id: gif.id,
+        platform: 'giphy',
+        title: gif.title,
+        summary: `Trending GIF: ${gif.title}`,
+        url: gif.url,
+        score: Math.floor(gif.engagement / 1000),
+        fetchedAt: gif.timestamp,
+        engagement: gif.engagement,
+        source: 'Giphy API',
+        keywords: gif.keywords,
+        metadata: {
+          category: gif.category,
+          platform: gif.platform
+        }
+      }));
+    } catch (error) {
+      debugLogger.error('Failed to fetch Giphy trends:', error);
+      return [];
+    }
+  }
+
+  async getImgurTrends(): Promise<TrendingTopic[]> {
+    try {
+      const imgurData = await this.imgurService.getTrendingImages();
+      
+      return imgurData.map(image => ({
+        id: image.id,
+        platform: 'imgur',
+        title: image.title,
+        summary: `Trending image: ${image.title}`,
+        url: image.url,
+        score: Math.floor(image.engagement / 100),
+        fetchedAt: image.timestamp,
+        engagement: image.engagement,
+        source: 'Imgur API',
+        keywords: image.keywords,
+        metadata: {
+          category: image.category,
+          platform: image.platform,
+          imageType: image.imageType
+        }
+      }));
+    } catch (error) {
+      debugLogger.error('Failed to fetch Imgur trends:', error);
+      return [];
+    }
   }
 
   private getFallbackRedditData(): TrendingTopic[] {
@@ -980,8 +1065,6 @@ export class ExternalAPIsService {
       }
     ];
   }
-}
-
   // Google Knowledge Graph enhancement
   async enhanceWithKnowledgeGraph(topics: TrendingTopic[]): Promise<TrendingTopic[]> {
     try {

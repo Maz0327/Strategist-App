@@ -174,6 +174,10 @@ export function TrendingTopics() {
         return <Globe className="text-black" size={16} />;
       case 'instagram-trends':
         return <Globe className="text-pink-600" size={16} />;
+      case 'giphy':
+        return <Globe className="text-blue-600" size={16} />;
+      case 'imgur':
+        return <Globe className="text-green-600" size={16} />;
       default:
         return <Globe className="text-gray-500" size={16} />;
     }
@@ -225,6 +229,10 @@ export function TrendingTopics() {
         return 'bg-gray-100 text-gray-800 border-gray-200';
       case 'instagram-trends':
         return 'bg-pink-100 text-pink-800 border-pink-200';
+      case 'giphy':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'imgur':
+        return 'bg-green-100 text-green-800 border-green-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -268,6 +276,10 @@ export function TrendingTopics() {
       case 'tiktok-trends':
       case 'instagram-trends':
         return 'cultural';
+      case 'giphy':
+        return 'visual';
+      case 'imgur':
+        return 'visual';
       default:
         return 'other';
     }
