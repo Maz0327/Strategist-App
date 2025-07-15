@@ -1,0 +1,31 @@
+BETA TEST
+
+Main Navigation
+
+1 - ? And chat bubble in Nav do the same thing. Remove the ? icon.
+2 - On the bottom right hand side the 2 floating buttons the “?” & “chat bubble” should correspond to “?” = Tutorial "Chat bubble” = Chat bot form and we could add a “Feedback” button in the nav the does what the floating “?” On the bottom right hand side currently does.  3 - Every interaction seems to trigger a login request. Almost every button I press trigger s request from my 1pass extension to save username and password. Investigate this,
+
+4 - the Icon & email username should function as a link to a settings page or a dropdown menu of settings options  5 - the system should show the icon and the username of the user not the email. The registration form need to be update to ask for Username, Email, Password for all new users and require all.    Todays briefing 
+
+Client Pulse Tab:   1 - We should add a button to allow users to connect 3rd party integrations like tracer, google analytics etc. For now the button will simply be a mock button that has no function but it should exist so we can build that out in the future.  2 - We need to consider how can a beta user pull in data right now for a client project into the client pulse section. Can we add a EXCL, CSV, google sheets Upload or even a google sheets integration to pull that data? What would that require if we set this up for only our beta testers?  3 - the refresh button should update to current data if linked with google sheets & with any other system we build integrations for in the future. Also every time a user refreshes to the page or navigates away and comes back it should refresh UNLESS it makes it to heavy on the system. This should apply to every tab with a “refresh” button.  Custom Feeds Tab:  1 -  This tab should have the same “Sources” button thats on the home page to allow users to add their sources to pull in. We should also have a container next to the “rss feeds” & “custom sources” containers explaining the limitations so users have an understanding of what they can and cant do.  Project Intelligence:  1 - How does these set up these custom interests or verticals? Theres no obvious operation for this.  2 - The “explore live intelligence” goes to an empty “explore signals” page   Explore Signals:  1 - When I go to explore signals page it doesnt load anything and then after a few seconds give me this error:   “[plugin:runtime-error-plugin] Invalid time value
+/home/runner/workspace/client/src/components/trending-topics.tsx:401:26
+399|                  <div className="flex items-center space-x-1">
+400|                    <Calendar size={12} />
+401|                    <span>{formatDistanceToNow(new Date(topic.fetchedAt), { addSuffix: true })}</span>
+   |                           ^
+402|                  </div>
+403|                  {topic.engagement && (
+    at /home/runner/workspace/client/src/components/trending-topics.tsx:401:26
+    at Array.map (<anonymous>)
+    at TrendingTopics /home/runner/workspace/client/src/components/trending-topics.tsx:376:25” 
+ I cant test the “explore signals” further until this issue is resolved  Signal Capture:  1 - Add loading animations to the faded buttons in the content analysis page during analysis.  2 - Content Analysis when doing analysis I get this error "[plugin:runtime-error-plugin] Cannot read properties of undefined (reading 'sentiment')
+/home/runner/workspace/client/src/components/enhanced-analysis-results.tsx:230:56
+228|                  </Button>
+229|                </div>
+230|                <Badge className={getSentimentColor(data.sentiment)} variant="secondary">
+   |                                                         ^
+231|                  {data.sentiment}
+232|                </Badge>
+    at EnhancedAnalysisResults /home/runner/workspace/client/src/components/enhanced-analysis-results.tsx:230:56”  3 - I cant test further until this is resolved.  4 - Explore trends & URL library at the bottom of the page are dead links and do nothing.  Strategic Brief:  1 - I cant test this until signal capture and analysis error ar resolved.   Side Navigation:
+
+1 - All Buttons Under “Strategic Brief”, “Manage”, and “Admin Panel” do nothing.  
