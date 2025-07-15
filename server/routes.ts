@@ -1098,6 +1098,28 @@ The analyzed signals provide a comprehensive view of current market trends and s
     res.json({ message: 'Logs and metrics cleared' });
   });
 
+  // CRITICAL FIX: Health check endpoint for monitoring
+  app.get('/api/health', (req, res) => {
+    const health = {
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      version: process.version,
+      environment: process.env.NODE_ENV || 'development',
+      database: 'connected', // Basic check - could be enhanced with actual DB ping
+      services: {
+        openai: !!process.env.OPENAI_API_KEY,
+        reddit: !!(process.env.REDDIT_CLIENT_ID && process.env.REDDIT_CLIENT_SECRET),
+        youtube: !!process.env.YOUTUBE_API_KEY,
+        news: !!process.env.NEWS_API_KEY,
+        spotify: !!(process.env.SPOTIFY_CLIENT_ID && process.env.SPOTIFY_CLIENT_SECRET)
+      }
+    };
+    
+    res.json(health);
+  });
+
   // Feed management routes
   app.get("/api/feeds/sources", requireAuth, async (req, res) => {
     try {

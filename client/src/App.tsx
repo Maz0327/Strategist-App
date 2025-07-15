@@ -12,6 +12,7 @@ import AdminRegister from "./components/admin-register";
 import { DebugPanel } from "./components/debug-panel";
 import { TutorialOverlay } from "./components/tutorial-overlay";
 import { useTutorial } from "./hooks/use-tutorial";
+import { ErrorBoundary } from "./components/error-boundary";
 
 function AppContent() {
   const [user, setUser] = useState<{ id: number; email: string } | null>(null);
@@ -69,30 +70,34 @@ function AppContent() {
   const currentPath = window.location.pathname;
   if (currentPath === "/admin-register") {
     return (
-      <TooltipProvider>
-        <Toaster />
-        <AdminRegister />
-      </TooltipProvider>
+      <ErrorBoundary>
+        <TooltipProvider>
+          <Toaster />
+          <AdminRegister />
+        </TooltipProvider>
+      </ErrorBoundary>
     );
   }
 
   return (
-    <TooltipProvider>
-      <Toaster />
-      {user ? (
-        <div className="min-h-screen bg-gray-50">
-          <Dashboard user={user} onLogout={handleLogout} onPageChange={setCurrentPage} />
-          <TutorialOverlay 
-            currentPage={currentPage}
-            isEnabled={tutorialEnabled}
-            onToggle={toggleTutorial}
-          />
-        </div>
-      ) : (
-        <AuthPage onAuthSuccess={handleAuthSuccess} />
-      )}
-      <DebugPanel />
-    </TooltipProvider>
+    <ErrorBoundary>
+      <TooltipProvider>
+        <Toaster />
+        {user ? (
+          <div className="min-h-screen bg-gray-50">
+            <Dashboard user={user} onLogout={handleLogout} onPageChange={setCurrentPage} />
+            <TutorialOverlay 
+              currentPage={currentPage}
+              isEnabled={tutorialEnabled}
+              onToggle={toggleTutorial}
+            />
+          </div>
+        ) : (
+          <AuthPage onAuthSuccess={handleAuthSuccess} />
+        )}
+        <DebugPanel />
+      </TooltipProvider>
+    </ErrorBoundary>
   );
 }
 

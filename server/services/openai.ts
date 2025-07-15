@@ -3,6 +3,8 @@ import type { AnalyzeContentData } from "@shared/schema";
 import { debugLogger } from "./debug-logger";
 import { analyticsService } from "./analytics";
 import { googleNgramService } from "./google-ngram";
+import { cacheService } from "./cache-service";
+import { structuredLogger } from "./structured-logger";
 
 // Using gpt-4o-mini for cost-efficient testing phase, can upgrade to gpt-4o later
 const openai = new OpenAI({ 
@@ -55,19 +57,40 @@ export class OpenAIService {
   }
 
   async analyzeContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number) => void): Promise<EnhancedAnalysisResult> {
+    const cacheKey = JSON.stringify({ content: data.content, title: data.title, lengthPreference });
+    
+    // CRITICAL FIX: Check cache first to reduce OpenAI costs
+    const cachedResult = cacheService.getAnalysis(cacheKey);
+    if (cachedResult) {
+      structuredLogger.info('Analysis cache hit', { 
+        title: data.title,
+        contentLength: data.content?.length,
+        lengthPreference,
+        type: 'analysis_cache_hit'
+      });
+      return cachedResult;
+    }
+    
     debugLogger.info('Starting OpenAI content analysis', { title: data.title, hasUrl: !!data.url, contentLength: data.content?.length, lengthPreference });
     
     const maxChunkLength = 10000; // ~2500 tokens per chunk for safety
     const content = data.content || '';
     
+    let result: EnhancedAnalysisResult;
+    
     // Check if content needs chunking
     if (content.length > maxChunkLength) {
       debugLogger.info('Content requires chunking', { originalLength: content.length, maxChunkLength });
-      return await this.analyzeContentInChunks(data, lengthPreference, onProgress);
+      result = await this.analyzeContentInChunks(data, lengthPreference, onProgress);
+    } else {
+      // Process normally for shorter content
+      result = await this.analyzeSingleContent(data, lengthPreference, onProgress);
     }
     
-    // Process normally for shorter content
-    return await this.analyzeSingleContent(data, lengthPreference, onProgress);
+    // Cache the result
+    cacheService.setAnalysis(cacheKey, result);
+    
+    return result;
   }
 
   private async analyzeContentInChunks(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number) => void): Promise<EnhancedAnalysisResult> {
@@ -531,6 +554,110 @@ Provide JSON with these fields:
 
       debugLogger.error('Failed to generate chat response', error);
       throw new Error(`Chat response generation failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * CRITICAL FIX: Missing generateInsights method for daily reports
+   * This method generates strategic insights from provided content/prompt
+   */
+  async generateInsights(prompt: string): Promise<string> {
+    const startTime = Date.now();
+    
+    // CRITICAL FIX: Check cache for insights generation
+    const cachedInsights = cacheService.get(`insights:${prompt.substring(0, 100)}`);
+    if (cachedInsights) {
+      structuredLogger.info('Insights cache hit', { 
+        promptLength: prompt.length,
+        type: 'insights_cache_hit'
+      });
+      return cachedInsights;
+    }
+    
+    try {
+      debugLogger.info('Generating strategic insights', { promptLength: prompt.length });
+      
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini", // Cost-efficient model as requested
+        messages: [
+          {
+            role: "system",
+            content: `You are a senior strategic analyst specializing in cultural intelligence and business insights. 
+            Generate strategic insights based on the provided data. Focus on:
+            1. Cultural patterns and human behavior trends
+            2. Business opportunities and competitive advantages
+            3. Actionable recommendations for decision-makers
+            4. Cohort identification and targeting strategies
+            5. Market timing and attention arbitrage opportunities
+            
+            Always respond in valid JSON format as requested in the prompt.`
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.7,
+        max_tokens: 1500,
+      });
+
+      const content = response.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error('No response content from OpenAI');
+      }
+
+      // Track successful API call
+      const tokensUsed = response.usage?.total_tokens || 0;
+      const responseTime = Date.now() - startTime;
+      
+      await analyticsService.trackExternalApiCall({
+        userId: 0, // System user for daily reports
+        service: 'openai',
+        endpoint: 'chat/completions',
+        method: 'POST',
+        statusCode: 200,
+        responseTime,
+        tokensUsed,
+        cost: Math.round(tokensUsed * 0.00015 * 100), // Cost in cents
+        metadata: {
+          model: 'gpt-4o-mini',
+          promptTokens: response.usage?.prompt_tokens || 0,
+          completionTokens: response.usage?.completion_tokens || 0,
+          purpose: 'daily_insights_generation'
+        }
+      });
+
+      debugLogger.info('Strategic insights generated successfully', {
+        responseTime,
+        tokensUsed,
+        contentLength: content.length
+      });
+
+      // Cache the insights
+      cacheService.set(`insights:${prompt.substring(0, 100)}`, content, 2 * 60 * 60 * 1000); // 2 hours
+
+      return content;
+    } catch (error: any) {
+      debugLogger.error('Strategic insights generation failed', error);
+      
+      // Track failed API call
+      await analyticsService.trackExternalApiCall({
+        userId: 0,
+        service: 'openai',
+        endpoint: 'chat/completions',
+        method: 'POST',
+        statusCode: 500,
+        responseTime: Date.now() - startTime,
+        errorMessage: error.message,
+        metadata: {
+          model: 'gpt-4o-mini',
+          promptLength: prompt.length,
+          purpose: 'daily_insights_generation'
+        }
+      });
+      
+      throw new Error(`Failed to generate strategic insights: ${error.message}`);
     }
   }
 }
