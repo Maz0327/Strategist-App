@@ -70,9 +70,11 @@ This document tracks services that were attempted but removed due to reliability
 11. **Google Books Ngram Viewer** - Historical analysis service
     - **Issue**: No official API, would require scraping approach
     - **Attempted**: Language evolution analysis over centuries
-    - **Value**: Historical context for cultural terms and concepts
-    - **Revisit**: If historical linguistic analysis becomes strategically important
-    - **Note**: Would go against optimization approach of using official APIs only
+    - **Value**: HIGH - Historical context for trend lifecycle analysis, language evolution, cultural moment validation
+    - **Strategic Applications**: Trend maturity assessment, cyclical pattern recognition, strategic timing insights
+    - **Alternative Approach**: Manual research integration - add historical context research to strategic brief workflow
+    - **Recommendation**: Include Google Books Ngram as manual research tool rather than automated API
+    - **Note**: High strategic value but technical implementation conflicts with optimization approach
 
 ## ✅ **WORKING SERVICES (Kept)**
 
