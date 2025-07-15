@@ -71,3 +71,6 @@ frontend-code-export.tar.gz
 strategic-content-analysis-platform.tar.gz
 *.tar.gzstrategic-content-analysis-platform.tar.gz
 strategic-content-analysis-platform.tar.gz
+# Replit Agent State Files
+.local/state/replit/agent/
+.local/
