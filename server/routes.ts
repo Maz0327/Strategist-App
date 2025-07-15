@@ -27,7 +27,7 @@ import {
 } from "../shared/admin-schema";
 import { ERROR_MESSAGES, getErrorMessage, matchErrorPattern } from "@shared/error-messages";
 import { sql } from "./storage";
-import { openaiRateLimit, dailyOpenaiRateLimit, generalRateLimit, authRateLimit } from './middleware/rate-limit';
+import { openaiRateLimit, dailyOpenaiRateLimit, generalRateLimit, authRateLimit, chatRateLimit, dailyChatRateLimit } from './middleware/rate-limit';
 
 declare module "express-session" {
   interface SessionData {
@@ -1239,7 +1239,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
   });
 
   // Chat API routes
-  app.post("/api/chat/message", generalRateLimit, async (req, res) => {
+  app.post("/api/chat/message", chatRateLimit, dailyChatRateLimit, async (req, res) => {
     try {
       const { message, sessionId } = req.body;
       

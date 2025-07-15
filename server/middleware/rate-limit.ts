@@ -43,7 +43,7 @@ export const dailyOpenaiRateLimit = rateLimit({
 // General API rate limiting (for all endpoints)
 export const generalRateLimit = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 100, // 100 requests per minute per user
+  max: 200, // 200 requests per minute per user (increased for chat)
   message: {
     error: 'Too many requests. Please slow down.',
     code: 'GENERAL_RATE_LIMIT_EXCEEDED',
@@ -54,6 +54,40 @@ export const generalRateLimit = rateLimit({
   keyGenerator: (req: Request) => {
     const userId = (req as any).session?.userId;
     return userId ? `general_user_${userId}` : `general_ip_${req.ip}`;
+  }
+});
+
+// Chat-specific rate limiting (more permissive for interactive chat)
+export const chatRateLimit = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30, // 30 chat messages per minute per user
+  message: {
+    error: 'Too many chat messages. Please wait a moment before sending another message.',
+    code: 'CHAT_RATE_LIMIT_EXCEEDED',
+    retryAfter: 60
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => {
+    const userId = (req as any).session?.userId;
+    return userId ? `chat_user_${userId}` : `chat_ip_${req.ip}`;
+  }
+});
+
+// Daily chat rate limiting (prevents excessive AI usage)
+export const dailyChatRateLimit = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000, // 24 hours
+  max: 200, // 200 chat messages per day per user
+  message: {
+    error: 'Daily chat limit reached. Your limit will reset tomorrow.',
+    code: 'DAILY_CHAT_LIMIT_EXCEEDED',
+    retryAfter: 24 * 60 * 60 // 24 hours in seconds
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => {
+    const userId = (req as any).session?.userId;
+    return userId ? `daily_chat_user_${userId}` : `daily_chat_ip_${req.ip}`;
   }
 });
 
