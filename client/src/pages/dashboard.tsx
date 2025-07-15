@@ -11,8 +11,9 @@ import { AdminDashboard } from "@/components/admin-dashboard";
 import { FeedbackWidget } from "@/components/feedback-widget";
 import { authService } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-import { Brain, Bell, User, Home, Search, Plus, Target, Settings, ChevronRight, BarChart3, ChevronLeft, Menu } from "lucide-react";
+import { Brain, Bell, User, Home, Search, Plus, Target, Settings, ChevronRight, BarChart3, ChevronLeft, Menu, MessageCircle } from "lucide-react";
 import { HelpButton } from "@/components/help-button";
+import { ChatInterface } from "@/components/chat-interface";
 
 interface DashboardProps {
   user: { id: number; email: string };
@@ -24,6 +25,7 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
   const [activeTab, setActiveTab] = useState("briefing");
   const [activeSubTab, setActiveSubTab] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const { toast } = useToast();
 
   // Notify parent component of page changes
@@ -132,6 +134,18 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
             </div>
             <div className="flex items-center space-x-2">
               <HelpButton />
+              
+              {/* Chat Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setChatOpen(true)}
+                className="h-8 w-8 p-0"
+                title="Open AI Assistant"
+              >
+                <MessageCircle size={16} className="text-gray-500" />
+              </Button>
+              
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                 <Bell size={16} className="text-gray-500" />
               </Button>
@@ -269,6 +283,12 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
       
       {/* Feedback Widget */}
       <FeedbackWidget />
+      
+      {/* Chat Interface */}
+      <ChatInterface 
+        isOpen={chatOpen} 
+        onClose={() => setChatOpen(false)} 
+      />
     </div>
   );
 }

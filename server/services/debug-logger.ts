@@ -101,6 +101,9 @@ class DebugLogger {
     } else {
       this.info(message, data, req);
     }
+    
+    // Skip analytics tracking to prevent console errors
+    // Analytics tables need to be set up first
   }
 
   // Database operation logging
