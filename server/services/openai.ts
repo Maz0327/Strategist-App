@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import type { AnalyzeContentData } from "@shared/schema";
 import { debugLogger } from "./debug-logger";
 import { analyticsService } from "./analytics";
+import { googleNgramService } from "./google-ngram";
 
 // Using gpt-4o-mini for cost-efficient testing phase, can upgrade to gpt-4o later
 const openai = new OpenAI({ 
@@ -37,6 +38,13 @@ export interface EnhancedAnalysisResult extends AnalysisResult {
   competitiveInsights: string[];
   strategicInsights: string[];
   strategicActions: string[];
+  historicalContext?: {
+    pattern: string;
+    currentPhase: string;
+    insight: string;
+    peaks: number[];
+    strategicTiming: string;
+  };
 }
 
 export class OpenAIService {
@@ -254,7 +262,45 @@ export class OpenAIService {
     };
   }
 
+  private async getHistoricalContext(title: string, content: string): Promise<any> {
+    try {
+      // Extract key terms from title and content for historical analysis
+      const textToAnalyze = `${title} ${content}`.toLowerCase();
+      const businessTerms = [
+        'artificial intelligence', 'ai', 'machine learning', 'sustainability', 'remote work', 
+        'digital transformation', 'influencer marketing', 'blockchain', 'cryptocurrency',
+        'social media', 'content marketing', 'ecommerce', 'automation', 'cloud computing'
+      ];
+      
+      // Find relevant terms
+      const relevantTerm = businessTerms.find(term => textToAnalyze.includes(term));
+      
+      if (relevantTerm) {
+        const historicalData = await googleNgramService.getHistoricalContext(relevantTerm);
+        if (historicalData && historicalData.historical_analysis) {
+          return {
+            pattern: historicalData.historical_analysis.pattern,
+            currentPhase: historicalData.historical_analysis.current_phase,
+            insight: historicalData.historical_analysis.insight,
+            peaks: historicalData.historical_analysis.peaks,
+            strategicTiming: `Based on historical patterns: ${historicalData.historical_analysis.insight}`
+          };
+        }
+      }
+    } catch (error) {
+      debugLogger.error('Historical context extraction failed', error);
+    }
+    
+    return null;
+  }
+
   private async analyzeSingleContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number) => void): Promise<EnhancedAnalysisResult> {
+    // Get historical context for the content
+    const historicalContext = await this.getHistoricalContext(data.title || '', data.content || '');
+    
+    if (onProgress) {
+      onProgress('Analyzing content with historical context', 20);
+    }
     const processedContent = data.content || '';
     
     const getLengthInstructions = (preference: string) => {
@@ -342,7 +388,7 @@ Provide JSON with these fields:
         max_tokens: 2000, // Limit response length to prevent timeouts
       });
       
-      return this.processOpenAIResponse(response, startTime);
+      return this.processOpenAIResponse(response, startTime, historicalContext);
     } catch (error: any) {
       debugLogger.error('OpenAI analysis failed', error);
       
@@ -366,7 +412,7 @@ Provide JSON with these fields:
     }
   }
 
-  private processOpenAIResponse(response: any, startTime: number): EnhancedAnalysisResult {
+  private processOpenAIResponse(response: any, startTime: number, historicalContext?: any): EnhancedAnalysisResult {
     const responseTime = Date.now() - startTime;
     const tokensUsed = response.usage?.total_tokens || 0;
     const promptTokens = response.usage?.prompt_tokens || 0;
@@ -426,7 +472,8 @@ Provide JSON with these fields:
       viralPotential: result.viralPotential || 'medium',
       competitiveInsights: result.competitiveInsights || [],
       strategicInsights: result.strategicInsights || [],
-      strategicActions: result.strategicActions || []
+      strategicActions: result.strategicActions || [],
+      historicalContext: historicalContext || undefined
     };
   }
 }

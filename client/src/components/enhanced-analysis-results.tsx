@@ -49,6 +49,13 @@ interface EnhancedAnalysisResultsProps {
       competitiveInsights: string[];
       strategicInsights: string[];
       strategicActions: string[];
+      historicalContext?: {
+        pattern: string;
+        currentPhase: string;
+        insight: string;
+        peaks: number[];
+        strategicTiming: string;
+      };
     };
     signalId: number;
   };
