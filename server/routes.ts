@@ -1108,6 +1108,40 @@ The analyzed signals provide a comprehensive view of current market trends and s
     }
   });
 
+  // CRITICAL FIX: Add missing API routes that frontend expects
+  app.get("/api/feed/user-feeds", requireAuth, async (req, res) => {
+    try {
+      const feeds = await feedManagerService.getUserFeedSources(req.session.userId!);
+      res.json({ feeds });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/daily-report", requireAuth, async (req, res) => {
+    try {
+      const { date } = req.query;
+      const reportDate = date as string | undefined;
+      
+      const report = await dailyReportsService.generateDailyReport(req.session.userId!, reportDate);
+      res.json(report);
+    } catch (error: any) {
+      debugLogger.error("Error generating daily report", error, req);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/chat/sessions", requireAuth, async (req, res) => {
+    try {
+      // Since there's no getUserSessions method, return empty array for now
+      // This prevents the HTML response issue
+      res.json({ sessions: [] });
+    } catch (error: any) {
+      debugLogger.error("Error getting chat sessions", error, req);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.post("/api/feeds/sources", requireAuth, async (req, res) => {
     try {
       const { name, feedType, sourceType, sourceUrl, sourceConfig, updateFrequency } = req.body;
