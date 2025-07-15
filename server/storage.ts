@@ -1,5 +1,5 @@
 import { users, signals, sources, signalSources, userFeedSources, userTopicProfiles, feedItems, chatSessions, chatMessages, type User, type InsertUser, type Signal, type InsertSignal, type Source, type InsertSource, type SignalSource, type InsertSignalSource, type UserFeedSource, type InsertUserFeedSource, type UserTopicProfile, type InsertUserTopicProfile, type FeedItem, type InsertFeedItem, type ChatSession, type InsertChatSession, type ChatMessage, type InsertChatMessage } from "@shared/schema";
-import { eq, desc, and, or } from "drizzle-orm";
+import { eq, desc, and, or, sql as drizzleSql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
@@ -83,8 +83,8 @@ export class DbStorage implements IStorage {
   async getUserByEmailOrUsername(emailOrUsername: string): Promise<User | undefined> {
     const result = await db.select().from(users)
       .where(or(
-        eq(users.email, emailOrUsername),
-        eq(users.username, emailOrUsername)
+        eq(users.email, emailOrUsername.toLowerCase()),
+        drizzleSql`LOWER(${users.username}) = LOWER(${emailOrUsername})`
       ))
       .limit(1);
     

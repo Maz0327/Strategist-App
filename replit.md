@@ -55,6 +55,7 @@ Preferred communication style: Simple, everyday language.
 
 ### 4. Authentication & Security
 - **Session-based authentication** with secure cookie handling
+- **Email/Username login** with case-insensitive username support
 - **Password hashing** with bcrypt
 - **Protected routes** with middleware validation
 - **CORS configuration** for cross-origin requests
