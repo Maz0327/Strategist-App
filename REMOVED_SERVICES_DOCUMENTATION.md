@@ -67,14 +67,14 @@ This document tracks services that were attempted but removed due to reliability
     - **Value**: Entertainment industry insights
     - **Revisit**: If entertainment focus becomes priority
 
-11. **Google Books Ngram Viewer** - Historical analysis service
-    - **Issue**: No official API, would require scraping approach
-    - **Attempted**: Language evolution analysis over centuries
+11. **Google Books Ngram Viewer** - ✅ **IMPLEMENTED AS CURATED SERVICE**
+    - **Original Issue**: No official API, would require scraping approach
+    - **Solution**: Created curated historical analysis service with Python backend
     - **Value**: HIGH - Historical context for trend lifecycle analysis, language evolution, cultural moment validation
     - **Strategic Applications**: Trend maturity assessment, cyclical pattern recognition, strategic timing insights
-    - **Alternative Approach**: Manual research integration - add historical context research to strategic brief workflow
-    - **Recommendation**: Include Google Books Ngram as manual research tool rather than automated API
-    - **Note**: High strategic value but technical implementation conflicts with optimization approach
+    - **Implementation**: `server/services/google-ngram.ts` and `server/python/google_ngram_service.py`
+    - **User Experience**: Historical context displayed directly in trending topics interface
+    - **Status**: ✅ **PRODUCTION READY** - Provides historical insights without external redirects
 
 ## ✅ **WORKING SERVICES (Kept)**
 

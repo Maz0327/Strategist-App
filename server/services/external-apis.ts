@@ -17,6 +17,7 @@ import { createMediaStackService } from './mediastack';
 import { glaspService } from './glasp';
 import { googleKnowledgeGraphService } from './google-knowledge-graph';
 import { perspectiveAPIService } from './perspective-api';
+import { googleNgramService } from './google-ngram';
 import { knowYourMemeService } from './knowyourmeme';
 import { urbanDictionaryService } from './urbandictionary';
 import { youtubeTrendingService } from './youtube-trending';
@@ -37,6 +38,7 @@ export class ExternalAPIsService {
   private mediastackService: ReturnType<typeof createMediaStackService>;
   private knowledgeGraphService: typeof googleKnowledgeGraphService;
   private perspectiveService: typeof perspectiveAPIService;
+  private ngramService: typeof googleNgramService;
 
   constructor() {
     // Initialize existing services
@@ -80,6 +82,7 @@ export class ExternalAPIsService {
     // Initialize Google enhancement services
     this.knowledgeGraphService = googleKnowledgeGraphService;
     this.perspectiveService = perspectiveAPIService;
+    this.ngramService = googleNgramService;
   }
 
   async getAllTrendingTopics(platform?: string): Promise<TrendingTopic[]> {
@@ -198,12 +201,16 @@ export class ExternalAPIsService {
         balancedResults.push(...topFromPlatform);
       });
       
-      // Enhance results with Google Knowledge Graph context
-      const enhancedResults = await this.enhanceWithKnowledgeGraph(
-        balancedResults.sort((a, b) => (b.score || 0) - (a.score || 0))
-      );
+      // Enhance results with Google Knowledge Graph context and historical analysis
+      const sortedResults = balancedResults.sort((a, b) => (b.score || 0) - (a.score || 0));
       
-      return enhancedResults;
+      // Apply Knowledge Graph enhancement
+      const contextEnhanced = await this.enhanceWithKnowledgeGraph(sortedResults);
+      
+      // Apply historical context enhancement
+      const historicalEnhanced = await this.ngramService.enhanceTrendingTopics(contextEnhanced);
+      
+      return historicalEnhanced;
     } catch (error) {
       return [];
     }

@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { TrendingUp, ExternalLink, RefreshCw, Globe, MessageSquare, Search, Calendar } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { HistoricalContext, HistoricalContextSummary } from "./historical-context";
 
 interface Topic {
   id: string;
@@ -20,6 +21,28 @@ interface Topic {
   fetchedAt: string;
   engagement?: number;
   source?: string;
+  metadata?: {
+    knowledgeGraph?: {
+      entityId: string;
+      types: string[];
+      detailedDescription?: string;
+      image?: string;
+      url?: string;
+    };
+    safety?: {
+      overall: {
+        safe: boolean;
+        riskLevel: 'low' | 'medium' | 'high';
+        primaryConcerns: string[];
+      };
+    };
+    historical?: {
+      pattern: 'emerging' | 'mature_growth' | 'cyclical' | 'exponential' | 'steady_growth' | 'unknown';
+      currentPhase: 'emerging' | 'growing' | 'mature' | 'plateau' | 'declining' | 'cyclical' | 'new_normal' | 'mainstream' | 'analysis_needed';
+      insight: string;
+      peaks: number[];
+    };
+  };
 }
 
 export function TrendingTopics() {
@@ -270,7 +293,7 @@ export function TrendingTopics() {
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Trending Topics</h2>
           <p className="text-sm text-gray-600 mt-1">
-            Real-time insights from social media and search trends
+            Real-time insights with historical context from social media and search trends
           </p>
         </div>
         <div className="flex items-center space-x-2">
@@ -288,6 +311,9 @@ export function TrendingTopics() {
           </Button>
         </div>
       </div>
+
+      {/* Historical Context Summary */}
+      <HistoricalContextSummary topics={filteredTopics} />
 
       {/* Platform Filter */}
       <div className="flex items-center space-x-4">
