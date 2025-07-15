@@ -27,10 +27,10 @@ export class AuthService {
   }
 
   async login(data: LoginData): Promise<User> {
-    const email = data.email.toLowerCase();
+    const emailOrUsername = data.email.toLowerCase();
     
     // Check for rate limiting
-    const attempts = this.loginAttempts.get(email);
+    const attempts = this.loginAttempts.get(emailOrUsername);
     if (attempts && attempts.attempts >= this.MAX_LOGIN_ATTEMPTS) {
       const timeSinceLastAttempt = Date.now() - attempts.lastAttempt;
       if (timeSinceLastAttempt < this.LOCKOUT_DURATION) {
@@ -38,13 +38,14 @@ export class AuthService {
         throw new Error(`Account temporarily locked. Try again in ${remainingTime} minutes.`);
       } else {
         // Reset attempts after lockout period
-        this.loginAttempts.delete(email);
+        this.loginAttempts.delete(emailOrUsername);
       }
     }
 
-    const user = await storage.getUserByEmail(email);
+    // Support both email and username login - but don't lowercase the original input for username lookup
+    const user = await storage.getUserByEmailOrUsername(data.email);
     if (!user) {
-      this.recordFailedAttempt(email);
+      this.recordFailedAttempt(emailOrUsername);
       const error = new Error("The email or password you entered is incorrect");
       error.name = "INVALID_CREDENTIALS";
       throw error;
@@ -52,14 +53,14 @@ export class AuthService {
 
     const isValidPassword = await bcrypt.compare(data.password, user.password);
     if (!isValidPassword) {
-      this.recordFailedAttempt(email);
+      this.recordFailedAttempt(emailOrUsername);
       const error = new Error("The email or password you entered is incorrect");
       error.name = "INVALID_CREDENTIALS";
       throw error;
     }
 
     // Clear failed attempts on successful login
-    this.loginAttempts.delete(email);
+    this.loginAttempts.delete(emailOrUsername);
     return user;
   }
 

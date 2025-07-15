@@ -5,6 +5,7 @@ import { z } from "zod";
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
+  username: text("username").unique(),
   password: text("password").notNull(),
   role: text("role").default("user"), // user, admin
   createdAt: timestamp("created_at").defaultNow(),
@@ -273,7 +274,7 @@ export const insertAbTestResultsSchema = createInsertSchema(abTestResults).omit(
 });
 
 export const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.string().min(1, "Email or username is required"),
   password: z.string().min(8),
 });
 

@@ -111,11 +111,11 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
                 )}
                 <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="login-email">Email address</Label>
+                    <Label htmlFor="login-email">Email or Username</Label>
                     <Input
                       id="login-email"
-                      type="email"
-                      placeholder="Enter your email"
+                      type="text"
+                      placeholder="Enter your email or username"
                       {...loginForm.register("email")}
                       disabled={isLoading}
                     />
