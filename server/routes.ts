@@ -639,13 +639,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get trending topics from external APIs
-  app.get("/api/topics", requireAuth, async (req, res) => {
+  // Get trending topics from external APIs (public access)
+  app.get("/api/topics", async (req, res) => {
     try {
       const { platform } = req.query;
       const platformFilter = platform as string | undefined;
       
-      debugLogger.info(`Fetching trending topics`, { platform: platformFilter, userId: req.session.userId }, req);
+      debugLogger.info(`Fetching trending topics`, { platform: platformFilter, userId: req.session.userId || 'anonymous' }, req);
       
       const { externalAPIsService } = await import('./services/external-apis');
       const topics = await externalAPIsService.getAllTrendingTopics(platformFilter);
@@ -658,8 +658,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Search trending topics
-  app.get("/api/topics/search", requireAuth, async (req, res) => {
+  // Search trending topics (public access)
+  app.get("/api/topics/search", async (req, res) => {
     try {
       const { q: query, platform } = req.query;
       
@@ -677,8 +677,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Check API health status
-  app.get("/api/topics/health", requireAuth, async (req, res) => {
+  // Check API health status (public access)
+  app.get("/api/topics/health", async (req, res) => {
     try {
       const { externalAPIsService } = await import('./services/external-apis');
       const health = await externalAPIsService.checkAPIHealth();
