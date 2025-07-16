@@ -113,8 +113,57 @@ export class MultiModelAIService {
     }
   }
 
+  // Fast analysis using single model for speed
+  private async fastAnalysis(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number) => void): Promise<EnhancedAnalysisResult & { usingFallback?: boolean }> {
+    const cacheKey = `fast_${this.hashContent(data.content || '')}_${lengthPreference}`;
+    
+    try {
+      // Check cache first
+      const cachedResult = await cacheService.get<EnhancedAnalysisResult>(cacheKey);
+      if (cachedResult) {
+        return cachedResult;
+      }
+
+      onProgress?.('Fast analysis with GPT-4o', 50);
+
+      const content = data.content || '';
+      const source = data.source || 'unknown';
+      const lengthInstructions = this.getLengthInstructions(lengthPreference);
+      const analysisPrompt = this.generateAnalysisPrompt(content, source, lengthInstructions);
+
+      try {
+        // Use GPT-4o for fast single-model analysis
+        const analysis = await this.callGPT4o(analysisPrompt);
+        onProgress?.('Parsing results', 80);
+        
+        const result = await this.parseAnalysisResult(analysis, content, source);
+        
+        // Cache the result
+        await cacheService.set(cacheKey, result, 3600); // 1 hour TTL for fast analysis
+        
+        onProgress?.('Fast analysis complete', 100);
+        return result;
+
+      } catch (error) {
+        // Fallback to GPT-4o-mini
+        onProgress?.('Using fallback model', 70);
+        const fallbackResult = await this.callGPT4oMini(analysisPrompt);
+        const result = await this.parseAnalysisResult(fallbackResult.content, content, source);
+        
+        return { ...result, usingFallback: true };
+      }
+    } catch (error) {
+      structuredLogger.error('Fast analysis failed', { error: error.message });
+      throw error;
+    }
+  }
+
   // Multi-model analysis with Claude for cultural insights and GPT-4o for strategic framework
   async analyzeContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number) => void): Promise<EnhancedAnalysisResult & { usingFallback?: boolean }> {
+    // Check if fastMode is requested - use single model for speed
+    if (data.fastMode) {
+      return this.fastAnalysis(data, lengthPreference, onProgress);
+    }
     // Optimized cache key
     const cacheKey = `multi_${this.hashContent(data.content || '')}_${lengthPreference}`;
     
@@ -136,19 +185,21 @@ export class MultiModelAIService {
       const analysisPrompt = this.generateAnalysisPrompt(content, source, lengthInstructions);
       
       try {
-        // Step 1: Claude Sonnet 4 for cultural insights and behavioral analysis
-        onProgress?.('Analyzing cultural context with Claude Sonnet 4', 25);
-        const culturalAnalysis = await this.callClaude(
-          `${analysisPrompt}\n\nFocus specifically on cultural context, human behavior patterns, and societal insights. Provide deep cultural analysis and behavioral truths.`,
-          "You are an expert cultural anthropologist and behavioral analyst. Focus on uncovering deep cultural patterns and human truths."
-        );
-
-        // Step 2: GPT-4o for strategic framework and actionable insights
-        onProgress?.('Generating strategic framework with GPT-4o', 50);
-        const strategicAnalysis = await this.callGPT4o(
-          `${analysisPrompt}\n\nFocus on strategic implications, viral potential, competitive insights, and actionable recommendations. Use the GET→TO→BY framework.`,
-          "You are an expert strategic analyst specializing in content strategy and competitive analysis. Focus on actionable insights and strategic recommendations."
-        );
+        // Run both Claude and GPT-4o in parallel for speed
+        onProgress?.('Running parallel AI analysis', 25);
+        
+        const [culturalAnalysis, strategicAnalysis] = await Promise.all([
+          // Claude Sonnet 4 for cultural insights and behavioral analysis
+          this.callClaude(
+            `${analysisPrompt}\n\nFocus specifically on cultural context, human behavior patterns, and societal insights. Provide deep cultural analysis and behavioral truths.`,
+            "You are an expert cultural anthropologist and behavioral analyst. Focus on uncovering deep cultural patterns and human truths."
+          ),
+          // GPT-4o for strategic framework and actionable insights
+          this.callGPT4o(
+            `${analysisPrompt}\n\nFocus on strategic implications, viral potential, competitive insights, and actionable recommendations. Use the GET→TO→BY framework.`,
+            "You are an expert strategic analyst specializing in content strategy and competitive analysis. Focus on actionable insights and strategic recommendations."
+          )
+        ]);
 
         // Step 3: Synthesize both analyses
         onProgress?.('Synthesizing multi-model insights', 75);

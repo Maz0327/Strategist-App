@@ -29,7 +29,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart }: ContentInp
   const [userNotes, setUserNotes] = useState("");
   const [analysisProgress, setAnalysisProgress] = useState({ stage: '', progress: 0 });
   const [useStreaming, setUseStreaming] = useState(true);
-  const [fastMode, setFastMode] = useState(false);
+  const [fastMode, setFastMode] = useState(true); // Default to fast mode for better UX
   const { toast } = useToast();
 
   // Example content for quick demo
