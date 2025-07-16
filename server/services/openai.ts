@@ -9,8 +9,8 @@ import { structuredLogger } from "./structured-logger";
 // Using gpt-4o-mini for cost-efficient testing phase, can upgrade to gpt-4o later
 const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || process.env.API_KEY,
-  timeout: 30 * 1000, // Reduce timeout to 30 seconds
-  maxRetries: 1, // Reduce retries for faster response
+  timeout: 15 * 1000, // Aggressive timeout reduction to 15 seconds
+  maxRetries: 0, // No retries for maximum speed
 });
 
 export interface AnalysisResult {
@@ -76,30 +76,26 @@ export class OpenAIService {
     // Check cache first - instant response if available
     const cachedResult = cacheService.getAnalysis(cacheKey);
     if (cachedResult) {
-      structuredLogger.info('Analysis cache hit', { 
-        title: data.title,
-        contentLength: data.content?.length,
-        lengthPreference,
-        type: 'analysis_cache_hit'
-      });
-      // Simulate instant progress for cached results
+      // Instant cached response
       if (onProgress) {
-        onProgress('Loading cached analysis...', 100);
+        onProgress('Cached analysis loaded', 100);
       }
       return cachedResult;
     }
     
-    debugLogger.info('Starting OpenAI content analysis', { title: data.title, hasUrl: !!data.url, contentLength: data.content?.length, lengthPreference });
-    
-    const maxChunkLength = 10000; // ~2500 tokens per chunk for safety
+    const maxChunkLength = 8000; // Reduced for faster processing
     const content = data.content || '';
     
     let result: EnhancedAnalysisResult;
     
-    // Check if content needs chunking
+    // Simplified processing - avoid chunking for speed
     if (content.length > maxChunkLength) {
-      debugLogger.info('Content requires chunking', { originalLength: content.length, maxChunkLength });
-      result = await this.analyzeContentInChunks(data, lengthPreference, onProgress);
+      // Truncate instead of chunking for speed
+      const truncatedData = {
+        ...data,
+        content: content.slice(0, maxChunkLength) + '...'
+      };
+      result = await this.analyzeSingleContent(truncatedData, lengthPreference, onProgress);
     } else {
       // Process normally for shorter content
       result = await this.analyzeSingleContent(data, lengthPreference, onProgress);
@@ -359,15 +355,15 @@ export class OpenAIService {
       }
     };
     
-    // Dynamic prompt optimization based on length preference
+    // Ultra-optimized prompt structure for maximum speed
     const getPromptStructure = (preference: string) => {
-      const contentLimit = preference === 'short' ? 1000 : (preference === 'medium' ? 1500 : 2000);
+      const contentLimit = preference === 'short' ? 600 : (preference === 'medium' ? 1000 : 1500);
       const lengthInstruction = {
-        short: '1 sentence',
-        medium: '2-3 sentences', 
-        long: '3-4 sentences',
-        bulletpoints: 'Use • format'
-      }[preference] || '2-3 sentences';
+        short: '1 sentence max',
+        medium: '2 sentences max', 
+        long: '3 sentences max',
+        bulletpoints: '• format'
+      }[preference] || '2 sentences max';
       
       return {
         contentLimit,
@@ -407,29 +403,20 @@ JSON:
 
     try {
       const startTime = Date.now();
-      debugLogger.info('Sending request to OpenAI API', { model: 'gpt-4o-mini', promptLength: prompt.length });
       
-      // Minimal progress tracking for speed
+      // Immediate progress update without delays
       if (onProgress) {
-        onProgress('Processing...', 30);
-        setTimeout(() => onProgress('Analyzing...', 60), 1000);
-        setTimeout(() => onProgress('Finalizing...', 90), 3000);
+        onProgress('Processing...', 50);
       }
       
-      // OpenAI API call with timeout prevention strategies
-      debugLogger.info('Sending OpenAI API request', { 
-        contentLength: processedContent.length,
-        promptLength: prompt.length 
-      });
-      
-      // Dynamic token allocation based on length preference for faster responses
+      // Aggressive token allocation for maximum speed
       const getTokenLimit = (preference: string) => {
         switch (preference) {
-          case 'short': return 400; // Much faster for short responses
-          case 'medium': return 800; // Balanced speed and detail
-          case 'long': return 1200; // More comprehensive but slower
-          case 'bulletpoints': return 600; // Concise structured format
-          default: return 800;
+          case 'short': return 250; // Ultra-fast responses
+          case 'medium': return 500; // Quick but informative
+          case 'long': return 800; // Detailed but efficient
+          case 'bulletpoints': return 350; // Concise structured format
+          default: return 500;
         }
       };
 
@@ -442,10 +429,10 @@ JSON:
           }
         ],
         response_format: { type: "json_object" },
-        temperature: 0.1, // Minimal for fastest responses
+        temperature: 0.0, // Deterministic for fastest responses
         max_tokens: getTokenLimit(lengthPreference), // Dynamic based on user preference
-        top_p: 0.7, // Further reduced for faster generation
-        presence_penalty: 0.1, // Encourage conciseness
+        top_p: 0.5, // Aggressive reduction for speed
+        presence_penalty: 0.2, // Strong conciseness encouragement
       });
       
       return this.processOpenAIResponse(response, startTime, historicalContext);
