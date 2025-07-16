@@ -413,13 +413,13 @@ Required JSON format:
         setTimeout(() => onProgress('Generating insights...', 80), 1000);
       }
       
-      // Balanced token limits for reliable JSON completion
+      // Dynamic token allocation for maximum speed while ensuring JSON completion
       const getTokenLimit = (preference: string) => {
         switch (preference) {
-          case 'short': return 400; // Ensures complete JSON
-          case 'medium': return 600; // Balanced speed and completion
-          case 'long': return 800; // Comprehensive but efficient
-          case 'bulletpoints': return 500; // Structured format completion
+          case 'short': return 400; // Ultra-fast responses with JSON safety
+          case 'medium': return 600; // Quick but informative with completion
+          case 'long': return 800; // Detailed but efficient
+          case 'bulletpoints': return 500; // Concise structured format
           default: return 600;
         }
       };
@@ -512,30 +512,60 @@ Required JSON format:
         error: parseError, 
         rawContent: rawContent.substring(0, 500) 
       });
-      // Return a minimal valid response instead of failing
-      result = {
-        summary: "Analysis parsing failed",
-        sentiment: "neutral",
-        tone: "professional",
-        keywords: [],
-        confidence: "0%",
-        truthAnalysis: {
-          fact: 'JSON parsing failed',
-          observation: 'Response format error',
-          insight: 'OpenAI returned invalid JSON',
-          humanTruth: 'Technical issue occurred',
-          culturalMoment: 'System needs debugging',
-          attentionValue: 'low',
-          platform: 'system',
-          cohortOpportunities: []
-        },
-        cohortSuggestions: [],
-        platformContext: 'Parsing error occurred',
-        viralPotential: 'low',
-        competitiveInsights: [],
-        strategicInsights: [],
-        strategicActions: []
-      };
+      
+      // Try to fix incomplete JSON by adding missing closing brackets
+      try {
+        let fixedContent = rawContent.trim();
+        
+        // Count opening and closing braces
+        const openBraces = (fixedContent.match(/\{/g) || []).length;
+        const closeBraces = (fixedContent.match(/\}/g) || []).length;
+        
+        // Add missing closing braces
+        if (openBraces > closeBraces) {
+          const missingBraces = openBraces - closeBraces;
+          for (let i = 0; i < missingBraces; i++) {
+            fixedContent += '\n}';
+          }
+        }
+        
+        // Try to close any unclosed strings
+        if (fixedContent.includes('"') && !fixedContent.endsWith('"') && !fixedContent.endsWith('"}')) {
+          const lastQuote = fixedContent.lastIndexOf('"');
+          const afterLastQuote = fixedContent.substring(lastQuote + 1);
+          if (!afterLastQuote.includes('"')) {
+            fixedContent = fixedContent.substring(0, lastQuote + 1) + '",\n  "error": "Response truncated"\n}';
+          }
+        }
+        
+        result = JSON.parse(fixedContent);
+        debugLogger.info('Successfully recovered from JSON parse error');
+      } catch (fixError) {
+        // If we can't fix it, return a minimal valid response
+        result = {
+          summary: "Analysis incomplete - response was truncated. Try using shorter content or 'Short' analysis length.",
+          sentiment: "neutral",
+          tone: "professional",
+          keywords: [],
+          confidence: "Partial",
+          truthAnalysis: {
+            fact: 'Response was cut off mid-analysis',
+            observation: 'Token limit may have been exceeded',
+            insight: 'Try shorter content or different analysis length',
+            humanTruth: 'System limitation encountered',
+            culturalMoment: 'Technical constraint',
+            attentionValue: 'low',
+            platform: 'system',
+            cohortOpportunities: []
+          },
+          cohortSuggestions: [],
+          platformContext: 'Incomplete response - try shorter content',
+          viralPotential: 'low',
+          competitiveInsights: [],
+          strategicInsights: [],
+          strategicActions: []
+        };
+      }
     }
     
     debugLogger.info('OpenAI response parsed', { 
