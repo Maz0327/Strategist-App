@@ -228,6 +228,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Content analysis routes
   app.post("/api/analyze", requireAuth, openaiRateLimit, dailyOpenaiRateLimit, async (req, res) => {
+    // Set timeout for analysis endpoint
+    req.setTimeout(60000, () => {
+      res.status(408).json({ message: 'Request timeout - analysis took too long' });
+    });
+
     try {
       debugLogger.info("Content analysis request received", { title: req.body.title, hasUrl: !!req.body.url, contentLength: req.body.content?.length }, req);
       const data = analyzeContentSchema.parse(req.body);
@@ -235,7 +240,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const lengthPreference = req.body.lengthPreference || 'medium';
       const userNotes = req.body.userNotes || '';
-      const analysis = await multiModelAI.analyzeContent(data, lengthPreference);
+      
+      // Add timeout wrapper for analysis
+      const analysisPromise = multiModelAI.analyzeContent(data, lengthPreference);
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Analysis timeout after 45 seconds')), 45000);
+      });
+
+      const analysis = await Promise.race([analysisPromise, timeoutPromise]);
       debugLogger.info("OpenAI analysis completed", { sentiment: analysis.sentiment, confidence: analysis.confidence, keywordCount: analysis.keywords.length }, req);
       
       // Save as potential signal after analysis
@@ -296,7 +308,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       debugLogger.info("Analysis request completed successfully", { signalId: signal.id }, req);
     } catch (error: any) {
       debugLogger.error('Content analysis failed', error, req);
-      res.status(400).json({ message: error.message });
+      
+      if (error.message?.includes('timeout')) {
+        res.status(408).json({ 
+          message: 'Analysis timed out. Please try fast mode for quicker results.', 
+          error: error.message,
+          suggestion: 'Enable fast mode in the analysis settings for better performance'
+        });
+      } else {
+        res.status(500).json({ message: error.message });
+      }
     }
   });
 

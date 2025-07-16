@@ -46,24 +46,24 @@ export class MultiModelAIService {
     return Math.abs(hash).toString(36);
   }
 
-  // Claude Sonnet 4 API call through Replit's service
-  private async callClaude(prompt: string, systemPrompt?: string): Promise<string> {
+  // Cultural analysis using GPT-4o (optimized for cultural insights)
+  private async callCulturalAnalysis(prompt: string, systemPrompt?: string): Promise<string> {
     try {
-      // Using OpenAI client with Claude model through Replit's AI service
+      // Using GPT-4o for cultural analysis
       const response = await this.openai.chat.completions.create({
-        model: "claude-3-5-sonnet-20241022", // Claude model available through Replit
+        model: "gpt-4o", // Using GPT-4o for cultural insights
         messages: [
-          { role: "system", content: systemPrompt || "You are an expert strategic content analyst specializing in cultural insights and behavioral patterns." },
+          { role: "system", content: systemPrompt || "You are an expert cultural anthropologist and behavioral analyst specializing in uncovering deep cultural patterns and human behavioral truths." },
           { role: "user", content: prompt }
         ],
-        temperature: 0.1,
+        temperature: 0.2, // Slightly higher temperature for cultural creativity
         max_tokens: 4000,
         timeout: 15000,
       });
 
       return response.choices[0].message.content || '';
     } catch (error) {
-      structuredLogger.error('Claude API call failed', { error: error.message });
+      structuredLogger.error('Cultural analysis failed', { error: error.message });
       throw error;
     }
   }
@@ -189,8 +189,8 @@ export class MultiModelAIService {
         onProgress?.('Running parallel AI analysis', 25);
         
         const [culturalAnalysis, strategicAnalysis] = await Promise.all([
-          // Claude Sonnet 4 for cultural insights and behavioral analysis
-          this.callClaude(
+          // GPT-4o for cultural insights and behavioral analysis
+          this.callCulturalAnalysis(
             `${analysisPrompt}\n\nFocus specifically on cultural context, human behavior patterns, and societal insights. Provide deep cultural analysis and behavioral truths.`,
             "You are an expert cultural anthropologist and behavioral analyst. Focus on uncovering deep cultural patterns and human truths."
           ),
