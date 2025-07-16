@@ -141,7 +141,7 @@ Return JSON with:
 
     try {
       const startTime = Date.now();
-      debugLogger.info('Sending request to OpenAI API', { model: 'gpt-4o-mini', promptLength: prompt.length });
+      debugLogger.info('Sending request to OpenAI API', { model: 'gpt-4o', promptLength: prompt.length });
       
       // Enhanced progress tracking with more detailed stages
       if (onProgress) {
@@ -163,7 +163,7 @@ Return JSON with:
       });
       
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini", // Keeping cost-efficient model as requested
+        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
         messages: [
           {
             role: "system",
@@ -177,7 +177,7 @@ Return JSON with:
         response_format: { type: "json_object" },
         temperature: 0.3, // Lower temperature for faster, more consistent responses
         max_tokens: lengthPreference === 'short' ? 600 : (lengthPreference === 'medium' ? 900 : 1200), // Reduced token limits for speed
-        timeout: 8000, // 8 second timeout to prevent hanging
+        timeout: 15000, // 15 second timeout to prevent hanging
         top_p: 0.8
       });
 
@@ -332,7 +332,7 @@ Return JSON with:
       const chatTokens = 600;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
         messages,
         max_tokens: chatTokens, // Dynamic token allocation
         temperature: 0.7, // Slightly more conversational
@@ -387,7 +387,7 @@ Return JSON with:
       const optimizedPrompt = prompt.length > 2000 ? prompt.substring(0, 2000) + '...' : prompt;
       
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
         messages: [
           {
             role: "system",
