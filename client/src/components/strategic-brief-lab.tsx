@@ -71,15 +71,7 @@ export function StrategicBriefLab({ activeSubTab }: StrategicBriefLabProps) {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-blue-900 mb-2">Strategic Framework</h3>
-                  <p className="text-sm text-blue-800">
-                    This framework helps you create actionable strategic briefs using the Define → Shift → Deliver methodology.
-                  </p>
-                </div>
-                <GetToByBrief />
-              </div>
+              <GetToByBrief />
             </CardContent>
           </Card>
         </TabsContent>

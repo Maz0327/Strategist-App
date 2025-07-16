@@ -1,6 +1,5 @@
 import axios from 'axios';
 import type { TrendingTopic } from './trends';
-import { debugLogger } from './debug-logger';
 
 interface RedditPost {
   id: string;
@@ -57,9 +56,9 @@ export class RedditService {
       this.accessToken = response.data.access_token;
       this.tokenExpiry = Date.now() + (response.data.expires_in * 1000);
       
-      debugLogger.info('Reddit API authenticated successfully');
+      console.log('Reddit API authenticated successfully');
     } catch (error) {
-      debugLogger.error('Reddit authentication failed:', error);
+      console.error('Reddit authentication failed:', error);
       throw new Error('Failed to authenticate with Reddit API');
     }
   }
@@ -80,7 +79,7 @@ export class RedditService {
         .sort((a, b) => (b.score || 0) - (a.score || 0))
         .slice(0, 10);
     } catch (error) {
-      debugLogger.error('Error fetching Reddit trending posts:', error);
+      console.error('Error fetching Reddit trending posts:', error);
       return [];
     }
   }
@@ -110,7 +109,7 @@ export class RedditService {
 
       return posts;
     } catch (error) {
-      debugLogger.error(`Error fetching posts from r/${subreddit}:`, error);
+      console.error(`Error fetching posts from r/${subreddit}:`, error);
       return [];
     }
   }
@@ -144,7 +143,7 @@ export class RedditService {
 
       return posts;
     } catch (error) {
-      debugLogger.error('Error searching Reddit posts:', error);
+      console.error('Error searching Reddit posts:', error);
       return [];
     }
   }
@@ -197,7 +196,7 @@ export class RedditService {
 
 export const createRedditService = (clientId?: string, clientSecret?: string): RedditService | null => {
   if (!clientId || !clientSecret) {
-    debugLogger.warn('Reddit API credentials not provided');
+    console.warn('Reddit API credentials not provided');
     return null;
   }
   

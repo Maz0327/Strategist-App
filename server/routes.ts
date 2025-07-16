@@ -6,12 +6,10 @@ import MemoryStore from "memorystore";
 import { storage } from "./storage";
 import { authService } from "./services/auth";
 import { openaiService } from "./services/openai";
-import { multiModelAI } from "./services/multi-model-ai";
 import { scraperService } from "./services/scraper";
 import { sourceManagerService } from "./services/source-manager";
 import { dailyReportsService } from "./services/daily-reports";
 import { feedManagerService } from "./services/feed-manager";
-import { chatService } from "./services/chat";
 import { 
   loginSchema, 
   registerSchema, 
@@ -28,7 +26,6 @@ import {
 } from "../shared/admin-schema";
 import { ERROR_MESSAGES, getErrorMessage, matchErrorPattern } from "@shared/error-messages";
 import { sql } from "./storage";
-import { openaiRateLimit, dailyOpenaiRateLimit, generalRateLimit, authRateLimit, chatRateLimit, dailyChatRateLimit } from './middleware/rate-limit';
 
 declare module "express-session" {
   interface SessionData {
@@ -94,50 +91,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add performance monitoring middleware
   app.use(performanceMiddleware);
 
-  // Add general rate limiting to all API endpoints
-  app.use('/api/', generalRateLimit);
-
-  // Optimized API call tracking middleware - reduced tracking to prevent spam
+  // API call tracking middleware
   app.use((req, res, next) => {
     const startTime = Date.now();
     
-    // Only track specific important endpoints to reduce noise
-    const trackedEndpoints = ['/api/analyze', '/api/signals', '/api/trending'];
-    
+    // Track response time and API calls
     res.on('finish', () => {
       const duration = Date.now() - startTime;
       
-      // Only track important API calls to reduce database noise
-      if (trackedEndpoints.some(endpoint => req.path.startsWith(endpoint)) && req.session?.userId) {
-        try {
-          analyticsService.trackApiCall({
-            userId: req.session.userId,
-            endpoint: req.path,
-            method: req.method,
-            statusCode: res.statusCode,
-            responseTime: duration,
-            requestSize: req.get('Content-Length') ? parseInt(req.get('Content-Length') || '0') : 0,
-            responseSize: res.get('Content-Length') ? parseInt(res.get('Content-Length') || '0') : 0,
-            userAgent: req.get('User-Agent') || '',
-            ipAddress: req.ip || '',
-            errorMessage: res.statusCode >= 400 ? res.statusMessage : null,
-            metadata: {
-              query: req.query,
-              sessionId: req.sessionID,
-            }
-          });
-        } catch (error) {
-          // Silently fail tracking to prevent disruption
-        }
+      // Track API calls for internal endpoints
+      if (req.path.startsWith('/api/') && req.session?.userId) {
+        const requestSize = req.get('Content-Length') ? parseInt(req.get('Content-Length') || '0') : 0;
+        const responseSize = res.get('Content-Length') ? parseInt(res.get('Content-Length') || '0') : 0;
+        
+        analyticsService.trackApiCall({
+          userId: req.session.userId,
+          endpoint: req.path,
+          method: req.method,
+          statusCode: res.statusCode,
+          responseTime: duration,
+          requestSize,
+          responseSize,
+          userAgent: req.get('User-Agent') || '',
+          ipAddress: req.ip || '',
+          errorMessage: res.statusCode >= 400 ? res.statusMessage : null,
+          metadata: {
+            query: req.query,
+            sessionId: req.sessionID,
+          }
+        });
       }
     });
     
     next();
   });
 
-  // Optimized Auth middleware - reduced logging for better UX
+  // Auth middleware
   const requireAuth = (req: any, res: any, next: any) => {
+    debugLogger.debug("Session check", { userId: req.session?.userId, sessionId: req.sessionID }, req);
     if (!req.session?.userId) {
+      debugLogger.warn("Authentication required - no session userId", { sessionId: req.sessionID }, req);
       return res.status(401).json({ message: "Not authenticated" });
     }
     next();
@@ -155,7 +148,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Auth routes
-  app.post("/api/auth/register", authRateLimit, async (req, res) => {
+  app.post("/api/auth/register", async (req, res) => {
     try {
       const data = registerSchema.parse(req.body);
       const user = await authService.register(data);
@@ -163,17 +156,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ 
         success: true, 
-        user: { id: user.id, email: user.email, username: user.username } 
+        user: { id: user.id, email: user.email } 
       });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
   });
 
-  app.post("/api/auth/login", authRateLimit, async (req, res) => {
+  app.post("/api/auth/login", async (req, res) => {
     try {
       const data = loginSchema.parse(req.body);
-      // Removed excessive debug logging for better UX
+      debugLogger.debug("Login attempt", { email: data.email }, req);
       
       const user = await authService.login(data);
       req.session.userId = user.id;
@@ -185,15 +178,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(500).json({ message: "Session save failed" });
         }
         
-        // Login successful - reduced logging for better UX
+        debugLogger.debug("Login successful", { 
+          userId: user.id, 
+          sessionId: req.sessionID,
+          sessionData: req.session
+        }, req);
         
         res.json({ 
           success: true, 
-          user: { id: user.id, email: user.email, username: user.username } 
+          user: { id: user.id, email: user.email } 
         });
       });
     } catch (error: any) {
-      // Login failed - reduced logging
+      debugLogger.warn("Login failed", { error: error.message }, req);
       res.status(400).json({ message: error.message });
     }
   });
@@ -219,7 +216,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json({ 
-        user: { id: user.id, email: user.email, username: user.username } 
+        user: { id: user.id, email: user.email } 
       });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -227,12 +224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Content analysis routes
-  app.post("/api/analyze", requireAuth, openaiRateLimit, dailyOpenaiRateLimit, async (req, res) => {
-    // Set timeout for analysis endpoint
-    req.setTimeout(60000, () => {
-      res.status(408).json({ message: 'Request timeout - analysis took too long' });
-    });
-
+  app.post("/api/analyze", requireAuth, async (req, res) => {
     try {
       debugLogger.info("Content analysis request received", { title: req.body.title, hasUrl: !!req.body.url, contentLength: req.body.content?.length }, req);
       const data = analyzeContentSchema.parse(req.body);
@@ -240,8 +232,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const lengthPreference = req.body.lengthPreference || 'medium';
       const userNotes = req.body.userNotes || '';
-      
-      // Use optimized OpenAI service for maximum speed
       const analysis = await openaiService.analyzeContent(data, lengthPreference);
       debugLogger.info("OpenAI analysis completed", { sentiment: analysis.sentiment, confidence: analysis.confidence, keywordCount: analysis.keywords.length }, req);
       
@@ -258,18 +248,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         tags: [],
         confidence: analysis.confidence,
         status: "capture", // Start as capture, user decides if it becomes potential_signal
-        // Enhanced analysis fields with null checks
-        truthFact: analysis.truthAnalysis?.fact || 'Not identified',
-        truthObservation: analysis.truthAnalysis?.observation || 'Not identified',
-        truthInsight: analysis.truthAnalysis?.insight || 'Not identified',
-        humanTruth: analysis.truthAnalysis?.humanTruth || 'Not identified',
-        culturalMoment: analysis.truthAnalysis?.culturalMoment || 'Not identified',
-        attentionValue: analysis.truthAnalysis?.attentionValue || 'medium',
+        // Enhanced analysis fields
+        truthFact: analysis.truthAnalysis.fact,
+        truthObservation: analysis.truthAnalysis.observation,
+        truthInsight: analysis.truthAnalysis.insight,
+        humanTruth: analysis.truthAnalysis.humanTruth,
+        culturalMoment: analysis.truthAnalysis.culturalMoment,
+        attentionValue: analysis.truthAnalysis.attentionValue,
         platformContext: analysis.platformContext,
         viralPotential: analysis.viralPotential,
         cohortSuggestions: analysis.cohortSuggestions,
         competitiveInsights: analysis.competitiveInsights,
-        nextActions: analysis.strategicActions || [],
+        nextActions: analysis.nextActions,
         userNotes: userNotes
       };
       
@@ -297,22 +287,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         analysis,
-        signalId: signal.id,
-        usingFallback: analysis.usingFallback || false
+        signalId: signal.id
       });
       debugLogger.info("Analysis request completed successfully", { signalId: signal.id }, req);
     } catch (error: any) {
       debugLogger.error('Content analysis failed', error, req);
-      
-      if (error.message?.includes('timeout')) {
-        res.status(408).json({ 
-          message: 'Analysis timed out. Please try fast mode for quicker results.', 
-          error: error.message,
-          suggestion: 'Enable fast mode in the analysis settings for better performance'
-        });
-      } else {
-        res.status(500).json({ message: error.message });
-      }
+      res.status(400).json({ message: error.message });
     }
   });
 
@@ -359,7 +339,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Re-analyze with different length preference
-  app.post("/api/reanalyze", requireAuth, openaiRateLimit, dailyOpenaiRateLimit, async (req, res) => {
+  app.post("/api/reanalyze", requireAuth, async (req, res) => {
     try {
       const { content, title, url, lengthPreference } = req.body;
       
@@ -377,8 +357,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ 
         success: true, 
         analysis,
-        lengthPreference,
-        usingFallback: analysis.usingFallback || false
+        lengthPreference
       });
     } catch (error: any) {
       debugLogger.error('Re-analysis failed', error, req);
@@ -387,9 +366,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Streaming analysis endpoint for real-time progress
-  app.post("/api/analyze/stream", requireAuth, openaiRateLimit, dailyOpenaiRateLimit, async (req, res) => {
+  app.post("/api/analyze/stream", requireAuth, async (req, res) => {
     try {
-      const { content, title, url, lengthPreference, fastMode = false } = req.body;
+      const { content, title, url, lengthPreference } = req.body;
       
       if (!content) {
         return res.status(400).json({ message: "Content is required" });
@@ -404,32 +383,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'Access-Control-Allow-Headers': 'Cache-Control'
       });
 
-      const data = { 
-        content: content.slice(0, lengthPreference === 'short' ? 800 : (lengthPreference === 'medium' ? 1500 : 2500)), // Match regular endpoint limits
-        title: title || "Analysis", 
-        url 
-      };
+      const data = { content, title: title || "Streaming Analysis", url };
       
-      // Simplified progress callback
+      // Progress callback for streaming updates
       const onProgress = (stage: string, progress: number) => {
         res.write(`data: ${JSON.stringify({ type: 'progress', stage, progress })}\n\n`);
       };
+
+      debugLogger.info("Streaming analysis request received", { title, lengthPreference, hasUrl: !!url }, req);
       
       try {
         const analysis = await openaiService.analyzeContent(data, lengthPreference || 'medium', onProgress);
         
-        const responseData = {
-          success: true,
-          analysis,
-          signalId: null,
-          usingFallback: analysis.usingFallback || false
-        };
-        
-        res.write(`data: ${JSON.stringify({ type: 'complete', analysis: responseData })}\n\n`);
+        // Send final result
+        res.write(`data: ${JSON.stringify({ type: 'complete', analysis })}\n\n`);
         res.write(`data: ${JSON.stringify({ type: 'end' })}\n\n`);
         
+        debugLogger.info("Streaming analysis completed", { sentiment: analysis.sentiment }, req);
       } catch (error: any) {
         res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+        debugLogger.error('Streaming analysis failed', error, req);
       } finally {
         res.end();
       }
@@ -494,24 +467,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!url) {
         return res.status(400).json({ message: "URL is required" });
       }
-
-      // Validate URL format
-      if (typeof url !== 'string' || url.trim().length === 0) {
-        return res.status(400).json({ message: "Please enter a valid URL" });
-      }
-
-      debugLogger.info("URL extraction request received", { url }, req);
       
-      const extracted = await scraperService.extractContent(url.trim());
-      
-      debugLogger.info("URL extraction successful", { title: extracted.title, contentLength: extracted.content.length }, req);
-      
+      const extracted = await scraperService.extractContent(url);
       res.json({
         success: true,
         ...extracted
       });
     } catch (error: any) {
-      debugLogger.error("URL extraction failed", { error: error.message, url: req.body.url }, req);
       res.status(400).json({ message: error.message });
     }
   });
@@ -673,13 +635,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get trending topics from external APIs (public access)
-  app.get("/api/topics", async (req, res) => {
+  // Get trending topics from external APIs
+  app.get("/api/topics", requireAuth, async (req, res) => {
     try {
       const { platform } = req.query;
       const platformFilter = platform as string | undefined;
       
-      debugLogger.info(`Fetching trending topics`, { platform: platformFilter, userId: req.session.userId || 'anonymous' }, req);
+      debugLogger.info(`Fetching trending topics`, { platform: platformFilter, userId: req.session.userId }, req);
       
       const { externalAPIsService } = await import('./services/external-apis');
       const topics = await externalAPIsService.getAllTrendingTopics(platformFilter);
@@ -692,8 +654,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Search trending topics (public access)
-  app.get("/api/topics/search", async (req, res) => {
+  // Search trending topics
+  app.get("/api/topics/search", requireAuth, async (req, res) => {
     try {
       const { q: query, platform } = req.query;
       
@@ -711,8 +673,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Check API health status (public access)
-  app.get("/api/topics/health", async (req, res) => {
+  // Check API health status
+  app.get("/api/topics/health", requireAuth, async (req, res) => {
     try {
       const { externalAPIsService } = await import('./services/external-apis');
       const health = await externalAPIsService.checkAPIHealth();
@@ -888,139 +850,6 @@ The analyzed signals provide a comprehensive view of current market trends and s
       
       const updatedSource = await storage.updateSource(id, updates);
       res.json({ source: updatedSource });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  // Visual capture routes
-  app.post("/api/visual-capture", requireAuth, async (req, res) => {
-    try {
-      const { type, screenshot, extractedText, ocrData, recordingData, tabInfo } = req.body;
-      
-      // Validate capture type
-      if (!type || !['screenshot', 'recording'].includes(type)) {
-        return res.status(400).json({ message: "Invalid capture type" });
-      }
-      
-      // Store visual capture
-      const capture = await storage.createVisualCapture({
-        userId: req.session.userId!,
-        captureType: type,
-        imageData: screenshot,
-        extractedText: extractedText || null,
-        ocrMetadata: ocrData || null,
-        recordingData: recordingData || null,
-        tabInfo: tabInfo || null,
-        isProcessed: false
-      });
-      
-      // If this is a screenshot with extracted text, also analyze it
-      if (type === 'screenshot' && extractedText) {
-        try {
-          const analysis = await openaiService.analyzeContent({
-            content: extractedText,
-            title: `Screenshot from ${tabInfo?.title || 'Unknown'}`,
-            url: tabInfo?.url || ''
-          });
-          
-          // Create a signal from the OCR analysis
-          const signal = await storage.createSignal({
-            userId: req.session.userId!,
-            title: `Screenshot Analysis: ${tabInfo?.title || 'Visual Content'}`,
-            content: extractedText,
-            url: tabInfo?.url || '',
-            summary: analysis.summary,
-            sentiment: analysis.sentiment,
-            tone: analysis.tone,
-            keywords: analysis.keywords,
-            confidence: analysis.confidence,
-            status: 'capture',
-            truthFact: analysis.truthAnalysis?.fact,
-            truthObservation: analysis.truthAnalysis?.observation,
-            truthInsight: analysis.truthAnalysis?.insight,
-            humanTruth: analysis.truthAnalysis?.humanTruth,
-            culturalMoment: analysis.truthAnalysis?.culturalMoment,
-            attentionValue: analysis.truthAnalysis?.attentionValue,
-            platformContext: analysis.platformContext,
-            viralPotential: analysis.viralPotential,
-            cohortSuggestions: analysis.cohortSuggestions,
-            competitiveInsights: analysis.competitiveInsights,
-            nextActions: analysis.strategicActions,
-            isDraft: false,
-            capturedAt: new Date(),
-            browserContext: tabInfo
-          });
-          
-          // Link the visual capture to the analysis
-          await storage.updateVisualCapture(capture.id, {
-            analysisId: signal.id,
-            isProcessed: true,
-            processedAt: new Date()
-          });
-          
-          res.json({ 
-            success: true, 
-            capture,
-            analysis: signal,
-            message: "Visual capture processed and analyzed successfully"
-          });
-        } catch (analysisError) {
-          // Visual capture was stored, but analysis failed
-          res.json({ 
-            success: true, 
-            capture,
-            message: "Visual capture stored successfully, but analysis failed"
-          });
-        }
-      } else {
-        res.json({ 
-          success: true, 
-          capture,
-          message: "Visual capture stored successfully"
-        });
-      }
-    } catch (error: any) {
-      debugLogger.error("Visual capture failed", error, req);
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  app.get("/api/visual-captures", requireAuth, async (req, res) => {
-    try {
-      const captures = await storage.getVisualCapturesByUserId(req.session.userId!);
-      res.json({ captures });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  app.get("/api/visual-captures/:id", requireAuth, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const capture = await storage.getVisualCapture(id);
-      
-      if (!capture || capture.userId !== req.session.userId) {
-        return res.status(404).json({ message: "Visual capture not found" });
-      }
-      
-      res.json({ capture });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  app.delete("/api/visual-captures/:id", requireAuth, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      
-      const capture = await storage.getVisualCapture(id);
-      if (!capture || capture.userId !== req.session.userId) {
-        return res.status(404).json({ message: "Visual capture not found" });
-      }
-      
-      await storage.deleteVisualCapture(id);
-      res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
@@ -1267,68 +1096,12 @@ The analyzed signals provide a comprehensive view of current market trends and s
     res.json({ message: 'Logs and metrics cleared' });
   });
 
-  // CRITICAL FIX: Health check endpoint for monitoring
-  app.get('/api/health', (req, res) => {
-    const health = {
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      memory: process.memoryUsage(),
-      version: process.version,
-      environment: process.env.NODE_ENV || 'development',
-      database: 'connected', // Basic check - could be enhanced with actual DB ping
-      services: {
-        openai: !!process.env.OPENAI_API_KEY,
-        reddit: !!(process.env.REDDIT_CLIENT_ID && process.env.REDDIT_CLIENT_SECRET),
-        youtube: !!process.env.YOUTUBE_API_KEY,
-        news: !!process.env.NEWS_API_KEY,
-        spotify: !!(process.env.SPOTIFY_CLIENT_ID && process.env.SPOTIFY_CLIENT_SECRET)
-      }
-    };
-    
-    res.json(health);
-  });
-
   // Feed management routes
   app.get("/api/feeds/sources", requireAuth, async (req, res) => {
     try {
       const feedSources = await feedManagerService.getUserFeedSources(req.session.userId!);
       res.json({ feedSources });
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  // CRITICAL FIX: Add missing API routes that frontend expects
-  app.get("/api/feed/user-feeds", requireAuth, async (req, res) => {
-    try {
-      const feeds = await feedManagerService.getUserFeedSources(req.session.userId!);
-      res.json({ feeds });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  app.get("/api/daily-report", requireAuth, async (req, res) => {
-    try {
-      const { date } = req.query;
-      const reportDate = date as string | undefined;
-      
-      const report = await dailyReportsService.generateDailyReport(req.session.userId!, reportDate);
-      res.json(report);
-    } catch (error: any) {
-      debugLogger.error("Error generating daily report", error, req);
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  app.get("/api/chat/sessions", requireAuth, async (req, res) => {
-    try {
-      // Since there's no getUserSessions method, return empty array for now
-      // This prevents the HTML response issue
-      res.json({ sessions: [] });
-    } catch (error: any) {
-      debugLogger.error("Error getting chat sessions", error, req);
       res.status(500).json({ message: error.message });
     }
   });
@@ -1457,76 +1230,6 @@ The analyzed signals provide a comprehensive view of current market trends and s
       res.json({ success: true });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
-    }
-  });
-
-  // Chat API routes
-  app.post("/api/chat/message", chatRateLimit, dailyChatRateLimit, async (req, res) => {
-    try {
-      const { message, sessionId } = req.body;
-      
-      if (!message || typeof message !== 'string') {
-        return res.status(400).json({ 
-          error: { 
-            title: "Invalid Message", 
-            message: "Message is required and must be a string" 
-          } 
-        });
-      }
-      
-      // Use existing session or create new one
-      const userId = req.session.userId;
-      const result = await chatService.sendMessage(
-        sessionId || '',
-        message,
-        userId
-      );
-      
-      res.json(result);
-    } catch (error: any) {
-      debugLogger.error("Chat message failed", error);
-      res.status(500).json({ 
-        error: { 
-          title: "Chat Error", 
-          message: "Failed to process chat message. Please try again." 
-        } 
-      });
-    }
-  });
-
-  app.get("/api/chat/history/:sessionId", generalRateLimit, async (req, res) => {
-    try {
-      const { sessionId } = req.params;
-      const limit = parseInt(req.query.limit as string) || 50;
-      
-      const history = await chatService.getChatHistory(sessionId, limit);
-      res.json({ history });
-    } catch (error: any) {
-      debugLogger.error("Get chat history failed", error);
-      res.status(500).json({ 
-        error: { 
-          title: "History Error", 
-          message: "Failed to retrieve chat history" 
-        } 
-      });
-    }
-  });
-
-  app.delete("/api/chat/session/:sessionId", generalRateLimit, async (req, res) => {
-    try {
-      const { sessionId } = req.params;
-      const userId = req.session.userId;
-      
-      await chatService.deleteChatSession(sessionId, userId);
-      res.json({ success: true });
-    } catch (error: any) {
-      debugLogger.error("Delete chat session failed", error);
-      res.status(500).json({ 
-        error: { 
-          title: "Delete Error", 
-          message: "Failed to delete chat session" 
-        } 
-      });
     }
   });
 

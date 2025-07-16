@@ -1,6 +1,5 @@
 import { storage } from "../storage";
 import { openaiService } from "./openai";
-import { multiModelAI } from "./multi-model-ai";
 import { debugLogger } from "./debug-logger";
 
 export interface DailyReport {
@@ -245,7 +244,7 @@ Format as JSON with these exact keys:
   "competitiveGaps": ["string1", "string2", ...]
 }`;
 
-      const response = await multiModelAI.generateInsights(allSignals, { userId, reportDate });
+      const response = await openaiService.generateInsights(prompt);
       
       try {
         return JSON.parse(response);

@@ -12,10 +12,9 @@ import AdminRegister from "./components/admin-register";
 import { DebugPanel } from "./components/debug-panel";
 import { TutorialOverlay } from "./components/tutorial-overlay";
 import { useTutorial } from "./hooks/use-tutorial";
-import { ErrorBoundary } from "./components/error-boundary";
 
 function AppContent() {
-  const [user, setUser] = useState<{ id: number; email: string; username?: string } | null>(null);
+  const [user, setUser] = useState<{ id: number; email: string } | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [currentPage, setCurrentPage] = useState("briefing");
   const { isEnabled: tutorialEnabled, toggleTutorial } = useTutorial();
@@ -34,8 +33,6 @@ function AppContent() {
     retry: false,
     enabled: !isInitialized,
     refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   useEffect(() => {
@@ -47,7 +44,7 @@ function AppContent() {
     }
   }, [userData, isCheckingAuth]);
 
-  const handleAuthSuccess = (userData: { id: number; email: string; username?: string }) => {
+  const handleAuthSuccess = (userData: { id: number; email: string }) => {
     setUser(userData);
     queryClient.invalidateQueries({ queryKey: ["/api/signals"] });
   };
@@ -72,34 +69,30 @@ function AppContent() {
   const currentPath = window.location.pathname;
   if (currentPath === "/admin-register") {
     return (
-      <ErrorBoundary>
-        <TooltipProvider>
-          <Toaster />
-          <AdminRegister />
-        </TooltipProvider>
-      </ErrorBoundary>
+      <TooltipProvider>
+        <Toaster />
+        <AdminRegister />
+      </TooltipProvider>
     );
   }
 
   return (
-    <ErrorBoundary>
-      <TooltipProvider>
-        <Toaster />
-        {user ? (
-          <div className="min-h-screen bg-gray-50">
-            <Dashboard user={user} onLogout={handleLogout} onPageChange={setCurrentPage} />
-            <TutorialOverlay 
-              currentPage={currentPage}
-              isEnabled={tutorialEnabled}
-              onToggle={toggleTutorial}
-            />
-          </div>
-        ) : (
-          <AuthPage onAuthSuccess={handleAuthSuccess} />
-        )}
-        <DebugPanel />
-      </TooltipProvider>
-    </ErrorBoundary>
+    <TooltipProvider>
+      <Toaster />
+      {user ? (
+        <div className="min-h-screen bg-gray-50">
+          <Dashboard user={user} onLogout={handleLogout} onPageChange={setCurrentPage} />
+          <TutorialOverlay 
+            currentPage={currentPage}
+            isEnabled={tutorialEnabled}
+            onToggle={toggleTutorial}
+          />
+        </div>
+      ) : (
+        <AuthPage onAuthSuccess={handleAuthSuccess} />
+      )}
+      <DebugPanel />
+    </TooltipProvider>
   );
 }
 

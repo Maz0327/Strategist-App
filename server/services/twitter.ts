@@ -1,6 +1,5 @@
 import axios from 'axios';
 import type { TrendingTopic } from './trends';
-import { debugLogger } from './debug-logger';
 
 interface TwitterTrend {
   name: string;
@@ -30,7 +29,7 @@ export class TwitterService {
       const trends = await this.searchTrendingHashtags();
       return trends;
     } catch (error) {
-      debugLogger.error('Error fetching Twitter trends:', error);
+      console.error('Error fetching Twitter trends:', error);
       return [];
     }
   }
@@ -61,7 +60,7 @@ export class TwitterService {
         .sort((a, b) => (b.engagement || 0) - (a.engagement || 0))
         .slice(0, 10);
     } catch (error) {
-      debugLogger.error('Error searching trending hashtags:', error);
+      console.error('Error searching trending hashtags:', error);
       return [];
     }
   }
@@ -107,7 +106,7 @@ export class TwitterService {
         };
       });
     } catch (error) {
-      debugLogger.error('Error searching tweets:', error);
+      console.error('Error searching tweets:', error);
       return [];
     }
   }
@@ -129,7 +128,7 @@ export class TwitterService {
       // For now, we'll use search approach
       return await this.searchTrendingHashtags();
     } catch (error) {
-      debugLogger.error('Error fetching trending topics by location:', error);
+      console.error('Error fetching trending topics by location:', error);
       return [];
     }
   }
@@ -172,7 +171,7 @@ export class TwitterService {
 
 export const createTwitterService = (bearerToken?: string): TwitterService | null => {
   if (!bearerToken) {
-    debugLogger.warn('Twitter API bearer token not provided');
+    console.warn('Twitter API bearer token not provided');
     return null;
   }
   

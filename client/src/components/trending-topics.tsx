@@ -9,7 +9,6 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { TrendingUp, ExternalLink, RefreshCw, Globe, MessageSquare, Search, Calendar } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { HistoricalContext, HistoricalContextSummary } from "./historical-context";
 
 interface Topic {
   id: string;
@@ -21,28 +20,6 @@ interface Topic {
   fetchedAt: string;
   engagement?: number;
   source?: string;
-  metadata?: {
-    knowledgeGraph?: {
-      entityId: string;
-      types: string[];
-      detailedDescription?: string;
-      image?: string;
-      url?: string;
-    };
-    safety?: {
-      overall: {
-        safe: boolean;
-        riskLevel: 'low' | 'medium' | 'high';
-        primaryConcerns: string[];
-      };
-    };
-    historical?: {
-      pattern: 'emerging' | 'mature_growth' | 'cyclical' | 'exponential' | 'steady_growth' | 'unknown';
-      currentPhase: 'emerging' | 'growing' | 'mature' | 'plateau' | 'declining' | 'cyclical' | 'new_normal' | 'mainstream' | 'analysis_needed';
-      insight: string;
-      peaks: number[];
-    };
-  };
 }
 
 export function TrendingTopics() {
@@ -162,22 +139,6 @@ export function TrendingTopics() {
         return <Globe className="text-indigo-500" size={16} />;
       case 'glasp':
         return <Globe className="text-teal-500" size={16} />;
-      case 'knowyourmeme':
-        return <Globe className="text-pink-500" size={16} />;
-      case 'urbandictionary':
-        return <Globe className="text-yellow-500" size={16} />;
-      case 'youtube-trending':
-        return <Globe className="text-red-600" size={16} />;
-      case 'reddit-cultural':
-        return <MessageSquare className="text-orange-600" size={16} />;
-      case 'tiktok-trends':
-        return <Globe className="text-black" size={16} />;
-      case 'instagram-trends':
-        return <Globe className="text-pink-600" size={16} />;
-      case 'giphy':
-        return <Globe className="text-blue-600" size={16} />;
-      case 'imgur':
-        return <Globe className="text-green-600" size={16} />;
       default:
         return <Globe className="text-gray-500" size={16} />;
     }
@@ -217,22 +178,6 @@ export function TrendingTopics() {
         return 'bg-indigo-100 text-indigo-800 border-indigo-200';
       case 'glasp':
         return 'bg-teal-100 text-teal-800 border-teal-200';
-      case 'knowyourmeme':
-        return 'bg-pink-100 text-pink-800 border-pink-200';
-      case 'urbandictionary':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'youtube-trending':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'reddit-cultural':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'tiktok-trends':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-      case 'instagram-trends':
-        return 'bg-pink-100 text-pink-800 border-pink-200';
-      case 'giphy':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'imgur':
-        return 'bg-green-100 text-green-800 border-green-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -269,17 +214,6 @@ export function TrendingTopics() {
         return 'entertainment';
       case 'glasp':
         return 'knowledge';
-      case 'knowyourmeme':
-      case 'urbandictionary':
-      case 'youtube-trending':
-      case 'reddit-cultural':
-      case 'tiktok-trends':
-      case 'instagram-trends':
-        return 'cultural';
-      case 'giphy':
-        return 'visual';
-      case 'imgur':
-        return 'visual';
       default:
         return 'other';
     }
@@ -305,7 +239,7 @@ export function TrendingTopics() {
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Trending Topics</h2>
           <p className="text-sm text-gray-600 mt-1">
-            Real-time insights with historical context from social media and search trends
+            Real-time insights from social media and search trends
           </p>
         </div>
         <div className="flex items-center space-x-2">
@@ -323,9 +257,6 @@ export function TrendingTopics() {
           </Button>
         </div>
       </div>
-
-      {/* Historical Context Summary */}
-      <HistoricalContextSummary topics={filteredTopics} />
 
       {/* Platform Filter */}
       <div className="flex items-center space-x-4">
@@ -352,12 +283,6 @@ export function TrendingTopics() {
             <SelectItem value="currents">📊 Currents</SelectItem>
             <SelectItem value="mediastack">📡 MediaStack</SelectItem>
             <SelectItem value="glasp">💡 Glasp</SelectItem>
-            <SelectItem value="knowyourmeme">🔥 Know Your Meme</SelectItem>
-            <SelectItem value="urbandictionary">📖 Urban Dictionary</SelectItem>
-            <SelectItem value="youtube-trending">🔥 YouTube Trending</SelectItem>
-            <SelectItem value="reddit-cultural">🎭 Reddit Cultural</SelectItem>
-            <SelectItem value="tiktok-trends">🎵 TikTok Trends</SelectItem>
-            <SelectItem value="instagram-trends">📸 Instagram Trends</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -374,7 +299,7 @@ export function TrendingTopics() {
       {/* Topics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {filteredTopics.map((topic) => (
-          <Card key={`${topic.id}-${topic.platform}-${topic.fetchedAt}`} className="hover:shadow-md transition-shadow">
+          <Card key={topic.id} className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-2">
@@ -398,12 +323,7 @@ export function TrendingTopics() {
               <div className="flex items-center space-x-4 text-sm text-gray-500">
                 <div className="flex items-center space-x-1">
                   <Calendar size={12} />
-                  <span>
-                    {topic.fetchedAt 
-                      ? formatDistanceToNow(new Date(topic.fetchedAt), { addSuffix: true })
-                      : 'Recently'
-                    }
-                  </span>
+                  <span>{formatDistanceToNow(new Date(topic.fetchedAt), { addSuffix: true })}</span>
                 </div>
                 {topic.engagement && (
                   <div className="flex items-center space-x-1">

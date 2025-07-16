@@ -52,15 +52,7 @@ export function ManageHub({ activeSubTab }: ManageHubProps) {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-green-900 mb-2">Dashboard Overview</h3>
-                  <p className="text-sm text-green-800">
-                    Monitor your signals, track performance, and manage your strategic content analysis.
-                  </p>
-                </div>
-                <SignalsDashboard />
-              </div>
+              <SignalsDashboard />
             </CardContent>
           </Card>
         </TabsContent>
@@ -84,19 +76,11 @@ export function ManageHub({ activeSubTab }: ManageHubProps) {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                Daily Reports
+                Daily Intelligence Reports
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="bg-purple-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-purple-900 mb-2">Daily Reports</h3>
-                  <p className="text-sm text-purple-800">
-                    Generate and review daily strategic reports based on your captured signals.
-                  </p>
-                </div>
-                <DailyReport />
-              </div>
+              <DailyReport />
             </CardContent>
           </Card>
         </TabsContent>
@@ -106,19 +90,11 @@ export function ManageHub({ activeSubTab }: ManageHubProps) {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                Audience Insights
+                Audience Insight Generator
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="bg-orange-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-orange-900 mb-2">Audience Insights</h3>
-                  <p className="text-sm text-orange-800">
-                    Build cohorts and analyze audience behavior patterns for strategic targeting.
-                  </p>
-                </div>
-                <CohortBuilder />
-              </div>
+              <CohortBuilder />
             </CardContent>
           </Card>
         </TabsContent>

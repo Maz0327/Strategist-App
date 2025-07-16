@@ -5,7 +5,6 @@ import { z } from "zod";
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
-  username: text("username").notNull().unique(),
   password: text("password").notNull(),
   role: text("role").default("user"), // user, admin
   createdAt: timestamp("created_at").defaultNow(),
@@ -102,40 +101,6 @@ export const userTopicProfiles = pgTable("user_topic_profiles", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Chat system tables
-export const chatSessions = pgTable("chat_sessions", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  sessionId: text("session_id").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const chatMessages = pgTable("chat_messages", {
-  id: serial("id").primaryKey(),
-  sessionId: integer("session_id").notNull().references(() => chatSessions.id),
-  userId: integer("user_id").references(() => users.id),
-  message: text("message").notNull(),
-  response: text("response"),
-  messageType: text("message_type").default("user"), // 'user', 'assistant', 'system'
-  metadata: jsonb("metadata"),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const visualCaptures = pgTable("visual_captures", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  captureType: text("capture_type").notNull(), // 'screenshot', 'recording'
-  imageData: text("image_data"), // base64 encoded image for screenshots
-  extractedText: text("extracted_text"), // OCR extracted text
-  ocrMetadata: jsonb("ocr_metadata"), // OCR confidence, word positions, etc.
-  recordingData: jsonb("recording_data"), // video metadata, duration, etc.
-  tabInfo: jsonb("tab_info"), // browser tab context
-  processedAt: timestamp("processed_at"),
-  isProcessed: boolean("is_processed").default(false),
-  analysisId: integer("analysis_id").references(() => signals.id), // Link to main analysis
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
 export const feedItems = pgTable("feed_items", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
@@ -190,22 +155,6 @@ export const insertFeedItemSchema = createInsertSchema(feedItems).omit({
   id: true,
   createdAt: true,
   fetchedAt: true,
-});
-
-export const insertChatSessionSchema = createInsertSchema(chatSessions).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertVisualCaptureSchema = createInsertSchema(visualCaptures).omit({
-  id: true,
-  createdAt: true,
-  processedAt: true,
 });
 
 // Admin Analytics Tables
@@ -295,12 +244,11 @@ export const insertAbTestResultsSchema = createInsertSchema(abTestResults).omit(
 });
 
 export const loginSchema = z.object({
-  email: z.string().min(1, "Email or username is required"),
+  email: z.string().email(),
   password: z.string().min(8),
 });
 
 export const registerSchema = loginSchema.extend({
-  username: z.string().min(3, "Username must be at least 3 characters").max(30, "Username must be less than 30 characters"),
   confirmPassword: z.string().min(8),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
@@ -346,14 +294,8 @@ export type InsertUserFeedSource = z.infer<typeof insertUserFeedSourceSchema>;
 export type UserFeedSource = typeof userFeedSources.$inferSelect;
 export type InsertUserTopicProfile = z.infer<typeof insertUserTopicProfileSchema>;
 export type UserTopicProfile = typeof userTopicProfiles.$inferSelect;
-export type InsertChatSession = z.infer<typeof insertChatSessionSchema>;
-export type ChatSession = typeof chatSessions.$inferSelect;
-export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
-export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertFeedItem = z.infer<typeof insertFeedItemSchema>;
 export type FeedItem = typeof feedItems.$inferSelect;
-export type InsertVisualCapture = z.infer<typeof insertVisualCaptureSchema>;
-export type VisualCapture = typeof visualCaptures.$inferSelect;
 export type LoginData = z.infer<typeof loginSchema>;
 export type RegisterData = z.infer<typeof registerSchema>;
 export type AnalyzeContentData = z.infer<typeof analyzeContentSchema>;

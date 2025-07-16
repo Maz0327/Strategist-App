@@ -33,7 +33,7 @@ interface EnhancedAnalysisResultsProps {
       tone: string;
       keywords: string[];
       confidence: string;
-      truthAnalysis?: {
+      truthAnalysis: {
         fact: string;
         observation: string;
         insight: string;
@@ -49,13 +49,6 @@ interface EnhancedAnalysisResultsProps {
       competitiveInsights: string[];
       strategicInsights: string[];
       strategicActions: string[];
-      historicalContext?: {
-        pattern: string;
-        currentPhase: string;
-        insight: string;
-        peaks: number[];
-        strategicTiming: string;
-      };
     };
     signalId: number;
   };
@@ -76,37 +69,6 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
   const [analysisCache, setAnalysisCache] = useState<Record<string, any>>({
     medium: data // Cache the initial analysis with medium length
   });
-
-  // Add safety check for missing data
-  if (!data) {
-    return (
-      <Card className="border-red-200 bg-red-50">
-        <CardHeader>
-          <CardTitle className="text-red-800 flex items-center gap-2">
-            <AlertCircle className="h-5 w-5" />
-            Analysis Error
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-red-700">
-            The analysis results are incomplete or corrupted. Please try analyzing the content again.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Create fallback truthAnalysis if missing
-  const truthAnalysis = data.truthAnalysis || {
-    fact: 'Analysis in progress...',
-    observation: 'Analysis in progress...',
-    insight: 'Analysis in progress...',
-    humanTruth: 'Analysis in progress...',
-    culturalMoment: 'Analysis in progress...',
-    attentionValue: 'medium' as const,
-    platform: 'unknown',
-    cohortOpportunities: []
-  };
 
   const handleLengthPreferenceChange = async (newLength: 'short' | 'medium' | 'long' | 'bulletpoints') => {
     setLengthPreference(newLength);
@@ -258,8 +220,8 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
                   <Info size={14} className="text-gray-400" />
                 </Button>
               </div>
-              <Badge className={getSentimentColor(data?.sentiment)} variant="secondary">
-                {data?.sentiment || 'Unknown'}
+              <Badge className={getSentimentColor(data.sentiment)} variant="secondary">
+                {data.sentiment}
               </Badge>
             </div>
             <div className="text-center">
@@ -269,8 +231,8 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
                   <Info size={14} className="text-gray-400" />
                 </Button>
               </div>
-              <Badge className={getAttentionColor(data?.truthAnalysis?.attentionValue)} variant="secondary">
-                {data?.truthAnalysis?.attentionValue || 'Unknown'}
+              <Badge className={getAttentionColor(data.truthAnalysis.attentionValue)} variant="secondary">
+                {data.truthAnalysis.attentionValue}
               </Badge>
             </div>
             <div className="text-center">
@@ -280,14 +242,14 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
                   <Info size={14} className="text-gray-400" />
                 </Button>
               </div>
-              <Badge className={getViralColor(data?.viralPotential)} variant="secondary">
-                {data?.viralPotential || 'Unknown'}
+              <Badge className={getViralColor(data.viralPotential)} variant="secondary">
+                {data.viralPotential}
               </Badge>
             </div>
           </div>
           <Separator className="my-4" />
           <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-700 flex-1">{data?.summary || 'No summary available'}</p>
+            <p className="text-sm text-gray-700 flex-1">{data.summary}</p>
             <div className="flex items-center gap-2 ml-4">
               <Button 
                 size="sm" 
@@ -366,7 +328,7 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
                   <h4 className="font-semibold text-blue-900">Fact</h4>
                 </div>
                 <p className="text-sm text-gray-700 bg-blue-50 p-3 rounded">
-                  {(currentAnalysis.truthAnalysis || truthAnalysis).fact}
+                  {currentAnalysis.truthAnalysis.fact}
                 </p>
               </div>
 
@@ -377,7 +339,7 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
                   <h4 className="font-semibold text-green-900">Observation</h4>
                 </div>
                 <p className="text-sm text-gray-700 bg-green-50 p-3 rounded">
-                  {(currentAnalysis.truthAnalysis || truthAnalysis).observation}
+                  {currentAnalysis.truthAnalysis.observation}
                 </p>
               </div>
 
@@ -388,7 +350,7 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
                   <h4 className="font-semibold text-yellow-900">Insight</h4>
                 </div>
                 <p className="text-sm text-gray-700 bg-yellow-50 p-3 rounded">
-                  {(currentAnalysis.truthAnalysis || truthAnalysis).insight}
+                  {currentAnalysis.truthAnalysis.insight}
                 </p>
               </div>
 
@@ -399,7 +361,7 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
                   <h4 className="font-semibold text-purple-900">Human Truth</h4>
                 </div>
                 <p className="text-sm text-gray-700 bg-purple-50 p-3 rounded">
-                  {(currentAnalysis.truthAnalysis || truthAnalysis).humanTruth}
+                  {currentAnalysis.truthAnalysis.humanTruth}
                 </p>
               </div>
 
@@ -410,7 +372,7 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
                   <h4 className="font-semibold text-red-900">Cultural Moment</h4>
                 </div>
                 <p className="text-sm text-gray-700 bg-red-50 p-3 rounded">
-                  {(currentAnalysis.truthAnalysis || truthAnalysis).culturalMoment}
+                  {currentAnalysis.truthAnalysis.culturalMoment}
                 </p>
               </div>
             </CardContent>

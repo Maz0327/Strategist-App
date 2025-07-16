@@ -1,15 +1,9 @@
-import { users, signals, sources, signalSources, userFeedSources, userTopicProfiles, feedItems, chatSessions, chatMessages, visualCaptures, type User, type InsertUser, type Signal, type InsertSignal, type Source, type InsertSource, type SignalSource, type InsertSignalSource, type UserFeedSource, type InsertUserFeedSource, type UserTopicProfile, type InsertUserTopicProfile, type FeedItem, type InsertFeedItem, type ChatSession, type InsertChatSession, type ChatMessage, type InsertChatMessage, type VisualCapture, type InsertVisualCapture } from "@shared/schema";
-import { eq, desc, and, or, sql as drizzleSql } from "drizzle-orm";
+import { users, signals, sources, signalSources, userFeedSources, userTopicProfiles, feedItems, type User, type InsertUser, type Signal, type InsertSignal, type Source, type InsertSource, type SignalSource, type InsertSignalSource, type UserFeedSource, type InsertUserFeedSource, type UserTopicProfile, type InsertUserTopicProfile, type FeedItem, type InsertFeedItem } from "@shared/schema";
+import { eq, desc, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
-// Database connection with connection pooling
-const sql = postgres(process.env.DATABASE_URL!, {
-  max: 20,          // Maximum number of connections
-  idle_timeout: 20, // Idle connection timeout in seconds
-  connect_timeout: 10, // Connection timeout in seconds
-  ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
-});
+const sql = postgres(process.env.DATABASE_URL!);
 const db = drizzle(sql);
 
 export { sql };
@@ -18,8 +12,6 @@ export interface IStorage {
   // Users
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  getUserByEmailOrUsername(emailOrUsername: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   
   // Signals
@@ -58,23 +50,6 @@ export interface IStorage {
   createFeedItem(feedItem: InsertFeedItem): Promise<FeedItem>;
   updateFeedItem(id: number, updates: Partial<InsertFeedItem>): Promise<FeedItem | undefined>;
   deleteFeedItem(id: number): Promise<void>;
-  
-  // Chat System
-  getChatSessionBySessionId(sessionId: string): Promise<ChatSession | undefined>;
-  createChatSession(session: InsertChatSession): Promise<ChatSession>;
-  deleteChatSession(sessionId: number): Promise<void>;
-  getChatMessagesBySessionId(sessionId: number, limit?: number): Promise<ChatMessage[]>;
-  createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
-  
-  // Analytics helpers
-  getUserSignalStats(userId: number): Promise<{total: number, captures: number, potentialSignals: number, signals: number}>;
-  
-  // Visual Captures
-  getVisualCapture(id: number): Promise<VisualCapture | undefined>;
-  getVisualCapturesByUserId(userId: number): Promise<VisualCapture[]>;
-  createVisualCapture(capture: InsertVisualCapture): Promise<VisualCapture>;
-  updateVisualCapture(id: number, updates: Partial<InsertVisualCapture>): Promise<VisualCapture | undefined>;
-  deleteVisualCapture(id: number): Promise<void>;
 }
 
 export class DbStorage implements IStorage {
@@ -85,22 +60,6 @@ export class DbStorage implements IStorage {
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
-    return result[0];
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.username, username)).limit(1);
-    return result[0];
-  }
-
-  async getUserByEmailOrUsername(emailOrUsername: string): Promise<User | undefined> {
-    const result = await db.select().from(users)
-      .where(or(
-        eq(users.email, emailOrUsername.toLowerCase()),
-        drizzleSql`LOWER(${users.username}) = LOWER(${emailOrUsername})`
-      ))
-      .limit(1);
-    
     return result[0];
   }
 
@@ -347,87 +306,6 @@ export class DbStorage implements IStorage {
 
   async deleteFeedItem(id: number): Promise<void> {
     await db.delete(feedItems).where(eq(feedItems.id, id));
-  }
-
-  // Chat System implementation
-  async getChatSessionBySessionId(sessionId: string): Promise<ChatSession | undefined> {
-    const result = await db.select().from(chatSessions)
-      .where(eq(chatSessions.sessionId, sessionId))
-      .limit(1);
-    return result[0];
-  }
-
-  async createChatSession(session: InsertChatSession): Promise<ChatSession> {
-    const result = await db.insert(chatSessions).values(session).returning();
-    return result[0];
-  }
-
-  async deleteChatSession(sessionId: number): Promise<void> {
-    // Delete all messages first
-    await db.delete(chatMessages).where(eq(chatMessages.sessionId, sessionId));
-    // Then delete the session
-    await db.delete(chatSessions).where(eq(chatSessions.id, sessionId));
-  }
-
-  async getChatMessagesBySessionId(sessionId: number, limit: number = 50): Promise<ChatMessage[]> {
-    const result = await db.select().from(chatMessages)
-      .where(eq(chatMessages.sessionId, sessionId))
-      .orderBy(desc(chatMessages.createdAt))
-      .limit(limit);
-    return result;
-  }
-
-  async createChatMessage(message: InsertChatMessage): Promise<ChatMessage> {
-    const result = await db.insert(chatMessages).values(message).returning();
-    return result[0];
-  }
-
-  // Analytics helpers
-  async getUserSignalStats(userId: number): Promise<{total: number, captures: number, potentialSignals: number, signals: number}> {
-    const result = await db.select().from(signals)
-      .where(eq(signals.userId, userId));
-    
-    const total = result.length;
-    const captures = result.filter(s => s.status === 'capture').length;
-    const potentialSignals = result.filter(s => s.status === 'potential_signal').length;
-    const signalCount = result.filter(s => s.status === 'signal').length;
-    
-    return {
-      total,
-      captures,
-      potentialSignals,
-      signals: signalCount
-    };
-  }
-
-  // Visual Captures implementation
-  async getVisualCapture(id: number): Promise<VisualCapture | undefined> {
-    const result = await db.select().from(visualCaptures).where(eq(visualCaptures.id, id)).limit(1);
-    return result[0];
-  }
-
-  async getVisualCapturesByUserId(userId: number): Promise<VisualCapture[]> {
-    const result = await db.select().from(visualCaptures)
-      .where(eq(visualCaptures.userId, userId))
-      .orderBy(desc(visualCaptures.createdAt));
-    return result;
-  }
-
-  async createVisualCapture(capture: InsertVisualCapture): Promise<VisualCapture> {
-    const result = await db.insert(visualCaptures).values(capture).returning();
-    return result[0];
-  }
-
-  async updateVisualCapture(id: number, updates: Partial<InsertVisualCapture>): Promise<VisualCapture | undefined> {
-    const result = await db.update(visualCaptures)
-      .set(updates)
-      .where(eq(visualCaptures.id, id))
-      .returning();
-    return result[0];
-  }
-
-  async deleteVisualCapture(id: number): Promise<void> {
-    await db.delete(visualCaptures).where(eq(visualCaptures.id, id));
   }
 }
 

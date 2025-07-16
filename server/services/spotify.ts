@@ -1,6 +1,4 @@
 import axios from 'axios';
-import type { TrendingTopic } from './trends';
-import { debugLogger } from './debug-logger';
 
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
@@ -64,7 +62,7 @@ export class SpotifyService {
 
       return this.accessToken;
     } catch (error) {
-      debugLogger.error('Error getting Spotify access token:', error);
+      console.error('Error getting Spotify access token:', error);
       throw error;
     }
   }
@@ -99,7 +97,7 @@ export class SpotifyService {
         }
       }));
     } catch (error) {
-      debugLogger.error('Error fetching Spotify featured playlists:', error);
+      console.error('Error fetching Spotify featured playlists:', error);
       return [];
     }
   }
@@ -135,7 +133,7 @@ export class SpotifyService {
         }
       }));
     } catch (error) {
-      debugLogger.error('Error fetching Spotify new releases:', error);
+      console.error('Error fetching Spotify new releases:', error);
       return [];
     }
   }

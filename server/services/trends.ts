@@ -1,5 +1,4 @@
 import googleTrends from 'google-trends-api';
-import { debugLogger } from './debug-logger';
 
 export interface TrendingTopic {
   id: string;
@@ -38,9 +37,9 @@ export class TrendsService {
             granularTimeResolution: true
           });
 
-          // Check if response is HTML (blocked/CAPTCHA)
-          if (typeof interest === 'string' && (interest.includes('<HTML>') || interest.includes('<!DOCTYPE'))) {
-            debugLogger.warn('Google Trends API blocked with CAPTCHA for keyword:', keyword);
+          // Check if response is HTML (404 or error page)
+          if (typeof interest === 'string' && interest.startsWith('<')) {
+            console.warn('Google Trends API returned HTML for keyword:', keyword);
             continue;
           }
 
@@ -66,7 +65,7 @@ export class TrendsService {
             }
           }
         } catch (keywordError) {
-          debugLogger.warn(`Error fetching trends for keyword "${keywords[i]}":`, keywordError);
+          console.warn(`Error fetching trends for keyword "${keywords[i]}":`, keywordError);
           continue;
         }
       }
@@ -77,11 +76,11 @@ export class TrendsService {
       }
 
       // If no results from real API, return fallback
-      debugLogger.warn('No Google Trends data available, using fallback');
+      console.warn('No Google Trends data available, using fallback');
       return this.getFallbackTrends();
       
     } catch (error) {
-      debugLogger.error('Error fetching Google Trends:', error);
+      console.error('Error fetching Google Trends:', error);
       return this.getFallbackTrends();
     }
   }
@@ -89,7 +88,7 @@ export class TrendsService {
   private getFallbackTrends(): TrendingTopic[] {
     // Note: This fallback is used when Google Trends API is unavailable
     // In production, this would be replaced with a more robust API or data source
-    debugLogger.warn('Using fallback trends - Google Trends API appears to be blocked or rate limited');
+    console.warn('Using fallback trends - Google Trends API appears to be blocked or rate limited');
     
     return [
       {
@@ -167,28 +166,19 @@ export class TrendsService {
 
       return JSON.parse(interest);
     } catch (error) {
-      debugLogger.error('Error fetching interest by region:', error);
+      console.error('Error fetching interest by region:', error);
       return null;
     }
   }
 
   async getRelatedTopics(keyword: string, geo: string = 'US'): Promise<TrendingTopic[]> {
     try {
-      // Add delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
       const related = await googleTrends.relatedTopics({
         keyword,
         geo,
         startTime: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
         endTime: new Date(),
       });
-
-      // Check if response is HTML (blocked/CAPTCHA)
-      if (typeof related === 'string' && related.includes('<HTML>')) {
-        debugLogger.warn('Google Trends API blocked with CAPTCHA for keyword:', keyword);
-        return this.getFallbackRelatedTopics(keyword);
-      }
 
       const relatedData = JSON.parse(related);
       const topics: TrendingTopic[] = [];
@@ -214,68 +204,8 @@ export class TrendsService {
       return topics.slice(0, 5); // Limit to top 5
     } catch (error) {
       console.error('Error fetching related topics:', error);
-      return this.getFallbackRelatedTopics(keyword);
+      return [];
     }
-  }
-
-  private getFallbackRelatedTopics(keyword: string): TrendingTopic[] {
-    // Provide relevant fallback topics based on keyword
-    const fallbackMaps: Record<string, TrendingTopic[]> = {
-      'business strategy': [
-        {
-          id: 'fallback-bs-1',
-          platform: 'google',
-          title: 'Digital Transformation Strategy',
-          summary: 'Companies adapting to digital-first approaches',
-          url: 'https://trends.google.com/trends/explore?q=digital+transformation',
-          score: 75,
-          fetchedAt: new Date().toISOString(),
-          engagement: 15000,
-          source: 'Google Trends (Fallback)',
-          keywords: ['digital', 'transformation', 'strategy']
-        },
-        {
-          id: 'fallback-bs-2',
-          platform: 'google',
-          title: 'Customer Experience Strategy',
-          summary: 'Focus on improving customer journey and satisfaction',
-          url: 'https://trends.google.com/trends/explore?q=customer+experience',
-          score: 82,
-          fetchedAt: new Date().toISOString(),
-          engagement: 18000,
-          source: 'Google Trends (Fallback)',
-          keywords: ['customer', 'experience', 'strategy']
-        }
-      ],
-      'digital marketing': [
-        {
-          id: 'fallback-dm-1',
-          platform: 'google',
-          title: 'AI Marketing Tools',
-          summary: 'Artificial intelligence in marketing automation',
-          url: 'https://trends.google.com/trends/explore?q=ai+marketing',
-          score: 88,
-          fetchedAt: new Date().toISOString(),
-          engagement: 22000,
-          source: 'Google Trends (Fallback)',
-          keywords: ['ai', 'marketing', 'automation']
-        },
-        {
-          id: 'fallback-dm-2',
-          platform: 'google',
-          title: 'Social Commerce',
-          summary: 'Selling directly through social media platforms',
-          url: 'https://trends.google.com/trends/explore?q=social+commerce',
-          score: 79,
-          fetchedAt: new Date().toISOString(),
-          engagement: 16000,
-          source: 'Google Trends (Fallback)',
-          keywords: ['social', 'commerce', 'selling']
-        }
-      ]
-    };
-
-    return fallbackMaps[keyword] || [];
   }
 
   private calculateTrendScore(formattedTraffic: string): number {

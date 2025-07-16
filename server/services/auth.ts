@@ -19,7 +19,6 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(data.password, 12);
     const userData: InsertUser = {
       email: data.email,
-      username: data.username || data.email.split('@')[0],
       password: hashedPassword,
       role: data.role || "user",
     };
@@ -28,10 +27,10 @@ export class AuthService {
   }
 
   async login(data: LoginData): Promise<User> {
-    const emailOrUsername = data.email.toLowerCase();
+    const email = data.email.toLowerCase();
     
     // Check for rate limiting
-    const attempts = this.loginAttempts.get(emailOrUsername);
+    const attempts = this.loginAttempts.get(email);
     if (attempts && attempts.attempts >= this.MAX_LOGIN_ATTEMPTS) {
       const timeSinceLastAttempt = Date.now() - attempts.lastAttempt;
       if (timeSinceLastAttempt < this.LOCKOUT_DURATION) {
@@ -39,14 +38,13 @@ export class AuthService {
         throw new Error(`Account temporarily locked. Try again in ${remainingTime} minutes.`);
       } else {
         // Reset attempts after lockout period
-        this.loginAttempts.delete(emailOrUsername);
+        this.loginAttempts.delete(email);
       }
     }
 
-    // Support both email and username login - but don't lowercase the original input for username lookup
-    const user = await storage.getUserByEmailOrUsername(data.email);
+    const user = await storage.getUserByEmail(email);
     if (!user) {
-      this.recordFailedAttempt(emailOrUsername);
+      this.recordFailedAttempt(email);
       const error = new Error("The email or password you entered is incorrect");
       error.name = "INVALID_CREDENTIALS";
       throw error;
@@ -54,14 +52,14 @@ export class AuthService {
 
     const isValidPassword = await bcrypt.compare(data.password, user.password);
     if (!isValidPassword) {
-      this.recordFailedAttempt(emailOrUsername);
+      this.recordFailedAttempt(email);
       const error = new Error("The email or password you entered is incorrect");
       error.name = "INVALID_CREDENTIALS";
       throw error;
     }
 
     // Clear failed attempts on successful login
-    this.loginAttempts.delete(emailOrUsername);
+    this.loginAttempts.delete(email);
     return user;
   }
 

@@ -1,5 +1,4 @@
 import { trendsService } from './trends';
-import { googleTrendsPythonService } from './google-trends-python';
 import { createRedditService } from './reddit';
 // Removed Twitter API - moved to future integrations due to rate limiting
 import { createNewsService } from './news';
@@ -15,17 +14,6 @@ import { createNYTimesService } from './nytimes';
 import { createCurrentsService } from './currents';
 import { createMediaStackService } from './mediastack';
 import { glaspService } from './glasp';
-import { googleKnowledgeGraphService } from './google-knowledge-graph';
-import { perspectiveAPIService } from './perspective-api';
-import { googleNgramService } from './google-ngram';
-import { knowYourMemeService } from './knowyourmeme';
-import { urbanDictionaryService } from './urbandictionary';
-import { youtubeTrendingService } from './youtube-trending';
-import { redditCulturalService } from './reddit-cultural';
-import { tikTokTrendsService } from './tiktok-trends';
-import { giphyService } from './giphy';
-import { imgurService } from './imgur';
-// Instagram trends service removed - causing 429 errors
 import type { TrendingTopic } from './trends';
 
 export class ExternalAPIsService {
@@ -38,11 +26,6 @@ export class ExternalAPIsService {
   private nytimesService: ReturnType<typeof createNYTimesService>;
   private currentsService: ReturnType<typeof createCurrentsService>;
   private mediastackService: ReturnType<typeof createMediaStackService>;
-  private knowledgeGraphService: typeof googleKnowledgeGraphService;
-  private perspectiveService: typeof perspectiveAPIService;
-  private ngramService: typeof googleNgramService;
-  private giphyService: typeof giphyService;
-  private imgurService: typeof imgurService;
 
   constructor() {
     // Initialize existing services
@@ -82,15 +65,6 @@ export class ExternalAPIsService {
     this.mediastackService = createMediaStackService(
       process.env.MEDIASTACK_API_KEY
     );
-
-    // Initialize Google enhancement services
-    this.knowledgeGraphService = googleKnowledgeGraphService;
-    this.perspectiveService = perspectiveAPIService;
-    this.ngramService = googleNgramService;
-    
-    // Initialize visual content services
-    this.giphyService = giphyService;
-    this.imgurService = imgurService;
   }
 
   async getAllTrendingTopics(platform?: string): Promise<TrendingTopic[]> {
@@ -100,13 +74,13 @@ export class ExternalAPIsService {
       if (!platform || platform === 'all') {
         // Fetch from all platforms in parallel for maximum efficiency
         const [
-          googleTrends, redditTrends, newsTrends, youtubeTrends, hackerNewsTrends,
-          spotifyTrends, lastfmTrends, geniusTrends, tmdbTrends,
-          gnewsTrends, currentsTrends, mediastackTrends, instagramTrends,
-          giphyTrends, imgurTrends
+          googleTrends, redditTrends, twitterTrends, newsTrends, youtubeTrends, hackerNewsTrends,
+          spotifyTrends, lastfmTrends, geniusTrends, tmdbTrends, tvmazeTrends,
+          gnewsTrends, nytimesTrends, currentsTrends, mediastackTrends, glaspTrends
         ] = await Promise.allSettled([
           this.getGoogleTrends(),
           this.getRedditTrends(),
+          this.getTwitterTrends(),
           this.getNewsTrends(),
           this.getYouTubeTrends(),
           this.getHackerNewsTrends(),
@@ -114,28 +88,26 @@ export class ExternalAPIsService {
           this.getLastFmTrends(),
           this.getGeniusTrends(),
           this.getTMDbTrends(),
+          this.getTVMazeTrends(),
           this.getGNewsTrends(),
+          this.getNYTimesTrends(),
           this.getCurrentsTrends(),
           this.getMediaStackTrends(),
-          this.getInstagramTrends(),
-          this.getGiphyTrends(),
-          this.getImgurTrends()
+          this.getGlaspTrends()
         ]);
 
         // Process all fulfilled results
         const allPromises = [
-          googleTrends, redditTrends, newsTrends, youtubeTrends, hackerNewsTrends,
-          spotifyTrends, lastfmTrends, geniusTrends, tmdbTrends,
-          gnewsTrends, currentsTrends, mediastackTrends, instagramTrends,
-          giphyTrends, imgurTrends
+          googleTrends, redditTrends, twitterTrends, newsTrends, youtubeTrends, hackerNewsTrends,
+          spotifyTrends, lastfmTrends, geniusTrends, tmdbTrends, tvmazeTrends,
+          gnewsTrends, nytimesTrends, currentsTrends, mediastackTrends, glaspTrends
         ];
 
         allPromises.forEach((promise, index) => {
           const platformNames = [
-            'google', 'reddit', 'news', 'youtube', 'hackernews',
-            'spotify', 'lastfm', 'genius', 'tmdb',
-            'gnews', 'currents', 'mediastack', 'instagram',
-            'giphy', 'imgur'
+            'google', 'reddit', 'twitter', 'news', 'youtube', 'hackernews',
+            'spotify', 'lastfm', 'genius', 'tmdb', 'tvmaze',
+            'gnews', 'nytimes', 'currents', 'mediastack', 'glasp'
           ];
           
           if (promise.status === 'fulfilled') {
@@ -152,7 +124,9 @@ export class ExternalAPIsService {
           case 'reddit':
             results.push(...await this.getRedditTrends());
             break;
-
+          case 'twitter':
+            results.push(...await this.getTwitterTrends());
+            break;
           case 'news':
             results.push(...await this.getNewsTrends());
             break;
@@ -174,26 +148,23 @@ export class ExternalAPIsService {
           case 'tmdb':
             results.push(...await this.getTMDbTrends());
             break;
-
+          case 'tvmaze':
+            results.push(...await this.getTVMazeTrends());
+            break;
           case 'gnews':
             results.push(...await this.getGNewsTrends());
             break;
-
+          case 'nytimes':
+            results.push(...await this.getNYTimesTrends());
+            break;
           case 'currents':
             results.push(...await this.getCurrentsTrends());
             break;
           case 'mediastack':
             results.push(...await this.getMediaStackTrends());
             break;
-
-          case 'instagram':
-            results.push(...await this.getInstagramTrends());
-            break;
-          case 'giphy':
-            results.push(...await this.getGiphyTrends());
-            break;
-          case 'imgur':
-            results.push(...await this.getImgurTrends());
+          case 'glasp':
+            results.push(...await this.getGlaspTrends());
             break;
         }
         
@@ -220,16 +191,7 @@ export class ExternalAPIsService {
         balancedResults.push(...topFromPlatform);
       });
       
-      // Enhance results with Google Knowledge Graph context and historical analysis
-      const sortedResults = balancedResults.sort((a, b) => (b.score || 0) - (a.score || 0));
-      
-      // Apply Knowledge Graph enhancement
-      const contextEnhanced = await this.enhanceWithKnowledgeGraph(sortedResults);
-      
-      // Apply historical context enhancement
-      const historicalEnhanced = await this.ngramService.enhanceTrendingTopics(contextEnhanced);
-      
-      return historicalEnhanced;
+      return balancedResults.sort((a, b) => (b.score || 0) - (a.score || 0));
     } catch (error) {
       return [];
     }
@@ -237,15 +199,14 @@ export class ExternalAPIsService {
 
   async getGoogleTrends(): Promise<TrendingTopic[]> {
     try {
-      debugLogger.info('Fetching Google Trends data using Python service');
+      const trends = await trendsService.getGoogleTrends();
       
-      // Use the new Python-based Google Trends service
-      const trends = await googleTrendsPythonService.getAllGoogleTrends();
+      // Also get some business-related trends
+      const businessTrends = await trendsService.getRelatedTopics('business strategy');
+      const marketingTrends = await trendsService.getRelatedTopics('digital marketing');
       
-      debugLogger.info(`Successfully fetched ${trends.length} Google Trends topics`);
-      return trends;
+      return [...trends, ...businessTrends.slice(0, 3), ...marketingTrends.slice(0, 3)];
     } catch (error) {
-      debugLogger.error('Failed to fetch Google Trends data:', error);
       return [];
     }
   }
@@ -483,107 +444,6 @@ export class ExternalAPIsService {
     }
   }
 
-  // Cultural Intelligence Services
-  async getKnowYourMemeTrends(): Promise<TrendingTopic[]> {
-    try {
-      const [trending, popular, deadpools] = await Promise.all([
-        knowYourMemeService.getTrendingMemes(8),
-        knowYourMemeService.getPopularMemes(8),
-        knowYourMemeService.getDeadpoolMemes(4)
-      ]);
-      
-      const allTrends = [...trending, ...popular, ...deadpools];
-      return allTrends.slice(0, 10);
-    } catch (error) {
-      debugLogger.warn('Know Your Meme blocked - using fallback data');
-      return [];
-    }
-  }
-
-  async getUrbanDictionaryTrends(): Promise<TrendingTopic[]> {
-    try {
-      const [trending, popular, recent, wordOfDay] = await Promise.all([
-        urbanDictionaryService.getTrendingWords(8),
-        urbanDictionaryService.getPopularWords(8),
-        urbanDictionaryService.getRecentWords(4),
-        urbanDictionaryService.getWordOfTheDay()
-      ]);
-      
-      const allTrends = [...trending, ...popular, ...recent, ...wordOfDay];
-      return allTrends.slice(0, 10);
-    } catch (error) {
-      return [];
-    }
-  }
-
-  async getYouTubeTrendingTrends(): Promise<TrendingTopic[]> {
-    try {
-      const [general, music, gaming, news] = await Promise.all([
-        youtubeTrendingService.getTrendingVideos(8),
-        youtubeTrendingService.getMusicTrending(6),
-        youtubeTrendingService.getGamingTrending(6),
-        youtubeTrendingService.getNewsTrending(4)
-      ]);
-      
-      const allTrends = [...general, ...music, ...gaming, ...news];
-      return allTrends.slice(0, 12);
-    } catch (error) {
-      return [];
-    }
-  }
-
-  async getRedditCulturalTrends(): Promise<TrendingTopic[]> {
-    try {
-      const [cultural, viral, generational, trending] = await Promise.all([
-        redditCulturalService.getCulturalTrends(8),
-        redditCulturalService.getViralContent(6),
-        redditCulturalService.getGenerationalTrends(6),
-        redditCulturalService.getTrendingSubreddits(4)
-      ]);
-      
-      const allTrends = [...cultural, ...viral, ...generational, ...trending];
-      return allTrends.slice(0, 12);
-    } catch (error) {
-      return [];
-    }
-  }
-
-  async getTikTokTrends(): Promise<TrendingTopic[]> {
-    try {
-      const [hashtags, discover, music] = await Promise.all([
-        tikTokTrendsService.getTrendingHashtags(10),
-        tikTokTrendsService.getDiscoverTrends(8),
-        tikTokTrendsService.getMusicTrends(6)
-      ]);
-      
-      const allTrends = [...hashtags, ...discover, ...music];
-      return allTrends.slice(0, 12);
-    } catch (error) {
-      return [];
-    }
-  }
-
-  async getInstagramTrends(): Promise<TrendingTopic[]> {
-    try {
-      // Use simple hashtag analysis instead of scraping
-      const hashtags = ['marketing', 'business', 'entrepreneurship', 'innovation', 'leadership'];
-      
-      return hashtags.map((tag, index) => ({
-        id: `instagram-${tag}`,
-        title: `#${tag}`,
-        description: `Trending hashtag: ${tag}`,
-        url: `https://www.instagram.com/explore/tags/${tag}/`,
-        platform: 'instagram',
-        score: 75 - index * 5,
-        engagement: (1000 - index * 100) * 1000,
-        keywords: [tag, 'instagram', 'social media'],
-        createdAt: new Date().toISOString()
-      }));
-    } catch (error) {
-      return [];
-    }
-  }
-
   async searchTrends(query: string, platform?: string): Promise<TrendingTopic[]> {
     const results: TrendingTopic[] = [];
 
@@ -808,73 +668,7 @@ export class ExternalAPIsService {
       message: 'Glasp integration ready (API under development)'
     });
 
-    // Visual Content Intelligence APIs
-    results.push({
-      platform: 'giphy',
-      status: this.giphyService ? 'available' : 'unavailable',
-      message: this.giphyService ? 'Giphy API integration ready' : 'Giphy API key not configured'
-    });
-
-    results.push({
-      platform: 'imgur',
-      status: this.imgurService ? 'available' : 'unavailable',
-      message: this.imgurService ? 'Imgur API integration ready' : 'Imgur client ID not configured'
-    });
-
     return results;
-  }
-
-  async getGiphyTrends(): Promise<TrendingTopic[]> {
-    try {
-      const giphyData = await this.giphyService.getTrendingGifs();
-      
-      return giphyData.map(gif => ({
-        id: gif.id,
-        platform: 'giphy',
-        title: gif.title,
-        summary: `Trending GIF: ${gif.title}`,
-        url: gif.url,
-        score: Math.floor(gif.engagement / 1000),
-        fetchedAt: gif.timestamp,
-        engagement: gif.engagement,
-        source: 'Giphy API',
-        keywords: gif.keywords,
-        metadata: {
-          category: gif.category,
-          platform: gif.platform
-        }
-      }));
-    } catch (error) {
-      debugLogger.error('Failed to fetch Giphy trends:', error);
-      return [];
-    }
-  }
-
-  async getImgurTrends(): Promise<TrendingTopic[]> {
-    try {
-      const imgurData = await this.imgurService.getTrendingImages();
-      
-      return imgurData.map(image => ({
-        id: image.id,
-        platform: 'imgur',
-        title: image.title,
-        summary: `Trending image: ${image.title}`,
-        url: image.url,
-        score: Math.floor(image.engagement / 100),
-        fetchedAt: image.timestamp,
-        engagement: image.engagement,
-        source: 'Imgur API',
-        keywords: image.keywords,
-        metadata: {
-          category: image.category,
-          platform: image.platform,
-          imageType: image.imageType
-        }
-      }));
-    } catch (error) {
-      debugLogger.error('Failed to fetch Imgur trends:', error);
-      return [];
-    }
   }
 
   private getFallbackRedditData(): TrendingTopic[] {
@@ -1064,63 +858,6 @@ export class ExternalAPIsService {
         keywords: ['glasp', 'knowledge', 'highlighting', 'curation', 'social']
       }
     ];
-  }
-  // Google Knowledge Graph enhancement
-  async enhanceWithKnowledgeGraph(topics: TrendingTopic[]): Promise<TrendingTopic[]> {
-    try {
-      // Only enhance top 10 topics to avoid API quota issues
-      const topTopics = topics.slice(0, 10);
-      const enhancedTopics = await this.knowledgeGraphService.analyzeTrendingTopics(topTopics);
-      
-      // Return enhanced topics plus remaining unenhanced ones
-      return [...enhancedTopics, ...topics.slice(10)];
-    } catch (error) {
-      console.error('Knowledge Graph enhancement failed:', error);
-      return topics;
-    }
-  }
-
-  // Perspective API content safety analysis
-  async analyzeSentimentSafety(content: string): Promise<any> {
-    try {
-      const analysis = await this.perspectiveService.analyzeText(content);
-      return analysis;
-    } catch (error) {
-      console.error('Perspective API analysis failed:', error);
-      return null;
-    }
-  }
-
-  // Enhanced trend analysis with safety and context
-  async getEnhancedTrendAnalysis(topics: TrendingTopic[]): Promise<TrendingTopic[]> {
-    try {
-      // First enhance with Knowledge Graph for context
-      const contextEnhanced = await this.enhanceWithKnowledgeGraph(topics);
-      
-      // Then analyze content safety for user-generated content
-      const safetyEnhanced = await Promise.all(
-        contextEnhanced.map(async (topic) => {
-          if (topic.description) {
-            const safetyAnalysis = await this.analyzeSentimentSafety(topic.description);
-            if (safetyAnalysis) {
-              return {
-                ...topic,
-                metadata: {
-                  ...topic.metadata,
-                  safety: safetyAnalysis
-                }
-              };
-            }
-          }
-          return topic;
-        })
-      );
-      
-      return safetyEnhanced;
-    } catch (error) {
-      console.error('Enhanced trend analysis failed:', error);
-      return topics;
-    }
   }
 }
 

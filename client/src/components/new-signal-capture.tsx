@@ -4,11 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ContentInput } from "@/components/content-input";
 import { Button } from "@/components/ui/button";
 import { Plus, FileText, Link, Target, ArrowRight } from "lucide-react";
-import { AnalysisSkeleton } from "@/components/ui/analysis-skeleton";
-import { EnhancedAnalysisResults } from "@/components/enhanced-analysis-results";
-import { FloatingActionButton } from "@/components/ui/floating-action-button";
-import { ProgressBreadcrumb } from "@/components/ui/progress-breadcrumb";
-import { FallbackIndicator } from "@/components/fallback-indicator";
 
 interface NewSignalCaptureProps {
   activeSubTab?: string;
@@ -18,36 +13,6 @@ interface NewSignalCaptureProps {
 
 export function NewSignalCapture({ activeSubTab, onNavigateToExplore, onNavigateToBrief }: NewSignalCaptureProps) {
   const [activeTab, setActiveTab] = useState(activeSubTab || "capture");
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
-  const [originalContent, setOriginalContent] = useState<any>(null);
-  const [usingFallback, setUsingFallback] = useState(false);
-  
-  const handleAnalysisStart = () => {
-    setIsAnalyzing(true);
-    setAnalysisResult(null);
-  };
-  
-  const handleAnalysisComplete = (result: any, content?: any) => {
-    setAnalysisResult(result);
-    setOriginalContent(content);
-    setUsingFallback(result?.usingFallback || false);
-    setIsAnalyzing(false);
-    
-    // Scroll to results
-    setTimeout(() => {
-      document.getElementById('analysis-results')?.scrollIntoView({ 
-        behavior: 'smooth',
-        block: 'start'
-      });
-    }, 100);
-  };
-  
-  const breadcrumbSteps = [
-    { label: "Capture", completed: !!analysisResult, active: !analysisResult },
-    { label: "Analyze", completed: !!analysisResult, active: isAnalyzing },
-    { label: "Brief", active: false }
-  ];
 
   return (
     <div className="space-y-6">
@@ -68,9 +33,6 @@ export function NewSignalCapture({ activeSubTab, onNavigateToExplore, onNavigate
           </Button>
         </div>
       </div>
-      
-      {/* Progress Breadcrumb */}
-      <ProgressBreadcrumb steps={breadcrumbSteps} className="mb-6" />
 
       {/* Capture Interface */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -95,10 +57,7 @@ export function NewSignalCapture({ activeSubTab, onNavigateToExplore, onNavigate
             </CardHeader>
             <CardContent>
               <div data-tutorial="content-input">
-                <ContentInput 
-                  onAnalysisStart={handleAnalysisStart} 
-                  onAnalysisComplete={handleAnalysisComplete}
-                />
+                <ContentInput />
               </div>
             </CardContent>
           </Card>
@@ -125,35 +84,6 @@ export function NewSignalCapture({ activeSubTab, onNavigateToExplore, onNavigate
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Analysis Results */}
-      {(isAnalyzing || analysisResult) && (
-        <Card id="analysis-results">
-          <CardHeader>
-            <CardTitle>Analysis Results</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isAnalyzing ? (
-              <AnalysisSkeleton />
-            ) : analysisResult ? (
-              <div className="space-y-4">
-                <FallbackIndicator isVisible={usingFallback} />
-                <EnhancedAnalysisResults 
-                  analysis={analysisResult} 
-                  originalContent={originalContent}
-                />
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Floating Action Button */}
-      <FloatingActionButton 
-        onNewSignal={() => setActiveTab("capture")}
-        onQuickAnalysis={() => setActiveTab("capture")}
-        onNewBrief={() => onNavigateToBrief?.()}
-      />
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { debugLogger } from './debug-logger';
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const TMDB_READ_TOKEN = process.env.TMDB_READ_TOKEN;
@@ -64,7 +63,7 @@ export class TMDBService {
         }
       }));
     } catch (error) {
-      debugLogger.error('Error fetching TMDB trending movies:', error);
+      console.error('Error fetching TMDB trending movies:', error);
       return [];
     }
   }
@@ -98,7 +97,7 @@ export class TMDBService {
         }
       }));
     } catch (error) {
-      debugLogger.error('Error fetching TMDB trending TV shows:', error);
+      console.error('Error fetching TMDB trending TV shows:', error);
       return [];
     }
   }
