@@ -475,13 +475,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!url) {
         return res.status(400).json({ message: "URL is required" });
       }
+
+      // Validate URL format
+      if (typeof url !== 'string' || url.trim().length === 0) {
+        return res.status(400).json({ message: "Please enter a valid URL" });
+      }
+
+      debugLogger.info("URL extraction request received", { url }, req);
       
-      const extracted = await scraperService.extractContent(url);
+      const extracted = await scraperService.extractContent(url.trim());
+      
+      debugLogger.info("URL extraction successful", { title: extracted.title, contentLength: extracted.content.length }, req);
+      
       res.json({
         success: true,
         ...extracted
       });
     } catch (error: any) {
+      debugLogger.error("URL extraction failed", { error: error.message, url: req.body.url }, req);
       res.status(400).json({ message: error.message });
     }
   });

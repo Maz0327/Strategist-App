@@ -9,8 +9,8 @@ import { structuredLogger } from "./structured-logger";
 // Using gpt-4o-mini for cost-efficient testing phase, can upgrade to gpt-4o later
 const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || process.env.API_KEY,
-  timeout: 45 * 1000, // 45 second timeout
-  maxRetries: 2, // Built-in retries
+  timeout: 30 * 1000, // Reduce timeout to 30 seconds
+  maxRetries: 1, // Reduce retries for faster response
 });
 
 export interface AnalysisResult {
@@ -318,11 +318,11 @@ export class OpenAIService {
   }
 
   private async analyzeSingleContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number) => void): Promise<EnhancedAnalysisResult> {
-    // Get historical context for the content
-    const historicalContext = await this.getHistoricalContext(data.title || '', data.content || '');
+    // Skip historical context for faster processing in beta
+    const historicalContext = null;
     
     if (onProgress) {
-      onProgress('Analyzing content with historical context', 20);
+      onProgress('Analyzing content', 20);
     }
     const processedContent = data.content || '';
     
@@ -341,37 +341,34 @@ export class OpenAIService {
       }
     };
     
-    // Streamlined prompt for faster processing and timeout prevention
+    // Optimized prompt for faster processing - reduced token usage
     const prompt = `
-Analyze this content for strategic insights. ${getLengthInstructions(lengthPreference)}
+Analyze: ${data.title || 'Untitled'}
+Content: ${processedContent.slice(0, 3000)} ${processedContent.length > 3000 ? '...' : ''}
 
-Title: ${data.title || 'N/A'}
-Content: ${processedContent}
-URL: ${data.url || 'N/A'}
-
-Provide JSON with these fields:
+Return JSON only:
 {
-  "summary": "Strategic overview",
+  "summary": "${lengthPreference === 'short' ? '1-2 sentences' : lengthPreference === 'long' ? '4-6 sentences' : '2-3 sentences'}",
   "sentiment": "positive/negative/neutral",
   "tone": "professional/casual/urgent",
-  "keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
-  "confidence": "85%",
+  "keywords": ["5 key terms"],
+  "confidence": "XX%",
   "truthAnalysis": {
-    "fact": "What happened - ${lengthPreference === 'bulletpoints' ? 'Use bullet points with • symbols' : `Use ${lengthPreference} length`}",
-    "observation": "What pattern you see - ${lengthPreference === 'bulletpoints' ? 'Use bullet points with • symbols' : `Use ${lengthPreference} length`}",
-    "insight": "Why this is happening - ${lengthPreference === 'bulletpoints' ? 'Use bullet points with • symbols' : `Use ${lengthPreference} length`}",
-    "humanTruth": "Deep psychological driver - ${lengthPreference === 'bulletpoints' ? 'Use bullet points with • symbols' : `Use ${lengthPreference} length`}",
-    "culturalMoment": "Larger cultural shift - ${lengthPreference === 'bulletpoints' ? 'Use bullet points with • symbols' : `Use ${lengthPreference} length`}",
+    "fact": "${lengthPreference === 'bulletpoints' ? 'Use •' : `${lengthPreference} length`}",
+    "observation": "${lengthPreference === 'bulletpoints' ? 'Use •' : `${lengthPreference} length`}",
+    "insight": "${lengthPreference === 'bulletpoints' ? 'Use •' : `${lengthPreference} length`}",
+    "humanTruth": "${lengthPreference === 'bulletpoints' ? 'Use •' : `${lengthPreference} length`}",
+    "culturalMoment": "${lengthPreference === 'bulletpoints' ? 'Use •' : `${lengthPreference} length`}",
     "attentionValue": "high/medium/low",
-    "platform": "Platform context",
-    "cohortOpportunities": ["specific cohort names"]
+    "platform": "brief platform context",
+    "cohortOpportunities": ["3 specific cohorts"]
   },
-  "cohortSuggestions": ["cohort 1", "cohort 2", "cohort 3"],
-  "platformContext": "Platform relevance",
+  "cohortSuggestions": ["3 suggestions"],
+  "platformContext": "brief context",
   "viralPotential": "high/medium/low",
-  "competitiveInsights": ["insight 1", "insight 2", "insight 3"],
-  "strategicInsights": ["strategic insight 1", "strategic insight 2", "strategic insight 3"],
-  "strategicActions": ["action 1", "action 2", "action 3"]
+  "competitiveInsights": ["3 insights"],
+  "strategicInsights": ["3 strategic points"],
+  "strategicActions": ["3 actions"]
 }
 `;
 
@@ -379,13 +376,13 @@ Provide JSON with these fields:
       const startTime = Date.now();
       debugLogger.info('Sending request to OpenAI API', { model: 'gpt-4o-mini', promptLength: prompt.length });
       
-      // Progress tracking for better UX
+      // Progress tracking for better UX - faster intervals
       if (onProgress) {
         onProgress('Initializing analysis', 10);
-        setTimeout(() => onProgress('Processing content', 30), 500);
-        setTimeout(() => onProgress('Analyzing cultural context', 50), 2000);
-        setTimeout(() => onProgress('Generating insights', 70), 4000);
-        setTimeout(() => onProgress('Finalizing results', 90), 6000);
+        setTimeout(() => onProgress('Processing content', 30), 300);
+        setTimeout(() => onProgress('Analyzing cultural context', 50), 1000);
+        setTimeout(() => onProgress('Generating insights', 70), 2500);
+        setTimeout(() => onProgress('Finalizing results', 90), 4000);
       }
       
       // OpenAI API call with timeout prevention strategies
@@ -399,7 +396,7 @@ Provide JSON with these fields:
         messages: [
           {
             role: "system",
-            content: "You are a strategic content analyst. Provide concise, actionable insights focusing on cultural intelligence and human behavior patterns."
+            content: "Strategic content analyst. Return JSON only. Be concise."
           },
           {
             role: "user",
@@ -407,8 +404,9 @@ Provide JSON with these fields:
           }
         ],
         response_format: { type: "json_object" },
-        temperature: 0.7,
-        max_tokens: 4000, // Increased to ensure complete truthAnalysis responses
+        temperature: 0.5, // Reduced for faster, more focused responses
+        max_tokens: 2500, // Reduced for faster processing
+        top_p: 0.9, // Added for faster generation
       });
       
       return this.processOpenAIResponse(response, startTime, historicalContext);
