@@ -266,11 +266,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Store preference
         chrome.storage.local.set({captureMode: mode});
         
+        const visualControls = document.getElementById('visualControls');
+        
         // Update UI based on mode
         if (mode === 'selection') {
             selectedTextContainer.style.display = 'block';
+            visualControls.style.display = 'none';
         } else if (mode === 'page') {
             handleSpecialCaptureMode('page');
+            visualControls.style.display = 'none';
+        } else if (mode === 'screenshot' || mode === 'recording') {
+            selectedTextContainer.style.display = 'none';
+            visualControls.style.display = 'block';
+        } else {
+            visualControls.style.display = 'none';
         }
     }
 
@@ -404,6 +413,141 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // Visual capture handlers
+    async function handleScreenshot() {
+        try {
+            const screenshotButton = document.getElementById('screenshotButton');
+            screenshotButton.disabled = true;
+            screenshotButton.textContent = '📸 Processing...';
+            
+            // Get current tab info
+            const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
+            
+            // Capture screenshot
+            const screenshotData = await chrome.tabs.captureVisibleTab(null, {format: 'png'});
+            
+            // Process with OCR
+            const ocrProcessor = new OCRProcessor();
+            await ocrProcessor.initialize();
+            const ocrResult = await ocrProcessor.extractText(screenshotData);
+            
+            // Send to backend
+            await fetch(`${currentConfig.backendUrl}${currentConfig.apiPrefix}/visual-capture`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    type: 'screenshot',
+                    screenshot: screenshotData,
+                    extractedText: ocrResult.text,
+                    ocrData: ocrResult.metadata,
+                    tabInfo: {
+                        title: tab.title,
+                        url: tab.url,
+                        favicon: tab.favIconUrl
+                    }
+                })
+            });
+            
+            showStatus('Screenshot captured and analyzed successfully!', 'success');
+            
+        } catch (error) {
+            console.error('Screenshot capture failed:', error);
+            showStatus('Screenshot capture failed. Please try again.', 'error');
+        } finally {
+            const screenshotButton = document.getElementById('screenshotButton');
+            screenshotButton.disabled = false;
+            screenshotButton.textContent = '📸 Take Screenshot';
+        }
+    }
+
+    async function handleRecording() {
+        const recordingButton = document.getElementById('recordingButton');
+        const recordingText = document.getElementById('recordingText');
+        const recordingStatus = document.getElementById('recordingStatus');
+        
+        try {
+            if (recordingText.textContent === 'Start Recording') {
+                // Start recording
+                recordingButton.disabled = true;
+                recordingText.textContent = 'Starting...';
+                
+                const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
+                
+                // Start screen recording
+                await chrome.tabs.sendMessage(tab.id, {action: 'startRecording'});
+                
+                recordingText.textContent = 'Stop Recording';
+                recordingButton.disabled = false;
+                recordingStatus.style.display = 'block';
+                
+                // Start timer
+                startRecordingTimer();
+                
+            } else {
+                // Stop recording
+                recordingButton.disabled = true;
+                recordingText.textContent = 'Stopping...';
+                
+                const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
+                
+                // Stop screen recording
+                const recordingData = await chrome.tabs.sendMessage(tab.id, {action: 'stopRecording'});
+                
+                // Send to backend
+                await fetch(`${currentConfig.backendUrl}${currentConfig.apiPrefix}/visual-capture`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        type: 'recording',
+                        recordingData: recordingData,
+                        tabInfo: {
+                            title: tab.title,
+                            url: tab.url,
+                            favicon: tab.favIconUrl
+                        }
+                    })
+                });
+                
+                recordingText.textContent = 'Start Recording';
+                recordingButton.disabled = false;
+                recordingStatus.style.display = 'none';
+                
+                showStatus('Recording saved successfully!', 'success');
+            }
+            
+        } catch (error) {
+            console.error('Recording failed:', error);
+            showStatus('Recording failed. Please try again.', 'error');
+            recordingText.textContent = 'Start Recording';
+            recordingButton.disabled = false;
+            recordingStatus.style.display = 'none';
+        }
+    }
+
+    function startRecordingTimer() {
+        const durationElement = document.getElementById('recordingDuration');
+        let seconds = 0;
+        
+        const timer = setInterval(() => {
+            seconds++;
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            durationElement.textContent = `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+            
+            // Stop timer if recording is stopped
+            if (document.getElementById('recordingText').textContent === 'Start Recording') {
+                clearInterval(timer);
+                durationElement.textContent = '00:00';
+            }
+        }, 1000);
+    }
+
     // Track extension analytics
     async function trackExtensionEvent(event, metadata) {
         try {
@@ -423,4 +567,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Analytics tracking failed:', error);
         }
     }
+    
+    // Event Listeners
+    document.getElementById('captureMode').addEventListener('change', handleCaptureModeChange);
+    document.getElementById('userNotes').addEventListener('input', handleNotesChange);
+    document.getElementById('saveButton').addEventListener('click', handleSave);
+    document.getElementById('quickCaptureButton').addEventListener('click', handleQuickCapture);
+    document.getElementById('screenshotButton').addEventListener('click', handleScreenshot);
+    document.getElementById('recordingButton').addEventListener('click', handleRecording);
+    
+    // Initialize the extension
+    initializePopup();
 });

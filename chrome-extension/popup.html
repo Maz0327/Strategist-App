@@ -30,8 +30,26 @@
                 <select id="captureMode">
                     <option value="selection">Selected Text</option>
                     <option value="page">Full Page</option>
+                    <option value="screenshot">Screenshot + OCR</option>
+                    <option value="recording">Screen Recording</option>
                     <option value="custom">Custom</option>
                 </select>
+            </div>
+
+            <!-- Visual Capture Controls -->
+            <div class="visual-controls" id="visualControls" style="display: none;">
+                <div class="visual-actions">
+                    <button id="screenshotButton" class="btn btn-secondary">
+                        📸 Take Screenshot
+                    </button>
+                    <button id="recordingButton" class="btn btn-secondary">
+                        🎥 <span id="recordingText">Start Recording</span>
+                    </button>
+                </div>
+                <div class="recording-status" id="recordingStatus" style="display: none;">
+                    <span class="recording-indicator">🔴 Recording...</span>
+                    <span id="recordingDuration">00:00</span>
+                </div>
             </div>
 
             <!-- Selected Text Display -->

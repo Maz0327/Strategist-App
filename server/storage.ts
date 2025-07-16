@@ -1,4 +1,4 @@
-import { users, signals, sources, signalSources, userFeedSources, userTopicProfiles, feedItems, chatSessions, chatMessages, type User, type InsertUser, type Signal, type InsertSignal, type Source, type InsertSource, type SignalSource, type InsertSignalSource, type UserFeedSource, type InsertUserFeedSource, type UserTopicProfile, type InsertUserTopicProfile, type FeedItem, type InsertFeedItem, type ChatSession, type InsertChatSession, type ChatMessage, type InsertChatMessage } from "@shared/schema";
+import { users, signals, sources, signalSources, userFeedSources, userTopicProfiles, feedItems, chatSessions, chatMessages, visualCaptures, type User, type InsertUser, type Signal, type InsertSignal, type Source, type InsertSource, type SignalSource, type InsertSignalSource, type UserFeedSource, type InsertUserFeedSource, type UserTopicProfile, type InsertUserTopicProfile, type FeedItem, type InsertFeedItem, type ChatSession, type InsertChatSession, type ChatMessage, type InsertChatMessage, type VisualCapture, type InsertVisualCapture } from "@shared/schema";
 import { eq, desc, and, or, sql as drizzleSql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -68,6 +68,13 @@ export interface IStorage {
   
   // Analytics helpers
   getUserSignalStats(userId: number): Promise<{total: number, captures: number, potentialSignals: number, signals: number}>;
+  
+  // Visual Captures
+  getVisualCapture(id: number): Promise<VisualCapture | undefined>;
+  getVisualCapturesByUserId(userId: number): Promise<VisualCapture[]>;
+  createVisualCapture(capture: InsertVisualCapture): Promise<VisualCapture>;
+  updateVisualCapture(id: number, updates: Partial<InsertVisualCapture>): Promise<VisualCapture | undefined>;
+  deleteVisualCapture(id: number): Promise<void>;
 }
 
 export class DbStorage implements IStorage {
@@ -391,6 +398,36 @@ export class DbStorage implements IStorage {
       potentialSignals,
       signals: signalCount
     };
+  }
+
+  // Visual Captures implementation
+  async getVisualCapture(id: number): Promise<VisualCapture | undefined> {
+    const result = await db.select().from(visualCaptures).where(eq(visualCaptures.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getVisualCapturesByUserId(userId: number): Promise<VisualCapture[]> {
+    const result = await db.select().from(visualCaptures)
+      .where(eq(visualCaptures.userId, userId))
+      .orderBy(desc(visualCaptures.createdAt));
+    return result;
+  }
+
+  async createVisualCapture(capture: InsertVisualCapture): Promise<VisualCapture> {
+    const result = await db.insert(visualCaptures).values(capture).returning();
+    return result[0];
+  }
+
+  async updateVisualCapture(id: number, updates: Partial<InsertVisualCapture>): Promise<VisualCapture | undefined> {
+    const result = await db.update(visualCaptures)
+      .set(updates)
+      .where(eq(visualCaptures.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteVisualCapture(id: number): Promise<void> {
+    await db.delete(visualCaptures).where(eq(visualCaptures.id, id));
   }
 }
 

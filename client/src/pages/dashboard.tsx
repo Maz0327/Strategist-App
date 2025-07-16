@@ -9,10 +9,11 @@ import { StrategicBriefLab } from "@/components/strategic-brief-lab";
 import { ManageHub } from "@/components/manage-hub";
 import { AdminDashboard } from "@/components/admin-dashboard";
 import { FeedbackWidget } from "@/components/feedback-widget";
+import VisualCaptures from "@/components/visual-captures";
 import { authService } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Brain, Bell, User, Home, Search, Plus, Target, Settings, ChevronRight, BarChart3, ChevronLeft, Menu, MessageCircle, ChevronDown, LogOut } from "lucide-react";
+import { Brain, Bell, User, Home, Search, Plus, Target, Settings, ChevronRight, BarChart3, ChevronLeft, Menu, MessageCircle, ChevronDown, LogOut, Camera } from "lucide-react";
 import { HelpButton } from "@/components/help-button";
 import { ChatInterface } from "@/components/chat-interface";
 
@@ -88,6 +89,12 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
       id: "capture",
       label: "Signal Capture",
       icon: Plus,
+      subItems: []
+    },
+    {
+      id: "visual",
+      label: "Visual Captures",
+      icon: Camera,
       subItems: []
     },
     {
@@ -292,6 +299,10 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
             <NewSignalCapture 
               onNavigateToBrief={handleNavigateToBrief}
             />
+          )}
+          
+          {activeTab === "visual" && (
+            <VisualCaptures userId={user.id} />
           )}
           
           {activeTab === "brief" && (

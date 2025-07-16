@@ -121,6 +121,21 @@ export const chatMessages = pgTable("chat_messages", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const visualCaptures = pgTable("visual_captures", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  captureType: text("capture_type").notNull(), // 'screenshot', 'recording'
+  imageData: text("image_data"), // base64 encoded image for screenshots
+  extractedText: text("extracted_text"), // OCR extracted text
+  ocrMetadata: jsonb("ocr_metadata"), // OCR confidence, word positions, etc.
+  recordingData: jsonb("recording_data"), // video metadata, duration, etc.
+  tabInfo: jsonb("tab_info"), // browser tab context
+  processedAt: timestamp("processed_at"),
+  isProcessed: boolean("is_processed").default(false),
+  analysisId: integer("analysis_id").references(() => signals.id), // Link to main analysis
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const feedItems = pgTable("feed_items", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
@@ -185,6 +200,12 @@ export const insertChatSessionSchema = createInsertSchema(chatSessions).omit({
 export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
   id: true,
   createdAt: true,
+});
+
+export const insertVisualCaptureSchema = createInsertSchema(visualCaptures).omit({
+  id: true,
+  createdAt: true,
+  processedAt: true,
 });
 
 // Admin Analytics Tables
@@ -331,6 +352,8 @@ export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertFeedItem = z.infer<typeof insertFeedItemSchema>;
 export type FeedItem = typeof feedItems.$inferSelect;
+export type InsertVisualCapture = z.infer<typeof insertVisualCaptureSchema>;
+export type VisualCapture = typeof visualCaptures.$inferSelect;
 export type LoginData = z.infer<typeof loginSchema>;
 export type RegisterData = z.infer<typeof registerSchema>;
 export type AnalyzeContentData = z.infer<typeof analyzeContentSchema>;

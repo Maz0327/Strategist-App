@@ -873,6 +873,139 @@ The analyzed signals provide a comprehensive view of current market trends and s
     }
   });
 
+  // Visual capture routes
+  app.post("/api/visual-capture", requireAuth, async (req, res) => {
+    try {
+      const { type, screenshot, extractedText, ocrData, recordingData, tabInfo } = req.body;
+      
+      // Validate capture type
+      if (!type || !['screenshot', 'recording'].includes(type)) {
+        return res.status(400).json({ message: "Invalid capture type" });
+      }
+      
+      // Store visual capture
+      const capture = await storage.createVisualCapture({
+        userId: req.session.userId!,
+        captureType: type,
+        imageData: screenshot,
+        extractedText: extractedText || null,
+        ocrMetadata: ocrData || null,
+        recordingData: recordingData || null,
+        tabInfo: tabInfo || null,
+        isProcessed: false
+      });
+      
+      // If this is a screenshot with extracted text, also analyze it
+      if (type === 'screenshot' && extractedText) {
+        try {
+          const analysis = await openaiService.analyzeContent({
+            content: extractedText,
+            title: `Screenshot from ${tabInfo?.title || 'Unknown'}`,
+            url: tabInfo?.url || ''
+          });
+          
+          // Create a signal from the OCR analysis
+          const signal = await storage.createSignal({
+            userId: req.session.userId!,
+            title: `Screenshot Analysis: ${tabInfo?.title || 'Visual Content'}`,
+            content: extractedText,
+            url: tabInfo?.url || '',
+            summary: analysis.summary,
+            sentiment: analysis.sentiment,
+            tone: analysis.tone,
+            keywords: analysis.keywords,
+            confidence: analysis.confidence,
+            status: 'capture',
+            truthFact: analysis.truthAnalysis?.fact,
+            truthObservation: analysis.truthAnalysis?.observation,
+            truthInsight: analysis.truthAnalysis?.insight,
+            humanTruth: analysis.truthAnalysis?.humanTruth,
+            culturalMoment: analysis.truthAnalysis?.culturalMoment,
+            attentionValue: analysis.truthAnalysis?.attentionValue,
+            platformContext: analysis.platformContext,
+            viralPotential: analysis.viralPotential,
+            cohortSuggestions: analysis.cohortSuggestions,
+            competitiveInsights: analysis.competitiveInsights,
+            nextActions: analysis.strategicActions,
+            isDraft: false,
+            capturedAt: new Date(),
+            browserContext: tabInfo
+          });
+          
+          // Link the visual capture to the analysis
+          await storage.updateVisualCapture(capture.id, {
+            analysisId: signal.id,
+            isProcessed: true,
+            processedAt: new Date()
+          });
+          
+          res.json({ 
+            success: true, 
+            capture,
+            analysis: signal,
+            message: "Visual capture processed and analyzed successfully"
+          });
+        } catch (analysisError) {
+          // Visual capture was stored, but analysis failed
+          res.json({ 
+            success: true, 
+            capture,
+            message: "Visual capture stored successfully, but analysis failed"
+          });
+        }
+      } else {
+        res.json({ 
+          success: true, 
+          capture,
+          message: "Visual capture stored successfully"
+        });
+      }
+    } catch (error: any) {
+      debugLogger.error("Visual capture failed", error, req);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/visual-captures", requireAuth, async (req, res) => {
+    try {
+      const captures = await storage.getVisualCapturesByUserId(req.session.userId!);
+      res.json({ captures });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/visual-captures/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const capture = await storage.getVisualCapture(id);
+      
+      if (!capture || capture.userId !== req.session.userId) {
+        return res.status(404).json({ message: "Visual capture not found" });
+      }
+      
+      res.json({ capture });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/visual-captures/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      const capture = await storage.getVisualCapture(id);
+      if (!capture || capture.userId !== req.session.userId) {
+        return res.status(404).json({ message: "Visual capture not found" });
+      }
+      
+      await storage.deleteVisualCapture(id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Admin password reset route (temporary - for development)
   app.post("/api/auth/reset-admin-password", async (req, res) => {
     try {

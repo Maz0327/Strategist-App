@@ -10,7 +10,8 @@
     "notifications",
     "alarms",
     "tabCapture",
-    "desktopCapture"
+    "desktopCapture",
+    "scripting"
   ],
   "commands": {
     "quick-capture": {
@@ -18,6 +19,18 @@
         "default": "Ctrl+Shift+C"
       },
       "description": "Quick capture content"
+    },
+    "screenshot-capture": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+S"
+      },
+      "description": "Capture screenshot"
+    },
+    "start-recording": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+R"
+      },
+      "description": "Start/stop screen recording"
     }
   },
   "host_permissions": [
