@@ -105,11 +105,14 @@ export class OpenAIService {
     const contentLimit = lengthPreference === 'short' ? 1000 : (lengthPreference === 'medium' ? 2000 : 3000);
     const processedContent = content.slice(0, contentLimit);
     
-    // Craft detailed prompt for comprehensive analysis
+    // Craft detailed prompt for comprehensive analysis with specific length requirements
+    const lengthInstructions = this.getLengthInstructions(lengthPreference);
     const prompt = `Analyze this content for strategic insights and cultural significance:
 
 Title: ${data.title || 'Content'}
 Content: ${processedContent}
+
+${lengthInstructions}
 
 Provide JSON with these fields:
 {
@@ -259,6 +262,52 @@ Provide JSON with these fields:
       debugLogger.error('JSON Parse Error:', parseError);
       // Return fallback response - no errors thrown
       return fallbackResponse;
+    }
+  }
+
+  // Get specific length instructions for different analysis types
+  private getLengthInstructions(lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints'): string {
+    switch (lengthPreference) {
+      case 'short':
+        return `ANALYSIS LENGTH: SHORT - Essential insights only
+- Summary: 1 sentence maximum
+- Truth Analysis fields: 1 sentence each, focus on core insight
+- Strategic fields: 2-3 items maximum, direct and actionable
+- No elaborate explanations, get straight to the point
+- Use punchy, decisive language`;
+      
+      case 'medium':
+        return `ANALYSIS LENGTH: MEDIUM - Balanced detail
+- Summary: 2-3 sentences providing context and key insight
+- Truth Analysis fields: 2-3 sentences each with reasoning
+- Strategic fields: 3-4 items with brief explanations
+- Include both "what" and "why" for key insights
+- Balance depth with clarity`;
+      
+      case 'long':
+        return `ANALYSIS LENGTH: LONG - Comprehensive analysis
+- Summary: 3-4 sentences with rich context and implications
+- Truth Analysis fields: 3-4 sentences each with deep context, examples, and connections
+- Strategic fields: 4-5 items with detailed explanations and implications
+- Explore cultural nuances, behavioral psychology, and strategic implications
+- Connect insights across different sections and provide broader context`;
+      
+      case 'bulletpoints':
+        return `ANALYSIS LENGTH: BULLETPOINTS - Structured format
+- Format ALL text fields using bullet points with • symbols
+- Summary: 2-3 bullet points covering key aspects
+- Truth Analysis fields: 2-3 bullets each, standalone insights
+- Strategic fields: 3-4 bullets each with clear actionable points
+- Each bullet should be complete and informative
+- Use • symbol consistently for all bullet points`;
+      
+      default:
+        return `ANALYSIS LENGTH: MEDIUM - Balanced detail
+- Summary: 2-3 sentences providing context and key insight
+- Truth Analysis fields: 2-3 sentences each with reasoning
+- Strategic fields: 3-4 items with brief explanations
+- Include both "what" and "why" for key insights
+- Balance depth with clarity`;
     }
   }
 
