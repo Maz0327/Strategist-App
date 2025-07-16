@@ -250,18 +250,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         tags: [],
         confidence: analysis.confidence,
         status: "capture", // Start as capture, user decides if it becomes potential_signal
-        // Enhanced analysis fields
-        truthFact: analysis.truthAnalysis.fact,
-        truthObservation: analysis.truthAnalysis.observation,
-        truthInsight: analysis.truthAnalysis.insight,
-        humanTruth: analysis.truthAnalysis.humanTruth,
-        culturalMoment: analysis.truthAnalysis.culturalMoment,
-        attentionValue: analysis.truthAnalysis.attentionValue,
+        // Enhanced analysis fields with null checks
+        truthFact: analysis.truthAnalysis?.fact || 'Not identified',
+        truthObservation: analysis.truthAnalysis?.observation || 'Not identified',
+        truthInsight: analysis.truthAnalysis?.insight || 'Not identified',
+        humanTruth: analysis.truthAnalysis?.humanTruth || 'Not identified',
+        culturalMoment: analysis.truthAnalysis?.culturalMoment || 'Not identified',
+        attentionValue: analysis.truthAnalysis?.attentionValue || 'medium',
         platformContext: analysis.platformContext,
         viralPotential: analysis.viralPotential,
         cohortSuggestions: analysis.cohortSuggestions,
         competitiveInsights: analysis.competitiveInsights,
-        nextActions: analysis.nextActions,
+        nextActions: analysis.strategicActions || [],
         userNotes: userNotes
       };
       

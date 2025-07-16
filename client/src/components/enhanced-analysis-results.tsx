@@ -33,7 +33,7 @@ interface EnhancedAnalysisResultsProps {
       tone: string;
       keywords: string[];
       confidence: string;
-      truthAnalysis: {
+      truthAnalysis?: {
         fact: string;
         observation: string;
         insight: string;
@@ -76,6 +76,37 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
   const [analysisCache, setAnalysisCache] = useState<Record<string, any>>({
     medium: data // Cache the initial analysis with medium length
   });
+
+  // Add safety check for missing data
+  if (!data) {
+    return (
+      <Card className="border-red-200 bg-red-50">
+        <CardHeader>
+          <CardTitle className="text-red-800 flex items-center gap-2">
+            <AlertCircle className="h-5 w-5" />
+            Analysis Error
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-red-700">
+            The analysis results are incomplete or corrupted. Please try analyzing the content again.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Create fallback truthAnalysis if missing
+  const truthAnalysis = data.truthAnalysis || {
+    fact: 'Analysis in progress...',
+    observation: 'Analysis in progress...',
+    insight: 'Analysis in progress...',
+    humanTruth: 'Analysis in progress...',
+    culturalMoment: 'Analysis in progress...',
+    attentionValue: 'medium' as const,
+    platform: 'unknown',
+    cohortOpportunities: []
+  };
 
   const handleLengthPreferenceChange = async (newLength: 'short' | 'medium' | 'long' | 'bulletpoints') => {
     setLengthPreference(newLength);
@@ -335,7 +366,7 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
                   <h4 className="font-semibold text-blue-900">Fact</h4>
                 </div>
                 <p className="text-sm text-gray-700 bg-blue-50 p-3 rounded">
-                  {currentAnalysis.truthAnalysis.fact}
+                  {(currentAnalysis.truthAnalysis || truthAnalysis).fact}
                 </p>
               </div>
 
@@ -346,7 +377,7 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
                   <h4 className="font-semibold text-green-900">Observation</h4>
                 </div>
                 <p className="text-sm text-gray-700 bg-green-50 p-3 rounded">
-                  {currentAnalysis.truthAnalysis.observation}
+                  {(currentAnalysis.truthAnalysis || truthAnalysis).observation}
                 </p>
               </div>
 
@@ -357,7 +388,7 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
                   <h4 className="font-semibold text-yellow-900">Insight</h4>
                 </div>
                 <p className="text-sm text-gray-700 bg-yellow-50 p-3 rounded">
-                  {currentAnalysis.truthAnalysis.insight}
+                  {(currentAnalysis.truthAnalysis || truthAnalysis).insight}
                 </p>
               </div>
 
@@ -368,7 +399,7 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
                   <h4 className="font-semibold text-purple-900">Human Truth</h4>
                 </div>
                 <p className="text-sm text-gray-700 bg-purple-50 p-3 rounded">
-                  {currentAnalysis.truthAnalysis.humanTruth}
+                  {(currentAnalysis.truthAnalysis || truthAnalysis).humanTruth}
                 </p>
               </div>
 
@@ -379,7 +410,7 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
                   <h4 className="font-semibold text-red-900">Cultural Moment</h4>
                 </div>
                 <p className="text-sm text-gray-700 bg-red-50 p-3 rounded">
-                  {currentAnalysis.truthAnalysis.culturalMoment}
+                  {(currentAnalysis.truthAnalysis || truthAnalysis).culturalMoment}
                 </p>
               </div>
             </CardContent>

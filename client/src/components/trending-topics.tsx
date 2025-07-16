@@ -374,7 +374,7 @@ export function TrendingTopics() {
       {/* Topics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {filteredTopics.map((topic) => (
-          <Card key={topic.id} className="hover:shadow-md transition-shadow">
+          <Card key={`${topic.id}-${topic.platform}-${topic.fetchedAt}`} className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-2">
