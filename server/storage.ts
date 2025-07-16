@@ -195,6 +195,9 @@ export class DbStorage implements IStorage {
       flaggedAt: signals.flaggedAt,
       promotedAt: signals.promotedAt,
       createdAt: signals.createdAt,
+      isDraft: signals.isDraft,
+      capturedAt: signals.capturedAt,
+      browserContext: signals.browserContext,
     })
     .from(signals)
     .innerJoin(signalSources, eq(signalSources.signalId, signals.id))

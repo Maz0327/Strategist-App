@@ -142,7 +142,7 @@ ${selectedSignals.map(s => `- ${s.culturalMoment || 'Cultural context not identi
 
   // Extract cohort suggestions from signals
   const allCohorts = selectedSignals.flatMap(s => s.cohortSuggestions || []);
-  const uniqueCohorts = [...new Set(allCohorts)];
+  const uniqueCohorts = Array.from(new Set(allCohorts));
 
   return (
     <div className="space-y-6">
