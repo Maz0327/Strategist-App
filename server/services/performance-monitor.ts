@@ -13,7 +13,7 @@ interface PerformanceMetric {
 class PerformanceMonitor {
   private metrics: PerformanceMetric[] = [];
   private readonly maxMetrics = 1000; // Keep last 1000 metrics
-  private readonly slowRequestThreshold = 2000; // 2 seconds
+  private readonly slowRequestThreshold = 5000; // 5 seconds (increased to reduce noise)
 
   recordRequest(endpoint: string, method: string, duration: number, status: number, userId?: number) {
     const memoryUsage = process.memoryUsage().heapUsed / 1024 / 1024; // MB
@@ -35,8 +35,13 @@ class PerformanceMonitor {
       this.metrics = this.metrics.slice(-this.maxMetrics);
     }
 
-    // Log slow requests
-    if (duration > this.slowRequestThreshold) {
+    // Log slow requests (exclude static assets and auth checks)
+    if (duration > this.slowRequestThreshold && 
+        !endpoint.includes('/src/') && 
+        !endpoint.includes('/api/auth/me') &&
+        !endpoint.includes('.css') &&
+        !endpoint.includes('.js') &&
+        !endpoint.includes('.tsx')) {
       debugLogger.warn(`Slow request detected: ${method} ${endpoint} took ${duration}ms`, {
         duration,
         endpoint,

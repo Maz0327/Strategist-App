@@ -45,8 +45,10 @@ app.use((req, res, next) => {
 
       log(logLine);
       
-      // Enhanced debug logging
-      debugLogger.apiCall(req, res, duration, res.statusCode >= 400 ? new Error(capturedJsonResponse?.message || 'Request failed') : undefined);
+      // Enhanced debug logging - skip auth errors to reduce noise
+      if (res.statusCode !== 401 && !capturedJsonResponse?.message?.includes('Not authenticated')) {
+        debugLogger.apiCall(req, res, duration, res.statusCode >= 400 ? new Error(capturedJsonResponse?.message || 'Request failed') : undefined);
+      }
     }
   });
 
