@@ -386,37 +386,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const data = { 
-        content: fastMode ? content.slice(0, 800) : content, // Aggressively limit content in fast mode
-        title: title || "Streaming Analysis", 
+        content: content.slice(0, 1500), // Optimize content length for speed
+        title: title || "Analysis", 
         url 
       };
       
-      // Progress callback for streaming updates
+      // Simplified progress callback
       const onProgress = (stage: string, progress: number) => {
         res.write(`data: ${JSON.stringify({ type: 'progress', stage, progress })}\n\n`);
       };
-
-      debugLogger.info("Streaming analysis request received", { title, lengthPreference, hasUrl: !!url, fastMode }, req);
       
       try {
-        // Use fast mode for quicker analysis if requested
-        const analysisLength = fastMode ? 'short' : (lengthPreference || 'medium');
-        const analysis = await openaiService.analyzeContent(data, analysisLength, onProgress);
+        const analysis = await openaiService.analyzeContent(data, lengthPreference || 'medium', onProgress);
         
-        // Send final result in format expected by frontend
         const responseData = {
           success: true,
           analysis,
-          signalId: null // Streaming doesn't save to database, just returns analysis
+          signalId: null
         };
         
         res.write(`data: ${JSON.stringify({ type: 'complete', analysis: responseData })}\n\n`);
         res.write(`data: ${JSON.stringify({ type: 'end' })}\n\n`);
         
-        debugLogger.info("Streaming analysis completed", { sentiment: analysis.sentiment, fastMode }, req);
       } catch (error: any) {
         res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
-        debugLogger.error('Streaming analysis failed', error, req);
       } finally {
         res.end();
       }
