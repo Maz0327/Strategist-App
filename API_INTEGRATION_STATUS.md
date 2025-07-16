@@ -11,7 +11,7 @@
 - **HackerNews**: Tech trends and discussions (no auth required)
 - **Last.fm**: Music trends and data (API key configured)
 - **TVMaze**: TV show information and trends (no auth required)
-- **Glasp**: Social highlights and insights (no auth required)
+- **Glasp**: Social highlights and insights (experimental web scraping planned)
 
 ### ⚠️ **APIs Requiring Authentication Setup**
 These APIs are integrated but need credentials to be fully operational:

@@ -346,21 +346,21 @@ Provide JSON with these fields:
     } catch (error: any) {
       debugLogger.error('OpenAI analysis failed', error);
       
-      // Track failed API call - temporarily disabled until proper user context is available
-      // analyticsService.trackExternalApiCall({
-      //   userId: 0, // System user for now, will be updated with actual user context
-      //   service: 'openai',
-      //   endpoint: 'chat/completions',
-      //   method: 'POST',
-      //   statusCode: 500,
-      //   responseTime: Date.now() - startTime,
-      //   errorMessage: error.message,
-      //   metadata: {
-      //     model: 'gpt-4o-mini',
-      //     promptLength: prompt.length,
-      //     contentLength: processedContent.length
-      //   }
-      // });
+      // Track failed API call
+      analyticsService.trackExternalApiCall({
+        userId: 0, // System user for now, will be updated with actual user context
+        service: 'openai',
+        endpoint: 'chat/completions',
+        method: 'POST',
+        statusCode: 500,
+        responseTime: Date.now() - startTime,
+        errorMessage: error.message,
+        metadata: {
+          model: 'gpt-4o-mini',
+          promptLength: prompt.length,
+          contentLength: processedContent.length
+        }
+      });
       
       throw new Error(`Failed to analyze content: ${error.message}`);
     }
@@ -379,23 +379,23 @@ Provide JSON with these fields:
       completionTokens
     });
 
-    // Track successful API call - temporarily disabled until proper user context is available
-    // analyticsService.trackExternalApiCall({
-    //   userId: 0, // System user for now, will be updated with actual user context
-    //   service: 'openai',
-    //   endpoint: 'chat/completions',
-    //   method: 'POST',
-    //   statusCode: 200,
-    //   responseTime,
-    //   tokensUsed,
-    //   cost: Math.round(tokensUsed * 0.00015 * 100), // Cost in cents ($0.00015 per token for gpt-4o-mini)
-    //   metadata: {
-    //     model: 'gpt-4o-mini',
-    //     promptTokens,
-    //     completionTokens,
-    //     finishReason: response.choices[0]?.finish_reason
-    //   }
-    // });
+    // Track successful API call
+    analyticsService.trackExternalApiCall({
+      userId: 0, // System user for now, will be updated with actual user context
+      service: 'openai',
+      endpoint: 'chat/completions',
+      method: 'POST',
+      statusCode: 200,
+      responseTime,
+      tokensUsed,
+      cost: Math.round(tokensUsed * 0.00015 * 100), // Cost in cents ($0.00015 per token for gpt-4o-mini)
+      metadata: {
+        model: 'gpt-4o-mini',
+        promptTokens,
+        completionTokens,
+        finishReason: response.choices[0]?.finish_reason
+      }
+    });
 
     const result = JSON.parse(response.choices[0].message.content || "{}");
     debugLogger.info('OpenAI response parsed successfully', { 

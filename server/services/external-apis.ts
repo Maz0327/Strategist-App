@@ -1,4 +1,5 @@
 import { trendsService } from './trends';
+import { googleTrendsPythonService } from './google-trends-python';
 import { createRedditService } from './reddit';
 // Removed Twitter API - moved to future integrations due to rate limiting
 import { createNewsService } from './news';
@@ -14,6 +15,12 @@ import { createNYTimesService } from './nytimes';
 import { createCurrentsService } from './currents';
 import { createMediaStackService } from './mediastack';
 import { glaspService } from './glasp';
+import { knowYourMemeService } from './knowyourmeme';
+import { urbanDictionaryService } from './urbandictionary';
+import { youtubeTrendingService } from './youtube-trending';
+import { redditCulturalService } from './reddit-cultural';
+import { tikTokTrendsService } from './tiktok-trends';
+import { instagramTrendsService } from './instagram-trends';
 import type { TrendingTopic } from './trends';
 
 export class ExternalAPIsService {
@@ -76,7 +83,9 @@ export class ExternalAPIsService {
         const [
           googleTrends, redditTrends, twitterTrends, newsTrends, youtubeTrends, hackerNewsTrends,
           spotifyTrends, lastfmTrends, geniusTrends, tmdbTrends, tvmazeTrends,
-          gnewsTrends, nytimesTrends, currentsTrends, mediastackTrends, glaspTrends
+          gnewsTrends, nytimesTrends, currentsTrends, mediastackTrends, glaspTrends,
+          knowYourMemeTrends, urbanDictionaryTrends, youtubeTrendingTrends, redditCulturalTrends,
+          tikTokTrends, instagramTrends
         ] = await Promise.allSettled([
           this.getGoogleTrends(),
           this.getRedditTrends(),
@@ -93,21 +102,31 @@ export class ExternalAPIsService {
           this.getNYTimesTrends(),
           this.getCurrentsTrends(),
           this.getMediaStackTrends(),
-          this.getGlaspTrends()
+          this.getGlaspTrends(),
+          this.getKnowYourMemeTrends(),
+          this.getUrbanDictionaryTrends(),
+          this.getYouTubeTrendingTrends(),
+          this.getRedditCulturalTrends(),
+          this.getTikTokTrends(),
+          this.getInstagramTrends()
         ]);
 
         // Process all fulfilled results
         const allPromises = [
           googleTrends, redditTrends, twitterTrends, newsTrends, youtubeTrends, hackerNewsTrends,
           spotifyTrends, lastfmTrends, geniusTrends, tmdbTrends, tvmazeTrends,
-          gnewsTrends, nytimesTrends, currentsTrends, mediastackTrends, glaspTrends
+          gnewsTrends, nytimesTrends, currentsTrends, mediastackTrends, glaspTrends,
+          knowYourMemeTrends, urbanDictionaryTrends, youtubeTrendingTrends, redditCulturalTrends,
+          tikTokTrends, instagramTrends
         ];
 
         allPromises.forEach((promise, index) => {
           const platformNames = [
             'google', 'reddit', 'twitter', 'news', 'youtube', 'hackernews',
             'spotify', 'lastfm', 'genius', 'tmdb', 'tvmaze',
-            'gnews', 'nytimes', 'currents', 'mediastack', 'glasp'
+            'gnews', 'nytimes', 'currents', 'mediastack', 'glasp',
+            'knowyourmeme', 'urbandictionary', 'youtube-trending', 'reddit-cultural',
+            'tiktok-trends', 'instagram-trends'
           ];
           
           if (promise.status === 'fulfilled') {
@@ -166,6 +185,24 @@ export class ExternalAPIsService {
           case 'glasp':
             results.push(...await this.getGlaspTrends());
             break;
+          case 'knowyourmeme':
+            results.push(...await this.getKnowYourMemeTrends());
+            break;
+          case 'urbandictionary':
+            results.push(...await this.getUrbanDictionaryTrends());
+            break;
+          case 'youtube-trending':
+            results.push(...await this.getYouTubeTrendingTrends());
+            break;
+          case 'reddit-cultural':
+            results.push(...await this.getRedditCulturalTrends());
+            break;
+          case 'tiktok-trends':
+            results.push(...await this.getTikTokTrends());
+            break;
+          case 'instagram-trends':
+            results.push(...await this.getInstagramTrends());
+            break;
         }
         
         // For single platform, return up to 20 topics sorted by score
@@ -199,14 +236,15 @@ export class ExternalAPIsService {
 
   async getGoogleTrends(): Promise<TrendingTopic[]> {
     try {
-      const trends = await trendsService.getGoogleTrends();
+      debugLogger.info('Fetching Google Trends data using Python service');
       
-      // Also get some business-related trends
-      const businessTrends = await trendsService.getRelatedTopics('business strategy');
-      const marketingTrends = await trendsService.getRelatedTopics('digital marketing');
+      // Use the new Python-based Google Trends service
+      const trends = await googleTrendsPythonService.getAllGoogleTrends();
       
-      return [...trends, ...businessTrends.slice(0, 3), ...marketingTrends.slice(0, 3)];
+      debugLogger.info(`Successfully fetched ${trends.length} Google Trends topics`);
+      return trends;
     } catch (error) {
+      debugLogger.error('Failed to fetch Google Trends data:', error);
       return [];
     }
   }
@@ -441,6 +479,102 @@ export class ExternalAPIsService {
       return trends;
     } catch (error) {
       return this.getFallbackKnowledgeData();
+    }
+  }
+
+  // Cultural Intelligence Services
+  async getKnowYourMemeTrends(): Promise<TrendingTopic[]> {
+    try {
+      const [trending, popular, deadpools] = await Promise.all([
+        knowYourMemeService.getTrendingMemes(8),
+        knowYourMemeService.getPopularMemes(8),
+        knowYourMemeService.getDeadpoolMemes(4)
+      ]);
+      
+      const allTrends = [...trending, ...popular, ...deadpools];
+      return allTrends.slice(0, 10);
+    } catch (error) {
+      debugLogger.warn('Know Your Meme blocked - using fallback data');
+      return [];
+    }
+  }
+
+  async getUrbanDictionaryTrends(): Promise<TrendingTopic[]> {
+    try {
+      const [trending, popular, recent, wordOfDay] = await Promise.all([
+        urbanDictionaryService.getTrendingWords(8),
+        urbanDictionaryService.getPopularWords(8),
+        urbanDictionaryService.getRecentWords(4),
+        urbanDictionaryService.getWordOfTheDay()
+      ]);
+      
+      const allTrends = [...trending, ...popular, ...recent, ...wordOfDay];
+      return allTrends.slice(0, 10);
+    } catch (error) {
+      return [];
+    }
+  }
+
+  async getYouTubeTrendingTrends(): Promise<TrendingTopic[]> {
+    try {
+      const [general, music, gaming, news] = await Promise.all([
+        youtubeTrendingService.getTrendingVideos(8),
+        youtubeTrendingService.getMusicTrending(6),
+        youtubeTrendingService.getGamingTrending(6),
+        youtubeTrendingService.getNewsTrending(4)
+      ]);
+      
+      const allTrends = [...general, ...music, ...gaming, ...news];
+      return allTrends.slice(0, 12);
+    } catch (error) {
+      return [];
+    }
+  }
+
+  async getRedditCulturalTrends(): Promise<TrendingTopic[]> {
+    try {
+      const [cultural, viral, generational, trending] = await Promise.all([
+        redditCulturalService.getCulturalTrends(8),
+        redditCulturalService.getViralContent(6),
+        redditCulturalService.getGenerationalTrends(6),
+        redditCulturalService.getTrendingSubreddits(4)
+      ]);
+      
+      const allTrends = [...cultural, ...viral, ...generational, ...trending];
+      return allTrends.slice(0, 12);
+    } catch (error) {
+      return [];
+    }
+  }
+
+  async getTikTokTrends(): Promise<TrendingTopic[]> {
+    try {
+      const [hashtags, discover, music] = await Promise.all([
+        tikTokTrendsService.getTrendingHashtags(10),
+        tikTokTrendsService.getDiscoverTrends(8),
+        tikTokTrendsService.getMusicTrends(6)
+      ]);
+      
+      const allTrends = [...hashtags, ...discover, ...music];
+      return allTrends.slice(0, 12);
+    } catch (error) {
+      return [];
+    }
+  }
+
+  async getInstagramTrends(): Promise<TrendingTopic[]> {
+    try {
+      const [trending, popular, lifestyle, business] = await Promise.all([
+        instagramTrendsService.getTrendingHashtags(8),
+        instagramTrendsService.getPopularHashtags(['fashion', 'food', 'travel', 'fitness'], 6),
+        instagramTrendsService.getLifestyleTrends(6),
+        instagramTrendsService.getBusinessTrends(4)
+      ]);
+      
+      const allTrends = [...trending, ...popular, ...lifestyle, ...business];
+      return allTrends.slice(0, 12);
+    } catch (error) {
+      return [];
     }
   }
 

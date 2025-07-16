@@ -194,9 +194,6 @@ export class DbStorage implements IStorage {
       systemSuggestionReason: signals.systemSuggestionReason,
       flaggedAt: signals.flaggedAt,
       promotedAt: signals.promotedAt,
-      isDraft: signals.isDraft,
-      capturedAt: signals.capturedAt,
-      browserContext: signals.browserContext,
       createdAt: signals.createdAt,
     })
     .from(signals)

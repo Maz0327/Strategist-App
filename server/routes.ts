@@ -26,6 +26,7 @@ import {
 } from "../shared/admin-schema";
 import { ERROR_MESSAGES, getErrorMessage, matchErrorPattern } from "@shared/error-messages";
 import { sql } from "./storage";
+import { openaiRateLimit, dailyOpenaiRateLimit, generalRateLimit, authRateLimit } from './middleware/rate-limit';
 
 declare module "express-session" {
   interface SessionData {
@@ -91,6 +92,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add performance monitoring middleware
   app.use(performanceMiddleware);
 
+  // Add general rate limiting to all API endpoints
+  app.use('/api/', generalRateLimit);
+
   // API call tracking middleware
   app.use((req, res, next) => {
     const startTime = Date.now();
@@ -148,7 +152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Auth routes
-  app.post("/api/auth/register", async (req, res) => {
+  app.post("/api/auth/register", authRateLimit, async (req, res) => {
     try {
       const data = registerSchema.parse(req.body);
       const user = await authService.register(data);
@@ -163,7 +167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/auth/login", async (req, res) => {
+  app.post("/api/auth/login", authRateLimit, async (req, res) => {
     try {
       const data = loginSchema.parse(req.body);
       debugLogger.debug("Login attempt", { email: data.email }, req);
@@ -224,7 +228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Content analysis routes
-  app.post("/api/analyze", requireAuth, async (req, res) => {
+  app.post("/api/analyze", requireAuth, openaiRateLimit, dailyOpenaiRateLimit, async (req, res) => {
     try {
       debugLogger.info("Content analysis request received", { title: req.body.title, hasUrl: !!req.body.url, contentLength: req.body.content?.length }, req);
       const data = analyzeContentSchema.parse(req.body);
@@ -339,7 +343,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Re-analyze with different length preference
-  app.post("/api/reanalyze", requireAuth, async (req, res) => {
+  app.post("/api/reanalyze", requireAuth, openaiRateLimit, dailyOpenaiRateLimit, async (req, res) => {
     try {
       const { content, title, url, lengthPreference } = req.body;
       
@@ -366,7 +370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Streaming analysis endpoint for real-time progress
-  app.post("/api/analyze/stream", requireAuth, async (req, res) => {
+  app.post("/api/analyze/stream", requireAuth, openaiRateLimit, dailyOpenaiRateLimit, async (req, res) => {
     try {
       const { content, title, url, lengthPreference } = req.body;
       
@@ -635,13 +639,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get trending topics from external APIs
-  app.get("/api/topics", requireAuth, async (req, res) => {
+  // Get trending topics from external APIs (public access)
+  app.get("/api/topics", async (req, res) => {
     try {
       const { platform } = req.query;
       const platformFilter = platform as string | undefined;
       
-      debugLogger.info(`Fetching trending topics`, { platform: platformFilter, userId: req.session.userId }, req);
+      debugLogger.info(`Fetching trending topics`, { platform: platformFilter, userId: req.session.userId || 'anonymous' }, req);
       
       const { externalAPIsService } = await import('./services/external-apis');
       const topics = await externalAPIsService.getAllTrendingTopics(platformFilter);
@@ -654,8 +658,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Search trending topics
-  app.get("/api/topics/search", requireAuth, async (req, res) => {
+  // Search trending topics (public access)
+  app.get("/api/topics/search", async (req, res) => {
     try {
       const { q: query, platform } = req.query;
       
@@ -673,8 +677,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Check API health status
-  app.get("/api/topics/health", requireAuth, async (req, res) => {
+  // Check API health status (public access)
+  app.get("/api/topics/health", async (req, res) => {
     try {
       const { externalAPIsService } = await import('./services/external-apis');
       const health = await externalAPIsService.checkAPIHealth();
