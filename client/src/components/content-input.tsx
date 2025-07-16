@@ -29,6 +29,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart }: ContentInp
   const [userNotes, setUserNotes] = useState("");
   const [analysisProgress, setAnalysisProgress] = useState({ stage: '', progress: 0 });
   const [useStreaming, setUseStreaming] = useState(true);
+  const [fastMode, setFastMode] = useState(false);
   const { toast } = useToast();
 
   // Example content for quick demo
@@ -61,7 +62,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart }: ContentInp
     onAnalysisStart?.();
 
     try {
-      const requestData = { ...data, lengthPreference, userNotes };
+      const requestData = { ...data, lengthPreference, userNotes, fastMode };
       const response = await fetch('/api/analyze/stream', {
         method: 'POST',
         headers: {
@@ -131,7 +132,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart }: ContentInp
       setIsLoading(true);
       onAnalysisStart?.();
       try {
-        const requestData = { ...data, lengthPreference, userNotes };
+        const requestData = { ...data, lengthPreference, userNotes, fastMode };
         
         const result = await retryRequest(async () => {
           const response = await apiRequest("POST", "/api/analyze", requestData);
@@ -273,20 +274,36 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart }: ContentInp
         <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-800">
           <strong>Process:</strong> Analysis creates captures → Flag as potential signals → Validate to signals → Use in briefs
         </div>
-        <div className="mt-3 flex items-center gap-2">
-          <Label htmlFor="analysis-length" className="text-sm font-medium">Truth Analysis Length:</Label>
-          <InfoTooltip content="Choose how detailed you want the strategic insights to be. Short for quick overviews, Long for comprehensive analysis." />
-          <Select value={lengthPreference} onValueChange={(value: any) => setLengthPreference(value)}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="short">Short</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="long">Long</SelectItem>
-              <SelectItem value="bulletpoints">Bulletpoints</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="mt-3 flex items-center gap-6">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="analysis-length" className="text-sm font-medium">Truth Analysis Length:</Label>
+            <InfoTooltip content="Choose how detailed you want the strategic insights to be. Short for quick overviews, Long for comprehensive analysis." />
+            <Select value={lengthPreference} onValueChange={(value: any) => setLengthPreference(value)}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="short">Short</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="long">Long</SelectItem>
+                <SelectItem value="bulletpoints">Bulletpoints</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="fast-mode"
+              checked={fastMode}
+              onChange={(e) => setFastMode(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <Label htmlFor="fast-mode" className="text-sm font-medium">
+              Fast Mode (2-3 sec)
+            </Label>
+            <InfoTooltip content="Faster analysis with reduced content processing for quicker results." />
+          </div>
         </div>
       </CardHeader>
       <CardContent>

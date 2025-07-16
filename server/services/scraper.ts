@@ -17,10 +17,12 @@ export class ScraperService {
 
     try {
       const response = await axios.get(url, {
-        timeout: 10000,
+        timeout: 5000, // Reduced timeout for faster failures
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
+        },
+        maxRedirects: 3, // Limit redirects for faster processing
+        validateStatus: (status) => status < 400, // Only accept success status codes
       });
 
       const $ = cheerio.load(response.data);
@@ -69,8 +71,8 @@ export class ScraperService {
       }
       
       return {
-        title: title.substring(0, 200), // Limit title length
-        content: content.substring(0, 10000) // Limit content length
+        title: title.substring(0, 150), // Reduced title length for speed
+        content: content.substring(0, 5000) // Reduced content length for faster processing
       };
     } catch (error: any) {
       // Provide more specific error messages based on error type

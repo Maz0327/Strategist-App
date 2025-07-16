@@ -56,10 +56,24 @@ export class OpenAIService {
     }
   }
 
+  // Simple hash function for content caching
+  private hashContent(content: string): string {
+    let hash = 0;
+    if (content.length === 0) return hash.toString();
+    for (let i = 0; i < content.length; i++) {
+      const char = content.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return Math.abs(hash).toString(36);
+  }
+
   async analyzeContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number) => void): Promise<EnhancedAnalysisResult> {
-    const cacheKey = JSON.stringify({ content: data.content, title: data.title, lengthPreference });
+    // Enhanced cache key with content hash for better performance
+    const contentHash = this.hashContent(data.content || '');
+    const cacheKey = `${contentHash}_${lengthPreference}`;
     
-    // CRITICAL FIX: Check cache first to reduce OpenAI costs
+    // Check cache first - instant response if available
     const cachedResult = cacheService.getAnalysis(cacheKey);
     if (cachedResult) {
       structuredLogger.info('Analysis cache hit', { 
@@ -68,6 +82,10 @@ export class OpenAIService {
         lengthPreference,
         type: 'analysis_cache_hit'
       });
+      // Simulate instant progress for cached results
+      if (onProgress) {
+        onProgress('Loading cached analysis...', 100);
+      }
       return cachedResult;
     }
     
@@ -87,7 +105,7 @@ export class OpenAIService {
       result = await this.analyzeSingleContent(data, lengthPreference, onProgress);
     }
     
-    // Cache the result
+    // Cache the result with enhanced key
     cacheService.setAnalysis(cacheKey, result);
     
     return result;
@@ -122,9 +140,9 @@ export class OpenAIService {
         const result = await this.analyzeSingleContent(chunkData, lengthPreference);
         chunkResults.push(result);
         
-        // Small delay between chunks to prevent rate limiting
+        // Reduced delay between chunks for faster processing
         if (i < chunks.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 200));
         }
       } catch (error) {
         debugLogger.error(`Failed to analyze chunk ${i + 1}`, error);
@@ -341,48 +359,45 @@ export class OpenAIService {
       }
     };
     
-    // Optimized prompt for faster processing - reduced token usage
-    const prompt = `
-Analyze: ${data.title || 'Untitled'}
-Content: ${processedContent.slice(0, 3000)} ${processedContent.length > 3000 ? '...' : ''}
+    // Ultra-optimized prompt for maximum speed
+    const lengthMap = { short: '1-2 sentences', medium: '2-3 sentences', long: '3-4 sentences', bulletpoints: 'Use •' };
+    const prompt = `Analyze: ${data.title || 'Untitled'}
+Content: ${processedContent.slice(0, 2000)}${processedContent.length > 2000 ? '...' : ''}
 
-Return JSON only:
+JSON:
 {
-  "summary": "${lengthPreference === 'short' ? '1-2 sentences' : lengthPreference === 'long' ? '4-6 sentences' : '2-3 sentences'}",
+  "summary": "${lengthMap[lengthPreference] || '2-3 sentences'}",
   "sentiment": "positive/negative/neutral",
   "tone": "professional/casual/urgent",
-  "keywords": ["5 key terms"],
+  "keywords": ["5 terms"],
   "confidence": "XX%",
   "truthAnalysis": {
-    "fact": "${lengthPreference === 'bulletpoints' ? 'Use •' : `${lengthPreference} length`}",
-    "observation": "${lengthPreference === 'bulletpoints' ? 'Use •' : `${lengthPreference} length`}",
-    "insight": "${lengthPreference === 'bulletpoints' ? 'Use •' : `${lengthPreference} length`}",
-    "humanTruth": "${lengthPreference === 'bulletpoints' ? 'Use •' : `${lengthPreference} length`}",
-    "culturalMoment": "${lengthPreference === 'bulletpoints' ? 'Use •' : `${lengthPreference} length`}",
+    "fact": "${lengthMap[lengthPreference] || '2-3 sentences'}",
+    "observation": "${lengthMap[lengthPreference] || '2-3 sentences'}",
+    "insight": "${lengthMap[lengthPreference] || '2-3 sentences'}",
+    "humanTruth": "${lengthMap[lengthPreference] || '2-3 sentences'}",
+    "culturalMoment": "${lengthMap[lengthPreference] || '2-3 sentences'}",
     "attentionValue": "high/medium/low",
-    "platform": "brief platform context",
-    "cohortOpportunities": ["3 specific cohorts"]
+    "platform": "context",
+    "cohortOpportunities": ["3 cohorts"]
   },
-  "cohortSuggestions": ["3 suggestions"],
-  "platformContext": "brief context",
+  "cohortSuggestions": ["3 items"],
+  "platformContext": "context",
   "viralPotential": "high/medium/low",
-  "competitiveInsights": ["3 insights"],
-  "strategicInsights": ["3 strategic points"],
-  "strategicActions": ["3 actions"]
-}
-`;
+  "competitiveInsights": ["3 items"],
+  "strategicInsights": ["3 items"],
+  "strategicActions": ["3 items"]
+}`;
 
     try {
       const startTime = Date.now();
       debugLogger.info('Sending request to OpenAI API', { model: 'gpt-4o-mini', promptLength: prompt.length });
       
-      // Progress tracking for better UX - faster intervals
+      // Minimal progress tracking for speed
       if (onProgress) {
-        onProgress('Initializing analysis', 10);
-        setTimeout(() => onProgress('Processing content', 30), 300);
-        setTimeout(() => onProgress('Analyzing cultural context', 50), 1000);
-        setTimeout(() => onProgress('Generating insights', 70), 2500);
-        setTimeout(() => onProgress('Finalizing results', 90), 4000);
+        onProgress('Processing...', 30);
+        setTimeout(() => onProgress('Analyzing...', 60), 1000);
+        setTimeout(() => onProgress('Finalizing...', 90), 3000);
       }
       
       // OpenAI API call with timeout prevention strategies
@@ -395,18 +410,14 @@ Return JSON only:
         model: "gpt-4o-mini", // Keeping cost-efficient model as requested
         messages: [
           {
-            role: "system",
-            content: "Strategic content analyst. Return JSON only. Be concise."
-          },
-          {
             role: "user",
             content: prompt
           }
         ],
         response_format: { type: "json_object" },
-        temperature: 0.5, // Reduced for faster, more focused responses
-        max_tokens: 2500, // Reduced for faster processing
-        top_p: 0.9, // Added for faster generation
+        temperature: 0.3, // Lower for faster, more deterministic responses
+        max_tokens: 1800, // Further reduced for speed
+        top_p: 0.8, // Reduced for faster generation
       });
       
       return this.processOpenAIResponse(response, startTime, historicalContext);

@@ -370,7 +370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Streaming analysis endpoint for real-time progress
   app.post("/api/analyze/stream", requireAuth, openaiRateLimit, dailyOpenaiRateLimit, async (req, res) => {
     try {
-      const { content, title, url, lengthPreference } = req.body;
+      const { content, title, url, lengthPreference, fastMode = false } = req.body;
       
       if (!content) {
         return res.status(400).json({ message: "Content is required" });
@@ -385,17 +385,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'Access-Control-Allow-Headers': 'Cache-Control'
       });
 
-      const data = { content, title: title || "Streaming Analysis", url };
+      const data = { 
+        content: fastMode ? content.slice(0, 1500) : content, // Limit content in fast mode
+        title: title || "Streaming Analysis", 
+        url 
+      };
       
       // Progress callback for streaming updates
       const onProgress = (stage: string, progress: number) => {
         res.write(`data: ${JSON.stringify({ type: 'progress', stage, progress })}\n\n`);
       };
 
-      debugLogger.info("Streaming analysis request received", { title, lengthPreference, hasUrl: !!url }, req);
+      debugLogger.info("Streaming analysis request received", { title, lengthPreference, hasUrl: !!url, fastMode }, req);
       
       try {
-        const analysis = await openaiService.analyzeContent(data, lengthPreference || 'medium', onProgress);
+        // Use fast mode for quicker analysis if requested
+        const analysisLength = fastMode ? 'short' : (lengthPreference || 'medium');
+        const analysis = await openaiService.analyzeContent(data, analysisLength, onProgress);
         
         // Send final result in format expected by frontend
         const responseData = {
@@ -407,7 +413,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.write(`data: ${JSON.stringify({ type: 'complete', analysis: responseData })}\n\n`);
         res.write(`data: ${JSON.stringify({ type: 'end' })}\n\n`);
         
-        debugLogger.info("Streaming analysis completed", { sentiment: analysis.sentiment }, req);
+        debugLogger.info("Streaming analysis completed", { sentiment: analysis.sentiment, fastMode }, req);
       } catch (error: any) {
         res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
         debugLogger.error('Streaming analysis failed', error, req);
