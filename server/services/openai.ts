@@ -142,82 +142,32 @@ export class OpenAIService {
 
 
   private async analyzeSingleContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number) => void): Promise<EnhancedAnalysisResult> {
+    // Simplified content processing
     const content = data.content || '';
+    const contentLimit = lengthPreference === 'short' ? 1000 : (lengthPreference === 'medium' ? 1500 : 2000);
+    const processedContent = content.slice(0, contentLimit);
     
-    // Calculate optimal tokens based on content length
-    const optimalTokens = this.calculateOptimalTokens(content.length, 'enhanced');
-    
-    // Optimize content processing based on calculated tokens
-    const processedContent = this.optimizeContentForLength(content, optimalTokens);
-    
-    // Dynamic response length based on content complexity
-    const responseComplexity = content.length > 1000 ? 'detailed' : 
-                               content.length > 500 ? 'balanced' : 'concise';
-    
-    const analysisDepth = {
-      'concise': 'brief analysis with key points',
-      'balanced': 'thorough analysis with strategic insights',
-      'detailed': 'comprehensive analysis with deep strategic insights'
-    }[responseComplexity];
-    
-    // Ultra-fast prompt optimized for dynamic content
-    const prompt = `Analyze this content with ${analysisDepth} and return ONLY valid JSON:
+    // Streamlined prompt
+    const prompt = `Analyze: ${data.title || 'Content'}
+Content: ${processedContent}
 
-${data.title || 'Content'}: ${processedContent}
-
-Content length: ${content.length} characters
-Analysis depth: ${responseComplexity}
-
-Return this exact JSON structure:
-{
-  "summary": "brief summary",
-  "sentiment": "positive",
-  "tone": "professional",
-  "keywords": ["keyword1", "keyword2", "keyword3"],
-  "confidence": "85%",
-  "truthAnalysis": {
-    "fact": "main fact",
-    "observation": "key observation",
-    "insight": "strategic insight",
-    "humanTruth": "human truth",
-    "culturalMoment": "cultural context",
-    "attentionValue": "medium",
-    "platform": "general",
-    "cohortOpportunities": ["audience1", "audience2"]
-  },
-  "cohortSuggestions": ["suggestion1", "suggestion2"],
-  "platformContext": "platform context",
-  "viralPotential": "medium",
-  "competitiveInsights": ["insight1", "insight2"],
-  "strategicInsights": ["insight1", "insight2"],
-  "strategicActions": ["action1", "action2"]
-}`;
+Return JSON with: summary, sentiment, tone, keywords, confidence, truthAnalysis{fact, observation, insight, humanTruth, culturalMoment, attentionValue, platform, cohortOpportunities}, cohortSuggestions, platformContext, viralPotential, competitiveInsights, strategicInsights, strategicActions`;
 
     try {
       const startTime = Date.now();
       
-      // Use dynamic token allocation
-      const tokenLimit = optimalTokens;
-      
-      debugLogger.info('Dynamic token allocation', {
-        contentLength: content.length,
-        processedLength: processedContent.length,
-        optimalTokens: tokenLimit,
-        responseComplexity
-      });
+      // Optimized token limits for speed
+      const tokenLimit = lengthPreference === 'short' ? 300 : (lengthPreference === 'medium' ? 500 : 700);
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: "You are a content analysis expert. Always return valid JSON only. Adapt your analysis depth to the content complexity." },
-          { role: "user", content: prompt }
-        ],
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
-        temperature: 0.1, // Fast consistent responses
+        temperature: 0.1,
         max_tokens: tokenLimit,
-        top_p: 0.3, // More focused responses
-        stream: false, // Faster single response
-        timeout: 15000 // 15 second timeout for speed
+        top_p: 0.5,
+        presence_penalty: 0.3,
+        frequency_penalty: 0.2
       });
 
       // Direct response processing
@@ -329,7 +279,7 @@ Return this exact JSON structure:
       const chatTokens = Math.min(optimalTokens, 600); // Cap at 600 for chat
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o", // Using GPT-4o through Replit service
+        model: "gpt-4o-mini",
         messages,
         max_tokens: chatTokens, // Dynamic token allocation
         temperature: 0.7, // Slightly more conversational
@@ -402,7 +352,7 @@ Return this exact JSON structure:
                            prompt.length > 1000 ? 'detailed' : 'focused';
       
       const response = await openai.chat.completions.create({
-        model: "gpt-4o", // Using GPT-4o through Replit service
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
