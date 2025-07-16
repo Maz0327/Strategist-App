@@ -466,12 +466,53 @@ Provide JSON with these fields:
       }
     });
 
-    const result = JSON.parse(response.choices[0].message.content || "{}");
-    debugLogger.info('OpenAI response parsed successfully', { 
+    const rawContent = response.choices[0].message.content || "{}";
+    debugLogger.info('Raw OpenAI response content', { 
+      contentLength: rawContent.length,
+      contentPreview: rawContent.substring(0, 200),
+      finishReason: response.choices[0]?.finish_reason
+    });
+
+    let result;
+    try {
+      result = JSON.parse(rawContent);
+    } catch (parseError) {
+      debugLogger.error('JSON parse error', { 
+        error: parseError, 
+        rawContent: rawContent.substring(0, 500) 
+      });
+      // Return a minimal valid response instead of failing
+      result = {
+        summary: "Analysis parsing failed",
+        sentiment: "neutral",
+        tone: "professional",
+        keywords: [],
+        confidence: "0%",
+        truthAnalysis: {
+          fact: 'JSON parsing failed',
+          observation: 'Response format error',
+          insight: 'OpenAI returned invalid JSON',
+          humanTruth: 'Technical issue occurred',
+          culturalMoment: 'System needs debugging',
+          attentionValue: 'low',
+          platform: 'system',
+          cohortOpportunities: []
+        },
+        cohortSuggestions: [],
+        platformContext: 'Parsing error occurred',
+        viralPotential: 'low',
+        competitiveInsights: [],
+        strategicInsights: [],
+        strategicActions: []
+      };
+    }
+    
+    debugLogger.info('OpenAI response parsed', { 
       hasSummary: !!result.summary,
       sentiment: result.sentiment,
       keywordCount: result.keywords?.length || 0,
-      confidence: result.confidence
+      confidence: result.confidence,
+      hasTruthAnalysis: !!result.truthAnalysis
     });
     
     return {

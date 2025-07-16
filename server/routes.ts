@@ -397,8 +397,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const analysis = await openaiService.analyzeContent(data, lengthPreference || 'medium', onProgress);
         
-        // Send final result
-        res.write(`data: ${JSON.stringify({ type: 'complete', analysis })}\n\n`);
+        // Send final result in format expected by frontend
+        const responseData = {
+          success: true,
+          analysis,
+          signalId: null // Streaming doesn't save to database, just returns analysis
+        };
+        
+        res.write(`data: ${JSON.stringify({ type: 'complete', analysis: responseData })}\n\n`);
         res.write(`data: ${JSON.stringify({ type: 'end' })}\n\n`);
         
         debugLogger.info("Streaming analysis completed", { sentiment: analysis.sentiment }, req);
