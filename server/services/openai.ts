@@ -68,7 +68,7 @@ export class OpenAIService {
     return Math.abs(hash).toString(36);
   }
 
-  async analyzeContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number) => void): Promise<EnhancedAnalysisResult> {
+  async analyzeContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number, partialResults?: any) => void): Promise<EnhancedAnalysisResult> {
     // Enhanced cache key with content hash for better performance
     const contentHash = this.hashContent(data.content || '');
     const cacheKey = `${contentHash}_${lengthPreference}`;
@@ -335,7 +335,7 @@ export class OpenAIService {
     return null;
   }
 
-  private async analyzeSingleContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number) => void): Promise<EnhancedAnalysisResult> {
+  private async analyzeSingleContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number, partialResults?: any) => void): Promise<EnhancedAnalysisResult> {
     // Skip historical context for faster processing in beta
     const historicalContext = null;
     
@@ -409,11 +409,9 @@ JSON:
       const startTime = Date.now();
       debugLogger.info('Sending request to OpenAI API', { model: 'gpt-4o-mini', promptLength: prompt.length });
       
-      // Minimal progress tracking for speed
+      // Immediate progress tracking without delays
       if (onProgress) {
         onProgress('Processing...', 30);
-        setTimeout(() => onProgress('Analyzing...', 60), 1000);
-        setTimeout(() => onProgress('Finalizing...', 90), 3000);
       }
       
       // OpenAI API call with timeout prevention strategies
@@ -433,6 +431,11 @@ JSON:
         }
       };
 
+      // Immediate progress update when starting API call
+      if (onProgress) {
+        onProgress('Analyzing...', 50);
+      }
+
       const response = await openai.chat.completions.create({
         model: "gpt-4o-mini", // Keeping cost-efficient model as requested
         messages: [
@@ -447,8 +450,20 @@ JSON:
         top_p: 0.7, // Further reduced for faster generation
         presence_penalty: 0.1, // Encourage conciseness
       });
+
+      // Process response and send partial results immediately
+      const result = this.processOpenAIResponse(response, startTime, historicalContext);
       
-      return this.processOpenAIResponse(response, startTime, historicalContext);
+      // Send partial results as soon as we have them
+      if (onProgress) {
+        onProgress('Finalizing...', 90, {
+          summary: result.summary,
+          sentiment: result.sentiment,
+          keywords: result.keywords
+        });
+      }
+      
+      return result;
     } catch (error: any) {
       debugLogger.error('OpenAI analysis failed', error);
       

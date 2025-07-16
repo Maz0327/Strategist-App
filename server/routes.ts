@@ -391,9 +391,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         url 
       };
       
-      // Progress callback for streaming updates
-      const onProgress = (stage: string, progress: number) => {
-        res.write(`data: ${JSON.stringify({ type: 'progress', stage, progress })}\n\n`);
+      // Progress callback for streaming updates with immediate partial results
+      const onProgress = (stage: string, progress: number, partialResults?: any) => {
+        res.write(`data: ${JSON.stringify({ type: 'progress', stage, progress, partial: partialResults })}\n\n`);
       };
 
       debugLogger.info("Streaming analysis request received", { title, lengthPreference, hasUrl: !!url, fastMode }, req);
