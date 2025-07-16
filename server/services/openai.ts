@@ -413,14 +413,14 @@ Required JSON format:
         setTimeout(() => onProgress('Generating insights...', 80), 1000);
       }
       
-      // Ultra-aggressive token limits for speed
+      // Balanced token limits for reliable JSON completion
       const getTokenLimit = (preference: string) => {
         switch (preference) {
-          case 'short': return 200; // Ultra-fast responses
-          case 'medium': return 350; // Quick but informative
-          case 'long': return 500; // Detailed but efficient
-          case 'bulletpoints': return 250; // Concise structured format
-          default: return 350;
+          case 'short': return 400; // Ensures complete JSON
+          case 'medium': return 600; // Balanced speed and completion
+          case 'long': return 800; // Comprehensive but efficient
+          case 'bulletpoints': return 500; // Structured format completion
+          default: return 600;
         }
       };
 
