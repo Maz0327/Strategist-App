@@ -405,7 +405,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const data = { 
-        content: content.slice(0, 600), // Ultra-aggressive content limiting for speed
+        content: content.slice(0, lengthPreference === 'short' ? 800 : (lengthPreference === 'medium' ? 1500 : 2500)), // Match regular endpoint limits
         title: title || "Analysis", 
         url 
       };

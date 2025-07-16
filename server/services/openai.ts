@@ -9,7 +9,7 @@ import { structuredLogger } from "./structured-logger";
 // Using gpt-4o-mini for fast responses
 const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || process.env.API_KEY,
-  timeout: 10 * 1000, // Aggressive 10 second timeout
+  timeout: 8 * 1000, // 8 second timeout to match request timeout
   maxRetries: 0, // No retries for fastest response
 });
 
