@@ -375,18 +375,38 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart }: ContentInp
                 </p>
               </div>
               
-              {/* Progress indicator for streaming analysis */}
-              {isLoading && useStreaming && analysisProgress.stage && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">{analysisProgress.stage}</span>
-                    <span className="text-gray-500">{analysisProgress.progress}%</span>
+              {/* Enhanced Progress indicator for streaming analysis */}
+              {isLoading && (
+                <div className="space-y-3 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <div className="w-5 h-5 bg-blue-600 rounded-full animate-pulse"></div>
+                        <div className="absolute -top-1 -right-1 w-2 h-2 bg-purple-400 rounded-full animate-ping"></div>
+                      </div>
+                      <span className="text-sm font-medium text-gray-700">
+                        {analysisProgress.stage || 'Analyzing content...'}
+                      </span>
+                    </div>
+                    <span className="text-sm text-blue-600 font-medium">
+                      {analysisProgress.progress}%
+                    </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
-                      style={{ width: `${analysisProgress.progress}%` }}
-                    ></div>
+                  
+                  <div className="relative">
+                    <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                      <div 
+                        className="bg-gradient-to-r from-blue-500 to-purple-500 h-2.5 rounded-full transition-all duration-500 ease-out relative"
+                        style={{ width: `${analysisProgress.progress}%` }}
+                      >
+                        <div className="absolute inset-0 bg-white opacity-30 rounded-full animate-pulse"></div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>🧠 Processing strategic insights...</span>
+                    <span>ETA: {Math.max(1, Math.floor((100 - analysisProgress.progress) / 12))}s</span>
                   </div>
                 </div>
               )}

@@ -143,13 +143,17 @@ Provide JSON with these fields:
       const startTime = Date.now();
       debugLogger.info('Sending request to OpenAI API', { model: 'gpt-4o-mini', promptLength: prompt.length });
       
-      // Progress tracking for better UX
+      // Enhanced progress tracking with more detailed stages
       if (onProgress) {
-        onProgress('Initializing analysis', 10);
-        setTimeout(() => onProgress('Processing content', 30), 500);
-        setTimeout(() => onProgress('Analyzing cultural context', 50), 2000);
-        setTimeout(() => onProgress('Generating insights', 70), 4000);
-        setTimeout(() => onProgress('Finalizing results', 90), 6000);
+        onProgress('Initializing AI analysis', 5);
+        setTimeout(() => onProgress('Processing content structure', 15), 300);
+        setTimeout(() => onProgress('Analyzing sentiment & tone', 25), 800);
+        setTimeout(() => onProgress('Extracting key themes', 35), 1500);
+        setTimeout(() => onProgress('Identifying cultural patterns', 45), 2500);
+        setTimeout(() => onProgress('Generating strategic insights', 60), 3500);
+        setTimeout(() => onProgress('Evaluating viral potential', 75), 4500);
+        setTimeout(() => onProgress('Crafting actionable recommendations', 85), 5500);
+        setTimeout(() => onProgress('Finalizing analysis', 95), 6500);
       }
       
       // OpenAI API call with timeout prevention strategies
@@ -270,24 +274,24 @@ Provide JSON with these fields:
     switch (lengthPreference) {
       case 'short':
         return `ANALYSIS LENGTH: SHORT - Essential insights only
-- Summary: 1 sentence maximum
-- Truth Analysis fields: 1 sentence each, focus on core insight
+- Summary: 2 sentences maximum
+- Truth Analysis fields: 2 sentences each, focus on core insight
 - Strategic fields: 2-3 items maximum, direct and actionable
 - No elaborate explanations, get straight to the point
 - Use punchy, decisive language`;
       
       case 'medium':
         return `ANALYSIS LENGTH: MEDIUM - Balanced detail
-- Summary: 2-3 sentences providing context and key insight
-- Truth Analysis fields: 2-3 sentences each with reasoning
+- Summary: 3-4 sentences providing context and key insight
+- Truth Analysis fields: 3-4 sentences each with reasoning
 - Strategic fields: 3-4 items with brief explanations
 - Include both "what" and "why" for key insights
 - Balance depth with clarity`;
       
       case 'long':
         return `ANALYSIS LENGTH: LONG - Comprehensive analysis
-- Summary: 3-4 sentences with rich context and implications
-- Truth Analysis fields: 3-4 sentences each with deep context, examples, and connections
+- Summary: 4-5 sentences with rich context and implications
+- Truth Analysis fields: 4-5 sentences each with deep context, examples, and connections
 - Strategic fields: 4-5 items with detailed explanations and implications
 - Explore cultural nuances, behavioral psychology, and strategic implications
 - Connect insights across different sections and provide broader context`;
@@ -303,8 +307,8 @@ Provide JSON with these fields:
       
       default:
         return `ANALYSIS LENGTH: MEDIUM - Balanced detail
-- Summary: 2-3 sentences providing context and key insight
-- Truth Analysis fields: 2-3 sentences each with reasoning
+- Summary: 3-4 sentences providing context and key insight
+- Truth Analysis fields: 3-4 sentences each with reasoning
 - Strategic fields: 3-4 items with brief explanations
 - Include both "what" and "why" for key insights
 - Balance depth with clarity`;
