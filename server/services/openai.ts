@@ -141,7 +141,7 @@ Return this exact JSON structure:
       const tokenLimit = lengthPreference === 'short' ? 400 : (lengthPreference === 'medium' ? 600 : 800);
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: "You are a content analysis expert. Always return valid JSON only." },
           { role: "user", content: prompt }
@@ -317,7 +317,7 @@ Return this exact JSON structure:
       debugLogger.info('Generating strategic insights', { promptLength: prompt.length });
       
       const response = await openai.chat.completions.create({
-        model: "gpt-4o", // Using GPT-4o through Replit service
+        model: "gpt-4o-mini", // Using GPT-4o-mini through Replit service
         messages: [
           {
             role: "system",
