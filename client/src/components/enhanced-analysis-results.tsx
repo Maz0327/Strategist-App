@@ -70,6 +70,10 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
     medium: data // Cache the initial analysis with medium length
   });
 
+  // Debug: Log the analysis data structure
+  console.log('Analysis data structure:', JSON.stringify(data, null, 2));
+  console.log('Truth analysis:', data.truthAnalysis);
+
   const handleLengthPreferenceChange = async (newLength: 'short' | 'medium' | 'long' | 'bulletpoints') => {
     setLengthPreference(newLength);
     
@@ -321,60 +325,94 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Fact */}
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle className="h-4 w-4 text-blue-600" />
-                  <h4 className="font-semibold text-blue-900">Fact</h4>
-                </div>
-                <p className="text-sm text-gray-700 bg-blue-50 p-3 rounded">
-                  {currentAnalysis.truthAnalysis.fact}
-                </p>
+              {/* Debug Info */}
+              <div className="bg-gray-100 p-2 rounded text-xs">
+                <p><strong>Debug:</strong> truthAnalysis exists: {currentAnalysis.truthAnalysis ? 'YES' : 'NO'}</p>
+                {currentAnalysis.truthAnalysis && (
+                  <div className="mt-1">
+                    <p>Fact: {currentAnalysis.truthAnalysis.fact ? 'YES' : 'NO'}</p>
+                    <p>Observation: {currentAnalysis.truthAnalysis.observation ? 'YES' : 'NO'}</p>
+                    <p>Insight: {currentAnalysis.truthAnalysis.insight ? 'YES' : 'NO'}</p>
+                    <p>Human Truth: {currentAnalysis.truthAnalysis.humanTruth ? 'YES' : 'NO'}</p>
+                    <p>Cultural Moment: {currentAnalysis.truthAnalysis.culturalMoment ? 'YES' : 'NO'}</p>
+                  </div>
+                )}
               </div>
 
-              {/* Observation */}
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Target className="h-4 w-4 text-green-600" />
-                  <h4 className="font-semibold text-green-900">Observation</h4>
-                </div>
-                <p className="text-sm text-gray-700 bg-green-50 p-3 rounded">
-                  {currentAnalysis.truthAnalysis.observation}
-                </p>
-              </div>
+              {/* Truth Analysis Content */}
+              {currentAnalysis.truthAnalysis ? (
+                <>
+                  {/* Fact */}
+                  {currentAnalysis.truthAnalysis.fact && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <CheckCircle className="h-4 w-4 text-blue-600" />
+                        <h4 className="font-semibold text-blue-900">Fact</h4>
+                      </div>
+                      <p className="text-sm text-gray-700 bg-blue-50 p-3 rounded">
+                        {currentAnalysis.truthAnalysis.fact}
+                      </p>
+                    </div>
+                  )}
 
-              {/* Insight */}
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Lightbulb className="h-4 w-4 text-yellow-600" />
-                  <h4 className="font-semibold text-yellow-900">Insight</h4>
-                </div>
-                <p className="text-sm text-gray-700 bg-yellow-50 p-3 rounded">
-                  {currentAnalysis.truthAnalysis.insight}
-                </p>
-              </div>
+                  {/* Observation */}
+                  {currentAnalysis.truthAnalysis.observation && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Target className="h-4 w-4 text-green-600" />
+                        <h4 className="font-semibold text-green-900">Observation</h4>
+                      </div>
+                      <p className="text-sm text-gray-700 bg-green-50 p-3 rounded">
+                        {currentAnalysis.truthAnalysis.observation}
+                      </p>
+                    </div>
+                  )}
 
-              {/* Human Truth */}
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Brain className="h-4 w-4 text-purple-600" />
-                  <h4 className="font-semibold text-purple-900">Human Truth</h4>
-                </div>
-                <p className="text-sm text-gray-700 bg-purple-50 p-3 rounded">
-                  {currentAnalysis.truthAnalysis.humanTruth}
-                </p>
-              </div>
+                  {/* Insight */}
+                  {currentAnalysis.truthAnalysis.insight && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Lightbulb className="h-4 w-4 text-yellow-600" />
+                        <h4 className="font-semibold text-yellow-900">Insight</h4>
+                      </div>
+                      <p className="text-sm text-gray-700 bg-yellow-50 p-3 rounded">
+                        {currentAnalysis.truthAnalysis.insight}
+                      </p>
+                    </div>
+                  )}
 
-              {/* Cultural Moment */}
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="h-4 w-4 text-red-600" />
-                  <h4 className="font-semibold text-red-900">Cultural Moment</h4>
+                  {/* Human Truth */}
+                  {currentAnalysis.truthAnalysis.humanTruth && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Brain className="h-4 w-4 text-purple-600" />
+                        <h4 className="font-semibold text-purple-900">Human Truth</h4>
+                      </div>
+                      <p className="text-sm text-gray-700 bg-purple-50 p-3 rounded">
+                        {currentAnalysis.truthAnalysis.humanTruth}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Cultural Moment */}
+                  {currentAnalysis.truthAnalysis.culturalMoment && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrendingUp className="h-4 w-4 text-red-600" />
+                        <h4 className="font-semibold text-red-900">Cultural Moment</h4>
+                      </div>
+                      <p className="text-sm text-gray-700 bg-red-50 p-3 rounded">
+                        {currentAnalysis.truthAnalysis.culturalMoment}
+                      </p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-8">
+                  <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">Truth analysis data not available</p>
                 </div>
-                <p className="text-sm text-gray-700 bg-red-50 p-3 rounded">
-                  {currentAnalysis.truthAnalysis.culturalMoment}
-                </p>
-              </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
