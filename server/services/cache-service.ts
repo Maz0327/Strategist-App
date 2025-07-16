@@ -29,9 +29,18 @@ class CacheService {
    * Generate cache key from content
    */
   private generateKey(content: string, prefix: string = ''): string {
-    const crypto = require('crypto');
-    const hash = crypto.createHash('sha256').update(content).digest('hex');
-    return `${prefix}:${hash}`;
+    // Use a simple hash function for ESM compatibility
+    return `${prefix}:${this.simpleHash(content)}`;
+  }
+
+  private simpleHash(str: string): string {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash).toString(36);
   }
 
   /**
