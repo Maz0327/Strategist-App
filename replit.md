@@ -18,7 +18,8 @@ Preferred communication style: Simple, everyday language.
 - ✅ **SPEED OPTIMIZATIONS FOR CORE CAPTURE**: Ultra-fast GPT-4o integration with 15-second timeouts and optimized token limits
 - ✅ **57+ CONSOLE.LOG STATEMENTS REPLACED**: Implemented structured debug logging for production readiness
 - ✅ **OPENAI SERVICE OPTIMIZED**: Speed-focused architecture with 50-char hash functions and aggressive content limiting
-- ✅ **SIGNAL CAPTURE PERFORMANCE**: Optimized content limits (400/600/800 chars) and reduced token usage (300/450/600 tokens)
+- ✅ **DYNAMIC TOKEN ALLOCATION**: Intelligent token limits based on content length (150-800 tokens) with smart content optimization
+- ✅ **CONTENT-AWARE PROCESSING**: Adaptive analysis depth based on content complexity and intelligent truncation
 - ✅ **SCRAPER SERVICE ENHANCED**: Optimized content extraction with 3000-char limit for faster processing
 - ✅ **STRUCTURED LOGGING SYSTEM**: Replaced all console.log with debugLogger for production debugging
 - ✅ **CHROME EXTENSION READY**: SignalCard component created with proper test coverage for visual capture integration

@@ -69,6 +69,50 @@ export class OpenAIService {
     return Math.abs(hash).toString(36);
   }
 
+  // Dynamic token allocation based on content length
+  private calculateOptimalTokens(contentLength: number, analysisType: 'basic' | 'enhanced' = 'enhanced'): number {
+    // Base token allocation for analysis structure
+    const baseTokens = analysisType === 'basic' ? 200 : 300;
+    
+    // Dynamic scaling based on content length
+    const contentRatio = Math.min(contentLength / 1000, 3); // Cap at 3x for very long content
+    const scalingFactor = Math.max(0.5, Math.min(2, contentRatio)); // Between 0.5x and 2x scaling
+    
+    // Calculate final token count
+    const dynamicTokens = Math.round(baseTokens * scalingFactor);
+    
+    // Set reasonable bounds (150-800 tokens)
+    return Math.max(150, Math.min(800, dynamicTokens));
+  }
+
+  // Dynamic content processing based on length
+  private optimizeContentForLength(content: string, maxTokens: number): string {
+    if (content.length <= 500) return content; // Short content - use as-is
+    
+    // Estimate tokens (rough approximation: 1 token ≈ 4 characters)
+    const estimatedTokens = content.length / 4;
+    
+    if (estimatedTokens <= maxTokens * 0.7) { // Use 70% of tokens for input
+      return content;
+    }
+    
+    // For longer content, intelligently truncate
+    const targetLength = Math.floor(maxTokens * 0.7 * 4); // Convert back to characters
+    
+    // Try to find a good breaking point (end of sentence, paragraph, etc.)
+    const truncated = content.substring(0, targetLength);
+    const lastSentence = truncated.lastIndexOf('. ');
+    const lastParagraph = truncated.lastIndexOf('\n\n');
+    
+    const breakPoint = Math.max(lastSentence, lastParagraph);
+    
+    if (breakPoint > targetLength * 0.8) { // If we found a good breaking point
+      return content.substring(0, breakPoint + 1);
+    }
+    
+    return truncated + '...';
+  }
+
   async analyzeContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number) => void): Promise<EnhancedAnalysisResult> {
     // Optimized cache key
     const cacheKey = `${this.hashContent(data.content || '')}_${lengthPreference}`;
@@ -98,15 +142,31 @@ export class OpenAIService {
 
 
   private async analyzeSingleContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number) => void): Promise<EnhancedAnalysisResult> {
-    // Speed-optimized content limiting
     const content = data.content || '';
-    const contentLimit = lengthPreference === 'short' ? 400 : (lengthPreference === 'medium' ? 600 : 800);
-    const processedContent = content.slice(0, contentLimit);
     
-    // Ultra-fast prompt optimized for speed
-    const prompt = `Analyze this content and return ONLY valid JSON:
+    // Calculate optimal tokens based on content length
+    const optimalTokens = this.calculateOptimalTokens(content.length, 'enhanced');
+    
+    // Optimize content processing based on calculated tokens
+    const processedContent = this.optimizeContentForLength(content, optimalTokens);
+    
+    // Dynamic response length based on content complexity
+    const responseComplexity = content.length > 1000 ? 'detailed' : 
+                               content.length > 500 ? 'balanced' : 'concise';
+    
+    const analysisDepth = {
+      'concise': 'brief analysis with key points',
+      'balanced': 'thorough analysis with strategic insights',
+      'detailed': 'comprehensive analysis with deep strategic insights'
+    }[responseComplexity];
+    
+    // Ultra-fast prompt optimized for dynamic content
+    const prompt = `Analyze this content with ${analysisDepth} and return ONLY valid JSON:
 
 ${data.title || 'Content'}: ${processedContent}
+
+Content length: ${content.length} characters
+Analysis depth: ${responseComplexity}
 
 Return this exact JSON structure:
 {
@@ -136,13 +196,20 @@ Return this exact JSON structure:
     try {
       const startTime = Date.now();
       
-      // Speed-optimized configuration
-      const tokenLimit = lengthPreference === 'short' ? 300 : (lengthPreference === 'medium' ? 450 : 600);
+      // Use dynamic token allocation
+      const tokenLimit = optimalTokens;
+      
+      debugLogger.info('Dynamic token allocation', {
+        contentLength: content.length,
+        processedLength: processedContent.length,
+        optimalTokens: tokenLimit,
+        responseComplexity
+      });
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
-          { role: "system", content: "You are a content analysis expert. Always return valid JSON only." },
+          { role: "system", content: "You are a content analysis expert. Always return valid JSON only. Adapt your analysis depth to the content complexity." },
           { role: "user", content: prompt }
         ],
         response_format: { type: "json_object" },
@@ -254,10 +321,17 @@ Return this exact JSON structure:
         { role: 'user', content: message }
       ];
 
+      // Calculate conversation complexity for dynamic tokens
+      const totalConversationLength = messages.reduce((sum, msg) => sum + msg.content.length, 0);
+      const optimalTokens = this.calculateOptimalTokens(totalConversationLength, 'basic');
+      
+      // Optimize for chat - typically shorter responses
+      const chatTokens = Math.min(optimalTokens, 600); // Cap at 600 for chat
+
       const response = await openai.chat.completions.create({
         model: "gpt-4o", // Using GPT-4o through Replit service
         messages,
-        max_tokens: 500, // Limit response length for chat
+        max_tokens: chatTokens, // Dynamic token allocation
         temperature: 0.7, // Slightly more conversational
       });
 
@@ -273,14 +347,17 @@ Return this exact JSON structure:
         tokensUsed,
         model: 'gpt-4o',
         messageLength: message.length,
-        responseLength: content.length
+        responseLength: content.length,
+        dynamicTokens: chatTokens,
+        conversationLength: totalConversationLength
       });
 
       debugLogger.info('Chat response generated successfully', {
         messageLength: message.length,
         responseLength: content.length,
         tokensUsed,
-        cost
+        cost,
+        dynamicTokens: chatTokens
       });
 
       return content;
@@ -316,13 +393,21 @@ Return this exact JSON structure:
     try {
       debugLogger.info('Generating strategic insights', { promptLength: prompt.length });
       
+      // Calculate optimal tokens for insights generation
+      const optimalTokens = this.calculateOptimalTokens(prompt.length, 'enhanced');
+      const optimizedPrompt = this.optimizeContentForLength(prompt, optimalTokens);
+      
+      // Adjust insights depth based on prompt complexity
+      const insightsDepth = prompt.length > 2000 ? 'comprehensive' : 
+                           prompt.length > 1000 ? 'detailed' : 'focused';
+      
       const response = await openai.chat.completions.create({
         model: "gpt-4o", // Using GPT-4o through Replit service
         messages: [
           {
             role: "system",
             content: `You are a senior strategic analyst specializing in cultural intelligence and business insights. 
-            Generate strategic insights based on the provided data. Focus on:
+            Generate ${insightsDepth} strategic insights based on the provided data. Focus on:
             1. Cultural patterns and human behavior trends
             2. Business opportunities and competitive advantages
             3. Actionable recommendations for decision-makers
@@ -333,12 +418,12 @@ Return this exact JSON structure:
           },
           {
             role: "user",
-            content: prompt
+            content: optimizedPrompt
           }
         ],
         response_format: { type: "json_object" },
         temperature: 0.7,
-        max_tokens: 1500,
+        max_tokens: Math.min(optimalTokens * 1.2, 1500), // Dynamic but capped at 1500
       });
 
       const content = response.choices[0]?.message?.content;
@@ -363,14 +448,18 @@ Return this exact JSON structure:
           model: 'gpt-4o',
           promptTokens: response.usage?.prompt_tokens || 0,
           completionTokens: response.usage?.completion_tokens || 0,
-          purpose: 'daily_insights_generation'
+          purpose: 'daily_insights_generation',
+          dynamicTokens: optimalTokens,
+          insightsDepth
         }
       });
 
       debugLogger.info('Strategic insights generated successfully', {
         responseTime,
         tokensUsed,
-        contentLength: content.length
+        contentLength: content.length,
+        dynamicTokens: optimalTokens,
+        insightsDepth
       });
 
       // Cache the insights
