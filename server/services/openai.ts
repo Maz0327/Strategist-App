@@ -415,9 +415,10 @@ JSON:
           }
         ],
         response_format: { type: "json_object" },
-        temperature: 0.3, // Lower for faster, more deterministic responses
-        max_tokens: 1800, // Further reduced for speed
-        top_p: 0.8, // Reduced for faster generation
+        temperature: 0.1, // Minimal for fastest responses
+        max_tokens: 1200, // Aggressively reduced for speed
+        top_p: 0.7, // Further reduced for faster generation
+        presence_penalty: 0.1, // Encourage conciseness
       });
       
       return this.processOpenAIResponse(response, startTime, historicalContext);
