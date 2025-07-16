@@ -415,6 +415,16 @@ export function TodaysBriefing({ activeSubTab, onNavigateToExplore, onNavigateTo
                 </p>
               </div>
             )}
+            
+            {/* Sources Dialog for Custom Feeds */}
+            <Dialog open={isSourcesOpen} onOpenChange={setIsSourcesOpen}>
+              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Manage Feed Sources</DialogTitle>
+                </DialogHeader>
+                <FeedSourceManager onSourcesChange={() => setIsSourcesOpen(false)} />
+              </DialogContent>
+            </Dialog>
           </div>
         );
       case "project-feeds":
