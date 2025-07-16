@@ -6,6 +6,7 @@ export interface AuthResponse {
   user: {
     id: number;
     email: string;
+    username?: string;
   };
 }
 
@@ -24,7 +25,7 @@ export class AuthService {
     await apiRequest("POST", "/api/auth/logout");
   }
 
-  async getCurrentUser(): Promise<{ user: { id: number; email: string } }> {
+  async getCurrentUser(): Promise<{ user: { id: number; email: string; username?: string } }> {
     const response = await apiRequest("GET", "/api/auth/me");
     return response.json();
   }

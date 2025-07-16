@@ -255,6 +255,14 @@ export function TodaysBriefing({ activeSubTab, onNavigateToExplore, onNavigateTo
                 <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h4 className="font-medium text-gray-900 mb-2">No Client Data</h4>
                 <p className="text-gray-600 mb-4">Connect to client analytics and project management tools</p>
+                <Button 
+                  variant="outline" 
+                  className="mb-6"
+                  onClick={() => alert('Integration setup coming soon! This will allow you to connect Google Analytics, Tracer, and other tools.')}
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Connect 3rd Party Integrations
+                </Button>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
                   <Card>
                     <CardContent className="p-4">

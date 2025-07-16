@@ -162,7 +162,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ 
         success: true, 
-        user: { id: user.id, email: user.email } 
+        user: { id: user.id, email: user.email, username: user.username } 
       });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -188,7 +188,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         res.json({ 
           success: true, 
-          user: { id: user.id, email: user.email } 
+          user: { id: user.id, email: user.email, username: user.username } 
         });
       });
     } catch (error: any) {
@@ -218,7 +218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json({ 
-        user: { id: user.id, email: user.email } 
+        user: { id: user.id, email: user.email, username: user.username } 
       });
     } catch (error: any) {
       res.status(500).json({ message: error.message });

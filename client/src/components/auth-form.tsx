@@ -15,7 +15,7 @@ import { useErrorHandling } from "@/hooks/use-error-handling";
 import { ErrorDisplay } from "@/components/ui/error-display";
 
 interface AuthFormProps {
-  onAuthSuccess: (user: { id: number; email: string }) => void;
+  onAuthSuccess: (user: { id: number; email: string; username?: string }) => void;
 }
 
 export function AuthForm({ onAuthSuccess }: AuthFormProps) {
@@ -37,6 +37,7 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
     resolver: zodResolver(registerSchema),
     defaultValues: {
       email: "",
+      username: "",
       password: "",
       confirmPassword: "",
     },
@@ -169,6 +170,22 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
                     {registerForm.formState.errors.email && (
                       <p className="text-sm text-destructive">
                         {registerForm.formState.errors.email.message}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="register-username">Username</Label>
+                    <Input
+                      id="register-username"
+                      type="text"
+                      placeholder="Choose a username"
+                      {...registerForm.register("username")}
+                      disabled={isLoading}
+                    />
+                    {registerForm.formState.errors.username && (
+                      <p className="text-sm text-destructive">
+                        {registerForm.formState.errors.username.message}
                       </p>
                     )}
                   </div>

@@ -11,12 +11,13 @@ import { AdminDashboard } from "@/components/admin-dashboard";
 import { FeedbackWidget } from "@/components/feedback-widget";
 import { authService } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-import { Brain, Bell, User, Home, Search, Plus, Target, Settings, ChevronRight, BarChart3, ChevronLeft, Menu, MessageCircle } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Brain, Bell, User, Home, Search, Plus, Target, Settings, ChevronRight, BarChart3, ChevronLeft, Menu, MessageCircle, ChevronDown, LogOut } from "lucide-react";
 import { HelpButton } from "@/components/help-button";
 import { ChatInterface } from "@/components/chat-interface";
 
 interface DashboardProps {
-  user: { id: number; email: string };
+  user: { id: number; email: string; username?: string };
   onLogout: () => void;
   onPageChange?: (page: string) => void;
 }
@@ -26,6 +27,7 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
   const [activeSubTab, setActiveSubTab] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const { toast } = useToast();
 
   // Notify parent component of page changes
@@ -149,21 +151,42 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
                 <Bell size={16} className="text-gray-500" />
               </Button>
               
-              {/* User Profile */}
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={handleLogout}
-                className="flex items-center space-x-2 h-8 px-2"
-                title="Click to logout"
-              >
-                <div className="h-6 w-6 rounded-full bg-gray-300 flex items-center justify-center">
-                  <User size={12} className="text-gray-600" />
-                </div>
-                <span className="text-sm text-gray-700 font-medium hidden sm:inline">
-                  {user.email.split('@')[0]}
-                </span>
-              </Button>
+              {/* User Profile with Settings Dropdown */}
+              <DropdownMenu open={userDropdownOpen} onOpenChange={setUserDropdownOpen}>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="flex items-center space-x-2 h-8 px-2"
+                    title="User settings"
+                  >
+                    <div className="h-6 w-6 rounded-full bg-gray-300 flex items-center justify-center">
+                      <User size={12} className="text-gray-600" />
+                    </div>
+                    <span className="text-sm text-gray-700 font-medium hidden sm:inline">
+                      {user.username || user.email.split('@')[0]}
+                    </span>
+                    <ChevronDown size={12} className="text-gray-400" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem className="cursor-pointer">
+                    <Settings size={16} className="mr-2" />
+                    Account Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="cursor-pointer">
+                    <Settings size={16} className="mr-2" />
+                    Preferences
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="cursor-pointer text-red-600 hover:text-red-700"
+                    onClick={handleLogout}
+                  >
+                    <LogOut size={16} className="mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>

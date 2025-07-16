@@ -5,7 +5,7 @@ import { z } from "zod";
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
-  username: text("username").unique(),
+  username: text("username").notNull().unique(),
   password: text("password").notNull(),
   role: text("role").default("user"), // user, admin
   createdAt: timestamp("created_at").defaultNow(),
@@ -279,6 +279,7 @@ export const loginSchema = z.object({
 });
 
 export const registerSchema = loginSchema.extend({
+  username: z.string().min(3, "Username must be at least 3 characters").max(30, "Username must be less than 30 characters"),
   confirmPassword: z.string().min(8),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",

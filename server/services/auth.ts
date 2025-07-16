@@ -19,6 +19,7 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(data.password, 12);
     const userData: InsertUser = {
       email: data.email,
+      username: data.username || data.email.split('@')[0],
       password: hashedPassword,
       role: data.role || "user",
     };
