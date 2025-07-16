@@ -8,6 +8,7 @@ import { AnalysisSkeleton } from "@/components/ui/analysis-skeleton";
 import { EnhancedAnalysisResults } from "@/components/enhanced-analysis-results";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
 import { ProgressBreadcrumb } from "@/components/ui/progress-breadcrumb";
+import { FallbackIndicator } from "@/components/fallback-indicator";
 
 interface NewSignalCaptureProps {
   activeSubTab?: string;
@@ -20,6 +21,7 @@ export function NewSignalCapture({ activeSubTab, onNavigateToExplore, onNavigate
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [originalContent, setOriginalContent] = useState<any>(null);
+  const [usingFallback, setUsingFallback] = useState(false);
   
   const handleAnalysisStart = () => {
     setIsAnalyzing(true);
@@ -29,6 +31,7 @@ export function NewSignalCapture({ activeSubTab, onNavigateToExplore, onNavigate
   const handleAnalysisComplete = (result: any, content?: any) => {
     setAnalysisResult(result);
     setOriginalContent(content);
+    setUsingFallback(result?.usingFallback || false);
     setIsAnalyzing(false);
     
     // Scroll to results
@@ -133,10 +136,13 @@ export function NewSignalCapture({ activeSubTab, onNavigateToExplore, onNavigate
             {isAnalyzing ? (
               <AnalysisSkeleton />
             ) : analysisResult ? (
-              <EnhancedAnalysisResults 
-                analysis={analysisResult} 
-                originalContent={originalContent}
-              />
+              <div className="space-y-4">
+                <FallbackIndicator isVisible={usingFallback} />
+                <EnhancedAnalysisResults 
+                  analysis={analysisResult} 
+                  originalContent={originalContent}
+                />
+              </div>
             ) : null}
           </CardContent>
         </Card>

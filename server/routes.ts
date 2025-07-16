@@ -6,6 +6,7 @@ import MemoryStore from "memorystore";
 import { storage } from "./storage";
 import { authService } from "./services/auth";
 import { openaiService } from "./services/openai";
+import { multiModelAI } from "./services/multi-model-ai";
 import { scraperService } from "./services/scraper";
 import { sourceManagerService } from "./services/source-manager";
 import { dailyReportsService } from "./services/daily-reports";
@@ -234,7 +235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const lengthPreference = req.body.lengthPreference || 'medium';
       const userNotes = req.body.userNotes || '';
-      const analysis = await openaiService.analyzeContent(data, lengthPreference);
+      const analysis = await multiModelAI.analyzeContent(data, lengthPreference);
       debugLogger.info("OpenAI analysis completed", { sentiment: analysis.sentiment, confidence: analysis.confidence, keywordCount: analysis.keywords.length }, req);
       
       // Save as potential signal after analysis
@@ -289,7 +290,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         analysis,
-        signalId: signal.id
+        signalId: signal.id,
+        usingFallback: analysis.usingFallback || false
       });
       debugLogger.info("Analysis request completed successfully", { signalId: signal.id }, req);
     } catch (error: any) {
@@ -352,14 +354,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       debugLogger.info("Re-analysis request received", { title, lengthPreference, hasUrl: !!url }, req);
       
       const data = { content, title: title || "Re-analysis", url };
-      const analysis = await openaiService.analyzeContent(data, lengthPreference);
+      const analysis = await multiModelAI.analyzeContent(data, lengthPreference);
       
       debugLogger.info("Re-analysis completed", { sentiment: analysis.sentiment, lengthPreference }, req);
       
       res.json({ 
         success: true, 
         analysis,
-        lengthPreference
+        lengthPreference,
+        usingFallback: analysis.usingFallback || false
       });
     } catch (error: any) {
       debugLogger.error('Re-analysis failed', error, req);
@@ -397,12 +400,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       try {
-        const analysis = await openaiService.analyzeContent(data, lengthPreference || 'medium', onProgress);
+        const analysis = await multiModelAI.analyzeContent(data, lengthPreference || 'medium', onProgress);
         
         const responseData = {
           success: true,
           analysis,
-          signalId: null
+          signalId: null,
+          usingFallback: analysis.usingFallback || false
         };
         
         res.write(`data: ${JSON.stringify({ type: 'complete', analysis: responseData })}\n\n`);
