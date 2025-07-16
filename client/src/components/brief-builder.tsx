@@ -326,7 +326,10 @@ SLIDE ${selectedSignalsList.length + 4}: NEXT STEPS
 Title: Implementation Roadmap
 
 30-Day Actions:
-${selectedSignalsList.flatMap(s => s.nextActions || []).slice(0, 3).map(action => `• ${action}`).join('\n')}
+${selectedSignalsList.flatMap(s => {
+  const actions = s.nextActions;
+  return Array.isArray(actions) ? actions : [];
+}).slice(0, 3).map(action => `• ${action}`).join('\n')}
 
 90-Day Goals:
 • Monitor signal evolution and market response

@@ -141,7 +141,10 @@ ${selectedSignals.map(s => `- ${s.culturalMoment || 'Cultural context not identi
   };
 
   // Extract cohort suggestions from signals
-  const allCohorts = selectedSignals.flatMap(s => s.cohortSuggestions || []);
+  const allCohorts = selectedSignals.flatMap(s => {
+    const cohorts = s.cohortSuggestions;
+    return Array.isArray(cohorts) ? cohorts : [];
+  });
   const uniqueCohorts = [...new Set(allCohorts)];
 
   return (
