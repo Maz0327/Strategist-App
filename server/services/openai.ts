@@ -408,7 +408,7 @@ Provide JSON with these fields:
         ],
         response_format: { type: "json_object" },
         temperature: 0.7,
-        max_tokens: 2000, // Limit response length to prevent timeouts
+        max_tokens: 4000, // Increased to ensure complete truthAnalysis responses
       });
       
       return this.processOpenAIResponse(response, startTime, historicalContext);
