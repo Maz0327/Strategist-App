@@ -386,7 +386,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const data = { 
-        content: content.slice(0, 1500), // Optimize content length for speed
+        content: content.slice(0, 800), // Aggressive content limiting for speed
         title: title || "Analysis", 
         url 
       };
