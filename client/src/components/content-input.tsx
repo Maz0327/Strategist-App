@@ -30,7 +30,6 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart }: ContentInp
   const [analysisProgress, setAnalysisProgress] = useState({ stage: '', progress: 0 });
   const [useStreaming, setUseStreaming] = useState(true);
   const [fastMode, setFastMode] = useState(false);
-  const [partialResults, setPartialResults] = useState<any>(null);
   const { toast } = useToast();
 
   // Example content for quick demo
@@ -98,10 +97,6 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart }: ContentInp
               
               if (eventData.type === 'progress') {
                 setAnalysisProgress({ stage: eventData.stage, progress: eventData.progress });
-                // Display partial results immediately if available
-                if (eventData.partial) {
-                  setPartialResults(eventData.partial);
-                }
               } else if (eventData.type === 'complete') {
                 onAnalysisComplete?.(eventData.analysis, data);
                 toast({
@@ -126,7 +121,6 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart }: ContentInp
     } finally {
       setIsLoading(false);
       setAnalysisProgress({ stage: '', progress: 0 });
-      setPartialResults(null);
     }
   };
 
@@ -383,7 +377,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart }: ContentInp
               
               {/* Progress indicator for streaming analysis */}
               {isLoading && useStreaming && analysisProgress.stage && (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">{analysisProgress.stage}</span>
                     <span className="text-gray-500">{analysisProgress.progress}%</span>
@@ -394,51 +388,6 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart }: ContentInp
                       style={{ width: `${analysisProgress.progress}%` }}
                     ></div>
                   </div>
-                  
-                  {/* Display partial results immediately as they become available */}
-                  {partialResults && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <h4 className="text-sm font-semibold mb-2 text-blue-900">
-                        ⚡ Live Analysis Results
-                      </h4>
-                      <div className="space-y-2">
-                        {partialResults.summary && (
-                          <div>
-                            <span className="text-xs font-medium text-blue-700">Summary:</span>
-                            <p className="text-sm text-blue-800">{partialResults.summary}</p>
-                          </div>
-                        )}
-                        {partialResults.sentiment && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-blue-700">Sentiment:</span>
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              partialResults.sentiment === 'positive' 
-                                ? 'bg-green-100 text-green-800' 
-                                : partialResults.sentiment === 'negative'
-                                ? 'bg-red-100 text-red-800'
-                                : partialResults.sentiment === 'processing' || partialResults.sentiment === 'analyzing'
-                                ? 'bg-blue-100 text-blue-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {partialResults.sentiment}
-                            </span>
-                          </div>
-                        )}
-                        {partialResults.keywords && partialResults.keywords.length > 0 && (
-                          <div>
-                            <span className="text-xs font-medium text-blue-700">Keywords:</span>
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {partialResults.keywords.map((keyword: string, index: number) => (
-                                <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
-                                  {keyword}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
 

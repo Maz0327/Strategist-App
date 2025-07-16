@@ -391,42 +391,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         url 
       };
       
-      // Progress callback for streaming updates with immediate partial results
-      const onProgress = (stage: string, progress: number, partialResults?: any) => {
-        res.write(`data: ${JSON.stringify({ type: 'progress', stage, progress, partial: partialResults })}\n\n`);
+      // Progress callback for streaming updates
+      const onProgress = (stage: string, progress: number) => {
+        res.write(`data: ${JSON.stringify({ type: 'progress', stage, progress })}\n\n`);
       };
 
       debugLogger.info("Streaming analysis request received", { title, lengthPreference, hasUrl: !!url, fastMode }, req);
       
       try {
-        // Send immediate response with basic content analysis
-        onProgress('Starting analysis...', 10);
-        
-        // Quick content preview analysis - immediate results
-        const contentPreview = data.content.substring(0, 300);
-        const quickKeywords = contentPreview.split(/\s+/)
-          .filter(word => word.length > 4)
-          .filter(word => !/^https?:\/\//.test(word)) // Remove URLs
-          .slice(0, 5);
-        
-        // Basic sentiment analysis based on keywords
-        const positiveWords = ['good', 'great', 'excellent', 'amazing', 'love', 'best', 'success', 'opportunity', 'growth'];
-        const negativeWords = ['bad', 'terrible', 'awful', 'hate', 'worst', 'problem', 'issue', 'difficult', 'challenge'];
-        
-        const hasPositive = positiveWords.some(word => contentPreview.toLowerCase().includes(word));
-        const hasNegative = negativeWords.some(word => contentPreview.toLowerCase().includes(word));
-        
-        let quickSentiment = 'neutral';
-        if (hasPositive && !hasNegative) quickSentiment = 'positive';
-        else if (hasNegative && !hasPositive) quickSentiment = 'negative';
-        
-        // Send immediate partial results with basic analysis
-        onProgress('Processing content...', 25, {
-          summary: `Analyzing ${data.content.length} characters of content about ${data.title || 'various topics'}...`,
-          sentiment: quickSentiment,
-          keywords: quickKeywords
-        });
-        
         // Use fast mode for quicker analysis if requested
         const analysisLength = fastMode ? 'short' : (lengthPreference || 'medium');
         const analysis = await openaiService.analyzeContent(data, analysisLength, onProgress);

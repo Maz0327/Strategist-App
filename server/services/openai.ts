@@ -68,7 +68,7 @@ export class OpenAIService {
     return Math.abs(hash).toString(36);
   }
 
-  async analyzeContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number, partialResults?: any) => void): Promise<EnhancedAnalysisResult> {
+  async analyzeContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number) => void): Promise<EnhancedAnalysisResult> {
     // Enhanced cache key with content hash for better performance
     const contentHash = this.hashContent(data.content || '');
     const cacheKey = `${contentHash}_${lengthPreference}`;
@@ -335,7 +335,7 @@ export class OpenAIService {
     return null;
   }
 
-  private async analyzeSingleContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number, partialResults?: any) => void): Promise<EnhancedAnalysisResult> {
+  private async analyzeSingleContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number) => void): Promise<EnhancedAnalysisResult> {
     // Skip historical context for faster processing in beta
     const historicalContext = null;
     
@@ -409,7 +409,7 @@ JSON:
       const startTime = Date.now();
       debugLogger.info('Sending request to OpenAI API', { model: 'gpt-4o-mini', promptLength: prompt.length });
       
-      // Immediate progress tracking without delays
+      // Minimal progress tracking for speed
       if (onProgress) {
         onProgress('Processing...', 30);
       }
@@ -431,13 +431,9 @@ JSON:
         }
       };
 
-      // Send immediate partial results based on prompt analysis
+      // Minimal progress tracking for speed
       if (onProgress) {
-        onProgress('Analyzing with AI...', 50, {
-          summary: 'OpenAI processing content for strategic insights...',
-          sentiment: 'analyzing',
-          keywords: ['ai-analysis', 'strategic-insights', 'processing']
-        });
+        onProgress('Analyzing...', 60);
       }
 
       const response = await openai.chat.completions.create({
@@ -453,20 +449,14 @@ JSON:
         max_tokens: getTokenLimit(lengthPreference), // Dynamic based on user preference
         top_p: 0.7, // Further reduced for faster generation
         presence_penalty: 0.1, // Encourage conciseness
-        stream: false // Keep as false for now, but we'll send immediate partial results
+        stream: false
       });
 
-      // Process response and send partial results immediately
+      // Process response
       const result = this.processOpenAIResponse(response, startTime, historicalContext);
       
-      // Send complete results as soon as we have them
       if (onProgress) {
-        onProgress('Analysis complete!', 100, {
-          summary: result.summary,
-          sentiment: result.sentiment,
-          keywords: result.keywords,
-          confidence: result.confidence
-        });
+        onProgress('Finalizing...', 90);
       }
       
       return result;
