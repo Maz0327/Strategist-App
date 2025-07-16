@@ -17,11 +17,11 @@ export class ScraperService {
 
     try {
       const response = await axios.get(url, {
-        timeout: 3000, // Ultra-fast timeout for immediate feedback
+        timeout: 5000, // Reduced timeout for faster failures
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         },
-        maxRedirects: 2, // Minimal redirects for speed
+        maxRedirects: 3, // Limit redirects for faster processing
         validateStatus: (status) => status < 400, // Only accept success status codes
       });
 

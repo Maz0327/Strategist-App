@@ -9,8 +9,8 @@ import { structuredLogger } from "./structured-logger";
 // Using gpt-4o-mini for cost-efficient testing phase, can upgrade to gpt-4o later
 const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || process.env.API_KEY,
-  timeout: 15 * 1000, // Aggressive timeout reduction to 15 seconds
-  maxRetries: 0, // No retries for maximum speed
+  timeout: 30 * 1000, // Reduce timeout to 30 seconds
+  maxRetries: 1, // Reduce retries for faster response
 });
 
 export interface AnalysisResult {
@@ -76,26 +76,30 @@ export class OpenAIService {
     // Check cache first - instant response if available
     const cachedResult = cacheService.getAnalysis(cacheKey);
     if (cachedResult) {
-      // Instant cached response
+      structuredLogger.info('Analysis cache hit', { 
+        title: data.title,
+        contentLength: data.content?.length,
+        lengthPreference,
+        type: 'analysis_cache_hit'
+      });
+      // Simulate instant progress for cached results
       if (onProgress) {
-        onProgress('Cached analysis loaded', 100);
+        onProgress('Loading cached analysis...', 100);
       }
       return cachedResult;
     }
     
-    const maxChunkLength = 8000; // Reduced for faster processing
+    debugLogger.info('Starting OpenAI content analysis', { title: data.title, hasUrl: !!data.url, contentLength: data.content?.length, lengthPreference });
+    
+    const maxChunkLength = 10000; // ~2500 tokens per chunk for safety
     const content = data.content || '';
     
     let result: EnhancedAnalysisResult;
     
-    // Simplified processing - avoid chunking for speed
+    // Check if content needs chunking
     if (content.length > maxChunkLength) {
-      // Truncate instead of chunking for speed
-      const truncatedData = {
-        ...data,
-        content: content.slice(0, maxChunkLength) + '...'
-      };
-      result = await this.analyzeSingleContent(truncatedData, lengthPreference, onProgress);
+      debugLogger.info('Content requires chunking', { originalLength: content.length, maxChunkLength });
+      result = await this.analyzeContentInChunks(data, lengthPreference, onProgress);
     } else {
       // Process normally for shorter content
       result = await this.analyzeSingleContent(data, lengthPreference, onProgress);
@@ -355,24 +359,23 @@ export class OpenAIService {
       }
     };
     
-    // Ultra-minimal prompt for maximum speed
+    // Dynamic prompt optimization based on length preference
     const getPromptStructure = (preference: string) => {
-      const contentLimit = preference === 'short' ? 400 : (preference === 'medium' ? 700 : 1000);
+      const contentLimit = preference === 'short' ? 1000 : (preference === 'medium' ? 1500 : 2000);
       const lengthInstruction = {
         short: '1 sentence',
-        medium: '2 sentences', 
-        long: '3 sentences',
-        bulletpoints: '• format'
-      }[preference] || '2 sentences';
+        medium: '2-3 sentences', 
+        long: '3-4 sentences',
+        bulletpoints: 'Use • format'
+      }[preference] || '2-3 sentences';
       
       return {
         contentLimit,
         lengthInstruction,
-        prompt: `Analyze this content and return JSON:
+        prompt: `Analyze: ${data.title || 'Untitled'}
+Content: ${processedContent.slice(0, contentLimit)}${processedContent.length > contentLimit ? '...' : ''}
 
-Content: ${processedContent.slice(0, contentLimit)}
-
-Required JSON format:
+JSON:
 {
   "summary": "${lengthInstruction}",
   "sentiment": "positive/negative/neutral",
@@ -404,23 +407,29 @@ Required JSON format:
 
     try {
       const startTime = Date.now();
+      debugLogger.info('Sending request to OpenAI API', { model: 'gpt-4o-mini', promptLength: prompt.length });
       
-      // Enhanced progress tracking
+      // Minimal progress tracking for speed
       if (onProgress) {
-        onProgress('Preparing analysis...', 10);
-        setTimeout(() => onProgress('Sending to AI...', 30), 100);
-        setTimeout(() => onProgress('Analyzing content...', 60), 500);
-        setTimeout(() => onProgress('Generating insights...', 80), 1000);
+        onProgress('Processing...', 30);
+        setTimeout(() => onProgress('Analyzing...', 60), 1000);
+        setTimeout(() => onProgress('Finalizing...', 90), 3000);
       }
       
-      // Dynamic token allocation for maximum speed while ensuring JSON completion
+      // OpenAI API call with timeout prevention strategies
+      debugLogger.info('Sending OpenAI API request', { 
+        contentLength: processedContent.length,
+        promptLength: prompt.length 
+      });
+      
+      // Dynamic token allocation based on length preference for faster responses
       const getTokenLimit = (preference: string) => {
         switch (preference) {
-          case 'short': return 400; // Ultra-fast responses with JSON safety
-          case 'medium': return 600; // Quick but informative with completion
-          case 'long': return 800; // Detailed but efficient
-          case 'bulletpoints': return 500; // Concise structured format
-          default: return 600;
+          case 'short': return 400; // Much faster for short responses
+          case 'medium': return 800; // Balanced speed and detail
+          case 'long': return 1200; // More comprehensive but slower
+          case 'bulletpoints': return 600; // Concise structured format
+          default: return 800;
         }
       };
 
@@ -433,15 +442,12 @@ Required JSON format:
           }
         ],
         response_format: { type: "json_object" },
-        temperature: 0.0, // Deterministic for fastest responses
+        temperature: 0.1, // Minimal for fastest responses
         max_tokens: getTokenLimit(lengthPreference), // Dynamic based on user preference
-        top_p: 0.5, // Aggressive reduction for speed
-        presence_penalty: 0.2, // Strong conciseness encouragement
+        top_p: 0.7, // Further reduced for faster generation
+        presence_penalty: 0.1, // Encourage conciseness
       });
       
-      if (onProgress) {
-        onProgress('Finalizing results...', 95);
-      }
       return this.processOpenAIResponse(response, startTime, historicalContext);
     } catch (error: any) {
       debugLogger.error('OpenAI analysis failed', error);
@@ -512,60 +518,30 @@ Required JSON format:
         error: parseError, 
         rawContent: rawContent.substring(0, 500) 
       });
-      
-      // Try to fix incomplete JSON by adding missing closing brackets
-      try {
-        let fixedContent = rawContent.trim();
-        
-        // Count opening and closing braces
-        const openBraces = (fixedContent.match(/\{/g) || []).length;
-        const closeBraces = (fixedContent.match(/\}/g) || []).length;
-        
-        // Add missing closing braces
-        if (openBraces > closeBraces) {
-          const missingBraces = openBraces - closeBraces;
-          for (let i = 0; i < missingBraces; i++) {
-            fixedContent += '\n}';
-          }
-        }
-        
-        // Try to close any unclosed strings
-        if (fixedContent.includes('"') && !fixedContent.endsWith('"') && !fixedContent.endsWith('"}')) {
-          const lastQuote = fixedContent.lastIndexOf('"');
-          const afterLastQuote = fixedContent.substring(lastQuote + 1);
-          if (!afterLastQuote.includes('"')) {
-            fixedContent = fixedContent.substring(0, lastQuote + 1) + '",\n  "error": "Response truncated"\n}';
-          }
-        }
-        
-        result = JSON.parse(fixedContent);
-        debugLogger.info('Successfully recovered from JSON parse error');
-      } catch (fixError) {
-        // If we can't fix it, return a minimal valid response
-        result = {
-          summary: "Analysis incomplete - response was truncated. Try using shorter content or 'Short' analysis length.",
-          sentiment: "neutral",
-          tone: "professional",
-          keywords: [],
-          confidence: "Partial",
-          truthAnalysis: {
-            fact: 'Response was cut off mid-analysis',
-            observation: 'Token limit may have been exceeded',
-            insight: 'Try shorter content or different analysis length',
-            humanTruth: 'System limitation encountered',
-            culturalMoment: 'Technical constraint',
-            attentionValue: 'low',
-            platform: 'system',
-            cohortOpportunities: []
-          },
-          cohortSuggestions: [],
-          platformContext: 'Incomplete response - try shorter content',
-          viralPotential: 'low',
-          competitiveInsights: [],
-          strategicInsights: [],
-          strategicActions: []
-        };
-      }
+      // Return a minimal valid response instead of failing
+      result = {
+        summary: "Analysis parsing failed",
+        sentiment: "neutral",
+        tone: "professional",
+        keywords: [],
+        confidence: "0%",
+        truthAnalysis: {
+          fact: 'JSON parsing failed',
+          observation: 'Response format error',
+          insight: 'OpenAI returned invalid JSON',
+          humanTruth: 'Technical issue occurred',
+          culturalMoment: 'System needs debugging',
+          attentionValue: 'low',
+          platform: 'system',
+          cohortOpportunities: []
+        },
+        cohortSuggestions: [],
+        platformContext: 'Parsing error occurred',
+        viralPotential: 'low',
+        competitiveInsights: [],
+        strategicInsights: [],
+        strategicActions: []
+      };
     }
     
     debugLogger.info('OpenAI response parsed', { 

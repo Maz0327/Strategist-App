@@ -10,13 +10,13 @@ class CacheService {
   private maxSize: number;
   private defaultTTL: number; // Time to live in milliseconds
 
-  constructor(maxSize = 2000, defaultTTL = 4 * 60 * 60 * 1000) { // 4 hours default for better performance
+  constructor(maxSize = 1000, defaultTTL = 60 * 60 * 1000) { // 1 hour default
     this.cache = new Map();
     this.maxSize = maxSize;
     this.defaultTTL = defaultTTL;
     
-    // Cleanup expired entries every 30 minutes to reduce overhead
-    setInterval(() => this.cleanup(), 30 * 60 * 1000);
+    // Cleanup expired entries every 15 minutes
+    setInterval(() => this.cleanup(), 15 * 60 * 1000);
     
     structuredLogger.info('Cache service initialized', {
       maxSize,
