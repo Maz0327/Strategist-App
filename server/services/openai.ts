@@ -100,68 +100,89 @@ export class OpenAIService {
 
 
   private async analyzeSingleContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number) => void): Promise<EnhancedAnalysisResult> {
-    // Aggressive content limiting for speed
+    // Limit content length for processing efficiency
     const content = data.content || '';
-    const contentLimit = lengthPreference === 'short' ? 500 : (lengthPreference === 'medium' ? 800 : 1200);
+    const contentLimit = lengthPreference === 'short' ? 1000 : (lengthPreference === 'medium' ? 2000 : 3000);
     const processedContent = content.slice(0, contentLimit);
     
-    // Simplified prompt that works reliably
-    const prompt = `Analyze this content and return valid JSON only:
+    // Craft detailed prompt for comprehensive analysis
+    const prompt = `Analyze this content for strategic insights and cultural significance:
 
 Title: ${data.title || 'Content'}
 Content: ${processedContent}
 
-Return this exact JSON structure:
+Provide JSON with these fields:
 {
-  "summary": "brief summary of content",
-  "sentiment": "positive",
-  "tone": "professional",
-  "keywords": ["keyword1", "keyword2", "keyword3"],
+  "summary": "Strategic overview",
+  "sentiment": "positive/negative/neutral",
+  "tone": "professional/casual/urgent",
+  "keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
   "confidence": "85%",
   "truthAnalysis": {
-    "fact": "main fact from content",
-    "observation": "key observation",
-    "insight": "strategic insight",
-    "humanTruth": "human truth",
-    "culturalMoment": "cultural context",
-    "attentionValue": "medium",
-    "platform": "general",
-    "cohortOpportunities": ["audience1", "audience2"]
+    "fact": "What happened - ${lengthPreference === 'bulletpoints' ? 'Use bullet points with • symbols' : `Use ${lengthPreference} length`}",
+    "observation": "What pattern you see - ${lengthPreference === 'bulletpoints' ? 'Use bullet points with • symbols' : `Use ${lengthPreference} length`}",
+    "insight": "Why this is happening - ${lengthPreference === 'bulletpoints' ? 'Use bullet points with • symbols' : `Use ${lengthPreference} length`}",
+    "humanTruth": "Deep psychological driver - ${lengthPreference === 'bulletpoints' ? 'Use bullet points with • symbols' : `Use ${lengthPreference} length`}",
+    "culturalMoment": "Larger cultural shift - ${lengthPreference === 'bulletpoints' ? 'Use bullet points with • symbols' : `Use ${lengthPreference} length`}",
+    "attentionValue": "high/medium/low",
+    "platform": "Platform context",
+    "cohortOpportunities": ["specific cohort names"]
   },
-  "cohortSuggestions": ["suggestion1", "suggestion2"],
-  "platformContext": "platform context",
-  "viralPotential": "medium",
-  "competitiveInsights": ["insight1", "insight2"],
-  "strategicInsights": ["insight1", "insight2"],
-  "strategicActions": ["action1", "action2"]
+  "cohortSuggestions": ["cohort 1", "cohort 2", "cohort 3"],
+  "platformContext": "Platform relevance",
+  "viralPotential": "high/medium/low",
+  "competitiveInsights": ["insight 1", "insight 2", "insight 3"],
+  "strategicInsights": ["strategic insight 1", "strategic insight 2", "strategic insight 3"],
+  "strategicActions": ["action 1", "action 2", "action 3"]
 }`;
 
     try {
       const startTime = Date.now();
+      debugLogger.info('Sending request to OpenAI API', { model: 'gpt-4o-mini', promptLength: prompt.length });
       
-      // Balanced configuration for reliability
-      const tokenLimit = lengthPreference === 'short' ? 400 : (lengthPreference === 'medium' ? 600 : 800);
-
+      // Progress tracking for better UX
+      if (onProgress) {
+        onProgress('Initializing analysis', 10);
+        setTimeout(() => onProgress('Processing content', 30), 500);
+        setTimeout(() => onProgress('Analyzing cultural context', 50), 2000);
+        setTimeout(() => onProgress('Generating insights', 70), 4000);
+        setTimeout(() => onProgress('Finalizing results', 90), 6000);
+      }
+      
+      // OpenAI API call with timeout prevention strategies
+      debugLogger.info('Sending OpenAI API request', { 
+        contentLength: processedContent.length,
+        promptLength: prompt.length 
+      });
+      
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-4o-mini", // Keeping cost-efficient model as requested
         messages: [
-          { role: "system", content: "You are a content analysis expert. Always return valid JSON only." },
-          { role: "user", content: prompt }
+          {
+            role: "system",
+            content: "You are an expert strategic content analyst. Analyze content for cultural insights, trends, and strategic opportunities. Always return valid JSON matching the requested format."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
         ],
         response_format: { type: "json_object" },
-        temperature: 0.1,
-        max_tokens: tokenLimit,
-        top_p: 0.3,
-        stream: false
+        temperature: 0.7,
+        max_tokens: lengthPreference === 'short' ? 800 : (lengthPreference === 'medium' ? 1200 : 1600),
+        top_p: 0.9,
+        presence_penalty: 0.1,
+        frequency_penalty: 0.1
       });
 
-      // Direct response processing
+      // Process response and handle historical context
       const result = this.processOpenAIResponse(response, startTime, null);
       
       if (onProgress) onProgress('Complete', 100);
       
       return result;
     } catch (error: any) {
+      debugLogger.error('OpenAI API error', error);
       throw new Error(`Analysis failed: ${error.message}`);
     }
   }
