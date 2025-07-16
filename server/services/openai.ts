@@ -201,17 +201,17 @@ export class OpenAIService {
     
     // Aggregate sentiment (most common)
     const sentiments = chunkResults.map(r => r.sentiment);
-    const sentimentCounts = sentiments.reduce((acc, s) => ({ ...acc, [s]: (acc[s] || 0) + 1 }), {});
-    const dominantSentiment = Object.entries(sentimentCounts).sort(([,a], [,b]) => b - a)[0][0];
+    const sentimentCounts = sentiments.reduce((acc: Record<string, number>, s) => ({ ...acc, [s]: (acc[s] || 0) + 1 }), {});
+    const dominantSentiment = Object.entries(sentimentCounts).sort(([,a], [,b]) => (b as number) - (a as number))[0][0];
     
     // Combine tone (most professional approach)
     const tones = chunkResults.map(r => r.tone);
-    const toneCounts = tones.reduce((acc, t) => ({ ...acc, [t]: (acc[t] || 0) + 1 }), {});
-    const dominantTone = Object.entries(toneCounts).sort(([,a], [,b]) => b - a)[0][0];
+    const toneCounts = tones.reduce((acc: Record<string, number>, t) => ({ ...acc, [t]: (acc[t] || 0) + 1 }), {});
+    const dominantTone = Object.entries(toneCounts).sort(([,a], [,b]) => (b as number) - (a as number))[0][0];
     
     // Merge and deduplicate keywords
     const allKeywords = chunkResults.flatMap(r => r.keywords);
-    const uniqueKeywords = [...new Set(allKeywords)].slice(0, 7); // Top 7 unique keywords
+    const uniqueKeywords = Array.from(new Set(allKeywords)).slice(0, 7); // Top 7 unique keywords
     
     // Combine truth analysis (take most comprehensive)
     const truthAnalyses = chunkResults.map(r => r.truthAnalysis);
@@ -224,14 +224,14 @@ export class OpenAIService {
       attentionValue: truthAnalyses.filter(t => t.attentionValue === 'high').length > 0 ? 'high' : 
                      truthAnalyses.filter(t => t.attentionValue === 'medium').length > 0 ? 'medium' : 'low',
       platform: truthAnalyses[0].platform,
-      cohortOpportunities: [...new Set(truthAnalyses.flatMap(t => t.cohortOpportunities))].slice(0, 5)
+      cohortOpportunities: Array.from(new Set(truthAnalyses.flatMap(t => t.cohortOpportunities))).slice(0, 5)
     };
     
     // Combine other arrays and deduplicate
-    const combinedCohortSuggestions = [...new Set(chunkResults.flatMap(r => r.cohortSuggestions))].slice(0, 5);
-    const combinedCompetitiveInsights = [...new Set(chunkResults.flatMap(r => r.competitiveInsights))].slice(0, 5);
-    const combinedStrategicInsights = [...new Set(chunkResults.flatMap(r => r.strategicInsights))].slice(0, 5);
-    const combinedStrategicActions = [...new Set(chunkResults.flatMap(r => r.strategicActions))].slice(0, 5);
+    const combinedCohortSuggestions = Array.from(new Set(chunkResults.flatMap(r => r.cohortSuggestions))).slice(0, 5);
+    const combinedCompetitiveInsights = Array.from(new Set(chunkResults.flatMap(r => r.competitiveInsights))).slice(0, 5);
+    const combinedStrategicInsights = Array.from(new Set(chunkResults.flatMap(r => r.strategicInsights))).slice(0, 5);
+    const combinedStrategicActions = Array.from(new Set(chunkResults.flatMap(r => r.strategicActions))).slice(0, 5);
     
     // Determine overall viral potential
     const viralPotentials = chunkResults.map(r => r.viralPotential);
@@ -256,6 +256,7 @@ export class OpenAIService {
 
   private async analyzeSingleContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number) => void): Promise<EnhancedAnalysisResult> {
     const processedContent = data.content || '';
+    const startTime = Date.now();
     
     const getLengthInstructions = (preference: string) => {
       switch (preference) {
@@ -307,7 +308,6 @@ Provide JSON with these fields:
 `;
 
     try {
-      const startTime = Date.now();
       debugLogger.info('Sending request to OpenAI API', { model: 'gpt-4o-mini', promptLength: prompt.length });
       
       // Progress tracking for better UX

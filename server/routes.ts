@@ -263,7 +263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         viralPotential: analysis.viralPotential,
         cohortSuggestions: analysis.cohortSuggestions,
         competitiveInsights: analysis.competitiveInsights,
-        nextActions: analysis.nextActions,
+        // nextActions: analysis.nextActions, // Removed as this property doesn't exist
         userNotes: userNotes
       };
       
