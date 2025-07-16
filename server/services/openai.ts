@@ -6,11 +6,11 @@ import { googleNgramService } from "./google-ngram";
 import { cacheService } from "./cache-service";
 import { structuredLogger } from "./structured-logger";
 
-// Using gpt-4o-mini for cost-efficient testing phase, can upgrade to gpt-4o later
+// Using gpt-4o-mini for fast responses
 const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || process.env.API_KEY,
-  timeout: 10 * 1000, // Aggressive 10 second timeout
-  maxRetries: 0, // No retries for fastest response
+  timeout: 30 * 1000, // 30 second timeout
+  maxRetries: 1, // One retry for reliability
 });
 
 export interface AnalysisResult {
@@ -141,7 +141,7 @@ Return this exact JSON structure:
       const tokenLimit = lengthPreference === 'short' ? 400 : (lengthPreference === 'medium' ? 600 : 800);
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-4o",
         messages: [
           { role: "system", content: "You are a content analysis expert. Always return valid JSON only." },
           { role: "user", content: prompt }
@@ -317,7 +317,7 @@ Return this exact JSON structure:
       debugLogger.info('Generating strategic insights', { promptLength: prompt.length });
       
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini", // Cost-efficient model as requested
+        model: "gpt-4o", // Using GPT-4o through Replit service
         messages: [
           {
             role: "system",

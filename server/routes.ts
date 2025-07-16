@@ -241,13 +241,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const lengthPreference = req.body.lengthPreference || 'medium';
       const userNotes = req.body.userNotes || '';
       
-      // Add timeout wrapper for analysis
-      const analysisPromise = multiModelAI.analyzeContent(data, lengthPreference);
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Analysis timeout after 45 seconds')), 45000);
-      });
-
-      const analysis = await Promise.race([analysisPromise, timeoutPromise]);
+      // Use original OpenAI service for stability
+      const analysis = await openaiService.analyzeContent(data, lengthPreference);
       debugLogger.info("OpenAI analysis completed", { sentiment: analysis.sentiment, confidence: analysis.confidence, keywordCount: analysis.keywords.length }, req);
       
       // Save as potential signal after analysis
