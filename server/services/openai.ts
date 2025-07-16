@@ -100,40 +100,40 @@ export class OpenAIService {
 
 
   private async analyzeSingleContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number) => void): Promise<EnhancedAnalysisResult> {
-    // Limit content length for processing efficiency
+    // Limit content length for processing efficiency - more aggressive limits for speed
     const content = data.content || '';
-    const contentLimit = lengthPreference === 'short' ? 1000 : (lengthPreference === 'medium' ? 2000 : 3000);
+    const contentLimit = lengthPreference === 'short' ? 800 : (lengthPreference === 'medium' ? 1500 : 2500);
     const processedContent = content.slice(0, contentLimit);
     
-    // Craft detailed prompt for comprehensive analysis with specific length requirements
+    // Simplified prompt for faster processing
     const lengthInstructions = this.getLengthInstructions(lengthPreference);
-    const prompt = `Analyze this content for strategic insights and cultural significance:
+    const prompt = `Analyze this content for strategic insights:
 
 Title: ${data.title || 'Content'}
 Content: ${processedContent}
 
 ${lengthInstructions}
 
-Provide JSON with these fields:
+Return JSON with:
 {
   "summary": "Strategic overview",
-  "sentiment": "positive/negative/neutral",
+  "sentiment": "positive/negative/neutral", 
   "tone": "professional/casual/urgent",
   "keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
   "confidence": "85%",
   "truthAnalysis": {
-    "fact": "What happened - ${lengthPreference === 'bulletpoints' ? 'Use bullet points with • symbols' : `Use ${lengthPreference} length`}",
-    "observation": "What pattern you see - ${lengthPreference === 'bulletpoints' ? 'Use bullet points with • symbols' : `Use ${lengthPreference} length`}",
-    "insight": "Why this is happening - ${lengthPreference === 'bulletpoints' ? 'Use bullet points with • symbols' : `Use ${lengthPreference} length`}",
-    "humanTruth": "Deep psychological driver - ${lengthPreference === 'bulletpoints' ? 'Use bullet points with • symbols' : `Use ${lengthPreference} length`}",
-    "culturalMoment": "Larger cultural shift - ${lengthPreference === 'bulletpoints' ? 'Use bullet points with • symbols' : `Use ${lengthPreference} length`}",
+    "fact": "What happened",
+    "observation": "What pattern you see", 
+    "insight": "Why this is happening",
+    "humanTruth": "Deep psychological driver",
+    "culturalMoment": "Larger cultural shift",
     "attentionValue": "high/medium/low",
     "platform": "Platform context",
     "cohortOpportunities": ["specific cohort names"]
   },
   "cohortSuggestions": ["cohort 1", "cohort 2", "cohort 3"],
   "platformContext": "Platform relevance",
-  "viralPotential": "high/medium/low",
+  "viralPotential": "high/medium/low", 
   "competitiveInsights": ["insight 1", "insight 2", "insight 3"],
   "strategicInsights": ["strategic insight 1", "strategic insight 2", "strategic insight 3"],
   "strategicActions": ["action 1", "action 2", "action 3"]
@@ -167,7 +167,7 @@ Provide JSON with these fields:
         messages: [
           {
             role: "system",
-            content: "You are an expert strategic content analyst. Analyze content for cultural insights, trends, and strategic opportunities. Always return valid JSON matching the requested format."
+            content: "You are an expert strategic content analyst. Analyze content for cultural insights, trends, and strategic opportunities. Always return valid JSON matching the requested format. Be concise but thorough."
           },
           {
             role: "user",
@@ -175,11 +175,10 @@ Provide JSON with these fields:
           }
         ],
         response_format: { type: "json_object" },
-        temperature: 0.7,
-        max_tokens: lengthPreference === 'short' ? 800 : (lengthPreference === 'medium' ? 1200 : 1600),
-        top_p: 0.9,
-        presence_penalty: 0.1,
-        frequency_penalty: 0.1
+        temperature: 0.3, // Lower temperature for faster, more consistent responses
+        max_tokens: lengthPreference === 'short' ? 600 : (lengthPreference === 'medium' ? 900 : 1200), // Reduced token limits for speed
+        timeout: 8000, // 8 second timeout to prevent hanging
+        top_p: 0.8
       });
 
       // Process response and handle historical context
