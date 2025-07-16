@@ -9,8 +9,8 @@ import { structuredLogger } from "./structured-logger";
 // Using gpt-4o-mini for fast responses
 const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || process.env.API_KEY,
-  timeout: 30 * 1000, // 30 second timeout
-  maxRetries: 1, // One retry for reliability
+  timeout: 15 * 1000, // Reduced timeout for speed
+  maxRetries: 0, // No retries for maximum speed
 });
 
 export interface AnalysisResult {
@@ -69,49 +69,7 @@ export class OpenAIService {
     return Math.abs(hash).toString(36);
   }
 
-  // Dynamic token allocation based on content length
-  private calculateOptimalTokens(contentLength: number, analysisType: 'basic' | 'enhanced' = 'enhanced'): number {
-    // Base token allocation for analysis structure
-    const baseTokens = analysisType === 'basic' ? 200 : 300;
-    
-    // Dynamic scaling based on content length
-    const contentRatio = Math.min(contentLength / 1000, 3); // Cap at 3x for very long content
-    const scalingFactor = Math.max(0.5, Math.min(2, contentRatio)); // Between 0.5x and 2x scaling
-    
-    // Calculate final token count
-    const dynamicTokens = Math.round(baseTokens * scalingFactor);
-    
-    // Set reasonable bounds (150-800 tokens)
-    return Math.max(150, Math.min(800, dynamicTokens));
-  }
 
-  // Dynamic content processing based on length
-  private optimizeContentForLength(content: string, maxTokens: number): string {
-    if (content.length <= 500) return content; // Short content - use as-is
-    
-    // Estimate tokens (rough approximation: 1 token ≈ 4 characters)
-    const estimatedTokens = content.length / 4;
-    
-    if (estimatedTokens <= maxTokens * 0.7) { // Use 70% of tokens for input
-      return content;
-    }
-    
-    // For longer content, intelligently truncate
-    const targetLength = Math.floor(maxTokens * 0.7 * 4); // Convert back to characters
-    
-    // Try to find a good breaking point (end of sentence, paragraph, etc.)
-    const truncated = content.substring(0, targetLength);
-    const lastSentence = truncated.lastIndexOf('. ');
-    const lastParagraph = truncated.lastIndexOf('\n\n');
-    
-    const breakPoint = Math.max(lastSentence, lastParagraph);
-    
-    if (breakPoint > targetLength * 0.8) { // If we found a good breaking point
-      return content.substring(0, breakPoint + 1);
-    }
-    
-    return truncated + '...';
-  }
 
   async analyzeContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number) => void): Promise<EnhancedAnalysisResult> {
     // Optimized cache key
@@ -262,8 +220,7 @@ Return JSON with: summary, sentiment, tone, keywords, confidence, truthAnalysis{
     conversationHistory: Array<{role: 'user' | 'assistant', content: string}> = []
   ): Promise<string> {
     try {
-      // Track API call for monitoring
-      await analyticsService.trackExternalApiCall('openai', 'chat', 'POST', 0, 'pending');
+      // Skip analytics tracking for speed
       
       const messages: Array<{role: 'system' | 'user' | 'assistant', content: string}> = [
         { role: 'system', content: systemContext },
@@ -271,12 +228,8 @@ Return JSON with: summary, sentiment, tone, keywords, confidence, truthAnalysis{
         { role: 'user', content: message }
       ];
 
-      // Calculate conversation complexity for dynamic tokens
-      const totalConversationLength = messages.reduce((sum, msg) => sum + msg.content.length, 0);
-      const optimalTokens = this.calculateOptimalTokens(totalConversationLength, 'basic');
-      
-      // Optimize for chat - typically shorter responses
-      const chatTokens = Math.min(optimalTokens, 600); // Cap at 600 for chat
+      // Fixed token limit for chat
+      const chatTokens = 600;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o-mini",
@@ -290,17 +243,7 @@ Return JSON with: summary, sentiment, tone, keywords, confidence, truthAnalysis{
         throw new Error('No response content from OpenAI');
       }
 
-      // Track successful API call
-      const tokensUsed = response.usage?.total_tokens || 0;
-      const cost = tokensUsed * 0.00015; // Approximate cost per token
-      await analyticsService.trackExternalApiCall('openai', 'chat', 'POST', cost, 'success', {
-        tokensUsed,
-        model: 'gpt-4o',
-        messageLength: message.length,
-        responseLength: content.length,
-        dynamicTokens: chatTokens,
-        conversationLength: totalConversationLength
-      });
+      // Skip analytics tracking for speed
 
       debugLogger.info('Chat response generated successfully', {
         messageLength: message.length,
@@ -312,11 +255,7 @@ Return JSON with: summary, sentiment, tone, keywords, confidence, truthAnalysis{
 
       return content;
     } catch (error: any) {
-      // Track failed API call
-      await analyticsService.trackExternalApiCall('openai', 'chat', 'POST', 0, 'error', {
-        error: error.message,
-        messageLength: message.length
-      });
+      // Skip analytics tracking for speed
 
       debugLogger.error('Failed to generate chat response', error);
       throw new Error(`Chat response generation failed: ${error.message}`);
@@ -343,13 +282,9 @@ Return JSON with: summary, sentiment, tone, keywords, confidence, truthAnalysis{
     try {
       debugLogger.info('Generating strategic insights', { promptLength: prompt.length });
       
-      // Calculate optimal tokens for insights generation
-      const optimalTokens = this.calculateOptimalTokens(prompt.length, 'enhanced');
-      const optimizedPrompt = this.optimizeContentForLength(prompt, optimalTokens);
-      
-      // Adjust insights depth based on prompt complexity
-      const insightsDepth = prompt.length > 2000 ? 'comprehensive' : 
-                           prompt.length > 1000 ? 'detailed' : 'focused';
+      // Simplified insights generation
+      const insightsDepth = 'focused';
+      const optimizedPrompt = prompt.length > 2000 ? prompt.substring(0, 2000) + '...' : prompt;
       
       const response = await openai.chat.completions.create({
         model: "gpt-4o-mini",
@@ -373,7 +308,7 @@ Return JSON with: summary, sentiment, tone, keywords, confidence, truthAnalysis{
         ],
         response_format: { type: "json_object" },
         temperature: 0.7,
-        max_tokens: Math.min(optimalTokens * 1.2, 1500), // Dynamic but capped at 1500
+        max_tokens: 800, // Fixed token limit for speed
       });
 
       const content = response.choices[0]?.message?.content;
@@ -385,30 +320,12 @@ Return JSON with: summary, sentiment, tone, keywords, confidence, truthAnalysis{
       const tokensUsed = response.usage?.total_tokens || 0;
       const responseTime = Date.now() - startTime;
       
-      await analyticsService.trackExternalApiCall({
-        userId: 0, // System user for daily reports
-        service: 'openai',
-        endpoint: 'chat/completions',
-        method: 'POST',
-        statusCode: 200,
-        responseTime,
-        tokensUsed,
-        cost: Math.round(tokensUsed * 0.00015 * 100), // Cost in cents
-        metadata: {
-          model: 'gpt-4o',
-          promptTokens: response.usage?.prompt_tokens || 0,
-          completionTokens: response.usage?.completion_tokens || 0,
-          purpose: 'daily_insights_generation',
-          dynamicTokens: optimalTokens,
-          insightsDepth
-        }
-      });
+      // Skip analytics tracking for speed
 
       debugLogger.info('Strategic insights generated successfully', {
         responseTime,
         tokensUsed,
         contentLength: content.length,
-        dynamicTokens: optimalTokens,
         insightsDepth
       });
 
@@ -419,21 +336,7 @@ Return JSON with: summary, sentiment, tone, keywords, confidence, truthAnalysis{
     } catch (error: any) {
       debugLogger.error('Strategic insights generation failed', error);
       
-      // Track failed API call
-      await analyticsService.trackExternalApiCall({
-        userId: 0,
-        service: 'openai',
-        endpoint: 'chat/completions',
-        method: 'POST',
-        statusCode: 500,
-        responseTime: Date.now() - startTime,
-        errorMessage: error.message,
-        metadata: {
-          model: 'gpt-4o',
-          promptLength: prompt.length,
-          purpose: 'daily_insights_generation'
-        }
-      });
+      // Skip analytics tracking for speed
       
       throw new Error(`Failed to generate strategic insights: ${error.message}`);
     }
