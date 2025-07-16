@@ -299,10 +299,20 @@ export function TodaysBriefing({ activeSubTab, onNavigateToExplore, onNavigateTo
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Custom Watch</h3>
                 <p className="text-gray-600">Your RSS feeds, newsletters, and custom data sources</p>
               </div>
-              <Button onClick={refreshFeeds} variant="outline" size="sm">
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Refresh
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  onClick={() => setIsSourcesOpen(true)} 
+                  variant="outline" 
+                  size="sm"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Manage Sources
+                </Button>
+                <Button onClick={refreshFeeds} variant="outline" size="sm">
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Refresh
+                </Button>
+              </div>
             </div>
             
             {customLoading ? (
@@ -368,6 +378,14 @@ export function TodaysBriefing({ activeSubTab, onNavigateToExplore, onNavigateTo
                 <Rss className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h4 className="font-medium text-gray-900 mb-2">No Custom Feeds</h4>
                 <p className="text-gray-600 mb-4">Add RSS feeds and custom data sources to track specific content</p>
+                <Button 
+                  variant="outline" 
+                  className="mb-6"
+                  onClick={() => setIsSourcesOpen(true)}
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Manage RSS Sources
+                </Button>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
                   <Card>
                     <CardContent className="p-4">
