@@ -13,10 +13,10 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes (July 16, 2025)
 
 ### 🚀 OPTIMIZED AI SYSTEM IMPLEMENTED (July 16, 2025)
-- ✅ **Single GPT-4o-mini Model**: Streamlined to use GPT-4o-mini through Replit's AI service for fast, reliable analysis
+- ✅ **Single GPT-4o Model**: Streamlined to use GPT-4o through Replit's AI service for fast, reliable analysis
 - ✅ **Performance Optimized**: Removed complex multi-model parallel processing for better speed and reliability
 - ✅ **Simplified Architecture**: Single API call approach reduces complexity and potential failure points
-- ✅ **Replit Integration**: Uses Replit's included AI service for cost-effective GPT-4o-mini access
+- ✅ **Replit Integration**: Uses Replit's included AI service for cost-effective GPT-4o access
 - ✅ **Fast Response Times**: Optimized for 6-second analysis completion with reliable results
 - ✅ **Robust Error Handling**: Comprehensive timeout and error management for production stability
 - ✅ **JSON-First Approach**: Structured responses with consistent data format for frontend integration
@@ -85,7 +85,7 @@ Preferred communication style: Simple, everyday language.
 - **Session-based authentication** with bcrypt for password hashing
 - **PostgreSQL** database with Drizzle ORM
 - **Neon Database** as the cloud PostgreSQL provider
-- **OpenAI GPT-4o-mini** for content analysis and insights
+- **OpenAI GPT-4o** for content analysis and insights
 
 ### Database Design
 - **Drizzle ORM** for type-safe database operations
@@ -134,7 +134,7 @@ Preferred communication style: Simple, everyday language.
 ## External Dependencies
 
 ### APIs & Services
-- **OpenAI GPT-4o-mini** - Content analysis and insights generation
+- **OpenAI GPT-4o** - Content analysis and insights generation
 - **Google Trends** (via PyTrends) - Search trend data
 - **Reddit API** - Community discussions and trending content
 - **YouTube Data API** - Video content and trending analysis

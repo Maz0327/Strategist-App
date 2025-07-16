@@ -141,7 +141,7 @@ Return this exact JSON structure:
       const tokenLimit = lengthPreference === 'short' ? 400 : (lengthPreference === 'medium' ? 600 : 800);
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-4o",
         messages: [
           { role: "system", content: "You are a content analysis expert. Always return valid JSON only." },
           { role: "user", content: prompt }
@@ -255,7 +255,7 @@ Return this exact JSON structure:
       ];
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini", // Cost-efficient model for chat responses
+        model: "gpt-4o", // Using GPT-4o through Replit service
         messages,
         max_tokens: 500, // Limit response length for chat
         temperature: 0.7, // Slightly more conversational
@@ -271,7 +271,7 @@ Return this exact JSON structure:
       const cost = tokensUsed * 0.00015; // Approximate cost per token
       await analyticsService.trackExternalApiCall('openai', 'chat', 'POST', cost, 'success', {
         tokensUsed,
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o',
         messageLength: message.length,
         responseLength: content.length
       });
@@ -317,7 +317,7 @@ Return this exact JSON structure:
       debugLogger.info('Generating strategic insights', { promptLength: prompt.length });
       
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini", // Using GPT-4o-mini through Replit service
+        model: "gpt-4o", // Using GPT-4o through Replit service
         messages: [
           {
             role: "system",
@@ -360,7 +360,7 @@ Return this exact JSON structure:
         tokensUsed,
         cost: Math.round(tokensUsed * 0.00015 * 100), // Cost in cents
         metadata: {
-          model: 'gpt-4o-mini',
+          model: 'gpt-4o',
           promptTokens: response.usage?.prompt_tokens || 0,
           completionTokens: response.usage?.completion_tokens || 0,
           purpose: 'daily_insights_generation'
@@ -390,7 +390,7 @@ Return this exact JSON structure:
         responseTime: Date.now() - startTime,
         errorMessage: error.message,
         metadata: {
-          model: 'gpt-4o-mini',
+          model: 'gpt-4o',
           promptLength: prompt.length,
           purpose: 'daily_insights_generation'
         }
