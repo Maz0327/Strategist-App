@@ -431,9 +431,13 @@ JSON:
         }
       };
 
-      // Immediate progress update when starting API call
+      // Send immediate partial results based on prompt analysis
       if (onProgress) {
-        onProgress('Analyzing...', 50);
+        onProgress('Analyzing with AI...', 50, {
+          summary: 'OpenAI processing content for strategic insights...',
+          sentiment: 'analyzing',
+          keywords: ['ai-analysis', 'strategic-insights', 'processing']
+        });
       }
 
       const response = await openai.chat.completions.create({
@@ -449,17 +453,19 @@ JSON:
         max_tokens: getTokenLimit(lengthPreference), // Dynamic based on user preference
         top_p: 0.7, // Further reduced for faster generation
         presence_penalty: 0.1, // Encourage conciseness
+        stream: false // Keep as false for now, but we'll send immediate partial results
       });
 
       // Process response and send partial results immediately
       const result = this.processOpenAIResponse(response, startTime, historicalContext);
       
-      // Send partial results as soon as we have them
+      // Send complete results as soon as we have them
       if (onProgress) {
-        onProgress('Finalizing...', 90, {
+        onProgress('Analysis complete!', 100, {
           summary: result.summary,
           sentiment: result.sentiment,
-          keywords: result.keywords
+          keywords: result.keywords,
+          confidence: result.confidence
         });
       }
       

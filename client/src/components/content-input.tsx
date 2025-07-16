@@ -416,6 +416,8 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart }: ContentInp
                                 ? 'bg-green-100 text-green-800' 
                                 : partialResults.sentiment === 'negative'
                                 ? 'bg-red-100 text-red-800'
+                                : partialResults.sentiment === 'processing' || partialResults.sentiment === 'analyzing'
+                                ? 'bg-blue-100 text-blue-800'
                                 : 'bg-gray-100 text-gray-800'
                             }`}>
                               {partialResults.sentiment}
