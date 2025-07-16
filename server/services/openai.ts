@@ -9,8 +9,8 @@ import { structuredLogger } from "./structured-logger";
 // Using gpt-4o-mini for fast responses
 const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || process.env.API_KEY,
-  timeout: 15 * 1000, // Reduced timeout for speed
-  maxRetries: 0, // No retries for maximum speed
+  timeout: 10 * 1000, // Aggressive 10 second timeout
+  maxRetries: 0, // No retries for fastest response
 });
 
 export interface AnalysisResult {
@@ -100,32 +100,59 @@ export class OpenAIService {
 
 
   private async analyzeSingleContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number) => void): Promise<EnhancedAnalysisResult> {
-    // Simplified content processing
+    // Aggressive content limiting for speed
     const content = data.content || '';
-    const contentLimit = lengthPreference === 'short' ? 1000 : (lengthPreference === 'medium' ? 1500 : 2000);
+    const contentLimit = lengthPreference === 'short' ? 500 : (lengthPreference === 'medium' ? 800 : 1200);
     const processedContent = content.slice(0, contentLimit);
     
-    // Streamlined prompt
-    const prompt = `Analyze: ${data.title || 'Content'}
+    // Simplified prompt that works reliably
+    const prompt = `Analyze this content and return valid JSON only:
+
+Title: ${data.title || 'Content'}
 Content: ${processedContent}
 
-Return JSON with: summary, sentiment, tone, keywords, confidence, truthAnalysis{fact, observation, insight, humanTruth, culturalMoment, attentionValue, platform, cohortOpportunities}, cohortSuggestions, platformContext, viralPotential, competitiveInsights, strategicInsights, strategicActions`;
+Return this exact JSON structure:
+{
+  "summary": "brief summary of content",
+  "sentiment": "positive",
+  "tone": "professional",
+  "keywords": ["keyword1", "keyword2", "keyword3"],
+  "confidence": "85%",
+  "truthAnalysis": {
+    "fact": "main fact from content",
+    "observation": "key observation",
+    "insight": "strategic insight",
+    "humanTruth": "human truth",
+    "culturalMoment": "cultural context",
+    "attentionValue": "medium",
+    "platform": "general",
+    "cohortOpportunities": ["audience1", "audience2"]
+  },
+  "cohortSuggestions": ["suggestion1", "suggestion2"],
+  "platformContext": "platform context",
+  "viralPotential": "medium",
+  "competitiveInsights": ["insight1", "insight2"],
+  "strategicInsights": ["insight1", "insight2"],
+  "strategicActions": ["action1", "action2"]
+}`;
 
     try {
       const startTime = Date.now();
       
-      // Optimized token limits for speed
-      const tokenLimit = lengthPreference === 'short' ? 300 : (lengthPreference === 'medium' ? 500 : 700);
+      // Balanced configuration for reliability
+      const tokenLimit = lengthPreference === 'short' ? 400 : (lengthPreference === 'medium' ? 600 : 800);
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }],
+        messages: [
+          { role: "system", content: "You are a content analysis expert. Always return valid JSON only." },
+          { role: "user", content: prompt }
+        ],
         response_format: { type: "json_object" },
         temperature: 0.1,
         max_tokens: tokenLimit,
-        top_p: 0.5,
-        presence_penalty: 0.3,
-        frequency_penalty: 0.2
+        top_p: 0.3,
+        stream: false
       });
 
       // Direct response processing
