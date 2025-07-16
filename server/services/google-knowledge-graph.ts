@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { TrendingTopic } from './trends';
+import { debugLogger } from './debug-logger';
 
 export interface KnowledgeGraphEntity {
   id: string;
@@ -22,7 +23,7 @@ export class GoogleKnowledgeGraphService {
 
   async searchEntities(query: string, limit: number = 10): Promise<KnowledgeGraphEntity[]> {
     if (!this.apiKey) {
-      console.warn('Google Knowledge Graph API key not configured');
+      debugLogger.warn('Google Knowledge Graph API key not configured');
       return [];
     }
 
@@ -52,7 +53,7 @@ export class GoogleKnowledgeGraphService {
 
       return [];
     } catch (error) {
-      console.error('Google Knowledge Graph API error:', error);
+      debugLogger.error('Google Knowledge Graph API error:', error);
       return [];
     }
   }
@@ -89,7 +90,7 @@ export class GoogleKnowledgeGraphService {
             };
           }
         } catch (error) {
-          console.error(`Knowledge Graph enhancement failed for ${topic.title}:`, error);
+          debugLogger.error(`Knowledge Graph enhancement failed for ${topic.title}:`, error);
         }
         return topic;
       })

@@ -1,4 +1,6 @@
 import axios from 'axios';
+import type { TrendingTopic } from './trends';
+import { debugLogger } from './debug-logger';
 
 const GENIUS_ACCESS_TOKEN = process.env.GENIUS_ACCESS_TOKEN;
 const BASE_URL = 'https://api.genius.com';
@@ -66,7 +68,7 @@ export class GeniusService {
         };
       });
     } catch (error) {
-      console.error('Error fetching Genius trending songs:', error);
+      debugLogger.error('Error fetching Genius trending songs:', error);
       return [];
     }
   }
@@ -108,7 +110,7 @@ export class GeniusService {
         };
       });
     } catch (error) {
-      console.error('Error fetching Genius popular songs:', error);
+      debugLogger.error('Error fetching Genius popular songs:', error);
       return [];
     }
   }
@@ -145,7 +147,7 @@ export class GeniusService {
         };
       });
     } catch (error) {
-      console.error('Error searching Genius songs:', error);
+      debugLogger.error('Error searching Genius songs:', error);
       return [];
     }
   }

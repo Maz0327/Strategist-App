@@ -56,11 +56,11 @@ export class OpenAIService {
     }
   }
 
-  // Optimized simple hash function for content caching
+  // Ultra-fast hash function for content caching (speed optimized)
   private hashContent(content: string): string {
     if (content.length === 0) return '0';
-    // Use first 100 chars + length for faster hashing
-    const sample = content.substring(0, 100) + content.length;
+    // Use first 50 chars + length for maximum speed
+    const sample = content.substring(0, 50) + content.length;
     let hash = 0;
     for (let i = 0; i < sample.length; i++) {
       hash = ((hash << 5) - hash) + sample.charCodeAt(i);
@@ -98,26 +98,25 @@ export class OpenAIService {
 
 
   private async analyzeSingleContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', onProgress?: (stage: string, progress: number) => void): Promise<EnhancedAnalysisResult> {
-    // Aggressive content limiting for speed
+    // Speed-optimized content limiting
     const content = data.content || '';
-    const contentLimit = lengthPreference === 'short' ? 500 : (lengthPreference === 'medium' ? 800 : 1200);
+    const contentLimit = lengthPreference === 'short' ? 400 : (lengthPreference === 'medium' ? 600 : 800);
     const processedContent = content.slice(0, contentLimit);
     
-    // Simplified prompt that works reliably
-    const prompt = `Analyze this content and return valid JSON only:
+    // Ultra-fast prompt optimized for speed
+    const prompt = `Analyze this content and return ONLY valid JSON:
 
-Title: ${data.title || 'Content'}
-Content: ${processedContent}
+${data.title || 'Content'}: ${processedContent}
 
 Return this exact JSON structure:
 {
-  "summary": "brief summary of content",
+  "summary": "brief summary",
   "sentiment": "positive",
   "tone": "professional",
   "keywords": ["keyword1", "keyword2", "keyword3"],
   "confidence": "85%",
   "truthAnalysis": {
-    "fact": "main fact from content",
+    "fact": "main fact",
     "observation": "key observation",
     "insight": "strategic insight",
     "humanTruth": "human truth",
@@ -137,8 +136,8 @@ Return this exact JSON structure:
     try {
       const startTime = Date.now();
       
-      // Balanced configuration for reliability
-      const tokenLimit = lengthPreference === 'short' ? 400 : (lengthPreference === 'medium' ? 600 : 800);
+      // Speed-optimized configuration
+      const tokenLimit = lengthPreference === 'short' ? 300 : (lengthPreference === 'medium' ? 450 : 600);
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
@@ -147,10 +146,11 @@ Return this exact JSON structure:
           { role: "user", content: prompt }
         ],
         response_format: { type: "json_object" },
-        temperature: 0.1,
+        temperature: 0.1, // Fast consistent responses
         max_tokens: tokenLimit,
-        top_p: 0.3,
-        stream: false
+        top_p: 0.3, // More focused responses
+        stream: false, // Faster single response
+        timeout: 15000 // 15 second timeout for speed
       });
 
       // Direct response processing
@@ -167,8 +167,8 @@ Return this exact JSON structure:
   private processOpenAIResponse(response: any, startTime: number, historicalContext?: any): EnhancedAnalysisResult {
     const rawContent = response.choices[0].message.content;
     
-    // Debug log to see what we're getting
-    console.log('OpenAI Raw Response:', rawContent);
+    // Use structured logging instead of console.log
+    debugLogger.info('OpenAI Raw Response:', { response: rawContent.substring(0, 200) });
     
     // Create a robust fallback response that always works
     const fallbackResponse: EnhancedAnalysisResult = {
@@ -233,7 +233,7 @@ Return this exact JSON structure:
         strategicActions: Array.isArray(result.strategicActions) ? result.strategicActions : fallbackResponse.strategicActions
       };
     } catch (parseError) {
-      console.log('JSON Parse Error:', parseError);
+      debugLogger.error('JSON Parse Error:', parseError);
       // Return fallback response - no errors thrown
       return fallbackResponse;
     }

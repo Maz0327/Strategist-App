@@ -241,7 +241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const lengthPreference = req.body.lengthPreference || 'medium';
       const userNotes = req.body.userNotes || '';
       
-      // Use original OpenAI service for stability
+      // Use optimized OpenAI service for maximum speed
       const analysis = await openaiService.analyzeContent(data, lengthPreference);
       debugLogger.info("OpenAI analysis completed", { sentiment: analysis.sentiment, confidence: analysis.confidence, keywordCount: analysis.keywords.length }, req);
       
@@ -370,7 +370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       debugLogger.info("Re-analysis request received", { title, lengthPreference, hasUrl: !!url }, req);
       
       const data = { content, title: title || "Re-analysis", url };
-      const analysis = await multiModelAI.analyzeContent(data, lengthPreference);
+      const analysis = await openaiService.analyzeContent(data, lengthPreference);
       
       debugLogger.info("Re-analysis completed", { sentiment: analysis.sentiment, lengthPreference }, req);
       
@@ -405,7 +405,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const data = { 
-        content: content.slice(0, 800), // Aggressive content limiting for speed
+        content: content.slice(0, 600), // Ultra-aggressive content limiting for speed
         title: title || "Analysis", 
         url 
       };
@@ -416,7 +416,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       try {
-        const analysis = await multiModelAI.analyzeContent(data, lengthPreference || 'medium', onProgress);
+        const analysis = await openaiService.analyzeContent(data, lengthPreference || 'medium', onProgress);
         
         const responseData = {
           success: true,

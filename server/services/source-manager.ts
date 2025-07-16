@@ -1,5 +1,6 @@
 import { storage } from "../storage";
 import type { InsertSource, Source } from "@shared/schema";
+import { debugLogger } from './debug-logger';
 
 export class SourceManagerService {
   async extractSourceMetadata(url: string): Promise<Partial<InsertSource>> {
@@ -18,7 +19,7 @@ export class SourceManagerService {
 
       return metadata;
     } catch (error) {
-      console.error('Error extracting source metadata:', error);
+      debugLogger.error('Error extracting source metadata:', error);
       return {
         url,
         domain: 'unknown',

@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-// Note: SignalCard component needs to be created or imported from correct path
-// This test assumes the component exists - adjust import path as needed
+import { SignalCard } from '../SignalCard';
 
 const mockSignal = {
   id: 1,
@@ -96,7 +95,7 @@ describe('SignalCard', () => {
     const promoteButton = screen.getByRole('button', { name: /promote/i });
     fireEvent.click(promoteButton);
     
-    expect(mockOnPromote).toHaveBeenCalledWith(mockSignal.id);
+    expect(mockOnPromote).toHaveBeenCalledWith(mockSignal.id, "");
   });
 
   it('calls onDelete when delete button is clicked', () => {
@@ -126,7 +125,7 @@ describe('SignalCard', () => {
       />
     );
     
-    expect(screen.getByText('https://example.com')).toBeInTheDocument();
+    expect(screen.getByText('View Source')).toBeInTheDocument();
   });
 
   it('handles different sentiment colors', () => {

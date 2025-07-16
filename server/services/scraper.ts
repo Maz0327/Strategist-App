@@ -71,8 +71,8 @@ export class ScraperService {
       }
       
       return {
-        title: title.substring(0, 150), // Reduced title length for speed
-        content: content.substring(0, 5000) // Reduced content length for faster processing
+        title: title.substring(0, 100), // Optimized title length for speed
+        content: content.substring(0, 3000) // Optimized content length for faster processing
       };
     } catch (error: any) {
       // Provide more specific error messages based on error type

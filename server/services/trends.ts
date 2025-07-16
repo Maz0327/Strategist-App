@@ -1,4 +1,5 @@
 import googleTrends from 'google-trends-api';
+import { debugLogger } from './debug-logger';
 
 export interface TrendingTopic {
   id: string;
@@ -39,7 +40,7 @@ export class TrendsService {
 
           // Check if response is HTML (blocked/CAPTCHA)
           if (typeof interest === 'string' && (interest.includes('<HTML>') || interest.includes('<!DOCTYPE'))) {
-            console.warn('Google Trends API blocked with CAPTCHA for keyword:', keyword);
+            debugLogger.warn('Google Trends API blocked with CAPTCHA for keyword:', keyword);
             continue;
           }
 
@@ -65,7 +66,7 @@ export class TrendsService {
             }
           }
         } catch (keywordError) {
-          console.warn(`Error fetching trends for keyword "${keywords[i]}":`, keywordError);
+          debugLogger.warn(`Error fetching trends for keyword "${keywords[i]}":`, keywordError);
           continue;
         }
       }
@@ -76,11 +77,11 @@ export class TrendsService {
       }
 
       // If no results from real API, return fallback
-      console.warn('No Google Trends data available, using fallback');
+      debugLogger.warn('No Google Trends data available, using fallback');
       return this.getFallbackTrends();
       
     } catch (error) {
-      console.error('Error fetching Google Trends:', error);
+      debugLogger.error('Error fetching Google Trends:', error);
       return this.getFallbackTrends();
     }
   }
@@ -88,7 +89,7 @@ export class TrendsService {
   private getFallbackTrends(): TrendingTopic[] {
     // Note: This fallback is used when Google Trends API is unavailable
     // In production, this would be replaced with a more robust API or data source
-    console.warn('Using fallback trends - Google Trends API appears to be blocked or rate limited');
+    debugLogger.warn('Using fallback trends - Google Trends API appears to be blocked or rate limited');
     
     return [
       {
@@ -166,7 +167,7 @@ export class TrendsService {
 
       return JSON.parse(interest);
     } catch (error) {
-      console.error('Error fetching interest by region:', error);
+      debugLogger.error('Error fetching interest by region:', error);
       return null;
     }
   }
@@ -185,7 +186,7 @@ export class TrendsService {
 
       // Check if response is HTML (blocked/CAPTCHA)
       if (typeof related === 'string' && related.includes('<HTML>')) {
-        console.warn('Google Trends API blocked with CAPTCHA for keyword:', keyword);
+        debugLogger.warn('Google Trends API blocked with CAPTCHA for keyword:', keyword);
         return this.getFallbackRelatedTopics(keyword);
       }
 

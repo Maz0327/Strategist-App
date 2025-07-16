@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import helmet from "helmet";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { debugLogger, errorHandler } from "./services/debug-logger";
@@ -7,6 +8,23 @@ import { debugLogger, errorHandler } from "./services/debug-logger";
 // These are now handled through Replit secrets or .env file
 
 const app = express();
+
+// Security headers middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'"], // For Chrome extension compatibility
+      objectSrc: ["'none'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https://api.openai.com"],
+    },
+  },
+  crossOriginEmbedderPolicy: false, // For Chrome extension compatibility
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
