@@ -386,7 +386,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const data = { 
-        content: fastMode ? content.slice(0, 1500) : content, // Limit content in fast mode
+        content: fastMode ? content.slice(0, 800) : content, // Aggressively limit content in fast mode
         title: title || "Streaming Analysis", 
         url 
       };

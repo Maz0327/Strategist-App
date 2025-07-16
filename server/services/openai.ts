@@ -359,24 +359,35 @@ export class OpenAIService {
       }
     };
     
-    // Ultra-optimized prompt for maximum speed
-    const lengthMap = { short: '1-2 sentences', medium: '2-3 sentences', long: '3-4 sentences', bulletpoints: 'Use •' };
-    const prompt = `Analyze: ${data.title || 'Untitled'}
-Content: ${processedContent.slice(0, 2000)}${processedContent.length > 2000 ? '...' : ''}
+    // Dynamic prompt optimization based on length preference
+    const getPromptStructure = (preference: string) => {
+      const contentLimit = preference === 'short' ? 1000 : (preference === 'medium' ? 1500 : 2000);
+      const lengthInstruction = {
+        short: '1 sentence',
+        medium: '2-3 sentences', 
+        long: '3-4 sentences',
+        bulletpoints: 'Use • format'
+      }[preference] || '2-3 sentences';
+      
+      return {
+        contentLimit,
+        lengthInstruction,
+        prompt: `Analyze: ${data.title || 'Untitled'}
+Content: ${processedContent.slice(0, contentLimit)}${processedContent.length > contentLimit ? '...' : ''}
 
 JSON:
 {
-  "summary": "${lengthMap[lengthPreference] || '2-3 sentences'}",
+  "summary": "${lengthInstruction}",
   "sentiment": "positive/negative/neutral",
   "tone": "professional/casual/urgent",
   "keywords": ["5 terms"],
   "confidence": "XX%",
   "truthAnalysis": {
-    "fact": "${lengthMap[lengthPreference] || '2-3 sentences'}",
-    "observation": "${lengthMap[lengthPreference] || '2-3 sentences'}",
-    "insight": "${lengthMap[lengthPreference] || '2-3 sentences'}",
-    "humanTruth": "${lengthMap[lengthPreference] || '2-3 sentences'}",
-    "culturalMoment": "${lengthMap[lengthPreference] || '2-3 sentences'}",
+    "fact": "${lengthInstruction}",
+    "observation": "${lengthInstruction}",
+    "insight": "${lengthInstruction}",
+    "humanTruth": "${lengthInstruction}",
+    "culturalMoment": "${lengthInstruction}",
     "attentionValue": "high/medium/low",
     "platform": "context",
     "cohortOpportunities": ["3 cohorts"]
@@ -387,7 +398,12 @@ JSON:
   "competitiveInsights": ["3 items"],
   "strategicInsights": ["3 items"],
   "strategicActions": ["3 items"]
-}`;
+}`
+      };
+    };
+
+    const promptConfig = getPromptStructure(lengthPreference);
+    const prompt = promptConfig.prompt;
 
     try {
       const startTime = Date.now();
@@ -406,6 +422,17 @@ JSON:
         promptLength: prompt.length 
       });
       
+      // Dynamic token allocation based on length preference for faster responses
+      const getTokenLimit = (preference: string) => {
+        switch (preference) {
+          case 'short': return 400; // Much faster for short responses
+          case 'medium': return 800; // Balanced speed and detail
+          case 'long': return 1200; // More comprehensive but slower
+          case 'bulletpoints': return 600; // Concise structured format
+          default: return 800;
+        }
+      };
+
       const response = await openai.chat.completions.create({
         model: "gpt-4o-mini", // Keeping cost-efficient model as requested
         messages: [
@@ -416,7 +443,7 @@ JSON:
         ],
         response_format: { type: "json_object" },
         temperature: 0.1, // Minimal for fastest responses
-        max_tokens: 1200, // Aggressively reduced for speed
+        max_tokens: getTokenLimit(lengthPreference), // Dynamic based on user preference
         top_p: 0.7, // Further reduced for faster generation
         presence_penalty: 0.1, // Encourage conciseness
       });
