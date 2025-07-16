@@ -355,23 +355,24 @@ export class OpenAIService {
       }
     };
     
-    // Ultra-optimized prompt structure for maximum speed
+    // Ultra-minimal prompt for maximum speed
     const getPromptStructure = (preference: string) => {
-      const contentLimit = preference === 'short' ? 600 : (preference === 'medium' ? 1000 : 1500);
+      const contentLimit = preference === 'short' ? 400 : (preference === 'medium' ? 700 : 1000);
       const lengthInstruction = {
-        short: '1 sentence max',
-        medium: '2 sentences max', 
-        long: '3 sentences max',
+        short: '1 sentence',
+        medium: '2 sentences', 
+        long: '3 sentences',
         bulletpoints: '• format'
-      }[preference] || '2 sentences max';
+      }[preference] || '2 sentences';
       
       return {
         contentLimit,
         lengthInstruction,
-        prompt: `Analyze: ${data.title || 'Untitled'}
-Content: ${processedContent.slice(0, contentLimit)}${processedContent.length > contentLimit ? '...' : ''}
+        prompt: `Analyze this content and return JSON:
 
-JSON:
+Content: ${processedContent.slice(0, contentLimit)}
+
+Required JSON format:
 {
   "summary": "${lengthInstruction}",
   "sentiment": "positive/negative/neutral",
@@ -404,19 +405,22 @@ JSON:
     try {
       const startTime = Date.now();
       
-      // Immediate progress update without delays
+      // Enhanced progress tracking
       if (onProgress) {
-        onProgress('Processing...', 50);
+        onProgress('Preparing analysis...', 10);
+        setTimeout(() => onProgress('Sending to AI...', 30), 100);
+        setTimeout(() => onProgress('Analyzing content...', 60), 500);
+        setTimeout(() => onProgress('Generating insights...', 80), 1000);
       }
       
-      // Aggressive token allocation for maximum speed
+      // Ultra-aggressive token limits for speed
       const getTokenLimit = (preference: string) => {
         switch (preference) {
-          case 'short': return 250; // Ultra-fast responses
-          case 'medium': return 500; // Quick but informative
-          case 'long': return 800; // Detailed but efficient
-          case 'bulletpoints': return 350; // Concise structured format
-          default: return 500;
+          case 'short': return 200; // Ultra-fast responses
+          case 'medium': return 350; // Quick but informative
+          case 'long': return 500; // Detailed but efficient
+          case 'bulletpoints': return 250; // Concise structured format
+          default: return 350;
         }
       };
 
@@ -435,6 +439,9 @@ JSON:
         presence_penalty: 0.2, // Strong conciseness encouragement
       });
       
+      if (onProgress) {
+        onProgress('Finalizing results...', 95);
+      }
       return this.processOpenAIResponse(response, startTime, historicalContext);
     } catch (error: any) {
       debugLogger.error('OpenAI analysis failed', error);
