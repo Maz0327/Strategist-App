@@ -1,16 +1,234 @@
-# Complete System Code Export - Strategic Content Analysis Platform
+# Complete System Code Export - July 17, 2025
 
-## Overview
-This document contains ALL the code written for the strategic content analysis platform. Copy this alongside replit.md to a new chat for seamless project continuation.
+## System Overview
+Strategic content analysis platform with React frontend, Express backend, PostgreSQL database, and OpenAI integration for deep behavioral insights and cultural truths.
 
-## System Architecture Summary
-- **Frontend**: React with TypeScript, Radix UI, Tailwind CSS
-- **Backend**: Express.js with TypeScript, PostgreSQL with Drizzle ORM
-- **Database**: 7 tables with comprehensive relationships
-- **Chrome Extension**: Manifest V3 with full content capture capabilities
-- **External APIs**: 16+ platforms (OpenAI, Google Trends, Reddit, YouTube, etc.)
+## Current Issue
+GPT-4o-mini not consistently following length preferences (medium = 3-5 sentences) despite explicit prompt instructions.
 
-## 1. DATABASE SCHEMA (shared/schema.ts)
+## Architecture Summary
+- **Frontend**: React + TypeScript + Tailwind CSS + Radix UI
+- **Backend**: Express.js + TypeScript + PostgreSQL + Drizzle ORM
+- **AI Integration**: OpenAI GPT-4o-mini for cost-efficient analysis
+- **Performance**: 9-10 second analysis times, 95/100 system health
+- **Caching**: In-memory analysis caching with TTL
+
+---
+
+# CORE CODE FILES
+
+## 1. OpenAI Service - Primary Analysis Engine
+**File:** `server/services/openai.ts`
+
+```typescript
+import OpenAI from "openai";
+import type { AnalyzeContentData } from "@shared/schema";
+import { debugLogger } from "./debug-logger";
+import { analyticsService } from "./analytics";
+import { analysisCache, createCacheKey } from "./cache";
+import { performanceMonitor } from "./monitoring";
+
+// Using gpt-4o-mini for cost-efficient testing phase, can upgrade to gpt-4o later
+export const openai = new OpenAI({ 
+  apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || process.env.API_KEY,
+  timeout: 45 * 1000, // 45 second timeout
+  maxRetries: 2, // Built-in retries
+});
+
+export interface AnalysisResult {
+  summary: string;
+  sentiment: string;
+  tone: string;
+  keywords: string[];
+  confidence: string;
+}
+
+export interface TruthAnalysis {
+  fact: string;
+  observation: string;
+  insight: string;
+  humanTruth: string;
+  culturalMoment: string;
+  attentionValue: 'high' | 'medium' | 'low';
+  platform: string;
+  cohortOpportunities: string[];
+}
+
+export interface EnhancedAnalysisResult extends AnalysisResult {
+  truthAnalysis: TruthAnalysis;
+  cohortSuggestions: string[];
+  platformContext: string;
+  viralPotential: 'high' | 'medium' | 'low';
+  competitiveInsights: string[];
+  strategicInsights: string[];
+  strategicActions: string[];
+}
+
+export class OpenAIService {
+  constructor() {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OpenAI API key not configured. Please set OPENAI_API_KEY environment variable.');
+    }
+  }
+
+  async analyzeContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium'): Promise<EnhancedAnalysisResult> {
+    debugLogger.info('Starting OpenAI content analysis', { title: data.title, hasUrl: !!data.url, contentLength: data.content?.length, lengthPreference });
+    
+    const content = data.content || '';
+    const title = data.title || '';
+    const url = data.url || '';
+    
+    const startTime = Date.now();
+    
+    // Check cache first
+    const cacheKey = createCacheKey(content + title + lengthPreference, 'analysis');
+    const cached = analysisCache.get(cacheKey);
+    
+    if (cached) {
+      const cacheTime = Date.now() - startTime;
+      debugLogger.info('Analysis cache hit', { cacheKey, duration: cacheTime });
+      performanceMonitor.logRequest('/api/analyze', 'POST', cacheTime, true, true);
+      return cached;
+    }
+    
+    try {
+      const prompt = this.buildAnalysisPrompt(content, title, url, lengthPreference);
+      
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "You are an expert content strategist. Analyze content and return structured JSON with strategic insights." },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.1,
+        max_tokens: 2000
+      });
+
+      const analysisText = response.choices[0]?.message?.content;
+      if (!analysisText) {
+        throw new Error('No response from OpenAI');
+      }
+
+      debugLogger.info(`OpenAI response received, length: ${analysisText.length}`);
+      debugLogger.info('Raw OpenAI response:', { response: analysisText.substring(0, 500) });
+      
+      // Clean the response to ensure it's valid JSON
+      const cleanedResponse = analysisText.replace(/```json|```/g, '').trim();
+      debugLogger.info('Cleaned response:', { response: cleanedResponse.substring(0, 500) });
+      
+      let analysis;
+      try {
+        analysis = JSON.parse(cleanedResponse);
+        debugLogger.info('Successfully parsed OpenAI response', { 
+          hasSummary: !!analysis.summary,
+          hasTruthAnalysis: !!analysis.truthAnalysis,
+          hasKeywords: !!analysis.keywords
+        });
+      } catch (parseError) {
+        debugLogger.error('JSON parsing failed', { response: cleanedResponse, error: parseError });
+        throw new Error('Invalid JSON response from OpenAI');
+      }
+      
+      debugLogger.info(`Analysis completed in ${Date.now() - startTime}ms`);
+
+      const result = {
+        summary: analysis.summary || 'Strategic analysis completed',
+        sentiment: analysis.sentiment || 'neutral',
+        tone: analysis.tone || 'professional',
+        keywords: analysis.keywords || [],
+        confidence: analysis.confidence || '85%',
+        truthAnalysis: analysis.truthAnalysis || {
+          fact: 'Analysis pending',
+          observation: 'Patterns being analyzed',
+          insight: 'Insights being generated',
+          humanTruth: 'Motivations being explored',
+          culturalMoment: 'Context being evaluated',
+          attentionValue: 'medium',
+          platform: 'unknown',
+          cohortOpportunities: []
+        },
+        cohortSuggestions: analysis.cohortSuggestions || [],
+        platformContext: analysis.platformContext || 'General context',
+        viralPotential: analysis.viralPotential || 'medium',
+        competitiveInsights: analysis.competitiveInsights || [],
+        strategicInsights: analysis.strategicInsights || [],
+        strategicActions: analysis.strategicActions || []
+      };
+      
+      debugLogger.info('Final analysis result:', { 
+        summary: result.summary.substring(0, 100),
+        sentiment: result.sentiment,
+        keywordCount: result.keywords.length,
+        truthAnalysisKeys: Object.keys(result.truthAnalysis)
+      });
+      
+      // Cache the result
+      analysisCache.set(cacheKey, result);
+      
+      const processingTime = Date.now() - startTime;
+      performanceMonitor.logRequest('/api/analyze', 'POST', processingTime, true, false);
+      
+      return result;
+    } catch (error: any) {
+      debugLogger.error('OpenAI analysis failed', error);
+      const processingTime = Date.now() - startTime;
+      performanceMonitor.logRequest('/api/analyze', 'POST', processingTime, false, false);
+      throw new Error(`Analysis failed: ${error.message}`);
+    }
+  }
+
+  private buildAnalysisPrompt(content: string, title: string, url: string, lengthPreference: string): string {
+    const lengthGuidance = {
+      short: "2 sentences",
+      medium: "3-5 sentences",
+      long: "6-9 sentences",
+      bulletpoints: "multiple important points"
+    }[lengthPreference] || "3-5 sentences";
+
+    return `Analyze this content for strategic insights:
+
+Title: ${title}
+Content: ${content}
+URL: ${url}
+
+CRITICAL LENGTH REQUIREMENT: You must write exactly ${lengthGuidance} for ALL descriptive text fields. This is mandatory.
+
+Provide comprehensive strategic analysis in JSON format:
+{
+  "summary": "Strategic overview that contains exactly ${lengthGuidance}",
+  "sentiment": "positive/negative/neutral",
+  "tone": "professional/casual/urgent/analytical",
+  "keywords": ["strategic", "keywords", "here"],
+  "confidence": "85%",
+  "truthAnalysis": {
+    "fact": "What factually happened - write exactly ${lengthGuidance}",
+    "observation": "What patterns you observe - write exactly ${lengthGuidance}", 
+    "insight": "Why this is happening - write exactly ${lengthGuidance}",
+    "humanTruth": "Deep psychological driver - write exactly ${lengthGuidance}",
+    "culturalMoment": "Larger cultural shift this represents - write exactly ${lengthGuidance}",
+    "attentionValue": "high/medium/low",
+    "platform": "Platform or context",
+    "cohortOpportunities": ["behavioral audience segments"]
+  },
+  "cohortSuggestions": ["audience cohort suggestions"],
+  "platformContext": "Platform relevance explanation - write exactly ${lengthGuidance}",
+  "viralPotential": "high/medium/low",
+  "competitiveInsights": ["competitive insights"],
+  "strategicInsights": ["strategic business insights"],
+  "strategicActions": ["actionable next steps"]
+}
+
+MANDATORY: Every descriptive text field must contain exactly ${lengthGuidance}. Count your sentences carefully. Return only valid JSON without markdown formatting.`;
+  }
+}
+
+export const openaiService = new OpenAIService();
+```
+
+---
+
+## 2. Database Schema - Data Structure
+**File:** `shared/schema.ts`
 
 ```typescript
 import { pgTable, text, serial, timestamp, jsonb, boolean, integer } from "drizzle-orm/pg-core";
@@ -21,6 +239,7 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
+  role: text("role").default("user"), // user, admin
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -62,702 +281,330 @@ export const signals = pgTable("signals", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const sources = pgTable("sources", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  url: text("url").notNull(),
-  title: text("title").notNull(),
-  domain: text("domain").notNull(),
-  favicon: text("favicon"),
-  description: text("description"),
-  sourceType: text("source_type").default("article"), // article, social, research, news, etc.
-  reliability: text("reliability").default("unknown"), // high, medium, low, unknown
-  firstCaptured: timestamp("first_captured").defaultNow(),
-  lastAccessed: timestamp("last_accessed").defaultNow(),
-  accessCount: integer("access_count").default(1),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const signalSources = pgTable("signal_sources", {
-  id: serial("id").primaryKey(),
-  signalId: integer("signal_id").notNull().references(() => signals.id),
-  sourceId: integer("source_id").notNull().references(() => sources.id),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-// User feed configuration tables
-export const userFeedSources = pgTable("user_feed_sources", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  name: text("name").notNull(), // "Client Social Media", "Industry News", etc.
-  feedType: text("feed_type").notNull(), // "project_data", "custom_feed", "intelligence_feed"
-  sourceType: text("source_type").notNull(), // "rss", "social_api", "analytics", "reddit", "website"
-  sourceUrl: text("source_url").notNull(),
-  sourceConfig: jsonb("source_config"), // API keys, filters, etc.
-  isActive: boolean("is_active").default(true),
-  updateFrequency: text("update_frequency").default("4h"), // "1h", "4h", "12h", "24h"
-  lastFetched: timestamp("last_fetched"),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const userTopicProfiles = pgTable("user_topic_profiles", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  industries: text("industries").array().default([]), // ["healthcare", "tech", "finance"]
-  interests: text("interests").array().default([]), // ["AI", "sustainability", "consumer_behavior"]
-  keywords: text("keywords").array().default([]), // user-defined terms
-  geographicFocus: text("geographic_focus").array().default([]), // regions of interest
-  excludedTopics: text("excluded_topics").array().default([]), // noise reduction
-  preferredSources: text("preferred_sources").array().default([]), // platform preferences
-  urgencyLevels: jsonb("urgency_levels"), // custom urgency scoring
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const feedItems = pgTable("feed_items", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  feedSourceId: integer("feed_source_id").notNull().references(() => userFeedSources.id),
-  title: text("title").notNull(),
-  content: text("content"),
-  url: text("url"),
-  summary: text("summary"),
-  publishedAt: timestamp("published_at"),
-  fetchedAt: timestamp("fetched_at").defaultNow(),
-  relevanceScore: text("relevance_score"), // AI-calculated relevance
-  urgencyLevel: text("urgency_level").default("medium"), // "low", "medium", "high", "critical"
-  tags: text("tags").array().default([]),
-  isRead: boolean("is_read").default(false),
-  isBookmarked: boolean("is_bookmarked").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-// Zod schemas for validation
-export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertSignalSchema = createInsertSchema(signals).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertSourceSchema = createInsertSchema(sources).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertSignalSourceSchema = createInsertSchema(signalSources).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertUserFeedSourceSchema = createInsertSchema(userFeedSources).omit({
-  id: true,
-  createdAt: true,
-  lastFetched: true,
-});
-
-export const insertUserTopicProfileSchema = createInsertSchema(userTopicProfiles).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertFeedItemSchema = createInsertSchema(feedItems).omit({
-  id: true,
-  createdAt: true,
-  fetchedAt: true,
-});
-
-export const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-});
-
-export const registerSchema = loginSchema.extend({
-  confirmPassword: z.string().min(8),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-}).refine((data) => {
-  // Check for at least one uppercase letter
-  if (!/[A-Z]/.test(data.password)) {
-    return false;
-  }
-  // Check for at least one lowercase letter
-  if (!/[a-z]/.test(data.password)) {
-    return false;
-  }
-  // Check for at least one number
-  if (!/[0-9]/.test(data.password)) {
-    return false;
-  }
-  // Check for at least one special character
-  if (!/[!@#$%^&*(),.?":{}|<>.]/.test(data.password)) {
-    return false;
-  }
-  return true;
-}, {
-  message: "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
-  path: ["password"],
-});
-
+// Length preference schema
 export const analyzeContentSchema = z.object({
   content: z.string().min(1, "Content is required"),
-  url: z.union([z.string().url(), z.literal("")]).optional(),
   title: z.string().optional(),
+  url: z.string().url().optional().or(z.literal("")),
+  lengthPreference: z.enum(['short', 'medium', 'long', 'bulletpoints']).optional(),
 });
 
-// Type exports
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
-export type InsertSignal = z.infer<typeof insertSignalSchema>;
-export type Signal = typeof signals.$inferSelect;
-export type InsertSource = z.infer<typeof insertSourceSchema>;
-export type Source = typeof sources.$inferSelect;
-export type InsertSignalSource = z.infer<typeof insertSignalSourceSchema>;
-export type SignalSource = typeof signalSources.$inferSelect;
-export type InsertUserFeedSource = z.infer<typeof insertUserFeedSourceSchema>;
-export type UserFeedSource = typeof userFeedSources.$inferSelect;
-export type InsertUserTopicProfile = z.infer<typeof insertUserTopicProfileSchema>;
-export type UserTopicProfile = typeof userTopicProfiles.$inferSelect;
-export type InsertFeedItem = z.infer<typeof insertFeedItemSchema>;
-export type FeedItem = typeof feedItems.$inferSelect;
-export type LoginData = z.infer<typeof loginSchema>;
-export type RegisterData = z.infer<typeof registerSchema>;
 export type AnalyzeContentData = z.infer<typeof analyzeContentSchema>;
+
+// Current length preference configuration:
+// - short: "2 sentences"
+// - medium: "3-5 sentences"  
+// - long: "6-9 sentences"
+// - bulletpoints: "multiple important points"
 ```
 
-## 2. MAIN FRONTEND APP (client/src/App.tsx)
+---
+
+## 3. Backend API Routes - Content Analysis Endpoint
+**File:** `server/routes.ts` (Analysis Route)
 
 ```typescript
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { queryClient } from "./lib/queryClient";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { authService } from "./lib/auth";
-import AuthPage from "./pages/auth";
-import Dashboard from "./pages/dashboard";
-import { DebugPanel } from "./components/debug-panel";
-import { TutorialOverlay } from "./components/tutorial-overlay";
-import { useTutorial } from "./hooks/use-tutorial";
-
-function AppContent() {
-  const [user, setUser] = useState<{ id: number; email: string } | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [currentPage, setCurrentPage] = useState("briefing");
-  const { isEnabled: tutorialEnabled, toggleTutorial } = useTutorial();
-
-  // Check for existing session on app load
-  const { data: userData, isLoading: isCheckingAuth, error: authError } = useQuery({
-    queryKey: ["/api/auth/me"],
-    queryFn: async () => {
-      try {
-        return await authService.getCurrentUser();
-      } catch (error) {
-        // Silent fail for auth check - user just isn't logged in
-        return null;
-      }
-    },
-    retry: false,
-    enabled: !isInitialized,
-    refetchOnWindowFocus: false,
-  });
-
-  useEffect(() => {
-    if (!isCheckingAuth) {
-      if (userData?.user) {
-        setUser(userData.user);
-      }
-      setIsInitialized(true);
-    }
-  }, [userData, isCheckingAuth]);
-
-  const handleAuthSuccess = (userData: { id: number; email: string }) => {
-    setUser(userData);
-    queryClient.invalidateQueries({ queryKey: ["/api/signals"] });
-  };
-
-  const handleLogout = () => {
-    setUser(null);
-    queryClient.clear();
-  };
-
-  if (!isInitialized) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <LoadingSpinner size="lg" />
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <TooltipProvider>
-      <Toaster />
-      {user ? (
-        <div className="min-h-screen bg-gray-50">
-          <Dashboard user={user} onLogout={handleLogout} onPageChange={setCurrentPage} />
-          <TutorialOverlay 
-            currentPage={currentPage}
-            isEnabled={tutorialEnabled}
-            onToggle={toggleTutorial}
-          />
-        </div>
-      ) : (
-        <AuthPage onAuthSuccess={handleAuthSuccess} />
-      )}
-      <DebugPanel />
-    </TooltipProvider>
-  );
-}
-
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AppContent />
-    </QueryClientProvider>
-  );
-}
-
-export default App;
-```
-
-## 3. FRONTEND ENTRY POINT (client/src/main.tsx)
-
-```typescript
-import { createRoot } from "react-dom/client";
-import App from "./App";
-import "./index.css";
-
-createRoot(document.getElementById("root")!).render(<App />);
-```
-
-## 4. BACKEND SERVER (server/index.ts)
-
-```typescript
-import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
-import { debugLogger, errorHandler } from "./services/debug-logger";
-
-// Set Reddit API credentials
-process.env.REDDIT_CLIENT_ID = "xarhGzkT7yuAVMqaoc_Bdg";
-process.env.REDDIT_CLIENT_SECRET = "7cdXuM0mpCy3n3wYBS6TpQvPTmoZEw";
-
-// Set Twitter API credentials
-process.env.TWITTER_BEARER_TOKEN = "AAAAAAAAAAAAAAAAAAAAAJgE3AEAAAAAZdOJQZdr1BLIFpmXMamKArS4nw8%3Dr4JmJwLhm3clkDhn4u4pV3vO27cxRjo5ufkV4feWv7N0O0zccb";
-
-const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-
-// Add process error handlers
-process.on('uncaughtException', (error) => {
-  debugLogger.error('Uncaught Exception:', error);
-  process.exit(1);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  debugLogger.error('Unhandled Rejection at:', reason);
-});
-
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
-      
-      // Enhanced debug logging
-      debugLogger.apiCall(req, res, duration, res.statusCode >= 400 ? new Error(capturedJsonResponse?.message || 'Request failed') : undefined);
-    }
-  });
-
-  next();
-});
-
-(async () => {
-  const server = await registerRoutes(app);
-
-  // Enhanced error handling with debug logging
-  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    // Log error details
-    debugLogger.error(`Server error: ${message}`, err, req);
+// Content analysis routes
+app.post("/api/analyze", requireAuth, async (req, res) => {
+  try {
+    debugLogger.info("Content analysis request received", { title: req.body.title, hasUrl: !!req.body.url, contentLength: req.body.content?.length }, req);
+    const data = analyzeContentSchema.parse(req.body);
+    debugLogger.info("Content data parsed successfully", { title: data.title, url: data.url }, req);
     
-    res.status(status).json({ 
-      message,
-      timestamp: new Date().toISOString(),
-      path: req.path,
-      method: req.method
-    });
-  });
-
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
-
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
-})();
-```
-
-## 5. API ROUTES (server/routes.ts)
-
-**Note**: This file is extensive (800+ lines). Key sections include:
-
-- **Authentication routes**: `/api/auth/register`, `/api/auth/login`, `/api/auth/logout`, `/api/auth/me`
-- **Content analysis**: `/api/analyze`, `/api/reanalyze`, `/api/extract-url`
-- **Chrome extension**: `/api/signals/draft` (with CORS for extensions)
-- **Signals CRUD**: `/api/signals/*` endpoints with full management
-- **Topic profiles**: `/api/user/topic-profile` for user preferences
-- **Feed management**: `/api/feeds/*` for RSS and custom feeds
-- **External APIs**: `/api/topics` for trending content from 16+ platforms
-- **Debug/monitoring**: `/api/debug/*` endpoints for system health
-
-**Chrome Extension CORS Configuration**:
-```typescript
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Credentials', 'true');
-  const origin = req.headers.origin;
-  // Allow Chrome extension origins
-  if (origin && (origin.startsWith('chrome-extension://') || origin.startsWith('moz-extension://'))) {
-    res.header('Access-Control-Allow-Origin', origin);
-  } else {
-    res.header('Access-Control-Allow-Origin', origin || 'http://localhost:5000');
-  }
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  next();
-});
-```
-
-## 6. CHROME EXTENSION FILES
-
-### manifest.json
-```json
-{
-  "manifest_version": 3,
-  "name": "Strategic Content Capture",
-  "version": "1.0.0",
-  "description": "Capture and analyze web content for strategic insights using AI-powered analysis",
-  "permissions": [
-    "activeTab",
-    "storage",
-    "contextMenus",
-    "notifications",
-    "alarms"
-  ],
-  "host_permissions": [
-    "http://localhost:*/*",
-    "https://*.replit.app/*",
-    "https://*.replit.dev/*"
-  ],
-  "background": {
-    "service_worker": "background.js"
-  },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "run_at": "document_end"
-    }
-  ],
-  "action": {
-    "default_popup": "popup.html",
-    "default_title": "Strategic Content Capture",
-    "default_icon": {
-      "16": "images/icon16.png",
-      "48": "images/icon48.png",
-      "128": "images/icon128.png"
-    }
-  },
-  "icons": {
-    "16": "images/icon16.png",
-    "48": "images/icon48.png",
-    "128": "images/icon128.png"
-  },
-  "commands": {
-    "quick-capture": {
-      "suggested_key": {
-        "default": "Ctrl+Shift+C"
-      },
-      "description": "Quick capture current page content"
-    }
-  }
-}
-```
-
-### popup.html
-```html
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Strategic Content Capture</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>Strategic Content Capture</h1>
-            <div class="page-info">
-                <div class="domain"></div>
-                <div class="content-type"></div>
-                <div class="reading-time"></div>
-            </div>
-        </header>
-
-        <main>
-            <div class="capture-mode">
-                <label for="captureMode">Capture Mode:</label>
-                <select id="captureMode">
-                    <option value="selection">Text Selection</option>
-                    <option value="page">Full Page</option>
-                    <option value="custom">Custom</option>
-                </select>
-            </div>
-
-            <div id="selectedTextContainer" class="selected-text-container" style="display: none;">
-                <h3>Selected Text:</h3>
-                <div id="selectedText"></div>
-                <div id="selectionContext"></div>
-            </div>
-
-            <div class="notes-section">
-                <label for="userNotes">Your Notes & Insights:</label>
-                <textarea id="userNotes" placeholder="Add your observations, insights, or strategic notes about this content..."></textarea>
-                <div class="char-count">
-                    <span id="charCount">0</span> characters
-                </div>
-            </div>
-
-            <div id="autoSuggestionsContainer" class="auto-suggestions" style="display: none;">
-                <!-- Auto-suggestions will be populated here -->
-            </div>
-
-            <div class="action-buttons">
-                <button id="quickCapture" class="quick-capture-btn">Quick Capture</button>
-                <button id="saveButton" class="save-btn">Save Draft</button>
-            </div>
-
-            <div id="statusMessage" class="status-message"></div>
-        </main>
-    </div>
-
-    <script src="config.js"></script>
-    <script src="popup.js"></script>
-</body>
-</html>
-```
-
-### config.js
-```javascript
-// Configuration for Strategic Content Capture Extension
-
-function getExtensionConfig() {
-    // Auto-detect environment
-    const isProduction = !window.location.hostname.includes('localhost');
+    const lengthPreference = req.body.lengthPreference || 'medium';
+    const userNotes = req.body.userNotes || '';
+    const analysis = await openaiService.analyzeContent(data, lengthPreference);
+    debugLogger.info("OpenAI analysis completed", { sentiment: analysis.sentiment, confidence: analysis.confidence, keywordCount: analysis.keywords.length }, req);
     
-    return {
-        // API configuration
-        apiUrl: isProduction 
-            ? 'https://your-app-name.replit.app'  // UPDATE THIS WITH YOUR PRODUCTION URL
-            : 'http://localhost:5000',
-        
-        // Extension settings
-        retryAttempts: 3,
-        retryDelay: 1000,
-        autoSaveDelay: 500,
-        
-        // Content limits
-        maxContentLength: 10000,
-        maxNotesLength: 2000,
-        maxSelectionLength: 5000,
-        
-        // Storage settings
-        cleanupInterval: 7 * 24 * 60 * 60 * 1000, // 7 days
-        maxStorageItems: 100,
-        
-        // Debug settings
-        debugMode: !isProduction,
-        logLevel: isProduction ? 'error' : 'debug'
+    // Save as potential signal after analysis
+    const signalData = {
+      userId: req.session.userId!,
+      title: data.title || "Untitled Analysis",
+      content: data.content,
+      url: data.url,
+      summary: analysis.summary,
+      sentiment: analysis.sentiment,
+      tone: analysis.tone,
+      keywords: analysis.keywords,
+      tags: [],
+      confidence: analysis.confidence,
+      status: "capture", // Start as capture, user decides if it becomes potential_signal
+      // Enhanced analysis fields
+      truthFact: analysis.truthAnalysis.fact,
+      truthObservation: analysis.truthAnalysis.observation,
+      truthInsight: analysis.truthAnalysis.insight,
+      humanTruth: analysis.truthAnalysis.humanTruth,
+      culturalMoment: analysis.truthAnalysis.culturalMoment,
+      attentionValue: analysis.truthAnalysis.attentionValue,
+      platformContext: analysis.platformContext,
+      viralPotential: analysis.viralPotential,
+      cohortSuggestions: analysis.cohortSuggestions,
+      competitiveInsights: analysis.competitiveInsights,
+      userNotes: userNotes
     };
-}
-
-// Export for use in other scripts
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { getExtensionConfig };
-}
-```
-
-## 7. KEY BACKEND SERVICES
-
-### OpenAI Service (server/services/openai.ts)
-- **Enhanced content analysis** with truth-based framework
-- **Cultural intelligence** identification
-- **Cohort suggestions** using 7 pillars methodology
-- **Strategic insights** and competitive analysis
-- **Multiple analysis length options** (short, medium, long, bulletpoints)
-
-### Auth Service (server/services/auth.ts)
-- **Strong password validation** with complexity requirements
-- **Rate limiting** (5 failed attempts = 15-minute lockout)
-- **Session management** with bcrypt password hashing
-- **User registration and login** with comprehensive error handling
-
-### Feed Manager Service (server/services/feed-manager.ts)
-- **RSS feed parsing** for custom data sources
-- **AI relevance filtering** using OpenAI (stores only items with score ≥ 6)
-- **User topic profile integration** for personalized content
-- **Multi-platform support** (RSS, social media, websites, newsletters)
-
-## 8. CONFIGURATION FILES
-
-### drizzle.config.ts
-```typescript
-import { defineConfig } from "drizzle-kit";
-
-export default defineConfig({
-  schema: "./shared/schema.ts",
-  out: "./migrations",
-  dialect: "postgresql",
-  dbCredentials: {
-    url: process.env.DATABASE_URL!,
+    
+    const signal = await storage.createSignal(signalData);
+    debugLogger.info("Signal created successfully", { signalId: signal.id, status: signal.status }, req);
+    
+    res.json({
+      success: true,
+      analysis,
+      signalId: signal.id
+    });
+    debugLogger.info("Analysis request completed successfully", { signalId: signal.id }, req);
+  } catch (error: any) {
+    debugLogger.error('Content analysis failed', error, req);
+    res.status(400).json({ message: error.message });
   }
 });
 ```
 
-### tsconfig.json
-```json
-{
-  "compilerOptions": {
-    "target": "ES2022",
-    "useDefineForClassFields": true,
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "allowJs": false,
-    "skipLibCheck": true,
-    "esModuleInterop": false,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx",
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./client/src/*"],
-      "@shared/*": ["./shared/*"]
+---
+
+## 4. Frontend Content Input Component
+**File:** `client/src/components/content-input.tsx` (Key Methods)
+
+```typescript
+// Length preference handling
+const [lengthPreference, setLengthPreference] = useState<'short' | 'medium' | 'long' | 'bulletpoints'>('medium');
+
+// Analysis submission
+const handleAnalyze = async (data: AnalyzeContentData) => {
+  if (useStreaming) {
+    await handleStreamingAnalysis(data);
+  } else {
+    // Fallback to regular analysis with auto-retry
+    setIsLoading(true);
+    onAnalysisStart?.();
+    try {
+      const requestData = { ...data, lengthPreference, userNotes };
+      
+      const result = await retryRequest(async () => {
+        const response = await apiRequest("POST", "/api/analyze", requestData);
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to analyze content");
+        }
+        
+        return await response.json();
+      });
+      
+      onAnalysisComplete?.(result, data);
+      
+      toast({
+        title: "Analysis Complete", 
+        description: "Content captured and analyzed. Use 'Flag as Worth Researching' below to mark important insights, or check Suggestions tab for AI recommendations.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to analyze content",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
-  },
-  "include": ["client/src", "shared", "server"],
-  "references": [{ "path": "./tsconfig.node.json" }]
-}
+  }
+};
+
+// Length preference UI
+<Select value={lengthPreference} onValueChange={(value: any) => setLengthPreference(value)}>
+  <SelectTrigger className="w-32">
+    <SelectValue />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="short">Short</SelectItem>
+    <SelectItem value="medium">Medium</SelectItem>
+    <SelectItem value="long">Long</SelectItem>
+    <SelectItem value="bulletpoints">Bulletpoints</SelectItem>
+  </SelectContent>
+</Select>
 ```
 
-### components.json
-```json
-{
-  "$schema": "https://ui.shadcn.com/schema.json",
-  "style": "default",
-  "rsc": false,
-  "tsx": true,
-  "tailwind": {
-    "config": "tailwind.config.ts",
-    "css": "client/src/index.css",
-    "baseColor": "slate",
-    "cssVariables": true,
-    "prefix": ""
-  },
-  "aliases": {
-    "components": "@/components",
-    "utils": "@/lib/utils",
-    "ui": "@/components/ui",
-    "lib": "@/lib",
-    "hooks": "@/hooks"
+---
+
+## 5. Frontend Analysis Results Component
+**File:** `client/src/components/enhanced-analysis-results.tsx` (Length Preference Logic)
+
+```typescript
+// Length preference state management
+const [lengthPreference, setLengthPreference] = useState<'short' | 'medium' | 'long' | 'bulletpoints'>('medium');
+const [isReanalyzing, setIsReanalyzing] = useState(false);
+const [currentAnalysis, setCurrentAnalysis] = useState(data);
+const [analysisCache, setAnalysisCache] = useState<Record<string, any>>({
+  medium: data // Cache the initial analysis with medium length
+});
+
+// Re-analysis with different length preference
+const handleLengthPreferenceChange = async (newLength: 'short' | 'medium' | 'long' | 'bulletpoints') => {
+  setLengthPreference(newLength);
+  
+  // Check if we already have this analysis cached
+  if (analysisCache[newLength]) {
+    setCurrentAnalysis(analysisCache[newLength]);
+    toast({
+      title: "Length Switched",
+      description: `Showing ${newLength} analysis from cache.`,
+    });
+    return;
+  }
+  
+  // If not cached and we have original content, re-analyze
+  if (originalContent) {
+    setIsReanalyzing(true);
+    try {
+      const response = await apiRequest("POST", "/api/reanalyze", {
+        content: originalContent.content,
+        title: originalContent.title,
+        url: originalContent.url,
+        lengthPreference: newLength
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to re-analyze content");
+      }
+      
+      const result = await response.json();
+      const newAnalysis = result.analysis;
+      
+      // Cache the new analysis
+      setAnalysisCache(prev => ({
+        ...prev,
+        [newLength]: newAnalysis
+      }));
+      
+      setCurrentAnalysis(newAnalysis);
+      
+      toast({
+        title: "Analysis Updated",
+        description: `Generated new ${newLength} analysis.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to re-analyze content",
+        variant: "destructive",
+      });
+    } finally {
+      setIsReanalyzing(false);
+    }
+  }
+};
+
+// Truth Analysis display with length preference dropdown
+<div className="flex items-center justify-between">
+  <CardTitle className="flex items-center gap-2">
+    <Eye className="h-5 w-5" />
+    Truth Framework Analysis
+  </CardTitle>
+  <div className="flex items-center gap-2">
+    <Label htmlFor="length-preference" className="text-sm">Length:</Label>
+    <Select value={lengthPreference} onValueChange={(value: any) => handleLengthPreferenceChange(value)} disabled={isReanalyzing}>
+      <SelectTrigger className="w-32">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="short">Short</SelectItem>
+        <SelectItem value="medium">Medium</SelectItem>
+        <SelectItem value="long">Long</SelectItem>
+        <SelectItem value="bulletpoints">Bulletpoints</SelectItem>
+      </SelectContent>
+    </Select>
+    {isReanalyzing && (
+      <div className="flex items-center gap-1 text-xs text-gray-600">
+        <LoadingSpinner size="sm" />
+        <span>Re-analyzing...</span>
+      </div>
+    )}
+  </div>
+</div>
+```
+
+---
+
+## 6. Cache Service - Performance Optimization
+**File:** `server/services/cache.ts`
+
+```typescript
+import { createHash } from 'crypto';
+
+interface CacheItem {
+  data: any;
+  timestamp: number;
+  ttl: number;
+}
+
+class InMemoryCache {
+  private cache: Map<string, CacheItem> = new Map();
+  private readonly defaultTtl = 60 * 60 * 1000; // 1 hour
+
+  set(key: string, data: any, ttl: number = this.defaultTtl): void {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now(),
+      ttl
+    });
+  }
+
+  get(key: string): any | null {
+    const item = this.cache.get(key);
+    if (!item) return null;
+    
+    if (Date.now() - item.timestamp > item.ttl) {
+      this.cache.delete(key);
+      return null;
+    }
+    
+    return item.data;
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+
+  size(): number {
+    return this.cache.size;
   }
 }
+
+export const analysisCache = new InMemoryCache();
+
+export function createCacheKey(content: string, type: string = 'analysis'): string {
+  return `${type}:${createHash('md5').update(content).digest('hex')}`;
+}
 ```
 
-## 9. DEPLOYMENT STATUS
+---
 
-### Chrome Extension
-- ✅ **Production Ready**: All PNG icons created, auto-suggestions fixed
-- ✅ **Full Integration**: Backend API endpoint `/api/signals/draft` operational
-- ✅ **Advanced Features**: Context menus, keyboard shortcuts, smart analysis
-- ⚠️ **Pending**: Update production URL in `config.js` when deployed
+## Problem Analysis Summary
 
-### Main Platform
-- ✅ **Database**: 7 tables with comprehensive relationships
-- ✅ **Authentication**: Session-based with strong security
-- ✅ **API Coverage**: 25+ endpoints covering all functionality
-- ✅ **External APIs**: 16+ platforms integrated with fallback handling
-- ✅ **UI Components**: 40+ React components with professional design
+### Current Issue
+**GPT-4o-mini consistently returns 1-2 sentences for "medium" length preference instead of the required 3-5 sentences.**
 
-### System Health
-- ✅ **Performance**: 2ms average response time
-- ✅ **Error Handling**: Comprehensive logging and debug systems
-- ✅ **Security**: CORS, session management, input validation
-- ✅ **Scalability**: Modular architecture ready for growth
+### Architecture Flow
+1. **User Input**: Length preference selected in ContentInput component
+2. **API Request**: Sent to `/api/analyze` with `lengthPreference` parameter
+3. **Prompt Building**: `buildAnalysisPrompt` method creates prompt with length requirements
+4. **OpenAI Call**: Single GPT-4o-mini request with explicit length instructions
+5. **Response Processing**: JSON parsing and caching of results
+6. **UI Display**: Results shown in EnhancedAnalysisResults with re-analysis options
 
-## 10. NEXT STEPS FOR NEW CHAT
+### Key Technical Details
+- **Model**: GPT-4o-mini (cost optimization)
+- **Prompt Engineering**: Multiple explicit length requirements throughout prompt
+- **Caching**: In-memory caching with TTL for performance
+- **Re-analysis**: Frontend can request different length preferences
+- **Performance**: 9-10 second average analysis time
 
-1. **Copy this document + replit.md** to new chat
-2. **Update Chrome extension** production URL when deployed
-3. **Test Chrome extension** in developer mode
-4. **Deploy to Replit** using existing workflow
-5. **Optional**: Create Chrome Web Store developer account ($5) for public distribution
+### Suggested Solutions (Not Implemented)
+1. **Sentence-arrays approach**: Return JSON arrays instead of text strings
+2. **Few-shot examples**: Add examples of proper length responses
+3. **Post-parse validation**: Validate sentence count and auto-retry
+4. **Function calling**: Use OpenAI function calling with strict schemas
+5. **Template expansion**: Use fill-in-the-blank templates for exact control
 
-## Key Integration Points
-- **Chrome Extension → Backend**: `/api/signals/draft` endpoint with CORS support
-- **Frontend → Backend**: React Query with comprehensive API coverage
-- **Database → Services**: Drizzle ORM with type-safe operations
-- **External APIs → Platform**: Real-time data from 16+ sources with fallback handling
+---
 
-This export contains every essential piece of code needed to reconstruct and continue development of the strategic content analysis platform.
+## Complete Core Code Export - Ready for External Analysis
+All essential system components exported with focus on the length preference issue in the OpenAI prompt engineering.
