@@ -168,32 +168,34 @@ Title: ${title}
 Content: ${content}
 URL: ${url}
 
-Provide comprehensive strategic analysis in JSON format. For all text fields, use exactly ${lengthGuidance} as specified:
+CRITICAL LENGTH REQUIREMENT: You must write exactly ${lengthGuidance} for ALL descriptive text fields. This is mandatory.
+
+Provide comprehensive strategic analysis in JSON format:
 {
-  "summary": "Brief strategic overview (${lengthGuidance})",
+  "summary": "Strategic overview that contains exactly ${lengthGuidance}",
   "sentiment": "positive/negative/neutral",
   "tone": "professional/casual/urgent/analytical",
   "keywords": ["strategic", "keywords", "here"],
   "confidence": "85%",
   "truthAnalysis": {
-    "fact": "What factually happened (${lengthGuidance})",
-    "observation": "What patterns you observe (${lengthGuidance})", 
-    "insight": "Why this is happening (${lengthGuidance})",
-    "humanTruth": "Deep psychological driver (${lengthGuidance})",
-    "culturalMoment": "Larger cultural shift this represents (${lengthGuidance})",
+    "fact": "What factually happened - write exactly ${lengthGuidance}",
+    "observation": "What patterns you observe - write exactly ${lengthGuidance}", 
+    "insight": "Why this is happening - write exactly ${lengthGuidance}",
+    "humanTruth": "Deep psychological driver - write exactly ${lengthGuidance}",
+    "culturalMoment": "Larger cultural shift this represents - write exactly ${lengthGuidance}",
     "attentionValue": "high/medium/low",
     "platform": "Platform or context",
     "cohortOpportunities": ["behavioral audience segments"]
   },
   "cohortSuggestions": ["audience cohort suggestions"],
-  "platformContext": "Platform relevance explanation (${lengthGuidance})",
+  "platformContext": "Platform relevance explanation - write exactly ${lengthGuidance}",
   "viralPotential": "high/medium/low",
   "competitiveInsights": ["competitive insights"],
   "strategicInsights": ["strategic business insights"],
   "strategicActions": ["actionable next steps"]
 }
 
-IMPORTANT: Ensure all descriptive text fields follow the length requirement of ${lengthGuidance}. Return only valid JSON without markdown formatting.`;
+MANDATORY: Every descriptive text field must contain exactly ${lengthGuidance}. Count your sentences carefully. Return only valid JSON without markdown formatting.`;
   }
 }
 
