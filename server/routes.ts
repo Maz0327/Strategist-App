@@ -409,7 +409,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.write(`data: ${JSON.stringify({ type: 'complete', analysis })}\n\n`);
         res.write(`data: ${JSON.stringify({ type: 'end' })}\n\n`);
         
-        debugLogger.info("Streaming analysis completed", { sentiment: analysis.sentiment }, req);
+        debugLogger.info("Streaming analysis completed", { 
+          sentiment: analysis.sentiment,
+          summary: analysis.summary?.substring(0, 100),
+          hasTruthAnalysis: !!analysis.truthAnalysis,
+          analysisKeys: Object.keys(analysis)
+        }, req);
       } catch (error: any) {
         res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
         debugLogger.error('Streaming analysis failed', error, req);

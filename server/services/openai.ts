@@ -74,13 +74,20 @@ export class OpenAIService {
       }
 
       debugLogger.info(`OpenAI response received, length: ${analysisText.length}`);
+      debugLogger.info('Raw OpenAI response:', { response: analysisText.substring(0, 500) });
       
       // Clean the response to ensure it's valid JSON
       const cleanedResponse = analysisText.replace(/```json|```/g, '').trim();
+      debugLogger.info('Cleaned response:', { response: cleanedResponse.substring(0, 500) });
       
       let analysis;
       try {
         analysis = JSON.parse(cleanedResponse);
+        debugLogger.info('Successfully parsed OpenAI response', { 
+          hasSummary: !!analysis.summary,
+          hasTruthAnalysis: !!analysis.truthAnalysis,
+          hasKeywords: !!analysis.keywords
+        });
       } catch (parseError) {
         debugLogger.error('JSON parsing failed', { response: cleanedResponse, error: parseError });
         throw new Error('Invalid JSON response from OpenAI');
@@ -89,7 +96,7 @@ export class OpenAIService {
       const processingTime = Date.now() - startTime;
       debugLogger.info(`Analysis completed in ${processingTime}ms`);
 
-      return {
+      const result = {
         summary: analysis.summary || 'Strategic analysis completed',
         sentiment: analysis.sentiment || 'neutral',
         tone: analysis.tone || 'professional',
@@ -112,6 +119,15 @@ export class OpenAIService {
         strategicInsights: analysis.strategicInsights || [],
         strategicActions: analysis.strategicActions || []
       };
+      
+      debugLogger.info('Final analysis result:', { 
+        summary: result.summary.substring(0, 100),
+        sentiment: result.sentiment,
+        keywordCount: result.keywords.length,
+        truthAnalysisKeys: Object.keys(result.truthAnalysis)
+      });
+      
+      return result;
     } catch (error: any) {
       debugLogger.error('OpenAI analysis failed', error);
       throw new Error(`Analysis failed: ${error.message}`);

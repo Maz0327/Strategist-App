@@ -97,6 +97,8 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart }: ContentInp
               if (eventData.type === 'progress') {
                 setAnalysisProgress({ stage: eventData.stage, progress: eventData.progress });
               } else if (eventData.type === 'complete') {
+                console.log('Analysis complete event received:', eventData);
+                console.log('Analysis data:', eventData.analysis);
                 onAnalysisComplete?.(eventData.analysis, data);
                 toast({
                   title: "Analysis Complete", 
