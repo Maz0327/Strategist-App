@@ -9,6 +9,9 @@ import { Separator } from "@/components/ui/separator";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import ErrorBoundary from "./ErrorBoundary";
+import LazyCompetitiveInsights from "./LazyCompetitiveInsights";
+import LazyCohortBuilder from "./LazyCohortBuilder";
 import { 
   Eye, 
   Target, 
@@ -399,27 +402,13 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
         </TabsContent>
 
         <TabsContent value="cohorts" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Cohort Opportunities
-              </CardTitle>
-              <p className="text-sm text-gray-600">
-                Specific behavioral audiences who would resonate with this content
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {data.cohortSuggestions.map((cohort, index) => (
-                  <div key={index} className="p-3 bg-blue-50 rounded border border-blue-200">
-                    <h4 className="font-medium text-blue-900">{cohort}</h4>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
+          <ErrorBoundary>
+            <LazyCohortBuilder 
+              content={originalContent?.content || ''} 
+              title={originalContent?.title || ''} 
+            />
+          </ErrorBoundary>
+          
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -459,6 +448,13 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
               </div>
             </CardContent>
           </Card>
+
+          <ErrorBoundary>
+            <LazyCompetitiveInsights 
+              content={originalContent?.content || ''} 
+              title={originalContent?.title || ''} 
+            />
+          </ErrorBoundary>
 
           <Card>
             <CardHeader>
