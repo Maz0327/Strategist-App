@@ -67,18 +67,7 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
   const data = analysis.analysis || analysis;
   const { toast } = useToast();
 
-  // Debug logging for analysis data
-  console.log("EnhancedAnalysisResults received analysis:", analysis);
-  console.log("Analysis data:", data);
-
-  // Early return if no data
-  if (!data) {
-    return (
-      <div className="space-y-4">
-        <p className="text-center text-gray-500">No analysis data available</p>
-      </div>
-    );
-  }
+  // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   const [lengthPreference, setLengthPreference] = useState<'short' | 'medium' | 'long' | 'bulletpoints'>('medium');
   const [isFlagging, setIsFlagging] = useState(false);
   const [isReanalyzing, setIsReanalyzing] = useState(false);
@@ -86,6 +75,19 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
   const [analysisCache, setAnalysisCache] = useState<Record<string, any>>({
     medium: data // Cache the initial analysis with medium length
   });
+
+  // Debug logging for analysis data
+  console.log("EnhancedAnalysisResults received analysis:", analysis);
+  console.log("Analysis data:", data);
+
+  // Early return if no data - AFTER all hooks are called
+  if (!data) {
+    return (
+      <div className="space-y-4">
+        <p className="text-center text-gray-500">No analysis data available</p>
+      </div>
+    );
+  }
 
   const handleLengthPreferenceChange = async (newLength: 'short' | 'medium' | 'long' | 'bulletpoints') => {
     setLengthPreference(newLength);
