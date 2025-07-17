@@ -6,6 +6,7 @@ import MemoryStore from "memorystore";
 import { storage } from "./storage";
 import { authService } from "./services/auth";
 import { openaiService } from "./services/openai";
+import { analyzeContentSimple } from "./services/openai-simple";
 import { scraperService } from "./services/scraper";
 import { sourceManagerService } from "./services/source-manager";
 import { dailyReportsService } from "./services/daily-reports";
@@ -236,7 +237,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const lengthPreference = req.body.lengthPreference || 'medium';
       const userNotes = req.body.userNotes || '';
-      const analysis = await openaiService.analyzeContent(data, lengthPreference);
+      const analysis = await analyzeContentSimple(data.content, data.title || '', data.url || '', lengthPreference);
       debugLogger.info("OpenAI analysis completed", { sentiment: analysis.sentiment, confidence: analysis.confidence, keywordCount: analysis.keywords.length }, req);
       
       // Save as potential signal after analysis
@@ -354,7 +355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       debugLogger.info("Re-analysis request received", { title, lengthPreference, hasUrl: !!url }, req);
       
       const data = { content, title: title || "Re-analysis", url };
-      const analysis = await openaiService.analyzeContent(data, lengthPreference);
+      const analysis = await analyzeContentSimple(content, title || '', url || '', lengthPreference);
       
       debugLogger.info("Re-analysis completed", { sentiment: analysis.sentiment, lengthPreference }, req);
       
@@ -397,7 +398,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       debugLogger.info("Streaming analysis request received", { title, lengthPreference, hasUrl: !!url }, req);
       
       try {
-        const analysis = await openaiService.analyzeContent(data, lengthPreference || 'medium', onProgress);
+        const analysis = await analyzeContentSimple(content, title || '', url || '', lengthPreference || 'medium');
         
         // Send final result
         res.write(`data: ${JSON.stringify({ type: 'complete', analysis })}\n\n`);

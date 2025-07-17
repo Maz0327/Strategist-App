@@ -295,106 +295,76 @@ export class OpenAIService {
     const processedContent = data.content || '';
     const startTime = Date.now();
     
-    const getLengthInstructions = (preference: string) => {
+    const getLengthDesc = (preference: string) => {
       switch (preference) {
-        case 'short':
-          return 'CRITICAL: Each truth analysis field (fact, observation, insight, humanTruth, culturalMoment) must be EXACTLY 1-2 sentences. No more, no less.';
-        case 'medium':
-          return 'CRITICAL: Each truth analysis field (fact, observation, insight, humanTruth, culturalMoment) must be EXACTLY 3-5 sentences. This is the default length.';
-        case 'long':
-          return 'CRITICAL: Each truth analysis field (fact, observation, insight, humanTruth, culturalMoment) must be EXACTLY 6-9 sentences with detailed explanations and context.';
-        case 'bulletpoints':
-          return 'CRITICAL: Each truth analysis field (fact, observation, insight, humanTruth, culturalMoment) must be formatted as bullet points using • symbols. Each field should have 3-5 bullet points with concise, impactful statements.';
-        default:
-          return 'CRITICAL: Each truth analysis field (fact, observation, insight, humanTruth, culturalMoment) must be EXACTLY 3-5 sentences. This is the default length.';
+        case 'short': return '1-2 sentences';
+        case 'medium': return '3-5 sentences';
+        case 'long': return '6-9 sentences';
+        case 'bulletpoints': return '3-5 bullet points using • symbols';
+        default: return '3-5 sentences';
       }
     };
-    
-    // Build prompt with proper template literal interpolation
-    const lengthInstructions = lengthPreference === 'bulletpoints' ? 
-      'Use bullet points with • symbols for each field' : 
-      `Use ${lengthPreference} length (${lengthPreference === 'short' ? '1-2 sentences' : 
-        lengthPreference === 'medium' ? '3-5 sentences' : '6-9 sentences'}) for each field`;
 
-    // Unified prompt for single API call - no chunking, no multiple calls
-    const unifiedPrompt = `
-Analyze this content for strategic insights. ${getLengthInstructions(lengthPreference)}
+    const lengthDesc = getLengthDesc(lengthPreference);
+
+    // SIMPLIFIED UNIFIED PROMPT
+    const prompt = `Analyze this content for strategic insights. For each truthAnalysis field, use ${lengthDesc}.
 
 Title: ${data.title || 'N/A'}
 Content: ${processedContent}
 URL: ${data.url || 'N/A'}
 
-Return strictly valid JSON matching this exact schema:
+Return valid JSON with this structure:
 {
-  "summary": "Strategic overview of the content",
-  "sentiment": "positive|negative|neutral",
-  "tone": "professional|casual|urgent|analytical|encouraging",
-  "keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
+  "summary": "Strategic overview",
+  "sentiment": "positive",
+  "tone": "professional", 
+  "keywords": ["keyword1", "keyword2", "keyword3"],
   "confidence": "85%",
   "truthAnalysis": {
-    "fact": "What factually happened - ${lengthInstructions}",
-    "observation": "What patterns you observe - ${lengthInstructions}",
-    "insight": "Why this is happening - ${lengthInstructions}",
-    "humanTruth": "Deep psychological driver - ${lengthInstructions}",
-    "culturalMoment": "Larger cultural shift this represents - ${lengthInstructions}",
-    "attentionValue": "high|medium|low",
-    "platform": "Platform or context",
+    "fact": "What factually happened",
+    "observation": "What patterns you observe",
+    "insight": "Why this is happening",
+    "humanTruth": "Deep psychological driver",
+    "culturalMoment": "Larger cultural shift",
+    "attentionValue": "high",
+    "platform": "Platform context",
     "cohortOpportunities": ["cohort1", "cohort2"]
   },
-  "cohortSuggestions": ["suggestion1", "suggestion2", "suggestion3"],
-  "platformContext": "Platform relevance explanation",
-  "viralPotential": "high|medium|low",
-  "competitiveInsights": ["insight1", "insight2", "insight3"],
-  "strategicInsights": ["insight1", "insight2", "insight3"],
-  "strategicActions": ["action1", "action2", "action3"]
-}
-
-No markdown formatting, return only JSON.`;
+  "cohortSuggestions": ["suggestion1", "suggestion2"],
+  "platformContext": "Platform relevance",
+  "viralPotential": "medium",
+  "competitiveInsights": ["insight1", "insight2"],
+  "strategicInsights": ["insight1", "insight2"],
+  "strategicActions": ["action1", "action2"]
+}`;
 
     try {
-      debugLogger.info('Sending unified request to OpenAI API', { model: 'gpt-4o-mini', contentLength: processedContent.length });
-      
-      // Progress tracking for better UX
-      if (onProgress) {
-        onProgress('Analyzing content with OpenAI', 10);
-      }
+      if (onProgress) onProgress('Analyzing content with OpenAI', 10);
       
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini", // Keeping cost-efficient model as requested
+        model: "gpt-4o-mini",
         messages: [
-          {
-            role: "system",
-            content: "You are an expert content strategist assistant. Analyze content for strategic insights using the Truth Analysis framework. Return only valid JSON without markdown formatting."
-          },
-          {
-            role: "user",
-            content: unifiedPrompt
-          }
+          { role: "system", content: "You are an expert content strategist. Return only valid JSON." },
+          { role: "user", content: prompt }
         ],
-        temperature: 0.0,
-        max_tokens: 3000,
+        temperature: 0.1,
+        max_tokens: 2500,
         response_format: { type: "json_object" }
       });
       
+      if (onProgress) onProgress('Processing results', 80);
+      
       const content = response.choices[0]?.message?.content;
-      if (!content) {
-        throw new Error('No content received from OpenAI');
-      }
-
-      if (onProgress) {
-        onProgress('Processing analysis results', 80);
-      }
+      if (!content) throw new Error('No content received from OpenAI');
 
       const analysis = JSON.parse(content);
       
-      if (onProgress) {
-        onProgress('Analysis complete', 100);
-      }
-
+      if (onProgress) onProgress('Complete', 100);
+      
       const processingTime = Date.now() - startTime;
-      console.log(`[OpenAI] Analysis completed in ${processingTime}ms`);
+      debugLogger.info(`OpenAI analysis completed in ${processingTime}ms`);
 
-      // Return structured result with validation
       return {
         summary: analysis.summary || 'Strategic analysis completed',
         sentiment: analysis.sentiment || 'neutral',
@@ -420,90 +390,11 @@ No markdown formatting, return only JSON.`;
       };
     } catch (error: any) {
       debugLogger.error('OpenAI analysis failed', error);
-      
-      // Track failed API call - skip tracking if no valid user
-      /* analyticsService.trackExternalApiCall({
-        userId: 0, // System user for now, will be updated with actual user context
-        service: 'openai',
-        endpoint: 'chat/completions',
-        method: 'POST',
-        statusCode: 500,
-        responseTime: Date.now() - startTime,
-        errorMessage: error.message,
-        metadata: {
-          model: 'gpt-4o-mini',
-          promptLength: prompt.length,
-          contentLength: processedContent.length
-        }
-      }); */
-      
       throw new Error(`Failed to analyze content: ${error.message}`);
     }
   }
 
-  private processOpenAIResponse(response: any, startTime: number): EnhancedAnalysisResult {
-    const responseTime = Date.now() - startTime;
-    const tokensUsed = response.usage?.total_tokens || 0;
-    const promptTokens = response.usage?.prompt_tokens || 0;
-    const completionTokens = response.usage?.completion_tokens || 0;
-    
-    debugLogger.info('OpenAI API response received', { 
-      responseTime, 
-      tokensUsed,
-      promptTokens,
-      completionTokens
-    });
 
-    // Track successful API call - skip tracking if no valid user
-    /* analyticsService.trackExternalApiCall({
-      userId: 0, // System user for now, will be updated with actual user context
-      service: 'openai',
-      endpoint: 'chat/completions',
-      method: 'POST',
-      statusCode: 200,
-      responseTime,
-      tokensUsed,
-      cost: Math.round(tokensUsed * 0.00015 * 100), // Cost in cents ($0.00015 per token for gpt-4o-mini)
-      metadata: {
-        model: 'gpt-4o-mini',
-        promptTokens,
-        completionTokens,
-        finishReason: response.choices[0]?.finish_reason
-      }
-    }); */
-
-    const result = JSON.parse(response.choices[0].message.content || "{}");
-    debugLogger.info('OpenAI response parsed successfully', { 
-      hasSummary: !!result.summary,
-      sentiment: result.sentiment,
-      keywordCount: result.keywords?.length || 0,
-      confidence: result.confidence
-    });
-    
-    return {
-      summary: result.summary || "No summary available",
-      sentiment: result.sentiment || "Neutral",
-      tone: result.tone || "Professional",
-      keywords: Array.isArray(result.keywords) ? result.keywords : [],
-      confidence: result.confidence || "85%",
-      truthAnalysis: result.truthAnalysis || {
-        fact: 'Not identified',
-        observation: 'Not identified',
-        insight: 'Not identified',
-        humanTruth: 'Not identified',
-        culturalMoment: 'Not identified',
-        attentionValue: 'medium',
-        platform: 'unknown',
-        cohortOpportunities: []
-      },
-      cohortSuggestions: result.cohortSuggestions || [],
-      platformContext: result.platformContext || 'Platform context not identified',
-      viralPotential: result.viralPotential || 'medium',
-      competitiveInsights: result.competitiveInsights || [],
-      strategicInsights: result.strategicInsights || [],
-      strategicActions: result.strategicActions || []
-    };
-  }
 }
 
 export const openaiService = new OpenAIService();
