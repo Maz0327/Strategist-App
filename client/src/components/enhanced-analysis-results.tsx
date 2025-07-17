@@ -62,6 +62,15 @@ interface EnhancedAnalysisResultsProps {
 export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedAnalysisResultsProps) {
   const { analysis: data } = analysis;
   const { toast } = useToast();
+
+  // Early return if no data
+  if (!data) {
+    return (
+      <div className="space-y-4">
+        <p className="text-center text-gray-500">No analysis data available</p>
+      </div>
+    );
+  }
   const [lengthPreference, setLengthPreference] = useState<'short' | 'medium' | 'long' | 'bulletpoints'>('medium');
   const [isFlagging, setIsFlagging] = useState(false);
   const [isReanalyzing, setIsReanalyzing] = useState(false);

@@ -346,8 +346,8 @@ Provide JSON with these fields:
     } catch (error: any) {
       debugLogger.error('OpenAI analysis failed', error);
       
-      // Track failed API call
-      analyticsService.trackExternalApiCall({
+      // Track failed API call - skip tracking if no valid user
+      /* analyticsService.trackExternalApiCall({
         userId: 0, // System user for now, will be updated with actual user context
         service: 'openai',
         endpoint: 'chat/completions',
@@ -360,7 +360,7 @@ Provide JSON with these fields:
           promptLength: prompt.length,
           contentLength: processedContent.length
         }
-      });
+      }); */
       
       throw new Error(`Failed to analyze content: ${error.message}`);
     }
@@ -379,8 +379,8 @@ Provide JSON with these fields:
       completionTokens
     });
 
-    // Track successful API call
-    analyticsService.trackExternalApiCall({
+    // Track successful API call - skip tracking if no valid user
+    /* analyticsService.trackExternalApiCall({
       userId: 0, // System user for now, will be updated with actual user context
       service: 'openai',
       endpoint: 'chat/completions',
@@ -395,7 +395,7 @@ Provide JSON with these fields:
         completionTokens,
         finishReason: response.choices[0]?.finish_reason
       }
-    });
+    }); */
 
     const result = JSON.parse(response.choices[0].message.content || "{}");
     debugLogger.info('OpenAI response parsed successfully', { 
