@@ -63,7 +63,8 @@ interface EnhancedAnalysisResultsProps {
 }
 
 export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedAnalysisResultsProps) {
-  const { analysis: data } = analysis;
+  // Fix: analysis is the data itself, not nested under analysis.analysis
+  const data = analysis.analysis || analysis;
   const { toast } = useToast();
 
   // Debug logging for analysis data
