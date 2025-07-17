@@ -223,7 +223,7 @@ export class OpenAIService {
       culturalMoment: truthAnalyses.map(t => t.culturalMoment).join(' '),
       attentionValue: truthAnalyses.filter(t => t.attentionValue === 'high').length > 0 ? 'high' : 
                      truthAnalyses.filter(t => t.attentionValue === 'medium').length > 0 ? 'medium' : 'low',
-      platform: truthAnalyses[0].platform,
+      platform: truthAnalyses[0]?.platform || 'unknown',
       cohortOpportunities: Array.from(new Set(truthAnalyses.flatMap(t => t.cohortOpportunities))).slice(0, 5)
     };
     
@@ -273,7 +273,12 @@ export class OpenAIService {
       }
     };
     
-    // Streamlined prompt for faster processing and timeout prevention
+    // Build prompt with proper template literal interpolation
+    const lengthInstructions = lengthPreference === 'bulletpoints' ? 
+      'Use bullet points with • symbols for each field' : 
+      `Use ${lengthPreference} length (${lengthPreference === 'short' ? '1-2 sentences' : 
+        lengthPreference === 'medium' ? '3-5 sentences' : '6-9 sentences'}) for each field`;
+
     const prompt = `
 Analyze this content for strategic insights. ${getLengthInstructions(lengthPreference)}
 
@@ -281,31 +286,30 @@ Title: ${data.title || 'N/A'}
 Content: ${processedContent}
 URL: ${data.url || 'N/A'}
 
-Provide JSON with these fields:
+Return strictly valid JSON following this schema:
 {
   "summary": "Strategic overview",
-  "sentiment": "positive/negative/neutral",
+  "sentiment": "positive/negative/neutral", 
   "tone": "professional/casual/urgent",
   "keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
   "confidence": "85%",
   "truthAnalysis": {
-    "fact": "What happened - ${lengthPreference === 'bulletpoints' ? 'Use bullet points with • symbols' : `Use ${lengthPreference} length`}",
-    "observation": "What pattern you see - ${lengthPreference === 'bulletpoints' ? 'Use bullet points with • symbols' : `Use ${lengthPreference} length`}",
-    "insight": "Why this is happening - ${lengthPreference === 'bulletpoints' ? 'Use bullet points with • symbols' : `Use ${lengthPreference} length`}",
-    "humanTruth": "Deep psychological driver - ${lengthPreference === 'bulletpoints' ? 'Use bullet points with • symbols' : `Use ${lengthPreference} length`}",
-    "culturalMoment": "Larger cultural shift - ${lengthPreference === 'bulletpoints' ? 'Use bullet points with • symbols' : `Use ${lengthPreference} length`}",
-    "attentionValue": "high/medium/low",
-    "platform": "Platform context",
-    "cohortOpportunities": ["specific cohort names"]
+    "fact": "What factually happened - ${lengthInstructions}",
+    "observation": "What patterns you observe - ${lengthInstructions}",
+    "insight": "Why this is happening - ${lengthInstructions}",
+    "humanTruth": "Deep psychological driver - ${lengthInstructions}",
+    "culturalMoment": "Larger cultural shift this represents - ${lengthInstructions}",
+    "attentionValue": "high",
+    "platform": "Platform or context",
+    "cohortOpportunities": ["specific cohort 1", "specific cohort 2"]
   },
   "cohortSuggestions": ["cohort 1", "cohort 2", "cohort 3"],
-  "platformContext": "Platform relevance",
-  "viralPotential": "high/medium/low",
+  "platformContext": "Platform relevance explanation",
+  "viralPotential": "high",
   "competitiveInsights": ["insight 1", "insight 2", "insight 3"],
   "strategicInsights": ["strategic insight 1", "strategic insight 2", "strategic insight 3"],
   "strategicActions": ["action 1", "action 2", "action 3"]
-}
-`;
+}`;
 
     try {
       debugLogger.info('Sending request to OpenAI API', { model: 'gpt-4o-mini', promptLength: prompt.length });
