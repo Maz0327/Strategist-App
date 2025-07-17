@@ -156,7 +156,7 @@ export class OpenAIService {
 
   private buildAnalysisPrompt(content: string, title: string, url: string, lengthPreference: string): string {
     const lengthGuidance = {
-      short: "1-2 sentences",
+      short: "2 sentences",
       medium: "3-5 sentences",
       long: "6-9 sentences",
       bulletpoints: "multiple important points"
@@ -168,7 +168,7 @@ Title: ${title}
 Content: ${content}
 URL: ${url}
 
-Provide comprehensive strategic analysis in JSON format:
+Provide comprehensive strategic analysis in JSON format. For all text fields, use exactly ${lengthGuidance} as specified:
 {
   "summary": "Brief strategic overview (${lengthGuidance})",
   "sentiment": "positive/negative/neutral",
@@ -176,24 +176,24 @@ Provide comprehensive strategic analysis in JSON format:
   "keywords": ["strategic", "keywords", "here"],
   "confidence": "85%",
   "truthAnalysis": {
-    "fact": "What factually happened",
-    "observation": "What patterns you observe", 
-    "insight": "Why this is happening",
-    "humanTruth": "Deep psychological driver",
-    "culturalMoment": "Larger cultural shift this represents",
+    "fact": "What factually happened (${lengthGuidance})",
+    "observation": "What patterns you observe (${lengthGuidance})", 
+    "insight": "Why this is happening (${lengthGuidance})",
+    "humanTruth": "Deep psychological driver (${lengthGuidance})",
+    "culturalMoment": "Larger cultural shift this represents (${lengthGuidance})",
     "attentionValue": "high/medium/low",
     "platform": "Platform or context",
     "cohortOpportunities": ["behavioral audience segments"]
   },
   "cohortSuggestions": ["audience cohort suggestions"],
-  "platformContext": "Platform relevance explanation",
+  "platformContext": "Platform relevance explanation (${lengthGuidance})",
   "viralPotential": "high/medium/low",
   "competitiveInsights": ["competitive insights"],
   "strategicInsights": ["strategic business insights"],
   "strategicActions": ["actionable next steps"]
 }
 
-Return only valid JSON without markdown formatting.`;
+IMPORTANT: Ensure all descriptive text fields follow the length requirement of ${lengthGuidance}. Return only valid JSON without markdown formatting.`;
   }
 }
 

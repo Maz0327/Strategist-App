@@ -1225,7 +1225,7 @@ All Phase 2 functionality is working and ready for user testing and feedback.
 - **Terminology Standardization**: Completed system-wide terminology updates ensuring consistent "Capture → Potential Signal → Signal → Insight → Brief" flow
 - **Platform Dropdown Fix**: Updated trends interface to show all 16 platforms instead of just 3, with proper icons and color coding
 - **Dashboard Language**: Updated "showing X of Y signals" to "showing X of Y items" and standardized all interface terminology
-- **Truth Analysis Length Options**: Updated length preferences to Short (1-2 sentences), Medium (3-5 sentences), Long (6-9 sentences), and Bulletpoints (multiple important points) with backend OpenAI integration
+- **Truth Analysis Length Options**: Updated length preferences to Short (2 sentences), Medium (3-5 sentences), Long (6-9 sentences), and Bulletpoints (multiple important points) with backend OpenAI integration
 
 ### Strategic Enhancement Implementation - January 11, 2025:
 - **Signal Mining Dashboard**: ✅ Complete real-time cultural intelligence dashboard with signal detection, cultural moments analysis, and bridge-worthy content identification
