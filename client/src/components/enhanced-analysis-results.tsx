@@ -66,6 +66,10 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
   const { analysis: data } = analysis;
   const { toast } = useToast();
 
+  // Debug logging for analysis data
+  console.log("EnhancedAnalysisResults received analysis:", analysis);
+  console.log("Analysis data:", data);
+
   // Early return if no data
   if (!data) {
     return (
