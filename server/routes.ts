@@ -20,6 +20,10 @@ import {
 import { debugLogger } from "./services/debug-logger";
 import { performanceMonitor, performanceMiddleware } from "./services/performance-monitor";
 import { analyticsService } from "./services/analytics";
+import { cohortBuilderService } from "./services/cohortBuilder";
+import { competitiveIntelligenceService } from "./services/competitiveIntelligence";
+import { performanceMonitor, trackPerformance } from "./services/monitoring";
+import { getCacheStats } from "./services/cache";
 import { 
   insertUserFeedbackSchema,
   insertUserAnalyticsSchema
@@ -1245,6 +1249,61 @@ The analyzed signals provide a comprehensive view of current market trends and s
       res.json({ success: true });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
+    }
+  });
+
+  // New modular service endpoints
+  
+  // Cohort Builder Service - Load on demand
+  app.post("/api/cohorts", requireAuth, async (req, res) => {
+    try {
+      const { content, title } = req.body;
+      
+      if (!content) {
+        return res.status(400).json({ error: 'Content is required' });
+      }
+      
+      const cohorts = await cohortBuilderService.getCohortSuggestions(content, title);
+      res.json({ cohorts });
+      
+    } catch (error: any) {
+      debugLogger.error('Cohort analysis failed', error, req);
+      res.status(500).json({ error: 'Failed to analyze cohorts' });
+    }
+  });
+  
+  // Competitive Intelligence Service - Load on demand
+  app.post("/api/competitive-intelligence", requireAuth, async (req, res) => {
+    try {
+      const { content, title } = req.body;
+      
+      if (!content) {
+        return res.status(400).json({ error: 'Content is required' });
+      }
+      
+      const insights = await competitiveIntelligenceService.getCompetitiveInsights(content, title);
+      res.json({ insights });
+      
+    } catch (error: any) {
+      debugLogger.error('Competitive intelligence failed', error, req);
+      res.status(500).json({ error: 'Failed to analyze competitive intelligence' });
+    }
+  });
+  
+  // Performance monitoring endpoint
+  app.get("/api/performance", requireAuth, async (req, res) => {
+    try {
+      const stats = performanceMonitor.getStats();
+      const cacheStats = getCacheStats();
+      
+      res.json({
+        performance: stats,
+        cache: cacheStats
+      });
+      
+    } catch (error: any) {
+      debugLogger.error('Performance stats failed', error, req);
+      res.status(500).json({ error: 'Failed to get performance stats' });
     }
   });
 

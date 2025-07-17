@@ -2,9 +2,11 @@ import OpenAI from "openai";
 import type { AnalyzeContentData } from "@shared/schema";
 import { debugLogger } from "./debug-logger";
 import { analyticsService } from "./analytics";
+import { analysisCache, createCacheKey } from "./cache";
+import { performanceMonitor } from "./monitoring";
 
 // Using gpt-4o-mini for cost-efficient testing phase, can upgrade to gpt-4o later
-const openai = new OpenAI({ 
+export const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || process.env.API_KEY,
   timeout: 45 * 1000, // 45 second timeout
   maxRetries: 2, // Built-in retries
@@ -55,6 +57,17 @@ export class OpenAIService {
     
     const startTime = Date.now();
     
+    // Check cache first
+    const cacheKey = createCacheKey(content + title + lengthPreference, 'analysis');
+    const cached = analysisCache.get(cacheKey);
+    
+    if (cached) {
+      const cacheTime = Date.now() - startTime;
+      debugLogger.info('Analysis cache hit', { cacheKey, duration: cacheTime });
+      performanceMonitor.logRequest('/api/analyze', 'POST', cacheTime, true, true);
+      return cached;
+    }
+    
     try {
       const prompt = this.buildAnalysisPrompt(content, title, url, lengthPreference);
       
@@ -93,8 +106,7 @@ export class OpenAIService {
         throw new Error('Invalid JSON response from OpenAI');
       }
       
-      const processingTime = Date.now() - startTime;
-      debugLogger.info(`Analysis completed in ${processingTime}ms`);
+      debugLogger.info(`Analysis completed in ${Date.now() - startTime}ms`);
 
       const result = {
         summary: analysis.summary || 'Strategic analysis completed',
@@ -127,9 +139,17 @@ export class OpenAIService {
         truthAnalysisKeys: Object.keys(result.truthAnalysis)
       });
       
+      // Cache the result
+      analysisCache.set(cacheKey, result);
+      
+      const processingTime = Date.now() - startTime;
+      performanceMonitor.logRequest('/api/analyze', 'POST', processingTime, true, false);
+      
       return result;
     } catch (error: any) {
       debugLogger.error('OpenAI analysis failed', error);
+      const processingTime = Date.now() - startTime;
+      performanceMonitor.logRequest('/api/analyze', 'POST', processingTime, false, false);
       throw new Error(`Analysis failed: ${error.message}`);
     }
   }
