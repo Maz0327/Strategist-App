@@ -76,15 +76,53 @@ Return valid JSON:
 }`;
 
   try {
+    debugLogger.info(`Starting OpenAI analysis for content length: ${content.length}`);
+    
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "You are an expert content strategist. Return only valid JSON." },
-        { role: "user", content: prompt }
+        { 
+          role: "system", 
+          content: "You are an expert content strategist. Analyze content and return structured JSON with strategic insights. Focus on facts, observations, insights, and human truths." 
+        },
+        { 
+          role: "user", 
+          content: `Analyze this content for strategic insights:
+
+Title: ${title}
+Content: ${content}
+URL: ${url}
+
+Provide comprehensive strategic analysis in JSON format:
+{
+  "summary": "Brief strategic overview",
+  "sentiment": "positive/negative/neutral",
+  "tone": "professional/casual/urgent/analytical",
+  "keywords": ["strategic", "keywords", "here"],
+  "confidence": "85%",
+  "truthAnalysis": {
+    "fact": "What factually happened",
+    "observation": "What patterns you observe", 
+    "insight": "Why this is happening",
+    "humanTruth": "Deep psychological driver",
+    "culturalMoment": "Larger cultural shift this represents",
+    "attentionValue": "high/medium/low",
+    "platform": "Platform or context",
+    "cohortOpportunities": ["behavioral audience segments"]
+  },
+  "cohortSuggestions": ["audience cohort suggestions"],
+  "platformContext": "Platform relevance explanation",
+  "viralPotential": "high/medium/low",
+  "competitiveInsights": ["competitive insights"],
+  "strategicInsights": ["strategic business insights"],
+  "strategicActions": ["actionable next steps"]
+}
+
+Return only valid JSON without markdown formatting.`
+        }
       ],
-      temperature: 0.1,
-      max_tokens: 2500,
-      response_format: { type: "json_object" }
+      temperature: 0.2,
+      max_tokens: 2000
     });
 
     const analysisText = response.choices[0]?.message?.content;
@@ -92,13 +130,24 @@ Return valid JSON:
       throw new Error('No response from OpenAI');
     }
 
-    const analysis = JSON.parse(analysisText);
-    const processingTime = Date.now() - startTime;
+    debugLogger.info(`OpenAI response received, length: ${analysisText.length}`);
     
-    debugLogger.info(`Simple OpenAI analysis completed in ${processingTime}ms`);
+    // Clean the response to ensure it's valid JSON
+    const cleanedResponse = analysisText.replace(/```json|```/g, '').trim();
+    
+    let analysis;
+    try {
+      analysis = JSON.parse(cleanedResponse);
+    } catch (parseError) {
+      debugLogger.error('JSON parsing failed', { response: cleanedResponse, error: parseError });
+      throw new Error('Invalid JSON response from OpenAI');
+    }
+    
+    const processingTime = Date.now() - startTime;
+    debugLogger.info(`Analysis completed in ${processingTime}ms`);
 
     return {
-      summary: analysis.summary || 'Analysis completed',
+      summary: analysis.summary || 'Strategic analysis completed',
       sentiment: analysis.sentiment || 'neutral',
       tone: analysis.tone || 'professional',
       keywords: analysis.keywords || [],
@@ -121,7 +170,7 @@ Return valid JSON:
       strategicActions: analysis.strategicActions || []
     };
   } catch (error: any) {
-    debugLogger.error('Simple OpenAI analysis failed', error);
+    debugLogger.error('OpenAI analysis failed', error);
     throw new Error(`Analysis failed: ${error.message}`);
   }
 }
