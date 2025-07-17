@@ -391,6 +391,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       debugLogger.info("Streaming analysis request received", { title, lengthPreference, hasUrl: !!url }, req);
       
       try {
+        // Send progress updates during analysis
+        res.write(`data: ${JSON.stringify({ type: 'progress', stage: 'Initializing analysis...', progress: 10 })}\n\n`);
+        
+        await new Promise(resolve => setTimeout(resolve, 500));
+        res.write(`data: ${JSON.stringify({ type: 'progress', stage: 'Processing content...', progress: 30 })}\n\n`);
+        
+        await new Promise(resolve => setTimeout(resolve, 500));
+        res.write(`data: ${JSON.stringify({ type: 'progress', stage: 'Analyzing cultural context...', progress: 60 })}\n\n`);
+        
+        await new Promise(resolve => setTimeout(resolve, 500));
+        res.write(`data: ${JSON.stringify({ type: 'progress', stage: 'Generating insights...', progress: 80 })}\n\n`);
+
         const analysis = await openaiService.analyzeContent(data, lengthPreference || 'medium');
         
         // Send final result
