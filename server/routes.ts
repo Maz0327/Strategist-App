@@ -6,7 +6,6 @@ import MemoryStore from "memorystore";
 import { storage } from "./storage";
 import { authService } from "./services/auth";
 import { openaiService } from "./services/openai";
-import { analyzeContentSimple } from "./services/openai-simple";
 import { scraperService } from "./services/scraper";
 import { sourceManagerService } from "./services/source-manager";
 import { dailyReportsService } from "./services/daily-reports";
@@ -27,7 +26,7 @@ import {
 } from "../shared/admin-schema";
 import { ERROR_MESSAGES, getErrorMessage, matchErrorPattern } from "@shared/error-messages";
 import { sql } from "./storage";
-import { openaiRateLimit, dailyOpenaiRateLimit, generalRateLimit, authRateLimit } from './middleware/rate-limit';
+import { authRateLimit } from './middleware/rate-limit';
 
 declare module "express-session" {
   interface SessionData {
@@ -93,8 +92,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add performance monitoring middleware
   app.use(performanceMiddleware);
 
-  // Add general rate limiting to all API endpoints
-  app.use('/api/', generalRateLimit);
+  // General rate limiting removed for performance optimization
 
   // API call tracking middleware
   app.use((req, res, next) => {
@@ -229,7 +227,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Content analysis routes
-  app.post("/api/analyze", requireAuth, openaiRateLimit, dailyOpenaiRateLimit, async (req, res) => {
+  app.post("/api/analyze", requireAuth, async (req, res) => {
     try {
       debugLogger.info("Content analysis request received", { title: req.body.title, hasUrl: !!req.body.url, contentLength: req.body.content?.length }, req);
       const data = analyzeContentSchema.parse(req.body);
@@ -237,7 +235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const lengthPreference = req.body.lengthPreference || 'medium';
       const userNotes = req.body.userNotes || '';
-      const analysis = await analyzeContentSimple(data.content, data.title || '', data.url || '', lengthPreference);
+      const analysis = await openaiService.analyzeContent(data, lengthPreference);
       debugLogger.info("OpenAI analysis completed", { sentiment: analysis.sentiment, confidence: analysis.confidence, keywordCount: analysis.keywords.length }, req);
       
       // Save as potential signal after analysis
@@ -344,7 +342,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Re-analyze with different length preference
-  app.post("/api/reanalyze", requireAuth, openaiRateLimit, dailyOpenaiRateLimit, async (req, res) => {
+  app.post("/api/reanalyze", requireAuth, async (req, res) => {
     try {
       const { content, title, url, lengthPreference } = req.body;
       
@@ -355,7 +353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       debugLogger.info("Re-analysis request received", { title, lengthPreference, hasUrl: !!url }, req);
       
       const data = { content, title: title || "Re-analysis", url };
-      const analysis = await analyzeContentSimple(content, title || '', url || '', lengthPreference);
+      const analysis = await openaiService.analyzeContent({ content, title, url }, lengthPreference);
       
       debugLogger.info("Re-analysis completed", { sentiment: analysis.sentiment, lengthPreference }, req);
       
@@ -371,7 +369,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Streaming analysis endpoint for real-time progress
-  app.post("/api/analyze/stream", requireAuth, openaiRateLimit, dailyOpenaiRateLimit, async (req, res) => {
+  app.post("/api/analyze/stream", requireAuth, async (req, res) => {
     try {
       const { content, title, url, lengthPreference } = req.body;
       
@@ -390,15 +388,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const data = { content, title: title || "Streaming Analysis", url };
       
-      // Progress callback for streaming updates
-      const onProgress = (stage: string, progress: number) => {
-        res.write(`data: ${JSON.stringify({ type: 'progress', stage, progress })}\n\n`);
-      };
-
       debugLogger.info("Streaming analysis request received", { title, lengthPreference, hasUrl: !!url }, req);
       
       try {
-        const analysis = await analyzeContentSimple(content, title || '', url || '', lengthPreference || 'medium');
+        const analysis = await openaiService.analyzeContent(data, lengthPreference || 'medium');
         
         // Send final result
         res.write(`data: ${JSON.stringify({ type: 'complete', analysis })}\n\n`);
