@@ -252,58 +252,63 @@ Return JSON only.`;
   }
 
   private async adjustAnalysis(mediumAnalysis: EnhancedAnalysisResult, lengthPreference: 'short' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
-    debugLogger.info('Fast local adjustment to ' + lengthPreference);
+    debugLogger.info('OpenAI adjustment to ' + lengthPreference);
     
-    // Fast local text manipulation instead of OpenAI API call
-    const adjustedTruthAnalysis = {
-      fact: this.adjustText(mediumAnalysis.truthAnalysis.fact, lengthPreference),
-      observation: this.adjustText(mediumAnalysis.truthAnalysis.observation, lengthPreference),
-      insight: this.adjustText(mediumAnalysis.truthAnalysis.insight, lengthPreference),
-      humanTruth: this.adjustText(mediumAnalysis.truthAnalysis.humanTruth, lengthPreference),
-      culturalMoment: this.adjustText(mediumAnalysis.truthAnalysis.culturalMoment, lengthPreference),
-      attentionValue: mediumAnalysis.truthAnalysis.attentionValue,
-      platform: mediumAnalysis.truthAnalysis.platform,
-      cohortOpportunities: mediumAnalysis.truthAnalysis.cohortOpportunities
-    };
+    // Use OpenAI for proper analysis adjustment with optimized prompt
+    const adjustmentPrompt = `Adjust the following analysis to ${lengthPreference} format. Keep the same strategic insights and JSON structure.
+
+CURRENT ANALYSIS (Medium length):
+${JSON.stringify(mediumAnalysis.truthAnalysis, null, 2)}
+
+REQUIREMENTS:
+- ${lengthPreference === 'short' ? 'Exactly 2 sentences per field' : lengthPreference === 'long' ? 'Exactly 5-7 sentences per field' : 'Exactly 5-12 bullet points per field'}
+- Keep the same strategic insights and conclusions
+- Maintain professional strategic analysis quality
+- Only adjust truthAnalysis fields: fact, observation, insight, humanTruth, culturalMoment
+
+Return ONLY the truthAnalysis JSON object with adjusted fields.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: "You are adjusting strategic analysis length while preserving quality and insights. Return only the truthAnalysis JSON object." },
+        { role: "user", content: adjustmentPrompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.1,
+      max_tokens: lengthPreference === 'short' ? 800 : lengthPreference === 'long' ? 1500 : 1200
+    });
+
+    const responseContent = response.choices[0]?.message?.content;
+    if (!responseContent) {
+      debugLogger.error('No response from OpenAI adjustment');
+      return mediumAnalysis;
+    }
+
+    let adjustedTruthAnalysis;
+    try {
+      adjustedTruthAnalysis = JSON.parse(responseContent);
+    } catch (parseError) {
+      debugLogger.error('Failed to parse OpenAI adjustment response', { error: parseError });
+      return mediumAnalysis;
+    }
 
     const result: EnhancedAnalysisResult = {
       ...mediumAnalysis,
-      truthAnalysis: adjustedTruthAnalysis
+      truthAnalysis: {
+        fact: adjustedTruthAnalysis.fact || mediumAnalysis.truthAnalysis.fact,
+        observation: adjustedTruthAnalysis.observation || mediumAnalysis.truthAnalysis.observation,
+        insight: adjustedTruthAnalysis.insight || mediumAnalysis.truthAnalysis.insight,
+        humanTruth: adjustedTruthAnalysis.humanTruth || mediumAnalysis.truthAnalysis.humanTruth,
+        culturalMoment: adjustedTruthAnalysis.culturalMoment || mediumAnalysis.truthAnalysis.culturalMoment,
+        attentionValue: mediumAnalysis.truthAnalysis.attentionValue,
+        platform: mediumAnalysis.truthAnalysis.platform,
+        cohortOpportunities: mediumAnalysis.truthAnalysis.cohortOpportunities
+      }
     };
 
-    debugLogger.info('Fast adjustment complete', { lengthPreference });
+    debugLogger.info('OpenAI adjustment complete', { lengthPreference });
     return result;
-  }
-
-  private adjustText(text: string, lengthPreference: 'short' | 'long' | 'bulletpoints'): string {
-    const sentences = text.split('. ').filter(s => s.trim().length > 0);
-    
-    switch (lengthPreference) {
-      case 'short':
-        // Take first 2 sentences exactly
-        return sentences.slice(0, 2).join('. ') + (sentences.length > 2 ? '.' : '');
-        
-      case 'long':
-        // For long, duplicate key sentences to reach 5-7 sentences
-        if (sentences.length >= 5) {
-          return sentences.slice(0, 6).join('. ') + '.';
-        } else {
-          // Expand by adding "Additionally" variants
-          const expanded = [...sentences];
-          while (expanded.length < 5) {
-            expanded.push(`Additionally, ${sentences[expanded.length % sentences.length].toLowerCase()}`);
-          }
-          return expanded.slice(0, 6).join('. ') + '.';
-        }
-        
-      case 'bulletpoints':
-        // Convert to bullet points (5-12 points)
-        const points = sentences.slice(0, 8).map(s => `• ${s.trim()}`);
-        return points.join('\n');
-        
-      default:
-        return text;
-    }
   }
 }
 
