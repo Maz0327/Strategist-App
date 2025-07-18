@@ -20,9 +20,21 @@ interface LazyStrategicRecommendationsProps {
   content: string;
   title: string;
   truthAnalysis: any;
+  cohorts?: any[];
+  strategicInsights?: any[];
+  strategicActions?: any[];
+  competitiveInsights?: any[];
 }
 
-export default function LazyStrategicRecommendations({ content, title, truthAnalysis }: LazyStrategicRecommendationsProps) {
+export default function LazyStrategicRecommendations({ 
+  content, 
+  title, 
+  truthAnalysis, 
+  cohorts = [], 
+  strategicInsights = [], 
+  strategicActions = [], 
+  competitiveInsights = [] 
+}: LazyStrategicRecommendationsProps) {
   const [recommendations, setRecommendations] = useState<StrategicRecommendation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,10 +43,16 @@ export default function LazyStrategicRecommendations({ content, title, truthAnal
 
   useEffect(() => {
     if (!hasLoadedOnce && content && title && truthAnalysis) {
-      loadStrategicRecommendations();
+      // Auto-load if we have significant existing component results (advanced analysis mode)
+      const hasExistingResults = cohorts.length > 0 || strategicInsights.length > 0 || 
+                                strategicActions.length > 0 || competitiveInsights.length > 0;
+      
+      if (hasExistingResults) {
+        loadStrategicRecommendations();
+      }
       setHasLoadedOnce(true);
     }
-  }, [content, title, truthAnalysis, hasLoadedOnce]);
+  }, [content, title, truthAnalysis, cohorts, strategicInsights, strategicActions, competitiveInsights, hasLoadedOnce]);
 
   const loadStrategicRecommendations = async () => {
     if (!content || !title || !truthAnalysis) return;
@@ -43,9 +61,22 @@ export default function LazyStrategicRecommendations({ content, title, truthAnal
     setError(null);
     
     try {
+      const componentResults = {
+        truthAnalysis,
+        cohorts,
+        strategicInsights,
+        strategicActions,
+        competitiveInsights
+      };
+      
       const response = await apiRequest('/api/strategic-recommendations', {
         method: 'POST',
-        body: JSON.stringify({ content, title, truthAnalysis }),
+        body: JSON.stringify({ 
+          content, 
+          title, 
+          truthAnalysis,
+          componentResults 
+        }),
       });
       
       if (response.ok) {
@@ -161,10 +192,10 @@ export default function LazyStrategicRecommendations({ content, title, truthAnal
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 mx-auto"
             >
               <Zap className="h-4 w-4" />
-              Analyze Analysis for Strategic Recommendations
+              Advanced Strategic Analysis
             </button>
             <p className="text-sm text-gray-500 mt-3">
-              Generate strategic recommendations by analyzing all components together
+              Generate comprehensive strategic recommendations by analyzing all insights, actions, and competitive intelligence together
             </p>
           </div>
         </CardContent>

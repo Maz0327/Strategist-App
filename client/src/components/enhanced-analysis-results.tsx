@@ -210,11 +210,11 @@ export function EnhancedAnalysisResults({
       return;
     }
 
-    setLoadingStates(prev => ({ ...prev, insights: true, competitive: true }));
+    setLoadingStates(prev => ({ ...prev, insights: true, competitive: true, actions: true }));
     
     try {
-      // Run both strategic insights and competitive intelligence in parallel
-      const [strategicResponse, competitiveResponse] = await Promise.all([
+      // Run strategic insights, competitive intelligence, and strategic actions in parallel
+      const [strategicResponse, competitiveResponse, actionsResponse] = await Promise.all([
         apiRequest(
           'POST',
           '/api/strategic-insights',
@@ -232,21 +232,33 @@ export function EnhancedAnalysisResults({
             title: originalContent?.title || '',
             truthAnalysis: currentAnalysis.truthAnalysis
           }
+        ),
+        apiRequest(
+          'POST',
+          '/api/strategic-actions',
+          {
+            content: originalContent?.content || '',
+            title: originalContent?.title || '',
+            truthAnalysis: currentAnalysis.truthAnalysis
+          }
         )
       ]);
       
       const strategicData = await strategicResponse.json();
       const competitiveData = await competitiveResponse.json();
+      const actionsData = await actionsResponse.json();
       
       console.log('Strategic Data:', strategicData);
       console.log('Competitive Data:', competitiveData);
+      console.log('Actions Data:', actionsData);
       
       setInsightsResults(strategicData.insights || []);
       setCompetitiveResults(competitiveData.insights || []);
+      setActionsResults(actionsData.actions || []);
       
       toast({
         title: "Success",
-        description: "All strategic insights and competitive intelligence completed",
+        description: "All strategic insights, competitive intelligence, and strategic actions completed",
       });
     } catch (error: any) {
       console.error('All insights failed:', error);
@@ -256,7 +268,7 @@ export function EnhancedAnalysisResults({
         variant: "destructive"
       });
     } finally {
-      setLoadingStates(prev => ({ ...prev, insights: false, competitive: false }));
+      setLoadingStates(prev => ({ ...prev, insights: false, competitive: false, actions: false }));
     }
   };
 
@@ -538,7 +550,7 @@ export function EnhancedAnalysisResults({
       {/* Detailed Analysis Tabs */}
       <Tabs defaultValue="truth" className="w-full">
         <div className="overflow-x-auto">
-          <TabsList className={`${isMobile ? 'flex w-max' : 'grid w-full grid-cols-5'}`}>
+          <TabsList className={`${isMobile ? 'flex w-max' : 'grid w-full grid-cols-4'}`}>
             <TabsTrigger value="truth" className="text-xs sm:text-sm whitespace-nowrap">
               <span className="hidden sm:inline">Truth Analysis</span>
               <span className="sm:hidden">Truth</span>
@@ -550,10 +562,6 @@ export function EnhancedAnalysisResults({
             <TabsTrigger value="insights" className="text-xs sm:text-sm whitespace-nowrap">
               <span className="hidden sm:inline">Insights</span>
               <span className="sm:hidden">Insights</span>
-            </TabsTrigger>
-            <TabsTrigger value="actions" className="text-xs sm:text-sm whitespace-nowrap">
-              <span className="hidden sm:inline">Actions</span>
-              <span className="sm:hidden">Actions</span>
             </TabsTrigger>
             <TabsTrigger value="strategic-recommendations" className="text-xs sm:text-sm whitespace-nowrap">
               <span className="hidden sm:inline">Strategic Recommendations</span>
@@ -851,29 +859,51 @@ export function EnhancedAnalysisResults({
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Lightbulb className="h-5 w-5" />
-                Advanced Strategic Analysis
+                <Target className="h-5 w-5" />
+                Strategic Actions
               </CardTitle>
               <p className="text-sm text-gray-600">
-                Generate additional insights: Enhanced Strategic Insights, Competitive Intelligence, and Analysis
+                What specific actions brands should take based on these insights
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {data.strategicActions?.map((action, index) => (
+                  <div key={index} className="flex items-start gap-3">
+                    <CheckCircle className="h-4 w-4 text-green-600 mt-0.5" />
+                    <p className="text-sm text-gray-700">{action}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lightbulb className="h-5 w-5" />
+                Build Strategic Insights
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                Generate enhanced insights: Strategic Insights, Competitive Intelligence, and Strategic Actions
               </p>
             </CardHeader>
             <CardContent>
               <div className="flex justify-center mb-4">
                 <Button 
                   onClick={handleBuildAllInsights}
-                  disabled={loadingStates.insights || loadingStates.competitive || !currentAnalysis.truthAnalysis}
+                  disabled={loadingStates.insights || loadingStates.competitive || loadingStates.actions || !currentAnalysis.truthAnalysis}
                   className="flex items-center gap-2"
                 >
-                  {(loadingStates.insights || loadingStates.competitive) ? (
+                  {(loadingStates.insights || loadingStates.competitive || loadingStates.actions) ? (
                     <>
                       <LoadingSpinner size="sm" />
-                      Building Advanced Insights...
+                      Building Strategic Insights...
                     </>
                   ) : (
                     <>
                       <Lightbulb className="h-4 w-4" />
-                      Build Advanced Strategic Insights
+                      Build Strategic Insights
                     </>
                   )}
                 </Button>
@@ -942,86 +972,51 @@ export function EnhancedAnalysisResults({
                   </div>
                 </div>
               )}
+
+              {/* Advanced Strategic Actions Section */}
+              {actionsResults.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    <Target className="h-5 w-5" />
+                    Advanced Strategic Actions
+                  </h3>
+                  <div className="space-y-3">
+                    {actionsResults.map((action, index) => (
+                      <div key={index} className="p-3 bg-green-50 rounded border border-green-200">
+                        <h4 className="font-medium text-green-900 mb-1">
+                          {action.action || action.title || `Advanced Strategic Action ${index + 1}`}
+                        </h4>
+                        <p className="text-sm text-gray-700 mb-2">
+                          {action.description || action.action || 'No description available'}
+                        </p>
+                        {action.category && (
+                          <div className="text-xs text-gray-600">
+                            <strong>Category:</strong> {action.category} | Effort: {action.effort}
+                          </div>
+                        )}
+                        {action.priority && (
+                          <div className="text-xs text-green-700 bg-green-100 p-2 rounded mt-2">
+                            <strong>Priority:</strong> {action.priority} | Impact: {action.impact}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               
-              {insightsResults.length === 0 && competitiveResults.length === 0 && !loadingStates.insights && !loadingStates.competitive && (
+              {insightsResults.length === 0 && competitiveResults.length === 0 && actionsResults.length === 0 && !loadingStates.insights && !loadingStates.competitive && !loadingStates.actions && (
                 <div className="text-center py-8 text-gray-500">
                   <Lightbulb className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                  <p>No advanced strategic insights yet</p>
-                  <p className="text-sm">Click "Build Advanced Strategic Insights" to generate comprehensive insights</p>
+                  <p>No strategic insights yet</p>
+                  <p className="text-sm">Click "Build Strategic Insights" to generate insights, competitive intelligence, and strategic actions</p>
                 </div>
               )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="actions" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5" />
-                Strategic Actions
-              </CardTitle>
-              <p className="text-sm text-gray-600">
-                Generate exactly 5 strategic actions from truth analysis
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-center mb-4">
-                <Button 
-                  onClick={handleBuildActions}
-                  disabled={loadingStates.actions || !currentAnalysis.truthAnalysis}
-                  className="flex items-center gap-2"
-                >
-                  {loadingStates.actions ? (
-                    <>
-                      <LoadingSpinner size="sm" />
-                      Building Actions...
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="h-4 w-4" />
-                      Build Strategic Actions
-                    </>
-                  )}
-                </Button>
-              </div>
-              
-              {actionsResults.length > 0 && (
-                <div className="space-y-3">
-                  {actionsResults.map((action, index) => (
-                    <div key={index} className="p-3 bg-green-50 rounded border border-green-200">
-                      <h4 className="font-medium text-green-900 mb-1">
-                        {action.action || action.title || `Strategic Action ${index + 1}`}
-                      </h4>
-                      <p className="text-sm text-gray-700 mb-2">
-                        {action.description || action.action || 'No description available'}
-                      </p>
-                      {action.category && (
-                        <div className="text-xs text-gray-600">
-                          <strong>Category:</strong> {action.category} | Effort: {action.effort}
-                        </div>
-                      )}
-                      {action.priority && (
-                        <div className="text-xs text-green-700 bg-green-100 p-2 rounded mt-2">
-                          <strong>Priority:</strong> {action.priority} | Impact: {action.impact}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              {actionsResults.length === 0 && !loadingStates.actions && (
-                <div className="text-center py-8 text-gray-500">
-                  <Zap className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                  <p>No strategic actions yet</p>
-                  <p className="text-sm">Click "Build Strategic Actions" to generate 5 actions</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
+
         <TabsContent value="strategic-recommendations" className="space-y-4">
           <ErrorBoundary>
             <Suspense fallback={<LoadingSpinner />}>
@@ -1029,6 +1024,10 @@ export function EnhancedAnalysisResults({
                 content={data.content}
                 title={data.title}
                 truthAnalysis={currentAnalysis.truthAnalysis}
+                cohorts={cohortResults}
+                strategicInsights={insightsResults}
+                strategicActions={actionsResults}
+                competitiveInsights={competitiveResults}
               />
             </Suspense>
           </ErrorBoundary>

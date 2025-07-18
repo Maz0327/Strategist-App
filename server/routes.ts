@@ -399,32 +399,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Strategic Recommendations endpoint - analyzes ALL components
   app.post("/api/strategic-recommendations", requireAuth, async (req, res) => {
     try {
-      const { content, title, truthAnalysis } = req.body;
+      const { content, title, truthAnalysis, componentResults } = req.body;
       
       if (!content || !title || !truthAnalysis) {
         return res.status(400).json({ error: "Content, title, and truth analysis are required" });
       }
 
-      debugLogger.info("Strategic recommendations request", { contentLength: content.length, title });
+      debugLogger.info("Strategic recommendations request", { 
+        contentLength: content.length, 
+        title,
+        hasExistingComponents: !!componentResults 
+      });
 
-      // First, generate all component results
-      const [cohorts, strategicInsights, strategicActions, competitiveInsights] = await Promise.all([
-        cohortBuilderService.generateCohorts(content, title, truthAnalysis),
-        strategicInsightsService.generateInsights(content, title, truthAnalysis),
-        strategicActionsService.generateActions(content, title, truthAnalysis),
-        competitiveIntelligenceService.generateInsights(content, title, truthAnalysis)
-      ]);
+      let finalComponentResults;
 
-      // Then generate strategic recommendations from all components
-      const componentResults = {
-        truthAnalysis,
-        cohorts,
-        strategicInsights,
-        strategicActions,
-        competitiveInsights
-      };
+      // Check if we have existing component results (Advanced Strategic Analysis)
+      if (componentResults && 
+          componentResults.cohorts && componentResults.cohorts.length > 0 &&
+          componentResults.strategicInsights && componentResults.strategicInsights.length > 0 &&
+          componentResults.strategicActions && componentResults.strategicActions.length > 0 &&
+          componentResults.competitiveInsights && componentResults.competitiveInsights.length > 0) {
+        
+        debugLogger.info("Using existing component results for advanced strategic analysis");
+        finalComponentResults = componentResults;
+      } else {
+        // Generate all component results from scratch
+        debugLogger.info("Generating new component results");
+        const [cohorts, strategicInsights, strategicActions, competitiveInsights] = await Promise.all([
+          cohortBuilderService.generateCohorts(content, title, truthAnalysis),
+          strategicInsightsService.generateInsights(content, title, truthAnalysis),
+          strategicActionsService.generateActions(content, title, truthAnalysis),
+          competitiveIntelligenceService.generateInsights(content, title, truthAnalysis)
+        ]);
 
-      const recommendations = await strategicRecommendationsService.generateRecommendations(componentResults);
+        finalComponentResults = {
+          truthAnalysis,
+          cohorts,
+          strategicInsights,
+          strategicActions,
+          competitiveInsights
+        };
+      }
+
+      const recommendations = await strategicRecommendationsService.generateRecommendations(finalComponentResults);
       
       res.json({ recommendations });
     } catch (error: any) {
