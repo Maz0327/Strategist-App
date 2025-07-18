@@ -22,6 +22,7 @@ export function NewSignalCapture({ activeSubTab, onNavigateToExplore, onNavigate
   const [originalContent, setOriginalContent] = useState<any>(null);
   const [analysisCache, setAnalysisCache] = useState<Map<string, any>>(new Map());
   const [currentLengthPreference, setCurrentLengthPreference] = useState<'short' | 'medium' | 'long' | 'bulletpoints'>('medium');
+  const [analysisProgress, setAnalysisProgress] = useState<{stage: string, progress: number}>({ stage: '', progress: 0 });
   
   const handleAnalysisStart = () => {
     setIsAnalyzing(true);
@@ -182,6 +183,7 @@ export function NewSignalCapture({ activeSubTab, onNavigateToExplore, onNavigate
                 <ContentInput 
                   onAnalysisStart={handleAnalysisStart} 
                   onAnalysisComplete={handleAnalysisComplete}
+                  onAnalysisProgress={setAnalysisProgress}
                 />
               </div>
             </CardContent>
@@ -218,7 +220,7 @@ export function NewSignalCapture({ activeSubTab, onNavigateToExplore, onNavigate
           </CardHeader>
           <CardContent>
             {isAnalyzing ? (
-              <AnalysisSkeleton />
+              <AnalysisSkeleton analysisProgress={analysisProgress} />
             ) : analysisResult ? (
               <EnhancedAnalysisResults 
                 analysis={analysisResult} 

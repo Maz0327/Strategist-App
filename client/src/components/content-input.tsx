@@ -19,9 +19,10 @@ import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 interface ContentInputProps {
   onAnalysisComplete?: (analysis: any, content?: any) => void;
   onAnalysisStart?: () => void;
+  onAnalysisProgress?: (progress: { stage: string; progress: number }) => void;
 }
 
-export function ContentInput({ onAnalysisComplete, onAnalysisStart }: ContentInputProps) {
+export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisProgress }: ContentInputProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [charCount, setCharCount] = useState(0);
   const [activeTab, setActiveTab] = useState("text");
@@ -110,7 +111,9 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart }: ContentInp
               const eventData = JSON.parse(line.slice(6));
               
               if (eventData.type === 'progress') {
-                setAnalysisProgress({ stage: eventData.stage, progress: eventData.progress });
+                const progressData = { stage: eventData.stage, progress: eventData.progress };
+                setAnalysisProgress(progressData);
+                onAnalysisProgress?.(progressData);
               } else if (eventData.type === 'complete') {
                 console.log('Analysis complete event received:', eventData);
                 console.log('Complete event data:', eventData.data);
@@ -138,6 +141,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart }: ContentInp
     } finally {
       setIsLoading(false);
       setAnalysisProgress({ stage: '', progress: 0 });
+      onAnalysisProgress?.({ stage: '', progress: 0 });
     }
   };
 
@@ -405,14 +409,46 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart }: ContentInp
                     Try Example
                   </Button>
                 </div>
-                <Textarea
-                  id="manual-text"
-                  rows={8}
-                  placeholder="Paste your content here for AI analysis..."
-                  {...form.register("content")}
-                  onChange={handleTextareaChange}
-                  disabled={isLoading}
-                />
+                <div className="relative">
+                  <Textarea
+                    id="manual-text"
+                    rows={8}
+                    placeholder="Paste your content here for AI analysis..."
+                    {...form.register("content")}
+                    onChange={handleTextareaChange}
+                    disabled={isLoading}
+                    className={`transition-all duration-500 ${
+                      isLoading 
+                        ? 'bg-gradient-to-r from-blue-50 via-purple-50 to-blue-50 border-blue-200 analysis-glow active' 
+                        : 'bg-white hover:border-blue-300 focus:border-blue-500'
+                    }`}
+                  />
+                  {/* Elegant analysis overlay */}
+                  {isLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-r from-blue-50/95 to-purple-50/95 backdrop-blur-sm rounded-md animate-in fade-in-50 duration-500">
+                      <div className="text-center space-y-3 floating-animation">
+                        <div className="flex items-center justify-center gap-2">
+                          <Brain className="h-6 w-6 text-blue-600 animate-pulse" />
+                          <span className="text-sm font-medium text-blue-700">
+                            {analysisProgress.stage || 'Analyzing content...'}
+                          </span>
+                        </div>
+                        {analysisProgress.progress > 0 && (
+                          <div className="w-40 bg-blue-200/50 rounded-full h-2">
+                            <div 
+                              className="progress-shimmer h-2 rounded-full transition-all duration-500 ease-out"
+                              style={{ width: `${analysisProgress.progress}%` }}
+                            />
+                          </div>
+                        )}
+                        <div className="text-xs text-blue-600/80 flex items-center justify-center gap-1">
+                          <div className="animate-pulse">●</div>
+                          <span>Processing insights...</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
               
               {/* User Notes Section */}
@@ -431,18 +467,31 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart }: ContentInp
                 </p>
               </div>
               
-              {/* Progress indicator for streaming analysis */}
+              {/* Elegant progress indicator for streaming analysis */}
               {isLoading && useStreaming && analysisProgress.stage && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">{analysisProgress.stage}</span>
-                    <span className="text-gray-500">{analysisProgress.progress}%</span>
+                <div className="space-y-3 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200/50 animate-in fade-in-50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="animate-pulse text-blue-600">
+                        <Brain className="h-4 w-4" />
+                      </div>
+                      <span className="text-sm font-medium text-blue-700">
+                        {analysisProgress.stage}
+                      </span>
+                    </div>
+                    <span className="text-sm text-blue-600 font-medium">
+                      {Math.round(analysisProgress.progress)}%
+                    </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-blue-200/50 rounded-full h-2">
                     <div 
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                      className="progress-shimmer h-2 rounded-full transition-all duration-500 ease-out shadow-sm"
                       style={{ width: `${analysisProgress.progress}%` }}
-                    ></div>
+                    />
+                  </div>
+                  <div className="text-xs text-blue-600/80 flex items-center gap-1">
+                    <div className="animate-pulse">●</div>
+                    <span>Processing strategic insights...</span>
                   </div>
                 </div>
               )}
