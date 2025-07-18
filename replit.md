@@ -423,6 +423,26 @@ Successfully restructured the main navigation according to user specifications:
 - **Length Adjustment Performance**: Optimized from 14-26 seconds to instant (<1 second) using fast text processing instead of OpenAI calls
 - **Cache Fix**: Fixed backend cache validation to properly return non-empty results instead of null/empty cached data
 
+### Critical System Fixes - July 18, 2025
+
+#### ✅ **React Child Rendering Error Fix - RESOLVED**:
+- **Issue**: System crashes due to React child rendering errors where objects were being rendered directly
+- **Root Cause**: Strategic Insights, Competitive Intelligence, and Strategic Actions sections tried to render objects instead of their properties
+- **Fix**: Enhanced all three sections to properly handle both string and object responses with safe property access
+- **Result**: No more "Objects are not valid as a React child" errors, system stable
+
+#### ✅ **Strategic Insights Flow Clarification - RESOLVED**:
+- **Issue**: "Build Strategic Insights" button was doing both regular AND advanced insights causing confusion
+- **Clarification**: Button correctly generates upper sections only (Strategic Insights, Competitive Intelligence, Strategic Actions)
+- **Fix**: Removed duplicate "Advanced" sections that were causing architectural confusion
+- **Result**: Clear separation - upper sections for initial insights, Strategic Recommendations tab for advanced analysis
+
+#### ✅ **Cohorts Functionality - OPERATIONAL**:
+- **Status**: Cohorts functionality is working correctly
+- **API**: `/api/cohorts` endpoint operational with proper authentication
+- **Display**: Cohort results display properly with safe object property handling
+- **Performance**: Cohort building integrated with existing cache and error handling systems
+
 ### Insights Tab Restructure & Strategic Workflow - July 18, 2025
 
 #### ✅ **Complete Strategic Workflow Restructure - IMPLEMENTED**:

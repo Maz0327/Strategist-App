@@ -848,7 +848,18 @@ export function EnhancedAnalysisResults({
                       <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
                         <span className="text-xs font-bold text-blue-600">{index + 1}</span>
                       </div>
-                      <p className="text-sm text-gray-700">{insight}</p>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-700 font-medium mb-1">
+                          {typeof insight === 'string' ? insight : insight.insight || insight.title || `Strategic Insight ${index + 1}`}
+                        </p>
+                        {typeof insight === 'object' && insight.category && (
+                          <div className="text-xs text-gray-600">
+                            <strong>Category:</strong> {insight.category} 
+                            {insight.priority && ` | Priority: ${insight.priority}`}
+                            {insight.impact && ` | Impact: ${insight.impact}`}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -882,7 +893,19 @@ export function EnhancedAnalysisResults({
                   {actionsResults.map((action, index) => (
                     <div key={index} className="flex items-start gap-3">
                       <CheckCircle className="h-4 w-4 text-green-600 mt-0.5" />
-                      <p className="text-sm text-gray-700">{action}</p>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-700 font-medium mb-1">
+                          {typeof action === 'string' ? action : action.action || action.title || `Strategic Action ${index + 1}`}
+                        </p>
+                        {typeof action === 'object' && action.category && (
+                          <div className="text-xs text-gray-600">
+                            <strong>Category:</strong> {action.category}
+                            {action.priority && ` | Priority: ${action.priority}`}
+                            {action.effort && ` | Effort: ${action.effort}`}
+                            {action.impact && ` | Impact: ${action.impact}`}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -913,7 +936,18 @@ export function EnhancedAnalysisResults({
                   {competitiveResults.map((insight, index) => (
                     <div key={index} className="flex items-start gap-3">
                       <AlertCircle className="h-4 w-4 text-orange-600 mt-0.5" />
-                      <p className="text-sm text-gray-700">{insight}</p>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-700 font-medium mb-1">
+                          {typeof insight === 'string' ? insight : insight.insight || insight.title || `Competitive Insight ${index + 1}`}
+                        </p>
+                        {typeof insight === 'object' && insight.category && (
+                          <div className="text-xs text-gray-600">
+                            <strong>Category:</strong> {insight.category}
+                            {insight.confidence && ` | Confidence: ${insight.confidence}`}
+                            {insight.actionable && ` | Actionable: ${insight.actionable}`}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -988,117 +1022,14 @@ export function EnhancedAnalysisResults({
                   )}
                 </Button>
               </div>
-              
-              {/* Advanced Strategic Insights Section */}
-              {insightsResults.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                    <Lightbulb className="h-5 w-5" />
-                    Advanced Strategic Insights
-                  </h3>
-                  <div className="space-y-3">
-                    {insightsResults.map((insight, index) => (
-                      <div key={index} className="p-3 bg-yellow-50 rounded border border-yellow-200">
-                        <h4 className="font-medium text-yellow-900 mb-1">
-                          {insight.insight || insight.title || `Advanced Strategic Insight ${index + 1}`}
-                        </h4>
-                        <p className="text-sm text-gray-700 mb-2">
-                          {insight.description || insight.insight || 'No description available'}
-                        </p>
-                        {insight.category && (
-                          <div className="text-xs text-gray-600">
-                            <strong>Category:</strong> {insight.category}
-                          </div>
-                        )}
-                        {insight.priority && (
-                          <div className="text-xs text-yellow-700 bg-yellow-100 p-2 rounded mt-2">
-                            <strong>Priority:</strong> {insight.priority} | Impact: {insight.impact}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
-              {/* Advanced Competitive Intelligence Section */}
-              {competitiveResults.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                    <Target className="h-5 w-5" />
-                    Advanced Competitive Intelligence
-                  </h3>
-                  <div className="space-y-3">
-                    {competitiveResults.map((competitive, index) => (
-                      <div key={index} className="p-3 bg-blue-50 rounded border border-blue-200">
-                        <h4 className="font-medium text-blue-900 mb-1">
-                          {competitive.insight || competitive.title || `Advanced Competitive Insight ${index + 1}`}
-                        </h4>
-                        <p className="text-sm text-gray-700 mb-2">
-                          {competitive.description || competitive.insight || 'No description available'}
-                        </p>
-                        {competitive.category && (
-                          <div className="text-xs text-gray-600">
-                            <strong>Category:</strong> {competitive.category}
-                          </div>
-                        )}
-                        {competitive.confidence && (
-                          <div className="text-xs text-blue-700 bg-blue-100 p-2 rounded mt-2">
-                            <strong>Confidence:</strong> {competitive.confidence} | Actionable: {competitive.actionable ? 'Yes' : 'No'}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
-              {/* Advanced Strategic Actions Section */}
-              {actionsResults.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                    <Target className="h-5 w-5" />
-                    Advanced Strategic Actions
-                  </h3>
-                  <div className="space-y-3">
-                    {actionsResults.map((action, index) => (
-                      <div key={index} className="p-3 bg-green-50 rounded border border-green-200">
-                        <h4 className="font-medium text-green-900 mb-1">
-                          {action.action || action.title || `Advanced Strategic Action ${index + 1}`}
-                        </h4>
-                        <p className="text-sm text-gray-700 mb-2">
-                          {action.description || action.action || 'No description available'}
-                        </p>
-                        {action.category && (
-                          <div className="text-xs text-gray-600">
-                            <strong>Category:</strong> {action.category} | Effort: {action.effort}
-                          </div>
-                        )}
-                        {action.priority && (
-                          <div className="text-xs text-green-700 bg-green-100 p-2 rounded mt-2">
-                            <strong>Priority:</strong> {action.priority} | Impact: {action.impact}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {(loadingStates.insights || loadingStates.competitive || loadingStates.actions) && (
-                <AnimatedLoadingState 
-                  title="Building Advanced Strategic Analysis"
-                  subtitle="Generating comprehensive insights, competitive intelligence, and strategic actions..."
-                />
-              )}
-              
-              {insightsResults.length === 0 && competitiveResults.length === 0 && actionsResults.length === 0 && !loadingStates.insights && !loadingStates.competitive && !loadingStates.actions && (
-                <div className="text-center py-8 text-gray-500">
-                  <Lightbulb className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                  <p>No strategic insights yet</p>
-                  <p className="text-sm">Click "Build Strategic Insights" to generate insights, competitive intelligence, and strategic actions</p>
-                </div>
-              )}
+
+
+
+              <p className="text-sm text-gray-600 text-center mt-4">
+                This button generates insights for the upper sections only. Advanced Strategic Analysis is in the separate Strategic Recommendations tab.
+              </p>
             </CardContent>
           </Card>
         </TabsContent>
