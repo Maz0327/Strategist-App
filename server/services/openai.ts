@@ -59,54 +59,62 @@ export class OpenAIService {
     const lengthInstruction = lengthInstructions[lengthPreference] || lengthInstructions['medium'];
 
     if (isDeepAnalysis) {
-      return `You're an expert Post Creative Strategist analyzing content for strategic intelligence. Think like a seasoned strategist who spots cultural moments and attention arbitrage opportunities. ${lengthInstruction}. Return valid JSON:
+      return `Expert content strategist. Provide comprehensive strategic analysis with deep insights. ${lengthInstruction}. 
+
+CRITICAL: Write your responses in a conversational, human tone - like you're discussing insights with your strategy team. Avoid robotic language. Be professional but natural and engaging.
+
+Return valid JSON:
 {
-  "summary": "Write a strategic summary that captures the core value and implications of this content. Think about what a strategist would want to know immediately.",
-  "sentiment": "positive|negative|neutral",
-  "tone": "professional|casual|urgent|analytical|conversational|authoritative", 
-  "keywords": ["strategic-keyword1", "strategic-keyword2", "strategic-keyword3", "strategic-keyword4", "strategic-keyword5"],
-  "confidence": "85%",
-  "truthAnalysis": {
-    "fact": "Start with the key facts - what's actually happening here? Focus on concrete, verifiable information that forms the foundation of your analysis.",
-    "observation": "What patterns do you notice? Look for connections, trends, and behavioral insights that might not be immediately obvious.",
-    "insight": "Here's where your strategic thinking shines - what does this really mean? What opportunities or risks does this present?",
-    "humanTruth": "Get to the heart of human motivation - why do people actually care about this? What psychological drivers are at play?",
-    "culturalMoment": "Is this tapping into something bigger culturally? Could this be an attention arbitrage opportunity or signal a cultural shift?",
-    "attentionValue": "high|medium|low",
-    "platform": "relevant platform with cross-platform considerations",
-    "cohortOpportunities": ["specific-audience-segment1", "specific-audience-segment2", "specific-audience-segment3"]
-  },
-  "cohortSuggestions": ["cohort1", "cohort2", "cohort3", "cohort4"],
-  "platformContext": "Analyze the platform dynamics and cross-platform potential with tactical recommendations",
-  "viralPotential": "high|medium|low",
-  "competitiveInsights": ["competitive-insight1", "competitive-insight2", "competitive-insight3"],
-  "strategicInsights": ["strategic-recommendation1", "strategic-recommendation2", "strategic-recommendation3"],
-  "strategicActions": ["actionable-next-step1", "actionable-next-step2", "actionable-next-step3", "actionable-next-step4"]
-}`;
-    } else {
-      return `You're a strategic content analyst with an eye for cultural trends and attention opportunities. Analyze this content like you're briefing a client on what matters. ${lengthInstruction}. Return valid JSON:
-{
-  "summary": "Give me the strategic story - what's happening here and why it matters from a business perspective",
+  "summary": "Multi-sentence strategic summary providing comprehensive analysis of the content's strategic value and implications. Each response field must follow the exact sentence count requirements specified.",
   "sentiment": "positive|negative|neutral",
   "tone": "professional|casual|urgent|analytical|conversational|authoritative",
-  "keywords": ["strategic-keyword1", "strategic-keyword2"],
+  "keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
   "confidence": "85%",
   "truthAnalysis": {
-    "fact": "What are the key facts? Give me the concrete information that forms the foundation of this analysis.",
-    "observation": "What patterns or connections do you see? Look for insights that might not be immediately obvious.",
-    "insight": "What's the strategic takeaway? What opportunities or implications should we be thinking about?",
-    "humanTruth": "Why do people actually care about this? What human motivations are driving engagement?",
-    "culturalMoment": "Is this part of a bigger cultural trend? Could this be an attention arbitrage opportunity?",
+    "fact": "Multiple sentences providing comprehensive factual analysis with context and implications. Must contain the exact number of sentences specified in the length preference.",
+    "observation": "Multiple sentences detailing patterns, connections, and cross-references. Must contain the exact number of sentences specified in the length preference.",
+    "insight": "Multiple sentences providing deep strategic insights with actionable implications. Must contain the exact number of sentences specified in the length preference.",
+    "humanTruth": "Multiple sentences explaining complex human motivations and psychological drivers. Must contain the exact number of sentences specified in the length preference.",
+    "culturalMoment": "Multiple sentences providing rich cultural context with historical and future implications. Must contain the exact number of sentences specified in the length preference.",
+    "attentionValue": "high|medium|low",
+    "platform": "relevant platform with cross-platform considerations",
+    "cohortOpportunities": ["detailed audience1", "detailed audience2", "detailed audience3"]
+  },
+  "cohortSuggestions": ["cohort1", "cohort2", "cohort3", "cohort4"],
+  "platformContext": "Multi-sentence platform analysis with specific tactical recommendations following length requirements",
+  "viralPotential": "high|medium|low",
+  "competitiveInsights": ["detailed insight1", "detailed insight2", "detailed insight3"],
+  "strategicInsights": ["comprehensive recommendation1", "comprehensive recommendation2", "comprehensive recommendation3"],
+  "strategicActions": ["detailed action1", "detailed action2", "detailed action3", "detailed action4"]
+}`;
+    } else {
+      return `Expert content strategist. Analyze content for strategic insights. ${lengthInstruction}. 
+
+CRITICAL: Write your responses in a conversational, human tone - like you're discussing insights with your strategy team. Avoid robotic language. Be professional but natural and engaging.
+
+Return valid JSON:
+{
+  "summary": "Multi-sentence strategic summary following the exact sentence count requirements specified in the length preference",
+  "sentiment": "positive|negative|neutral",
+  "tone": "professional|casual|urgent|analytical|conversational|authoritative",
+  "keywords": ["keyword1", "keyword2"],
+  "confidence": "85%",
+  "truthAnalysis": {
+    "fact": "Multiple sentences providing key factual analysis. Must contain the exact number of sentences specified in the length preference.",
+    "observation": "Multiple sentences detailing key patterns and connections. Must contain the exact number of sentences specified in the length preference.",
+    "insight": "Multiple sentences providing strategic insights. Must contain the exact number of sentences specified in the length preference.",
+    "humanTruth": "Multiple sentences explaining human motivations. Must contain the exact number of sentences specified in the length preference.",
+    "culturalMoment": "Multiple sentences providing cultural context. Must contain the exact number of sentences specified in the length preference.",
     "attentionValue": "high|medium|low",
     "platform": "relevant platform",
-    "cohortOpportunities": ["audience-segment1", "audience-segment2"]
+    "cohortOpportunities": ["audience1", "audience2"]
   },
   "cohortSuggestions": ["cohort1", "cohort2"],
-  "platformContext": "Platform analysis with tactical recommendations",
+  "platformContext": "Multi-sentence platform context following length requirements",
   "viralPotential": "high|medium|low",
-  "competitiveInsights": ["competitive-insight1", "competitive-insight2"],
-  "strategicInsights": ["strategic-recommendation1", "strategic-recommendation2"],
-  "strategicActions": ["actionable-step1", "actionable-step2"]
+  "competitiveInsights": ["insight1", "insight2"],
+  "strategicInsights": ["recommendation1", "recommendation2"],
+  "strategicActions": ["action1", "action2"]
 }`;
     }
   }
@@ -175,20 +183,20 @@ export class OpenAIService {
     const systemPrompt = this.getSystemPrompt('medium', isDeepAnalysis);
     
     const userPrompt = isDeepAnalysis ? 
-      `I need a strategic analysis of this content. Think like you're briefing your strategy team on what this means for business and cultural landscape:
+      `Provide comprehensive strategic analysis of this content with MEDIUM length responses (3-5 sentences per field):
 
 Title: ${title}
 Content: ${content.substring(0, 4000)}${content.length > 4000 ? '...' : ''}
 
-Give me medium-length analysis (3-5 sentences per field). I'm looking for strategic intelligence we can act on - cultural moments, attention arbitrage opportunities, human motivations, and competitive implications.
+MANDATORY: Every field in truthAnalysis must contain exactly 3-5 sentences. This is CRITICAL for proper analysis.
 
-Return JSON only.` :
-      `Analyze this content from a strategic perspective. What would your strategy team want to know about this?
+Focus on deep strategic insights, complex human motivations, cultural context, competitive landscape, and actionable recommendations. Return JSON only.` :
+      `Analyze this content with MEDIUM length responses (3-5 sentences per field):
 
 Title: ${title}
 Content: ${content.substring(0, 1500)}${content.length > 1500 ? '...' : ''}
 
-Give me medium-length analysis (3-5 sentences per field). Focus on strategic insights and cultural intelligence.
+MANDATORY: Every field in truthAnalysis must contain exactly 3-5 sentences. This is CRITICAL for proper analysis.
 
 Return JSON only.`;
 
@@ -283,24 +291,24 @@ Return JSON only.`;
     // Use OpenAI for short/long analysis (for quality depth)
     debugLogger.info('OpenAI adjustment to ' + lengthPreference);
     
-    const adjustmentPrompt = `I need you to adjust this strategic analysis to ${lengthPreference} format while keeping the strategic depth:
+    const adjustmentPrompt = `Adjust the following analysis to ${lengthPreference} format. Keep the same strategic insights and JSON structure.
 
-HERE'S THE CURRENT ANALYSIS:
+CURRENT ANALYSIS (Medium length):
 ${JSON.stringify(mediumAnalysis.truthAnalysis, null, 2)}
 
-WHAT I NEED:
-- ${lengthPreference === 'short' ? 'Make it concise - 2-3 sentences per field but keep the key insights' : 'Give me more depth - 5-7 sentences per field with comprehensive detail'}
-- Keep all the strategic intelligence and cultural insights
-- Maintain the same professional strategic quality
-- Focus on actionable intelligence and attention opportunities
-- Only adjust the truthAnalysis fields: fact, observation, insight, humanTruth, culturalMoment
+REQUIREMENTS:
+- ${lengthPreference === 'short' ? 'Exactly 2-3 sentences per field' : 'Exactly 5-7 sentences per field'}
+- Keep the same strategic insights and conclusions
+- Maintain professional strategic analysis quality
+- Focus on actionable intelligence and cultural context
+- Only adjust truthAnalysis fields: fact, observation, insight, humanTruth, culturalMoment
 
-Return just the truthAnalysis JSON object with the adjusted fields.`;
+Return ONLY the truthAnalysis JSON object with adjusted fields.`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "You're a strategic content analyst helping adjust analysis length while keeping the strategic intelligence intact. Think like you're refining a brief for your strategy team." },
+        { role: "system", content: "You are adjusting strategic analysis length while preserving quality and insights. Write in a conversational, human tone - like discussing insights with your strategy team. Return only the truthAnalysis JSON object." },
         { role: "user", content: adjustmentPrompt }
       ],
       response_format: { type: "json_object" },
