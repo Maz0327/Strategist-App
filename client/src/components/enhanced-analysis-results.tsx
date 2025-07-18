@@ -343,10 +343,10 @@ export function EnhancedAnalysisResults({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="short">Short (2-3 sentences)</SelectItem>
-                      <SelectItem value="medium">Medium (3-4 sentences)</SelectItem>
-                      <SelectItem value="long">Long (4-6 sentences)</SelectItem>
-                      <SelectItem value="bulletpoints">Bulletpoints (2-3 points)</SelectItem>
+                      <SelectItem value="short">Short (2 sentences)</SelectItem>
+                      <SelectItem value="medium">Medium (3-5 sentences)</SelectItem>
+                      <SelectItem value="long">Long (5-7 sentences)</SelectItem>
+                      <SelectItem value="bulletpoints">Bulletpoints (5-12 points)</SelectItem>
                     </SelectContent>
                   </Select>
                   {isReanalyzing && (

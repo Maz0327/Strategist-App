@@ -131,55 +131,55 @@ export class OpenAIService {
   }
 
   private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
-    // Step 1: Always create or get short analysis first
-    const shortCacheKey = createCacheKey(content + title + 'short' + analysisMode + 'v3', 'analysis');
-    let shortAnalysis = await analysisCache.get(shortCacheKey);
+    // Step 1: Always create or get medium analysis first (baseline)
+    const mediumCacheKey = createCacheKey(content + title + 'medium' + analysisMode + 'v4', 'analysis');
+    let mediumAnalysis = await analysisCache.get(mediumCacheKey);
     
-    if (!shortAnalysis) {
-      debugLogger.info('Creating short analysis first');
-      shortAnalysis = await this.createShortAnalysis(content, title, analysisMode);
-      await analysisCache.set(shortCacheKey, shortAnalysis, 300);
+    if (!mediumAnalysis) {
+      debugLogger.info('Creating medium analysis baseline');
+      mediumAnalysis = await this.createMediumAnalysis(content, title, analysisMode);
+      await analysisCache.set(mediumCacheKey, mediumAnalysis, 300);
     }
     
-    // Step 2: If user wants short, return it immediately
-    if (lengthPreference === 'short') {
-      debugLogger.info('Returning short analysis');
-      return shortAnalysis;
+    // Step 2: If user wants medium, return it immediately
+    if (lengthPreference === 'medium') {
+      debugLogger.info('Returning medium analysis');
+      return mediumAnalysis;
     }
     
-    // Step 3: For other lengths, expand the short analysis
-    const expandedCacheKey = createCacheKey(content + title + lengthPreference + analysisMode + 'v3', 'analysis');
-    let expandedAnalysis = await analysisCache.get(expandedCacheKey);
+    // Step 3: For other lengths, adjust from medium baseline
+    const adjustedCacheKey = createCacheKey(content + title + lengthPreference + analysisMode + 'v4', 'analysis');
+    let adjustedAnalysis = await analysisCache.get(adjustedCacheKey);
     
-    if (!expandedAnalysis) {
-      debugLogger.info('Expanding analysis to ' + lengthPreference);
-      expandedAnalysis = await this.expandAnalysis(shortAnalysis, lengthPreference, analysisMode);
-      await analysisCache.set(expandedCacheKey, expandedAnalysis, 300);
+    if (!adjustedAnalysis) {
+      debugLogger.info('Adjusting analysis from medium to ' + lengthPreference);
+      adjustedAnalysis = await this.adjustAnalysis(mediumAnalysis, lengthPreference, analysisMode);
+      await analysisCache.set(adjustedCacheKey, adjustedAnalysis, 300);
     }
     
-    debugLogger.info('Returning expanded analysis');
-    return expandedAnalysis;
+    debugLogger.info('Returning adjusted analysis');
+    return adjustedAnalysis;
   }
 
-  private async createShortAnalysis(content: string, title: string, analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
+  private async createMediumAnalysis(content: string, title: string, analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     const isDeepAnalysis = analysisMode === 'deep';
-    const systemPrompt = this.getSystemPrompt('short', isDeepAnalysis);
+    const systemPrompt = this.getSystemPrompt('medium', isDeepAnalysis);
     
     const userPrompt = isDeepAnalysis ? 
-      `Provide comprehensive strategic analysis of this content with SHORT length responses (2-3 sentences per field):
+      `Provide comprehensive strategic analysis of this content with MEDIUM length responses (3-5 sentences per field):
 
 Title: ${title}
 Content: ${content.substring(0, 4000)}${content.length > 4000 ? '...' : ''}
 
-MANDATORY: Every field in truthAnalysis must contain exactly 2-3 sentences. This is CRITICAL for proper analysis.
+MANDATORY: Every field in truthAnalysis must contain exactly 3-5 sentences. This is CRITICAL for proper analysis.
 
 Focus on deep strategic insights, complex human motivations, cultural context, competitive landscape, and actionable recommendations. Return JSON only.` :
-      `Analyze this content with SHORT length responses (2-3 sentences per field):
+      `Analyze this content with MEDIUM length responses (3-5 sentences per field):
 
 Title: ${title}
 Content: ${content.substring(0, 1500)}${content.length > 1500 ? '...' : ''}
 
-MANDATORY: Every field in truthAnalysis must contain exactly 2-3 sentences. This is CRITICAL for proper analysis.
+MANDATORY: Every field in truthAnalysis must contain exactly 3-5 sentences. This is CRITICAL for proper analysis.
 
 Return JSON only.`;
 
@@ -191,7 +191,7 @@ Return JSON only.`;
       ],
       response_format: { type: "json_object" },
       temperature: 0.05,
-      max_tokens: isDeepAnalysis ? 2000 : 1200
+      max_tokens: isDeepAnalysis ? 2500 : 1500
     });
 
     const responseContent = response.choices[0]?.message?.content;
@@ -202,7 +202,7 @@ Return JSON only.`;
     let analysis;
     try {
       analysis = JSON.parse(responseContent);
-      debugLogger.info('Successfully parsed short analysis', { 
+      debugLogger.info('Successfully parsed medium analysis', { 
         hasSummary: !!analysis.summary,
         hasTruthAnalysis: !!analysis.truthAnalysis,
         hasKeywords: !!analysis.keywords,
@@ -242,75 +242,75 @@ Return JSON only.`;
     return result;
   }
 
-  private async expandAnalysis(shortAnalysis: EnhancedAnalysisResult, lengthPreference: 'medium' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
-    const expansionPrompt = `You are expanding an existing strategic analysis to ${lengthPreference} length format. 
+  private async adjustAnalysis(mediumAnalysis: EnhancedAnalysisResult, lengthPreference: 'short' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
+    const adjustmentPrompt = `You are adjusting an existing strategic analysis from MEDIUM format to ${lengthPreference} format. 
 
-EXISTING SHORT ANALYSIS:
-${JSON.stringify(shortAnalysis, null, 2)}
+EXISTING MEDIUM ANALYSIS:
+${JSON.stringify(mediumAnalysis, null, 2)}
 
-EXPANSION REQUIREMENTS:
-- ${lengthPreference === 'medium' ? 'Expand each truthAnalysis field to exactly 3-4 sentences' : lengthPreference === 'long' ? 'Expand each truthAnalysis field to exactly 4-6 sentences' : 'Convert each truthAnalysis field to exactly 2-3 bullet points'}
+ADJUSTMENT REQUIREMENTS:
+- ${lengthPreference === 'short' ? 'Condense each truthAnalysis field to exactly 2 sentences (no more, no less)' : lengthPreference === 'long' ? 'Expand each truthAnalysis field to exactly 5-7 sentences' : 'Convert each truthAnalysis field to exactly 5-12 bullet points'}
 - Keep the same core insights and strategic direction
-- Add more depth, context, and specific details
+- ${lengthPreference === 'short' ? 'Preserve the most critical insights while condensing' : lengthPreference === 'long' ? 'Add more depth, context, and specific details' : 'Structure information as clear, actionable bullet points'}
 - Maintain the same JSON structure exactly
 - MANDATORY: Follow the exact sentence/bullet point counts specified
 - Do not change the sentiment, tone, or keywords
-- Only expand the truthAnalysis fields (fact, observation, insight, humanTruth, culturalMoment)
+- Only adjust the truthAnalysis fields (fact, observation, insight, humanTruth, culturalMoment)
 
-Return the expanded analysis in the exact same JSON format with ${lengthPreference} length responses.`;
+Return the adjusted analysis in the exact same JSON format with ${lengthPreference} length responses.`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "You are a strategic analyst expanding existing analysis with more detail and context. Maintain the same JSON structure and only expand the truthAnalysis fields." },
-        { role: "user", content: expansionPrompt }
+        { role: "system", content: "You are a strategic analyst adjusting existing analysis format. Maintain the same JSON structure and only adjust the truthAnalysis fields according to the specified requirements." },
+        { role: "user", content: adjustmentPrompt }
       ],
       response_format: { type: "json_object" },
       temperature: 0.05,
-      max_tokens: lengthPreference === 'long' ? 2500 : 1800
+      max_tokens: lengthPreference === 'long' ? 2800 : lengthPreference === 'bulletpoints' ? 2500 : 1200
     });
 
     const responseContent = response.choices[0]?.message?.content;
     if (!responseContent) {
-      throw new Error('No response content from OpenAI expansion');
+      throw new Error('No response content from OpenAI adjustment');
     }
 
-    let expandedAnalysis;
+    let adjustedAnalysis;
     try {
-      expandedAnalysis = JSON.parse(responseContent);
-      debugLogger.info('Successfully expanded analysis', { 
+      adjustedAnalysis = JSON.parse(responseContent);
+      debugLogger.info('Successfully adjusted analysis', { 
         lengthPreference,
-        factLength: expandedAnalysis.truthAnalysis?.fact?.length || 0,
-        observationLength: expandedAnalysis.truthAnalysis?.observation?.length || 0
+        factLength: adjustedAnalysis.truthAnalysis?.fact?.length || 0,
+        observationLength: adjustedAnalysis.truthAnalysis?.observation?.length || 0
       });
     } catch (parseError) {
-      debugLogger.error('JSON parsing failed for expansion', { response: responseContent, error: parseError });
-      // Return original analysis if expansion fails
-      return shortAnalysis;
+      debugLogger.error('JSON parsing failed for adjustment', { response: responseContent, error: parseError });
+      // Return original analysis if adjustment fails
+      return mediumAnalysis;
     }
 
     const result: EnhancedAnalysisResult = {
-      summary: expandedAnalysis.summary || shortAnalysis.summary,
-      sentiment: expandedAnalysis.sentiment || shortAnalysis.sentiment,
-      tone: expandedAnalysis.tone || shortAnalysis.tone,
-      keywords: expandedAnalysis.keywords || shortAnalysis.keywords,
-      confidence: expandedAnalysis.confidence || shortAnalysis.confidence,
+      summary: adjustedAnalysis.summary || mediumAnalysis.summary,
+      sentiment: adjustedAnalysis.sentiment || mediumAnalysis.sentiment,
+      tone: adjustedAnalysis.tone || mediumAnalysis.tone,
+      keywords: adjustedAnalysis.keywords || mediumAnalysis.keywords,
+      confidence: adjustedAnalysis.confidence || mediumAnalysis.confidence,
       truthAnalysis: {
-        fact: expandedAnalysis.truthAnalysis?.fact || shortAnalysis.truthAnalysis.fact,
-        observation: expandedAnalysis.truthAnalysis?.observation || shortAnalysis.truthAnalysis.observation,
-        insight: expandedAnalysis.truthAnalysis?.insight || shortAnalysis.truthAnalysis.insight,
-        humanTruth: expandedAnalysis.truthAnalysis?.humanTruth || shortAnalysis.truthAnalysis.humanTruth,
-        culturalMoment: expandedAnalysis.truthAnalysis?.culturalMoment || shortAnalysis.truthAnalysis.culturalMoment,
-        attentionValue: expandedAnalysis.truthAnalysis?.attentionValue || shortAnalysis.truthAnalysis.attentionValue,
-        platform: expandedAnalysis.truthAnalysis?.platform || shortAnalysis.truthAnalysis.platform,
-        cohortOpportunities: expandedAnalysis.truthAnalysis?.cohortOpportunities || shortAnalysis.truthAnalysis.cohortOpportunities
+        fact: adjustedAnalysis.truthAnalysis?.fact || mediumAnalysis.truthAnalysis.fact,
+        observation: adjustedAnalysis.truthAnalysis?.observation || mediumAnalysis.truthAnalysis.observation,
+        insight: adjustedAnalysis.truthAnalysis?.insight || mediumAnalysis.truthAnalysis.insight,
+        humanTruth: adjustedAnalysis.truthAnalysis?.humanTruth || mediumAnalysis.truthAnalysis.humanTruth,
+        culturalMoment: adjustedAnalysis.truthAnalysis?.culturalMoment || mediumAnalysis.truthAnalysis.culturalMoment,
+        attentionValue: adjustedAnalysis.truthAnalysis?.attentionValue || mediumAnalysis.truthAnalysis.attentionValue,
+        platform: adjustedAnalysis.truthAnalysis?.platform || mediumAnalysis.truthAnalysis.platform,
+        cohortOpportunities: adjustedAnalysis.truthAnalysis?.cohortOpportunities || mediumAnalysis.truthAnalysis.cohortOpportunities
       },
-      cohortSuggestions: expandedAnalysis.cohortSuggestions || shortAnalysis.cohortSuggestions,
-      platformContext: expandedAnalysis.platformContext || shortAnalysis.platformContext,
-      viralPotential: expandedAnalysis.viralPotential || shortAnalysis.viralPotential,
-      competitiveInsights: expandedAnalysis.competitiveInsights || shortAnalysis.competitiveInsights,
-      strategicInsights: expandedAnalysis.strategicInsights || shortAnalysis.strategicInsights,
-      strategicActions: expandedAnalysis.strategicActions || shortAnalysis.strategicActions
+      cohortSuggestions: adjustedAnalysis.cohortSuggestions || mediumAnalysis.cohortSuggestions,
+      platformContext: adjustedAnalysis.platformContext || mediumAnalysis.platformContext,
+      viralPotential: adjustedAnalysis.viralPotential || mediumAnalysis.viralPotential,
+      competitiveInsights: adjustedAnalysis.competitiveInsights || mediumAnalysis.competitiveInsights,
+      strategicInsights: adjustedAnalysis.strategicInsights || mediumAnalysis.strategicInsights,
+      strategicActions: adjustedAnalysis.strategicActions || mediumAnalysis.strategicActions
     };
 
     return result;
