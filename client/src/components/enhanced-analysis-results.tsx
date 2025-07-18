@@ -236,6 +236,9 @@ export function EnhancedAnalysisResults({
       const strategicData = await strategicResponse.json();
       const competitiveData = await competitiveResponse.json();
       
+      console.log('Strategic Data:', strategicData);
+      console.log('Competitive Data:', competitiveData);
+      
       setInsightsResults(strategicData.insights || []);
       setCompetitiveResults(competitiveData.insights || []);
       
@@ -785,16 +788,20 @@ export function EnhancedAnalysisResults({
                   <div className="space-y-3">
                     {insightsResults.map((insight, index) => (
                       <div key={index} className="p-3 bg-yellow-50 rounded border border-yellow-200">
-                        <h4 className="font-medium text-yellow-900 mb-1">{insight.title}</h4>
-                        <p className="text-sm text-gray-700 mb-2">{insight.description}</p>
-                        {insight.rationale && (
+                        <h4 className="font-medium text-yellow-900 mb-1">
+                          {insight.insight || insight.title || `Strategic Insight ${index + 1}`}
+                        </h4>
+                        <p className="text-sm text-gray-700 mb-2">
+                          {insight.description || insight.insight || 'No description available'}
+                        </p>
+                        {insight.category && (
                           <div className="text-xs text-gray-600">
-                            <strong>Rationale:</strong> {insight.rationale}
+                            <strong>Category:</strong> {insight.category}
                           </div>
                         )}
-                        {insight.confidence && (
+                        {insight.priority && (
                           <div className="text-xs text-yellow-700 bg-yellow-100 p-2 rounded mt-2">
-                            <strong>Confidence:</strong> {insight.confidence}%
+                            <strong>Priority:</strong> {insight.priority} | Impact: {insight.impact}
                           </div>
                         )}
                       </div>
@@ -813,16 +820,20 @@ export function EnhancedAnalysisResults({
                   <div className="space-y-3">
                     {competitiveResults.map((competitive, index) => (
                       <div key={index} className="p-3 bg-blue-50 rounded border border-blue-200">
-                        <h4 className="font-medium text-blue-900 mb-1">{competitive.title}</h4>
-                        <p className="text-sm text-gray-700 mb-2">{competitive.description}</p>
-                        {competitive.opportunity && (
+                        <h4 className="font-medium text-blue-900 mb-1">
+                          {competitive.insight || competitive.title || `Competitive Insight ${index + 1}`}
+                        </h4>
+                        <p className="text-sm text-gray-700 mb-2">
+                          {competitive.description || competitive.insight || 'No description available'}
+                        </p>
+                        {competitive.category && (
                           <div className="text-xs text-gray-600">
-                            <strong>Opportunity:</strong> {competitive.opportunity}
+                            <strong>Category:</strong> {competitive.category}
                           </div>
                         )}
-                        {competitive.risk && (
+                        {competitive.confidence && (
                           <div className="text-xs text-blue-700 bg-blue-100 p-2 rounded mt-2">
-                            <strong>Risk Level:</strong> {competitive.risk}
+                            <strong>Confidence:</strong> {competitive.confidence} | Actionable: {competitive.actionable ? 'Yes' : 'No'}
                           </div>
                         )}
                       </div>
@@ -902,16 +913,20 @@ export function EnhancedAnalysisResults({
                 <div className="space-y-3">
                   {actionsResults.map((action, index) => (
                     <div key={index} className="p-3 bg-green-50 rounded border border-green-200">
-                      <h4 className="font-medium text-green-900 mb-1">{action.title}</h4>
-                      <p className="text-sm text-gray-700 mb-2">{action.description}</p>
-                      {action.timeframe && (
+                      <h4 className="font-medium text-green-900 mb-1">
+                        {action.action || action.title || `Strategic Action ${index + 1}`}
+                      </h4>
+                      <p className="text-sm text-gray-700 mb-2">
+                        {action.description || action.action || 'No description available'}
+                      </p>
+                      {action.category && (
                         <div className="text-xs text-gray-600">
-                          <strong>Timeframe:</strong> {action.timeframe}
+                          <strong>Category:</strong> {action.category} | Effort: {action.effort}
                         </div>
                       )}
                       {action.priority && (
                         <div className="text-xs text-green-700 bg-green-100 p-2 rounded mt-2">
-                          <strong>Priority:</strong> {action.priority}
+                          <strong>Priority:</strong> {action.priority} | Impact: {action.impact}
                         </div>
                       )}
                     </div>
