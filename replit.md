@@ -391,6 +391,7 @@ app.post("/api/signals/draft", requireAuth, async (req, res) => {
 - **Error rate**: Only expected authentication errors, no system failures
 - **Code quality**: Production-ready with streamlined, optimized architecture
 - **System Health**: 90/100 - All critical components operational
+- **Length Preference System**: Medium-first progressive analysis with optimized caching (v4)
 
 ### Comprehensive System Check - July 18, 2025
 - **Authentication**: ✅ Working correctly with session management

@@ -131,31 +131,40 @@ export class OpenAIService {
   }
 
   private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
-    // Step 1: Always create or get medium analysis first (baseline)
-    const mediumCacheKey = createCacheKey(content + title + 'medium' + analysisMode + 'v4', 'analysis');
+    // Create stable cache key base
+    const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v4';
+    
+    // Step 1: Check if we have the requested length preference cached
+    const targetCacheKey = createCacheKey(cacheKeyBase + lengthPreference, 'analysis');
+    let cachedAnalysis = await analysisCache.get(targetCacheKey);
+    
+    if (cachedAnalysis) {
+      debugLogger.info('Returning cached analysis for ' + lengthPreference);
+      return cachedAnalysis;
+    }
+    
+    // Step 2: Get or create medium analysis as baseline
+    const mediumCacheKey = createCacheKey(cacheKeyBase + 'medium', 'analysis');
     let mediumAnalysis = await analysisCache.get(mediumCacheKey);
     
     if (!mediumAnalysis) {
-      debugLogger.info('Creating medium analysis baseline');
+      debugLogger.info('Creating new medium analysis baseline');
       mediumAnalysis = await this.createMediumAnalysis(content, title, analysisMode);
       await analysisCache.set(mediumCacheKey, mediumAnalysis, 300);
+    } else {
+      debugLogger.info('Using cached medium analysis');
     }
     
-    // Step 2: If user wants medium, return it immediately
+    // Step 3: If user wants medium, return it immediately
     if (lengthPreference === 'medium') {
       debugLogger.info('Returning medium analysis');
       return mediumAnalysis;
     }
     
-    // Step 3: For other lengths, adjust from medium baseline
-    const adjustedCacheKey = createCacheKey(content + title + lengthPreference + analysisMode + 'v4', 'analysis');
-    let adjustedAnalysis = await analysisCache.get(adjustedCacheKey);
-    
-    if (!adjustedAnalysis) {
-      debugLogger.info('Adjusting analysis from medium to ' + lengthPreference);
-      adjustedAnalysis = await this.adjustAnalysis(mediumAnalysis, lengthPreference, analysisMode);
-      await analysisCache.set(adjustedCacheKey, adjustedAnalysis, 300);
-    }
+    // Step 4: Adjust from medium baseline for other lengths
+    debugLogger.info('Adjusting analysis from medium to ' + lengthPreference);
+    const adjustedAnalysis = await this.adjustAnalysis(mediumAnalysis, lengthPreference, analysisMode);
+    await analysisCache.set(targetCacheKey, adjustedAnalysis, 300);
     
     debugLogger.info('Returning adjusted analysis');
     return adjustedAnalysis;
