@@ -266,6 +266,14 @@ export function EnhancedAnalysisResults({
       setCompetitiveResults(newCompetitive);
       setActionsResults(newActions);
       
+      // Force re-render with immediate logging
+      setTimeout(() => {
+        console.log('Current state after update:');
+        console.log('insightsResults length:', newInsights.length);
+        console.log('competitiveResults length:', newCompetitive.length);
+        console.log('actionsResults length:', newActions.length);
+      }, 100);
+      
       toast({
         title: "Success",
         description: "All strategic insights, competitive intelligence, and strategic actions completed",
@@ -786,15 +794,10 @@ export function EnhancedAnalysisResults({
               </p>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {data.strategicInsights?.map((insight, index) => (
-                  <div key={index} className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-xs font-bold text-blue-600">{index + 1}</span>
-                    </div>
-                    <p className="text-sm text-gray-700">{insight}</p>
-                  </div>
-                ))}
+              <div className="text-center py-8 text-gray-500">
+                <Lightbulb className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                <p>Strategic insights from Truth Analysis</p>
+                <p className="text-sm">Use "Build Strategic Insights" below for enhanced analysis</p>
               </div>
             </CardContent>
           </Card>
@@ -810,13 +813,10 @@ export function EnhancedAnalysisResults({
               </p>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {data.strategicActions?.map((action, index) => (
-                  <div key={index} className="flex items-start gap-3">
-                    <CheckCircle className="h-4 w-4 text-green-600 mt-0.5" />
-                    <p className="text-sm text-gray-700">{action}</p>
-                  </div>
-                ))}
+              <div className="text-center py-8 text-gray-500">
+                <Target className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                <p>Strategic actions from Truth Analysis</p>
+                <p className="text-sm">Use "Build Strategic Insights" below for enhanced analysis</p>
               </div>
             </CardContent>
           </Card>
@@ -829,13 +829,10 @@ export function EnhancedAnalysisResults({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {data.competitiveInsights.map((insight, index) => (
-                  <div key={index} className="flex items-start gap-3">
-                    <AlertCircle className="h-4 w-4 text-orange-600 mt-0.5" />
-                    <p className="text-sm text-gray-700">{insight}</p>
-                  </div>
-                ))}
+              <div className="text-center py-8 text-gray-500">
+                <Zap className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                <p>Competitive intelligence from Truth Analysis</p>
+                <p className="text-sm">Use "Build Strategic Insights" below for enhanced analysis</p>
               </div>
             </CardContent>
           </Card>
@@ -863,28 +860,6 @@ export function EnhancedAnalysisResults({
                     <Badge variant="outline">{data.confidence}</Badge>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                Strategic Actions
-              </CardTitle>
-              <p className="text-sm text-gray-600">
-                What specific actions brands should take based on these insights
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {data.strategicActions?.map((action, index) => (
-                  <div key={index} className="flex items-start gap-3">
-                    <CheckCircle className="h-4 w-4 text-green-600 mt-0.5" />
-                    <p className="text-sm text-gray-700">{action}</p>
-                  </div>
-                ))}
               </div>
             </CardContent>
           </Card>
