@@ -133,8 +133,14 @@ export function EnhancedAnalysisResults({
     cohorts: false,
     insights: false,
     actions: false,
-    competitive: false
+    competitive: false,
+    advancedInsights: false
   });
+
+  // Advanced Strategic Insights state
+  const [advancedInsightsResults, setAdvancedInsightsResults] = useState<any[]>([]);
+  const [insightViewMode, setInsightViewMode] = useState<'insights' | 'aia'>('insights');
+  const [showAdvancedInsightsButton, setShowAdvancedInsightsButton] = useState(false);
 
   // Update analysis when new data arrives
   useEffect(() => {
@@ -301,6 +307,11 @@ export function EnhancedAnalysisResults({
       setCompetitiveResults(newCompetitive);
       setActionsResults(newActions);
       
+      // Show advanced insights button after initial insights are generated
+      if (newInsights.length > 0) {
+        setShowAdvancedInsightsButton(true);
+      }
+      
       // Force re-render with immediate logging
       setTimeout(() => {
         console.log('Current state after update:');
@@ -322,6 +333,48 @@ export function EnhancedAnalysisResults({
       });
     } finally {
       setLoadingStates(prev => ({ ...prev, insights: false, competitive: false, actions: false }));
+    }
+  };
+
+  const handleAdvancedInsights = async () => {
+    if (!insightsResults.length) {
+      toast({
+        title: "Error",
+        description: "Initial strategic insights required for advanced analysis",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoadingStates(prev => ({ ...prev, advancedInsights: true }));
+    
+    try {
+      const response = await apiRequest('POST', '/api/advanced-strategic-insights', {
+        content: originalContent?.content || data.content || '',
+        title: originalContent?.title || data.title || '',
+        truthAnalysis: currentAnalysis.truthAnalysis,
+        initialInsights: insightsResults,
+        strategicActions: actionsResults,
+        competitiveIntelligence: competitiveResults
+      });
+
+      const advancedData = await response.json();
+      setAdvancedInsightsResults(advancedData.advancedInsights || []);
+      setInsightViewMode('aia'); // Switch to advanced view
+
+      toast({
+        title: "Success",
+        description: "Advanced strategic analysis completed",
+      });
+    } catch (error: any) {
+      console.error('Advanced insights failed:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate advanced analysis. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingStates(prev => ({ ...prev, advancedInsights: false }));
     }
   };
 
@@ -612,9 +665,13 @@ export function EnhancedAnalysisResults({
       </Card>
 
       {/* Detailed Analysis Tabs */}
-      <Tabs defaultValue="truth" className="w-full">
+      <Tabs defaultValue="insights" className="w-full">
         <div className="overflow-x-auto">
           <TabsList className={`${isMobile ? 'flex w-max' : 'grid w-full grid-cols-4'}`}>
+            <TabsTrigger value="insights" className="text-xs sm:text-sm whitespace-nowrap">
+              <span className="hidden sm:inline">Strategic Insights</span>
+              <span className="sm:hidden">Insights</span>
+            </TabsTrigger>
             <TabsTrigger value="truth" className="text-xs sm:text-sm whitespace-nowrap">
               <span className="hidden sm:inline">Truth Analysis</span>
               <span className="sm:hidden">Truth</span>
@@ -623,16 +680,277 @@ export function EnhancedAnalysisResults({
               <span className="hidden sm:inline">Cohorts</span>
               <span className="sm:hidden">Cohorts</span>
             </TabsTrigger>
-            <TabsTrigger value="insights" className="text-xs sm:text-sm whitespace-nowrap">
-              <span className="hidden sm:inline">Insights</span>
-              <span className="sm:hidden">Insights</span>
-            </TabsTrigger>
             <TabsTrigger value="strategic-recommendations" className="text-xs sm:text-sm whitespace-nowrap">
               <span className="hidden sm:inline">Strategic Recommendations</span>
               <span className="sm:hidden">Strategic</span>
             </TabsTrigger>
           </TabsList>
         </div>
+
+        <TabsContent value="insights" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <CardTitle className="flex items-center gap-2">
+                  <Lightbulb className="h-5 w-5" />
+                  Strategic Insights
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  {showAdvancedInsightsButton && (
+                    <Button 
+                      onClick={handleAdvancedInsights}
+                      disabled={loadingStates.advancedInsights}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      {loadingStates.advancedInsights ? (
+                        <>
+                          <LoadingSpinner size="sm" />
+                          Advanced Analysis...
+                        </>
+                      ) : (
+                        <>
+                          <Brain className="h-4 w-4" />
+                          Advanced Strategic Analysis
+                        </>
+                      )}
+                    </Button>
+                  )}
+                  {advancedInsightsResults.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="insight-view-mode" className="text-sm">View:</Label>
+                      <Select value={insightViewMode} onValueChange={(value: any) => setInsightViewMode(value)}>
+                        <SelectTrigger className="w-full sm:w-24">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="insights">Insights</SelectItem>
+                          <SelectItem value="aia">A.I.A.</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <p className="text-sm text-gray-600">
+                Why there are business opportunities here
+              </p>
+            </CardHeader>
+            <CardContent>
+              {loadingStates.advancedInsights ? (
+                <AnimatedLoadingState 
+                  title="Advanced Strategic Analysis"
+                  subtitle="Generating comprehensive detailed analysis for each strategic insight..."
+                />
+              ) : (
+                <>
+                  {insightViewMode === 'insights' ? (
+                    insightsResults.length > 0 ? (
+                      <div className="space-y-3">
+                        {insightsResults.map((insight, index) => (
+                          <div key={index} className="flex items-start gap-3">
+                            <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                              <span className="text-xs font-bold text-blue-600">{index + 1}</span>
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm text-gray-700 font-medium mb-1">
+                                {typeof insight === 'string' ? insight : insight.insight || insight.title || `Strategic Insight ${index + 1}`}
+                              </p>
+                              {typeof insight === 'object' && insight.category && (
+                                <div className="text-xs text-gray-600">
+                                  <strong>Category:</strong> {insight.category} 
+                                  {insight.priority && ` | Priority: ${insight.priority}`}
+                                  {insight.impact && ` | Impact: ${insight.impact}`}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : loadingStates.insights ? (
+                      <AnimatedLoadingState 
+                        title="Building Strategic Insights"
+                        subtitle="Analyzing content for strategic opportunities..."
+                      />
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <Lightbulb className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                        <p>Click "Build Strategic Insights" below to generate initial strategic insights</p>
+                      </div>
+                    )
+                  ) : (
+                    advancedInsightsResults.length > 0 ? (
+                      <div className="space-y-4">
+                        {advancedInsightsResults.map((insight, index) => (
+                          <div key={index} className="border rounded-lg p-4 bg-gradient-to-r from-blue-50 to-purple-50">
+                            <div className="flex items-start gap-3">
+                              <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-bold text-white">{index + 1}</span>
+                              </div>
+                              <div className="flex-1 space-y-2">
+                                <h4 className="font-semibold text-gray-900">
+                                  {typeof insight === 'string' ? `Advanced Insight ${index + 1}` : insight.title || `Advanced Strategic Insight ${index + 1}`}
+                                </h4>
+                                <p className="text-sm text-gray-700 leading-relaxed">
+                                  {typeof insight === 'string' ? insight : insight.analysis || insight.description || `Advanced analysis for insight ${index + 1}`}
+                                </p>
+                                {typeof insight === 'object' && (
+                                  <div className="flex flex-wrap gap-2 mt-2">
+                                    {insight.category && (
+                                      <Badge variant="secondary" className="text-xs">
+                                        {insight.category}
+                                      </Badge>
+                                    )}
+                                    {insight.priority && (
+                                      <Badge variant="outline" className="text-xs">
+                                        Priority: {insight.priority}
+                                      </Badge>
+                                    )}
+                                    {insight.impact && (
+                                      <Badge variant="outline" className="text-xs">
+                                        Impact: {insight.impact}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <Brain className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                        <p>Advanced analysis not yet generated</p>
+                      </div>
+                    )
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Strategic Actions
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                What specific actions brands should take based on these insights
+              </p>
+            </CardHeader>
+            <CardContent>
+              {actionsResults.length > 0 ? (
+                <div className="space-y-3">
+                  {actionsResults.map((action, index) => (
+                    <div key={index} className="flex items-start gap-3">
+                      <CheckCircle className="h-4 w-4 text-green-600 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-700 font-medium mb-1">
+                          {typeof action === 'string' ? action : action.action || action.title || `Strategic Action ${index + 1}`}
+                        </p>
+                        {typeof action === 'object' && action.category && (
+                          <div className="text-xs text-gray-600">
+                            <strong>Category:</strong> {action.category}
+                            {action.priority && ` | Priority: ${action.priority}`}
+                            {action.effort && ` | Effort: ${action.effort}`}
+                            {action.impact && ` | Impact: ${action.impact}`}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : loadingStates.actions ? (
+                <AnimatedLoadingState 
+                  title="Building Strategic Actions"
+                  subtitle="Generating actionable recommendations..."
+                />
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Target className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p>Strategic actions will appear here after insights are generated</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5" />
+                Competitive Intelligence
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                How competitors are positioned and opportunities for differentiation
+              </p>
+            </CardHeader>
+            <CardContent>
+              {competitiveResults.length > 0 ? (
+                <div className="space-y-3">
+                  {competitiveResults.map((competitive, index) => (
+                    <div key={index} className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center">
+                        <span className="text-xs font-bold text-orange-600">{index + 1}</span>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-700 font-medium mb-1">
+                          {typeof competitive === 'string' ? competitive : competitive.intelligence || competitive.title || `Competitive Insight ${index + 1}`}
+                        </p>
+                        {typeof competitive === 'object' && competitive.category && (
+                          <div className="text-xs text-gray-600">
+                            <strong>Category:</strong> {competitive.category}
+                            {competitive.priority && ` | Priority: ${competitive.priority}`}
+                            {competitive.opportunity && ` | Opportunity: ${competitive.opportunity}`}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : loadingStates.competitive ? (
+                <AnimatedLoadingState 
+                  title="Building Competitive Intelligence"
+                  subtitle="Analyzing competitive landscape and opportunities..."
+                />
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Zap className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p>Competitive intelligence will appear here after insights are generated</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Button 
+                  onClick={handleBuildAllInsights}
+                  disabled={loadingStates.insights || loadingStates.actions || loadingStates.competitive || !currentAnalysis.truthAnalysis}
+                  className="flex items-center gap-2"
+                >
+                  {(loadingStates.insights || loadingStates.actions || loadingStates.competitive) ? (
+                    <>
+                      <LoadingSpinner size="sm" />
+                      Building Strategic Insights...
+                    </>
+                  ) : (
+                    <>
+                      <Lightbulb className="h-4 w-4" />
+                      Build Strategic Insights
+                    </>
+                  )}
+                </Button>
+              </CardTitle>
+              <p className="text-sm text-gray-600 text-center mt-4">
+                This button generates insights for the upper sections only. Advanced Strategic Analysis is in the separate Strategic Recommendations tab.
+              </p>
+            </CardHeader>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="truth" className="space-y-4">
           <Card>

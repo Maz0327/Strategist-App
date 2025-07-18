@@ -1636,6 +1636,41 @@ The analyzed signals provide a comprehensive view of current market trends and s
       res.status(500).json({ error: 'Failed to analyze strategic actions' });
     }
   });
+
+  // Advanced Strategic Insights Service - Enhanced analysis of existing insights
+  app.post("/api/advanced-strategic-insights", requireAuth, async (req, res) => {
+    try {
+      const { content, title, truthAnalysis, initialInsights, strategicActions, competitiveIntelligence } = req.body;
+      
+      if (!content || !initialInsights || !initialInsights.length) {
+        return res.status(400).json({ error: 'Content and initial insights are required' });
+      }
+      
+      debugLogger.info("Advanced strategic insights request", { 
+        userId: req.session.userId, 
+        contentLength: content?.length,
+        initialInsightsCount: initialInsights?.length || 0,
+        hasActions: !!strategicActions?.length,
+        hasCompetitive: !!competitiveIntelligence?.length
+      }, req);
+      
+      // Use the strategic insights service to generate advanced analysis
+      const advancedInsights = await strategicInsightsService.generateAdvancedInsights(
+        content, 
+        title, 
+        truthAnalysis,
+        initialInsights,
+        strategicActions,
+        competitiveIntelligence
+      );
+      
+      res.json({ advancedInsights });
+      
+    } catch (error: any) {
+      debugLogger.error('Advanced strategic insights failed', error, req);
+      res.status(500).json({ error: 'Failed to generate advanced strategic insights' });
+    }
+  });
   
   // Performance monitoring endpoint
   app.get("/api/performance", requireAuth, async (req, res) => {
