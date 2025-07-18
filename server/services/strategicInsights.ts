@@ -18,8 +18,8 @@ export class StrategicInsightsService {
     const cacheKey = createCacheKey(content, 'strategic-insights');
     
     // Check cache first
-    const cached = analysisCache.get(cacheKey);
-    if (cached) {
+    const cached = await analysisCache.get(cacheKey);
+    if (cached && Array.isArray(cached) && cached.length > 0) {
       debugLogger.info('Strategic insights cache hit', { cacheKey, duration: Date.now() - startTime });
       return cached;
     }
@@ -47,8 +47,10 @@ export class StrategicInsightsService {
       
       const result = strategicData.insights || [];
       
-      // Cache the result
-      analysisCache.set(cacheKey, result);
+      // Cache the result only if it's not empty
+      if (result && result.length > 0) {
+        await analysisCache.set(cacheKey, result);
+      }
       
       const processingTime = Date.now() - startTime;
       debugLogger.info(`Strategic insights completed in ${processingTime}ms`, { insightCount: result.length });

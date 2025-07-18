@@ -18,8 +18,8 @@ export class CompetitiveIntelligenceService {
     const cacheKey = createCacheKey(content, 'competitive');
     
     // Check cache first
-    const cached = competitiveCache.get(cacheKey);
-    if (cached) {
+    const cached = await competitiveCache.get(cacheKey);
+    if (cached && Array.isArray(cached) && cached.length > 0) {
       debugLogger.info('Competitive intelligence cache hit', { cacheKey, duration: Date.now() - startTime });
       return cached;
     }
@@ -47,8 +47,10 @@ export class CompetitiveIntelligenceService {
       
       const result = competitiveData.insights || [];
       
-      // Cache the result
-      competitiveCache.set(cacheKey, result);
+      // Cache the result only if it's not empty
+      if (result && result.length > 0) {
+        await competitiveCache.set(cacheKey, result);
+      }
       
       const processingTime = Date.now() - startTime;
       debugLogger.info(`Competitive intelligence completed in ${processingTime}ms`, { insightCount: result.length });
