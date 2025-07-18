@@ -1661,6 +1661,13 @@ This structure follows the natural Post Creative Strategist workflow: Listen →
 - **Attention Arbitrage**: Underpriced attention identification
 - **Trend Prediction**: Early signal detection for cultural shifts
 
+### 🔄 **Visual Intelligence Features (July 2025)**:
+- **Visual Analysis of Videos**: Video frame extraction and analysis with GPT-4o vision for cultural moment detection
+- **Chrome Extension Screen Recording**: Desktop save functionality for workflow documentation and competitor analysis
+- **Mobile Screenshot/Recording**: Native mobile app capabilities for visual capture on mobile-first platforms
+- **Project-Based System**: Client-specific visual intelligence tracking and organization with data isolation
+- **Mobile App**: Complete visual capture ecosystem with native iOS/Android applications
+
 ### 🔄 **Multi-Project/Workspace Support**:
 - **Data Isolation**: Project-scoped signals, sources, and briefs
 - **Client Management**: Separate workspaces for multiple clients
