@@ -479,19 +479,25 @@ Successfully restructured the strategic analysis system to follow the user's exa
 
 **Component Derivation (4 components derive from Truth Framework Analysis):**
 1. **Cohort Building Capabilities** → derives from Truth Framework Analysis
-2. **Strategic Insights** → derives from Truth Framework Analysis (exactly 5 items)
-3. **Strategic Actions** → derives from Truth Framework Analysis (exactly 5 items)  
-4. **Competitive Intelligence** → derives from Truth Framework Analysis (exactly 5 items)
+2. **Strategic Insights** → derives from Truth Framework Analysis (exactly 5 items) - **POPULATES UPPER SECTIONS**
+3. **Strategic Actions** → derives from Truth Framework Analysis (exactly 5 items) - **POPULATES UPPER SECTIONS**
+4. **Competitive Intelligence** → derives from Truth Framework Analysis (exactly 5 items) - **POPULATES UPPER SECTIONS**
 
-**Strategic Recommendations Synthesis:**
-- Strategic Recommendations analyzes and builds content from ALL produced components:
+**Advanced Strategic Analysis:**
+- Advanced Strategic Analysis analyzes and builds content from ALL produced components:
   1. Truth Framework Analysis results
   2. Cohorts from building capabilities
-  3. Strategic Insights (5 items)
-  4. Strategic Actions (5 items)
-  5. Competitive Intelligence (5 items)
-- Provides impact assessment and confidence scoring
-- Synthesizes all component insights into exactly 5 strategic recommendations
+  3. Strategic Insights (5 items from upper sections)
+  4. Strategic Actions (5 items from upper sections)
+  5. Competitive Intelligence (5 items from upper sections)
+- Provides **DEEPER, MORE COMPREHENSIVE analysis** of the initial strategic insights
+- Synthesizes all component insights into exactly 5 advanced strategic recommendations
+
+#### ✅ **CRITICAL DISPLAY SYSTEM FIX - July 18, 2025**:
+- **FIXED**: Removed conflicting static display system that was preventing results from showing
+- **CORRECT FLOW**: Upper sections now properly display dynamic results from "Build Strategic Insights" button
+- **ADVANCED ANALYSIS**: Bottom section provides deeper analysis of those initial results
+- **BACKEND CONFIRMED**: All APIs working correctly with proper data flow to frontend
 
 **Technical Implementation:**
 - **New Service**: `strategicRecommendations.ts` - synthesizes all component results
