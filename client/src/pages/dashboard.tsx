@@ -264,14 +264,20 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
               <div key={item.id}>
                 <Button
                   variant={activeTab === item.id ? "default" : "ghost"}
-                  className={`w-full justify-start ${sidebarCollapsed && !isMobile ? 'px-2' : 'px-3'}`}
+                  className={`w-full justify-between ${sidebarCollapsed && !isMobile ? 'px-2' : 'px-3'}`}
                   onClick={() => {
                     handleTabChange(item.id);
                     if (isMobile) setMobileMenuOpen(false);
                   }}
                 >
-                  <item.icon className={`h-4 w-4 ${sidebarCollapsed && !isMobile ? '' : 'mr-2'}`} />
-                  {(!sidebarCollapsed || isMobile) && item.label}
+                  <div className="flex items-center">
+                    <item.icon className={`h-4 w-4 ${sidebarCollapsed && !isMobile ? '' : 'mr-2'}`} />
+                    {(!sidebarCollapsed || isMobile) && item.label}
+                  </div>
+                  {/* Show chevron for items with sub-menus on desktop only */}
+                  {item.subItems.length > 0 && !isMobile && !sidebarCollapsed && (
+                    <ChevronRight className={`h-4 w-4 transition-transform ${activeTab === item.id ? 'rotate-90' : ''}`} />
+                  )}
                 </Button>
                 
                 {/* Sub-navigation */}
