@@ -50,10 +50,10 @@ export class OpenAIService {
 
   private getSystemPrompt(lengthPreference: string, isDeepAnalysis: boolean): string {
     const lengthInstructions = {
-      'short': 'Keep all responses concise (2 sentences minimum, 3 sentences maximum each field)',
-      'medium': 'Provide balanced responses (3-4 sentences each field)', 
-      'long': 'Provide detailed responses (4-6 sentences each field)',
-      'bulletpoints': 'Use bullet points for key information where applicable'
+      'short': 'MANDATORY: Each field must contain exactly 2-3 complete sentences. Do not use single sentences or bullet points.',
+      'medium': 'MANDATORY: Each field must contain exactly 3-4 complete sentences. Provide substantive analysis in each field.', 
+      'long': 'MANDATORY: Each field must contain exactly 4-6 complete sentences. Provide comprehensive detailed analysis.',
+      'bulletpoints': 'MANDATORY: Use bullet points for key information where applicable, with 2-3 bullet points per field.'
     };
 
     const lengthInstruction = lengthInstructions[lengthPreference] || lengthInstructions['medium'];
@@ -61,23 +61,23 @@ export class OpenAIService {
     if (isDeepAnalysis) {
       return `Expert content strategist. Provide comprehensive strategic analysis with deep insights. ${lengthInstruction}. Return valid JSON:
 {
-  "summary": "Detailed strategic summary with multiple perspectives",
+  "summary": "Multi-sentence strategic summary providing comprehensive analysis of the content's strategic value and implications. Each response field must follow the exact sentence count requirements specified.",
   "sentiment": "positive|negative|neutral",
   "tone": "professional|casual|urgent|analytical|conversational|authoritative",
   "keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
   "confidence": "85%",
   "truthAnalysis": {
-    "fact": "Comprehensive facts with context and implications",
-    "observation": "Detailed patterns with cross-references and connections",
-    "insight": "Deep strategic insights with actionable implications",
-    "humanTruth": "Complex human motivations and psychological drivers",
-    "culturalMoment": "Rich cultural context with historical and future implications",
+    "fact": "Multiple sentences providing comprehensive factual analysis with context and implications. Must contain the exact number of sentences specified in the length preference.",
+    "observation": "Multiple sentences detailing patterns, connections, and cross-references. Must contain the exact number of sentences specified in the length preference.",
+    "insight": "Multiple sentences providing deep strategic insights with actionable implications. Must contain the exact number of sentences specified in the length preference.",
+    "humanTruth": "Multiple sentences explaining complex human motivations and psychological drivers. Must contain the exact number of sentences specified in the length preference.",
+    "culturalMoment": "Multiple sentences providing rich cultural context with historical and future implications. Must contain the exact number of sentences specified in the length preference.",
     "attentionValue": "high|medium|low",
     "platform": "relevant platform with cross-platform considerations",
     "cohortOpportunities": ["detailed audience1", "detailed audience2", "detailed audience3"]
   },
   "cohortSuggestions": ["cohort1", "cohort2", "cohort3", "cohort4"],
-  "platformContext": "Comprehensive platform analysis with specific tactical recommendations",
+  "platformContext": "Multi-sentence platform analysis with specific tactical recommendations following length requirements",
   "viralPotential": "high|medium|low",
   "competitiveInsights": ["detailed insight1", "detailed insight2", "detailed insight3"],
   "strategicInsights": ["comprehensive recommendation1", "comprehensive recommendation2", "comprehensive recommendation3"],
@@ -86,23 +86,23 @@ export class OpenAIService {
     } else {
       return `Expert content strategist. Analyze content for strategic insights. ${lengthInstruction}. Return valid JSON:
 {
-  "summary": "Brief strategic summary",
+  "summary": "Multi-sentence strategic summary following the exact sentence count requirements specified in the length preference",
   "sentiment": "positive|negative|neutral",
   "tone": "professional|casual|urgent|analytical|conversational|authoritative",
   "keywords": ["keyword1", "keyword2"],
   "confidence": "85%",
   "truthAnalysis": {
-    "fact": "Key facts",
-    "observation": "Key patterns",
-    "insight": "Strategic insight",
-    "humanTruth": "Human motivation",
-    "culturalMoment": "Cultural context",
+    "fact": "Multiple sentences providing key factual analysis. Must contain the exact number of sentences specified in the length preference.",
+    "observation": "Multiple sentences detailing key patterns and connections. Must contain the exact number of sentences specified in the length preference.",
+    "insight": "Multiple sentences providing strategic insights. Must contain the exact number of sentences specified in the length preference.",
+    "humanTruth": "Multiple sentences explaining human motivations. Must contain the exact number of sentences specified in the length preference.",
+    "culturalMoment": "Multiple sentences providing cultural context. Must contain the exact number of sentences specified in the length preference.",
     "attentionValue": "high|medium|low",
     "platform": "relevant platform",
     "cohortOpportunities": ["audience1", "audience2"]
   },
   "cohortSuggestions": ["cohort1", "cohort2"],
-  "platformContext": "Platform context",
+  "platformContext": "Multi-sentence platform context following length requirements",
   "viralPotential": "high|medium|low",
   "competitiveInsights": ["insight1", "insight2"],
   "strategicInsights": ["recommendation1", "recommendation2"],
@@ -120,8 +120,8 @@ export class OpenAIService {
     
     const startTime = Date.now();
     
-    // Check cache first
-    const cacheKey = createCacheKey(content + title + lengthPreference + analysisMode, 'analysis');
+    // Check cache first - include timestamp to force new requests after prompt changes
+    const cacheKey = createCacheKey(content + title + lengthPreference + analysisMode + 'v2', 'analysis');
     const cached = await analysisCache.get(cacheKey);
     
     if (cached) {
@@ -144,12 +144,16 @@ Title: ${title}
 Content: ${content.substring(0, 4000)}${content.length > 4000 ? '...' : ''}
 Length Preference: ${lengthPreference} (${lengthPreference === 'short' ? '2-3 sentences per field' : lengthPreference === 'medium' ? '3-4 sentences per field' : lengthPreference === 'long' ? '4-6 sentences per field' : 'bullet points where applicable'})
 
+CRITICAL: Every field in truthAnalysis (fact, observation, insight, humanTruth, culturalMoment) must contain exactly the number of sentences specified above. Do not use single sentences or incomplete responses.
+
 Focus on deep strategic insights, complex human motivations, cultural context, competitive landscape, and actionable recommendations. Return JSON only.` :
         `Analyze this content with ${lengthPreference} length responses:
 
 Title: ${title}
 Content: ${content.substring(0, 1500)}${content.length > 1500 ? '...' : ''}
 Length Preference: ${lengthPreference} (${lengthPreference === 'short' ? '2-3 sentences per field' : lengthPreference === 'medium' ? '3-4 sentences per field' : lengthPreference === 'long' ? '4-6 sentences per field' : 'bullet points where applicable'})
+
+CRITICAL: Every field in truthAnalysis (fact, observation, insight, humanTruth, culturalMoment) must contain exactly the number of sentences specified above. Do not use single sentences or incomplete responses.
 
 Return JSON only.`;
       
