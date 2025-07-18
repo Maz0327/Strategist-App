@@ -130,7 +130,7 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
   ];
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col">
+    <div className="h-screen bg-gray-50 flex flex-col mobile-safe">
       {/* Mobile-Responsive Header */}
       <header className="bg-white border-b border-gray-200 px-4 py-2 sm:px-6 sm:py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -165,40 +165,16 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
           <div className="flex overflow-x-auto pb-2 scrollbar-hide">
             <div className="flex space-x-2 min-w-max">
               <Button
-                variant={activeTab === "briefing" && activeSubTab === "client-feeds" ? "default" : "outline"}
+                variant={activeTab === "briefing" ? "default" : "outline"}
                 size="sm"
                 onClick={() => {
                   setActiveTab("briefing");
-                  setActiveSubTab("client-feeds");
+                  setActiveSubTab("");
                 }}
                 className="whitespace-nowrap flex-shrink-0"
               >
                 <Home className="w-4 h-4 mr-1" />
-                Client Channels
-              </Button>
-              <Button
-                variant={activeTab === "briefing" && activeSubTab === "custom-feeds" ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  setActiveTab("briefing");
-                  setActiveSubTab("custom-feeds");
-                }}
-                className="whitespace-nowrap flex-shrink-0"
-              >
-                <Brain className="w-4 h-4 mr-1" />
-                Custom Feeds
-              </Button>
-              <Button
-                variant={activeTab === "briefing" && activeSubTab === "project-feeds" ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  setActiveTab("briefing");
-                  setActiveSubTab("project-feeds");
-                }}
-                className="whitespace-nowrap flex-shrink-0"
-              >
-                <BarChart3 className="w-4 h-4 mr-1" />
-                Project Intel
+                Briefing
               </Button>
               <Button
                 variant={activeTab === "explore" ? "default" : "outline"}
@@ -227,12 +203,21 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
                 <Target className="w-4 h-4 mr-1" />
                 Brief Lab
               </Button>
+              <Button
+                variant={activeTab === "manage" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveTab("manage")}
+                className="whitespace-nowrap flex-shrink-0"
+              >
+                <Settings className="w-4 h-4 mr-1" />
+                Manage
+              </Button>
             </div>
           </div>
         </div>
       )}
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden mobile-safe">
         {/* Mobile Menu Overlay */}
         {isMobile && mobileMenuOpen && (
           <div 
@@ -314,8 +299,8 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex overflow-hidden">
-          <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <div className="flex-1 flex overflow-hidden min-w-0">
+          <main className="flex-1 overflow-y-auto p-4 sm:p-6 min-w-0">
             {activeTab === "briefing" && (
               <TodaysBriefing 
                 activeSubTab=""

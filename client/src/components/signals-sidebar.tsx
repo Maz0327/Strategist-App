@@ -8,9 +8,17 @@ import type { Signal } from "@shared/schema";
 
 interface SignalsSidebarProps {
   onNavigateToTrending?: (platform?: string) => void;
+  onNavigateToCapture?: () => void;
+  onNavigateToBrief?: () => void;
+  collapsed?: boolean;
 }
 
-export function SignalsSidebar({ onNavigateToTrending }: SignalsSidebarProps = {}) {
+export function SignalsSidebar({ 
+  onNavigateToTrending, 
+  onNavigateToCapture, 
+  onNavigateToBrief, 
+  collapsed = false 
+}: SignalsSidebarProps = {}) {
   const { data: signalsData, error } = useQuery<{ signals: Signal[] }>({
     queryKey: ["/api/signals"],
     retry: false,
@@ -66,52 +74,66 @@ export function SignalsSidebar({ onNavigateToTrending }: SignalsSidebarProps = {
   ];
 
   return (
-    <div className="space-y-4">
-      {/* Recent Signals */}
-      <Card className="bg-white shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-semibold">Recent Signals</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {error && (
-            <div className="text-center py-4">
-              <p className="text-sm text-gray-500">Unable to load signals</p>
-            </div>
-          )}
-          {!error && signals.length === 0 && (
-            <div className="text-center py-4">
-              <p className="text-sm text-gray-500">No signals yet</p>
-              <p className="text-xs text-gray-400 mt-1">Analyze content to create your first signal</p>
-            </div>
-          )}
-          {signals.slice(0, 3).map((signal) => (
-            <div key={signal.id} className="border-b border-gray-100 pb-3 last:border-b-0 last:pb-0">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <h4 className="text-sm font-medium truncate">{signal.title}</h4>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {formatDistanceToNow(new Date(signal.createdAt), { addSuffix: true })}
-                  </p>
-                </div>
-                <Badge variant="secondary" className={getSentimentColor(signal.sentiment)}>
-                  {signal.sentiment}
-                </Badge>
+    <div className={`${collapsed ? 'w-16' : 'w-64'} bg-white border-l border-gray-200 transition-all duration-300 ${collapsed ? 'overflow-hidden' : ''}`}>
+      <div className="p-4 space-y-4">
+        {/* Recent Signals */}
+        <Card className="bg-white shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className={`font-semibold ${collapsed ? 'text-xs text-center' : 'text-lg'}`}>
+              {collapsed ? 'Recent' : 'Recent Signals'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className={`space-y-3 ${collapsed ? 'p-2' : ''}`}>
+            {error && (
+              <div className="text-center py-4">
+                <p className={`text-gray-500 ${collapsed ? 'text-xs' : 'text-sm'}`}>
+                  {collapsed ? 'Error' : 'Unable to load signals'}
+                </p>
               </div>
-            </div>
-          ))}
-          {signals.length > 3 && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="w-full mt-3"
-              onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { page: 'manage' } }))}
-            >
-              View All Signals
-              <ArrowRight className="ml-2 h-3 w-3" />
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+            )}
+            {!error && signals.length === 0 && (
+              <div className="text-center py-4">
+                <p className={`text-gray-500 ${collapsed ? 'text-xs' : 'text-sm'}`}>
+                  {collapsed ? 'No data' : 'No signals yet'}
+                </p>
+                {!collapsed && (
+                  <p className="text-xs text-gray-400 mt-1">Analyze content to create your first signal</p>
+                )}
+              </div>
+            )}
+            {signals.slice(0, collapsed ? 1 : 3).map((signal) => (
+              <div key={signal.id} className="border-b border-gray-100 pb-3 last:border-b-0 last:pb-0">
+                <div className={`flex items-start ${collapsed ? 'flex-col' : 'justify-between'} gap-2`}>
+                  <div className="min-w-0 flex-1">
+                    <h4 className={`font-medium truncate ${collapsed ? 'text-xs' : 'text-sm'}`}>
+                      {collapsed ? signal.title.substring(0, 10) + '...' : signal.title}
+                    </h4>
+                    {!collapsed && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        {formatDistanceToNow(new Date(signal.createdAt), { addSuffix: true })}
+                      </p>
+                    )}
+                  </div>
+                  <Badge variant="secondary" className={`${getSentimentColor(signal.sentiment)} ${collapsed ? 'text-xs px-1' : ''}`}>
+                    {collapsed ? signal.sentiment.substring(0, 3) : signal.sentiment}
+                  </Badge>
+                </div>
+              </div>
+            ))}
+            {signals.length > 3 && !collapsed && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full mt-3"
+                onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { page: 'manage' } }))}
+              >
+                View All Signals
+                <ArrowRight className="ml-2 h-3 w-3" />
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
