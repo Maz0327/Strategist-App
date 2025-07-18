@@ -48,8 +48,8 @@ export class OpenAIService {
     }
   }
 
-  async analyzeContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium'): Promise<EnhancedAnalysisResult> {
-    debugLogger.info('Starting OpenAI content analysis', { title: data.title, hasUrl: !!data.url, contentLength: data.content?.length, lengthPreference });
+  async analyzeContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', analysisMode: 'quick' | 'deep' = 'quick'): Promise<EnhancedAnalysisResult> {
+    debugLogger.info('Starting OpenAI content analysis', { title: data.title, hasUrl: !!data.url, contentLength: data.content?.length, lengthPreference, analysisMode });
     
     const content = data.content || '';
     const title = data.title || '';
@@ -58,7 +58,7 @@ export class OpenAIService {
     const startTime = Date.now();
     
     // Check cache first
-    const cacheKey = createCacheKey(content + title + lengthPreference, 'analysis');
+    const cacheKey = createCacheKey(content + title + lengthPreference + analysisMode, 'analysis');
     const cached = await analysisCache.get(cacheKey);
     
     if (cached) {
@@ -69,13 +69,38 @@ export class OpenAIService {
     }
     
     try {
-      // Optimized OpenAI call with minimal tokens for fast response
+      // Choose analysis approach based on mode
+      const isDeepAnalysis = analysisMode === 'deep';
+      
       const response = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
           { 
             role: "system", 
-            content: `Expert content strategist. Analyze content for strategic insights. Return valid JSON:
+            content: isDeepAnalysis ? `Expert content strategist. Provide comprehensive strategic analysis with deep insights. Return valid JSON:
+{
+  "summary": "Detailed strategic summary with multiple perspectives",
+  "sentiment": "positive|negative|neutral",
+  "tone": "professional|casual|urgent|analytical|conversational|authoritative",
+  "keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
+  "confidence": "85%",
+  "truthAnalysis": {
+    "fact": "Comprehensive facts with context and implications",
+    "observation": "Detailed patterns with cross-references and connections",
+    "insight": "Deep strategic insights with actionable implications",
+    "humanTruth": "Complex human motivations and psychological drivers",
+    "culturalMoment": "Rich cultural context with historical and future implications",
+    "attentionValue": "high|medium|low",
+    "platform": "relevant platform with cross-platform considerations",
+    "cohortOpportunities": ["detailed audience1", "detailed audience2", "detailed audience3"]
+  },
+  "cohortSuggestions": ["cohort1", "cohort2", "cohort3", "cohort4"],
+  "platformContext": "Comprehensive platform analysis with specific tactical recommendations",
+  "viralPotential": "high|medium|low",
+  "competitiveInsights": ["detailed insight1", "detailed insight2", "detailed insight3"],
+  "strategicInsights": ["comprehensive recommendation1", "comprehensive recommendation2", "comprehensive recommendation3"],
+  "strategicActions": ["detailed action1", "detailed action2", "detailed action3", "detailed action4"]
+}` : `Expert content strategist. Analyze content for strategic insights. Return valid JSON:
 {
   "summary": "Brief strategic summary",
   "sentiment": "positive|negative|neutral",
@@ -102,12 +127,20 @@ export class OpenAIService {
           },
           { 
             role: "user", 
-            content: `Analyze: ${content.substring(0, 2000)}${content.length > 2000 ? '...' : ''}\n\nTitle: ${title}\nReturn JSON only.` 
+            content: isDeepAnalysis ? 
+              `Provide comprehensive strategic analysis of this content:
+
+Title: ${title}
+Content: ${content}
+Length Preference: ${lengthPreference}
+
+Focus on deep strategic insights, complex human motivations, cultural context, competitive landscape, and actionable recommendations. Return JSON only.` :
+              `Analyze: ${content.substring(0, 2000)}${content.length > 2000 ? '...' : ''}\n\nTitle: ${title}\nReturn JSON only.` 
           }
         ],
         response_format: { type: "json_object" },
         temperature: 0.1,
-        max_tokens: 1000
+        max_tokens: isDeepAnalysis ? 3000 : 1000
       });
 
       const responseContent = response.choices[0]?.message?.content;

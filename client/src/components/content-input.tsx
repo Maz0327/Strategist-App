@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { apiRequest } from "@/lib/queryClient";
 import { analyzeContentSchema, type AnalyzeContentData } from "@shared/schema";
-import { Edit, Link, Highlighter, Brain, Download, Info, Sparkles } from "lucide-react";
+import { Edit, Link, Highlighter, Brain, Download, Info, Sparkles, Zap, Search } from "lucide-react";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 
@@ -29,6 +29,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart }: ContentInp
   const [userNotes, setUserNotes] = useState("");
   const [analysisProgress, setAnalysisProgress] = useState({ stage: '', progress: 0 });
   const [useStreaming, setUseStreaming] = useState(true);
+  const [analysisMode, setAnalysisMode] = useState<'quick' | 'deep'>('quick');
   const { toast } = useToast();
 
   // Example content for quick demo
@@ -61,7 +62,21 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart }: ContentInp
     onAnalysisStart?.();
 
     try {
-      const requestData = { ...data, lengthPreference, userNotes };
+      const requestData = { ...data, lengthPreference, userNotes, analysisMode };
+      
+      // For Deep Analysis, use regular endpoint without streaming
+      if (analysisMode === 'deep') {
+        const response = await apiRequest("POST", "/api/analyze/deep", requestData);
+        const result = await response.json();
+        onAnalysisComplete?.(result.analysis, data);
+        toast({
+          title: "Deep Analysis Complete", 
+          description: "Comprehensive strategic analysis completed with detailed insights.",
+        });
+        return;
+      }
+      
+      // For Quick Analysis, use streaming endpoint
       const response = await fetch('/api/analyze/stream', {
         method: 'POST',
         headers: {
@@ -133,10 +148,11 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart }: ContentInp
       setIsLoading(true);
       onAnalysisStart?.();
       try {
-        const requestData = { ...data, lengthPreference, userNotes };
+        const requestData = { ...data, lengthPreference, userNotes, analysisMode };
         
         const result = await retryRequest(async () => {
-          const response = await apiRequest("POST", "/api/analyze", requestData);
+          const endpoint = analysisMode === 'deep' ? "/api/analyze/deep" : "/api/analyze";
+          const response = await apiRequest("POST", endpoint, requestData);
           
           if (!response.ok) {
             const errorData = await response.json();
@@ -275,20 +291,46 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart }: ContentInp
         <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-800">
           <strong>Process:</strong> Analysis creates captures → Flag as potential signals → Validate to signals → Use in briefs
         </div>
-        <div className="mt-3 flex items-center gap-2">
-          <Label htmlFor="analysis-length" className="text-sm font-medium">Truth Analysis Length:</Label>
-          <InfoTooltip content="Choose how detailed you want the strategic insights to be. Short for quick overviews, Long for comprehensive analysis." />
-          <Select value={lengthPreference} onValueChange={(value: any) => setLengthPreference(value)}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="short">Short</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="long">Long</SelectItem>
-              <SelectItem value="bulletpoints">Bulletpoints</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="mt-3 space-y-3">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="analysis-mode" className="text-sm font-medium">Analysis Mode:</Label>
+            <InfoTooltip content="Quick Analysis: 2-3 seconds, focused insights. Deep Analysis: 8-15 seconds, comprehensive strategic analysis with richer context." />
+            <Select value={analysisMode} onValueChange={(value: any) => setAnalysisMode(value)}>
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="quick">
+                  <div className="flex items-center gap-2">
+                    <Zap size={14} />
+                    Quick (2-3s)
+                  </div>
+                </SelectItem>
+                <SelectItem value="deep">
+                  <div className="flex items-center gap-2">
+                    <Search size={14} />
+                    Deep (8-15s)
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Label htmlFor="analysis-length" className="text-sm font-medium">Response Length:</Label>
+            <InfoTooltip content="Choose how detailed you want the strategic insights to be. Short for quick overviews, Long for comprehensive analysis." />
+            <Select value={lengthPreference} onValueChange={(value: any) => setLengthPreference(value)}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="short">Short</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="long">Long</SelectItem>
+                <SelectItem value="bulletpoints">Bulletpoints</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -317,6 +359,33 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart }: ContentInp
                 console.log("Form validation failed:", errors);
               })(e);
             }} className="space-y-4">
+              {/* Analysis Mode Toggle */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  {analysisMode === 'quick' ? (
+                    <Zap className="h-4 w-4 text-blue-600" />
+                  ) : (
+                    <Search className="h-4 w-4 text-purple-600" />
+                  )}
+                  <span className="text-sm font-medium">
+                    {analysisMode === 'quick' ? 'Quick Analysis' : 'Deep Analysis'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="text-xs text-gray-500">
+                    Est. {analysisMode === 'quick' ? '2-3 seconds' : '8-15 seconds'}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAnalysisMode(analysisMode === 'quick' ? 'deep' : 'quick')}
+                    className="h-8 px-3"
+                  >
+                    {analysisMode === 'quick' ? 'Switch to Deep' : 'Switch to Quick'}
+                  </Button>
+                </div>
+              </div>
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Label htmlFor="manual-text">Enter content to analyze</Label>

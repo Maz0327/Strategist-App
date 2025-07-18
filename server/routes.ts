@@ -274,7 +274,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Start analysis
       res.write(`data: ${JSON.stringify({ type: 'status', message: 'Analyzing content...', progress: 30 })}\n\n`);
       
-      const analysis = await openaiService.analyzeContent(data, lengthPreference);
+      const analysisMode = req.body.analysisMode || 'quick';
+      const analysis = await openaiService.analyzeContent(data, lengthPreference, analysisMode);
       
       res.write(`data: ${JSON.stringify({ type: 'status', message: 'Generating insights...', progress: 70 })}\n\n`);
       
@@ -347,7 +348,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const lengthPreference = req.body.lengthPreference || 'medium';
       const userNotes = req.body.userNotes || '';
-      const analysis = await openaiService.analyzeContent(data, lengthPreference);
+      const analysisMode = req.body.analysisMode || 'quick';
+      const analysis = await openaiService.analyzeContent(data, lengthPreference, analysisMode);
       debugLogger.info("OpenAI analysis completed", { sentiment: analysis.sentiment, confidence: analysis.confidence, keywordCount: analysis.keywords.length }, req);
       
       // Save as potential signal after analysis
@@ -456,23 +458,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Re-analyze with different length preference
   app.post("/api/reanalyze", requireAuth, async (req, res) => {
     try {
-      const { content, title, url, lengthPreference } = req.body;
+      const { content, title, url, lengthPreference, analysisMode } = req.body;
       
       if (!content || !lengthPreference) {
         return res.status(400).json({ message: "Content and length preference are required" });
       }
 
-      debugLogger.info("Re-analysis request received", { title, lengthPreference, hasUrl: !!url }, req);
+      debugLogger.info("Re-analysis request received", { title, lengthPreference, analysisMode, hasUrl: !!url }, req);
       
       const data = { content, title: title || "Re-analysis", url };
-      const analysis = await openaiService.analyzeContent({ content, title, url }, lengthPreference);
+      const analysis = await openaiService.analyzeContent({ content, title, url }, lengthPreference, analysisMode || 'quick');
       
       debugLogger.info("Re-analysis completed", { sentiment: analysis.sentiment, lengthPreference }, req);
       
       res.json({ 
         success: true, 
         analysis,
-        lengthPreference
+        lengthPreference,
+        analysisMode: analysisMode || 'quick'
       });
     } catch (error: any) {
       debugLogger.error('Re-analysis failed', error, req);
@@ -480,62 +483,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Streaming analysis endpoint for real-time progress
-  app.post("/api/analyze/stream", requireAuth, async (req, res) => {
+  // Deep Analysis endpoint for comprehensive strategic analysis
+  app.post("/api/analyze/deep", requireAuth, async (req, res) => {
     try {
-      const { content, title, url, lengthPreference } = req.body;
+      debugLogger.info("Deep analysis request received", { title: req.body.title, hasUrl: !!req.body.url, contentLength: req.body.content?.length }, req);
+      const data = analyzeContentSchema.parse(req.body);
       
-      if (!content) {
-        return res.status(400).json({ message: "Content is required" });
+      const lengthPreference = req.body.lengthPreference || 'medium';
+      const userNotes = req.body.userNotes || '';
+      const analysisMode = 'deep'; // Force deep analysis mode
+      
+      const analysis = await openaiService.analyzeContent(data, lengthPreference, analysisMode);
+      debugLogger.info("Deep analysis completed", { sentiment: analysis.sentiment, confidence: analysis.confidence, keywordCount: analysis.keywords.length }, req);
+      
+      // Save as signal with deep analysis flag
+      const signalData = {
+        userId: req.session.userId!,
+        title: data.title || "Deep Analysis",
+        content: data.content,
+        url: data.url,
+        summary: analysis.summary,
+        sentiment: analysis.sentiment,
+        tone: analysis.tone,
+        keywords: analysis.keywords,
+        tags: [],
+        confidence: analysis.confidence,
+        status: "capture",
+        truthFact: analysis.truthAnalysis.fact,
+        truthObservation: analysis.truthAnalysis.observation,
+        truthInsight: analysis.truthAnalysis.insight,
+        humanTruth: analysis.truthAnalysis.humanTruth,
+        culturalMoment: analysis.truthAnalysis.culturalMoment,
+        attentionValue: analysis.truthAnalysis.attentionValue,
+        platformContext: analysis.platformContext,
+        viralPotential: analysis.viralPotential,
+        cohortSuggestions: analysis.cohortSuggestions,
+        competitiveInsights: analysis.competitiveInsights,
+        userNotes: userNotes
+      };
+      
+      const signal = await storage.createSignal(signalData);
+      debugLogger.info("Deep analysis signal created", { signalId: signal.id, status: signal.status }, req);
+      
+      // Track source if URL provided
+      if (data.url) {
+        try {
+          const source = await sourceManagerService.findOrCreateSource(
+            data.url,
+            analysis.summary || data.title || 'Deep Analysis',
+            req.session.userId!,
+            analysis.summary
+          );
+          await sourceManagerService.linkSignalToSource(signal.id, source.id);
+        } catch (error) {
+          debugLogger.error('Error tracking source for deep analysis', error, req);
+        }
       }
-
-      // Set up Server-Sent Events (SSE)
-      res.writeHead(200, {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Cache-Control'
+      
+      res.json({
+        success: true,
+        analysis,
+        signalId: signal.id,
+        analysisMode: 'deep'
       });
-
-      const data = { content, title: title || "Streaming Analysis", url };
       
-      debugLogger.info("Streaming analysis request received", { title, lengthPreference, hasUrl: !!url }, req);
-      
-      try {
-        // Send progress updates during analysis
-        res.write(`data: ${JSON.stringify({ type: 'progress', stage: 'Initializing analysis...', progress: 10 })}\n\n`);
-        
-        await new Promise(resolve => setTimeout(resolve, 500));
-        res.write(`data: ${JSON.stringify({ type: 'progress', stage: 'Processing content...', progress: 30 })}\n\n`);
-        
-        await new Promise(resolve => setTimeout(resolve, 500));
-        res.write(`data: ${JSON.stringify({ type: 'progress', stage: 'Analyzing cultural context...', progress: 60 })}\n\n`);
-        
-        await new Promise(resolve => setTimeout(resolve, 500));
-        res.write(`data: ${JSON.stringify({ type: 'progress', stage: 'Generating insights...', progress: 80 })}\n\n`);
-
-        const analysis = await openaiService.analyzeContent(data, lengthPreference || 'medium');
-        
-        // Send final result
-        res.write(`data: ${JSON.stringify({ type: 'complete', analysis })}\n\n`);
-        res.write(`data: ${JSON.stringify({ type: 'end' })}\n\n`);
-        
-        debugLogger.info("Streaming analysis completed", { 
-          sentiment: analysis.sentiment,
-          summary: analysis.summary?.substring(0, 100),
-          hasTruthAnalysis: !!analysis.truthAnalysis,
-          analysisKeys: Object.keys(analysis)
-        }, req);
-      } catch (error: any) {
-        res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
-        debugLogger.error('Streaming analysis failed', error, req);
-      } finally {
-        res.end();
-      }
     } catch (error: any) {
-      debugLogger.error('Streaming setup failed', error, req);
-      res.status(500).json({ message: error.message });
+      debugLogger.error('Deep analysis failed', error, req);
+      res.status(400).json({ message: error.message });
     }
   });
 

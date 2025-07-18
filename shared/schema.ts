@@ -282,6 +282,7 @@ export const analyzeContentSchema = z.object({
   title: z.string().optional(),
   userNotes: z.string().optional(),
   lengthPreference: z.enum(['short', 'medium', 'long', 'bulletpoints']).optional(),
+  analysisMode: z.enum(['quick', 'deep']).optional(),
 });
 
 // API call tracking tables
