@@ -252,54 +252,91 @@ Return JSON only.`;
   }
 
   private async adjustAnalysis(mediumAnalysis: EnhancedAnalysisResult, lengthPreference: 'short' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
-    debugLogger.info('Fast text adjustment to ' + lengthPreference);
-    
-    // Fast text-based length adjustment without OpenAI calls - preserves quality while improving speed
-    const adjustText = (text: string, targetLength: 'short' | 'long' | 'bulletpoints'): string => {
-      if (!text) return text;
+    // Use smart text manipulation for bullet points (instant)
+    if (lengthPreference === 'bulletpoints') {
+      debugLogger.info('Fast text adjustment to bulletpoints');
       
-      const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
-      
-      if (targetLength === 'short') {
-        // Return first 2 sentences, ensuring they're complete
-        return sentences.slice(0, 2).join('. ').trim() + (sentences.length > 2 ? '.' : '');
-      } else if (targetLength === 'long') {
-        // If we have enough sentences, return them all. If not, enhance the existing ones
-        if (sentences.length >= 5) {
-          return sentences.slice(0, 6).join('. ').trim() + '.';
-        } else {
-          // Add strategic expansion to existing sentences
-          const expanded = sentences.map(s => {
-            if (s.trim().length < 50) {
-              return s.trim() + ', providing strategic value for content planning';
-            }
-            return s.trim();
-          }).join('. ').trim() + '.';
-          return expanded;
-        }
-      } else if (targetLength === 'bulletpoints') {
-        // Convert sentences to bullet points
+      const adjustToBulletPoints = (text: string): string => {
+        if (!text) return text;
+        const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
         return sentences.slice(0, 5).map(s => `• ${s.trim()}`).join('\n');
-      }
-      
-      return text;
-    };
+      };
+
+      const result: EnhancedAnalysisResult = {
+        ...mediumAnalysis,
+        truthAnalysis: {
+          fact: adjustToBulletPoints(mediumAnalysis.truthAnalysis.fact),
+          observation: adjustToBulletPoints(mediumAnalysis.truthAnalysis.observation),
+          insight: adjustToBulletPoints(mediumAnalysis.truthAnalysis.insight),
+          humanTruth: adjustToBulletPoints(mediumAnalysis.truthAnalysis.humanTruth),
+          culturalMoment: adjustToBulletPoints(mediumAnalysis.truthAnalysis.culturalMoment),
+          attentionValue: mediumAnalysis.truthAnalysis.attentionValue,
+          platform: mediumAnalysis.truthAnalysis.platform,
+          cohortOpportunities: mediumAnalysis.truthAnalysis.cohortOpportunities
+        }
+      };
+
+      debugLogger.info('Fast bulletpoint adjustment complete');
+      return result;
+    }
+
+    // Use OpenAI for short/long analysis (for quality depth)
+    debugLogger.info('OpenAI adjustment to ' + lengthPreference);
+    
+    const adjustmentPrompt = `Adjust this strategic analysis to ${lengthPreference} format while maintaining depth and quality:
+
+CURRENT ANALYSIS (Medium length):
+${JSON.stringify(mediumAnalysis.truthAnalysis, null, 2)}
+
+REQUIREMENTS:
+- ${lengthPreference === 'short' ? 'Exactly 2-3 sentences per field - concise but complete' : 'Exactly 5-7 sentences per field - comprehensive and detailed'}
+- Preserve all strategic insights and conclusions
+- Maintain professional strategic analysis quality
+- Focus on actionable intelligence and cultural context
+- Only adjust truthAnalysis fields: fact, observation, insight, humanTruth, culturalMoment
+
+Return ONLY the truthAnalysis JSON object with adjusted fields.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: "You are a strategic content analyst adjusting analysis length while preserving quality and insights. Return only the truthAnalysis JSON object." },
+        { role: "user", content: adjustmentPrompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.1,
+      max_tokens: lengthPreference === 'short' ? 800 : 1500
+    });
+
+    const responseContent = response.choices[0]?.message?.content;
+    if (!responseContent) {
+      debugLogger.error('No response from OpenAI adjustment');
+      return mediumAnalysis;
+    }
+
+    let adjustedTruthAnalysis;
+    try {
+      adjustedTruthAnalysis = JSON.parse(responseContent);
+    } catch (parseError) {
+      debugLogger.error('Failed to parse OpenAI adjustment response', { error: parseError });
+      return mediumAnalysis;
+    }
 
     const result: EnhancedAnalysisResult = {
       ...mediumAnalysis,
       truthAnalysis: {
-        fact: adjustText(mediumAnalysis.truthAnalysis.fact, lengthPreference),
-        observation: adjustText(mediumAnalysis.truthAnalysis.observation, lengthPreference),
-        insight: adjustText(mediumAnalysis.truthAnalysis.insight, lengthPreference),
-        humanTruth: adjustText(mediumAnalysis.truthAnalysis.humanTruth, lengthPreference),
-        culturalMoment: adjustText(mediumAnalysis.truthAnalysis.culturalMoment, lengthPreference),
+        fact: adjustedTruthAnalysis.fact || mediumAnalysis.truthAnalysis.fact,
+        observation: adjustedTruthAnalysis.observation || mediumAnalysis.truthAnalysis.observation,
+        insight: adjustedTruthAnalysis.insight || mediumAnalysis.truthAnalysis.insight,
+        humanTruth: adjustedTruthAnalysis.humanTruth || mediumAnalysis.truthAnalysis.humanTruth,
+        culturalMoment: adjustedTruthAnalysis.culturalMoment || mediumAnalysis.truthAnalysis.culturalMoment,
         attentionValue: mediumAnalysis.truthAnalysis.attentionValue,
         platform: mediumAnalysis.truthAnalysis.platform,
         cohortOpportunities: mediumAnalysis.truthAnalysis.cohortOpportunities
       }
     };
 
-    debugLogger.info('Fast adjustment complete', { lengthPreference, processingTime: 'instant' });
+    debugLogger.info('OpenAI adjustment complete', { lengthPreference });
     return result;
   }
 }
