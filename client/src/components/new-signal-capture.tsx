@@ -5,7 +5,7 @@ import { ContentInput } from "@/components/content-input";
 import { Button } from "@/components/ui/button";
 import { Plus, FileText, Link, Target, ArrowRight } from "lucide-react";
 import { AnalysisSkeleton } from "@/components/ui/analysis-skeleton";
-import { EnhancedAnalysisResults } from "@/components/enhanced-analysis-results";
+import EnhancedAnalysisResults from "@/components/enhanced-analysis-results";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
 import { ProgressBreadcrumb } from "@/components/ui/progress-breadcrumb";
 
