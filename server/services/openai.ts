@@ -120,164 +120,200 @@ export class OpenAIService {
     
     const startTime = Date.now();
     
-    // Check cache first - include timestamp to force new requests after prompt changes
-    const cacheKey = createCacheKey(content + title + lengthPreference + analysisMode + 'v2', 'analysis');
-    const cached = await analysisCache.get(cacheKey);
+    // Progressive analysis: short first, then expand
+    const result = await this.progressiveAnalysis(content, title, lengthPreference, analysisMode);
     
-    if (cached) {
-      const cacheTime = Date.now() - startTime;
-      debugLogger.info('Analysis cache hit', { cacheKey, duration: cacheTime });
-      performanceMonitor.logRequest('/api/analyze', 'POST', cacheTime, true, true);
-      return cached;
+    const processingTime = Date.now() - startTime;
+    debugLogger.info('Progressive analysis complete', { duration: processingTime, lengthPreference });
+    performanceMonitor.logRequest('/api/analyze', 'POST', processingTime, true, false);
+    
+    return result;
+  }
+
+  private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
+    // Step 1: Always create or get short analysis first
+    const shortCacheKey = createCacheKey(content + title + 'short' + analysisMode + 'v3', 'analysis');
+    let shortAnalysis = await analysisCache.get(shortCacheKey);
+    
+    if (!shortAnalysis) {
+      debugLogger.info('Creating short analysis first');
+      shortAnalysis = await this.createShortAnalysis(content, title, analysisMode);
+      await analysisCache.set(shortCacheKey, shortAnalysis, 300);
     }
     
-    try {
-      // Choose analysis approach based on mode
-      const isDeepAnalysis = analysisMode === 'deep';
-      
-      // Log the actual prompt being sent
-      const systemPrompt = this.getSystemPrompt(lengthPreference, isDeepAnalysis);
-      const userPrompt = isDeepAnalysis ? 
-        `Provide comprehensive strategic analysis of this content with ${lengthPreference} length responses:
+    // Step 2: If user wants short, return it immediately
+    if (lengthPreference === 'short') {
+      debugLogger.info('Returning short analysis');
+      return shortAnalysis;
+    }
+    
+    // Step 3: For other lengths, expand the short analysis
+    const expandedCacheKey = createCacheKey(content + title + lengthPreference + analysisMode + 'v3', 'analysis');
+    let expandedAnalysis = await analysisCache.get(expandedCacheKey);
+    
+    if (!expandedAnalysis) {
+      debugLogger.info('Expanding analysis to ' + lengthPreference);
+      expandedAnalysis = await this.expandAnalysis(shortAnalysis, lengthPreference, analysisMode);
+      await analysisCache.set(expandedCacheKey, expandedAnalysis, 300);
+    }
+    
+    debugLogger.info('Returning expanded analysis');
+    return expandedAnalysis;
+  }
+
+  private async createShortAnalysis(content: string, title: string, analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
+    const isDeepAnalysis = analysisMode === 'deep';
+    const systemPrompt = this.getSystemPrompt('short', isDeepAnalysis);
+    
+    const userPrompt = isDeepAnalysis ? 
+      `Provide comprehensive strategic analysis of this content with SHORT length responses (2-3 sentences per field):
 
 Title: ${title}
 Content: ${content.substring(0, 4000)}${content.length > 4000 ? '...' : ''}
-Length Preference: ${lengthPreference} (${lengthPreference === 'short' ? '2-3 sentences per field' : lengthPreference === 'medium' ? '3-4 sentences per field' : lengthPreference === 'long' ? '4-6 sentences per field' : 'bullet points where applicable'})
 
-CRITICAL: Every field in truthAnalysis (fact, observation, insight, humanTruth, culturalMoment) must contain exactly the number of sentences specified above. Do not use single sentences or incomplete responses.
+MANDATORY: Every field in truthAnalysis must contain exactly 2-3 sentences. This is CRITICAL for proper analysis.
 
 Focus on deep strategic insights, complex human motivations, cultural context, competitive landscape, and actionable recommendations. Return JSON only.` :
-        `Analyze this content with ${lengthPreference} length responses:
+      `Analyze this content with SHORT length responses (2-3 sentences per field):
 
 Title: ${title}
 Content: ${content.substring(0, 1500)}${content.length > 1500 ? '...' : ''}
-Length Preference: ${lengthPreference} (${lengthPreference === 'short' ? '2-3 sentences per field' : lengthPreference === 'medium' ? '3-4 sentences per field' : lengthPreference === 'long' ? '4-6 sentences per field' : 'bullet points where applicable'})
 
-CRITICAL: Every field in truthAnalysis (fact, observation, insight, humanTruth, culturalMoment) must contain exactly the number of sentences specified above. Do not use single sentences or incomplete responses.
+MANDATORY: Every field in truthAnalysis must contain exactly 2-3 sentences. This is CRITICAL for proper analysis.
 
 Return JSON only.`;
-      
-      debugLogger.info('OpenAI Prompt Details', {
-        lengthPreference,
-        analysisMode,
-        systemPromptLength: systemPrompt.length,
-        userPromptLength: userPrompt.length,
-        systemPromptStart: systemPrompt.substring(0, 200)
-      });
-      
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          { 
-            role: "system", 
-            content: systemPrompt
-          },
-          { 
-            role: "user", 
-            content: userPrompt
-          }
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.05,
-        max_tokens: isDeepAnalysis ? 2500 : 800
-      });
 
-      const responseContent = response.choices[0]?.message?.content;
-      if (!responseContent) {
-        throw new Error('No response content from OpenAI');
-      }
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.05,
+      max_tokens: isDeepAnalysis ? 2000 : 1200
+    });
 
-      debugLogger.info(`OpenAI response received, content length: ${responseContent.length}`);
-      debugLogger.info('Raw OpenAI Response:', { 
-        response: responseContent.substring(0, 500) + '...',
-        lengthPreference: lengthPreference,
-        analysisMode: analysisMode
-      });
-      
-      let analysis;
-      try {
-        analysis = JSON.parse(responseContent);
-        debugLogger.info('Successfully parsed OpenAI response', { 
-          hasSummary: !!analysis.summary,
-          hasTruthAnalysis: !!analysis.truthAnalysis,
-          hasKeywords: !!analysis.keywords,
-          summaryLength: analysis.summary?.length || 0,
-          factLength: analysis.truthAnalysis?.fact?.length || 0,
-          observationLength: analysis.truthAnalysis?.observation?.length || 0
-        });
-      } catch (parseError) {
-        debugLogger.error('JSON parsing failed', { response: responseContent, error: parseError });
-        throw new Error('Invalid JSON response from OpenAI');
-      }
-      
-      debugLogger.info(`Analysis completed in ${Date.now() - startTime}ms`);
-
-      const result: EnhancedAnalysisResult = {
-        summary: analysis.summary || 'Strategic analysis completed',
-        sentiment: analysis.sentiment || 'neutral',
-        tone: analysis.tone || 'professional',
-        keywords: analysis.keywords || [],
-        confidence: analysis.confidence || '85%',
-        truthAnalysis: {
-          fact: analysis.truthAnalysis?.fact || 'Key facts identified',
-          observation: analysis.truthAnalysis?.observation || 'Patterns analyzed',
-          insight: analysis.truthAnalysis?.insight || 'Strategic insights generated',
-          humanTruth: analysis.truthAnalysis?.humanTruth || 'Human motivations explored',
-          culturalMoment: analysis.truthAnalysis?.culturalMoment || 'Cultural context evaluated',
-          attentionValue: analysis.truthAnalysis?.attentionValue || 'medium',
-          platform: analysis.truthAnalysis?.platform || 'multi-platform',
-          cohortOpportunities: analysis.truthAnalysis?.cohortOpportunities || []
-        },
-        cohortSuggestions: analysis.cohortSuggestions || [],
-        platformContext: analysis.platformContext || 'Cross-platform analysis completed',
-        viralPotential: analysis.viralPotential || 'medium',
-        competitiveInsights: analysis.competitiveInsights || [],
-        strategicInsights: analysis.strategicInsights || [],
-        strategicActions: analysis.strategicActions || []
-      };
-      
-      debugLogger.info('Final analysis result:', { 
-        summary: result.summary.substring(0, 100),
-        sentiment: result.sentiment,
-        keywordCount: result.keywords.length,
-        truthAnalysisKeys: Object.keys(result.truthAnalysis)
-      });
-      
-      // Cache the result
-      await analysisCache.set(cacheKey, result);
-      
-      const processingTime = Date.now() - startTime;
-      performanceMonitor.logRequest('/api/analyze', 'POST', processingTime, true, false);
-      
-      // Track API usage
-      try {
-        await analyticsService.trackExternalAPICall('openai', 'analyze', processingTime, null, processingTime / 1000);
-      } catch (trackingError) {
-        debugLogger.warn('Failed to track API call', { error: trackingError });
-      }
-      
-      return result;
-    } catch (error) {
-      const errorTime = Date.now() - startTime;
-      debugLogger.error('OpenAI analysis failed', { 
-        error: error.message,
-        duration: errorTime,
-        contentLength: content.length,
-        hasTitle: !!title,
-        hasUrl: !!url
-      });
-      
-      performanceMonitor.logRequest('/api/analyze', 'POST', errorTime, false, false);
-      
-      // Track error
-      try {
-        await analyticsService.trackExternalAPICall('openai', 'analyze', errorTime, error.message, 0);
-      } catch (trackingError) {
-        debugLogger.warn('Failed to track API error', { error: trackingError });
-      }
-      
-      throw error;
+    const responseContent = response.choices[0]?.message?.content;
+    if (!responseContent) {
+      throw new Error('No response content from OpenAI');
     }
+
+    let analysis;
+    try {
+      analysis = JSON.parse(responseContent);
+      debugLogger.info('Successfully parsed short analysis', { 
+        hasSummary: !!analysis.summary,
+        hasTruthAnalysis: !!analysis.truthAnalysis,
+        hasKeywords: !!analysis.keywords,
+        summaryLength: analysis.summary?.length || 0,
+        factLength: analysis.truthAnalysis?.fact?.length || 0,
+        observationLength: analysis.truthAnalysis?.observation?.length || 0
+      });
+    } catch (parseError) {
+      debugLogger.error('JSON parsing failed', { response: responseContent, error: parseError });
+      throw new Error('Invalid JSON response from OpenAI');
+    }
+
+    const result: EnhancedAnalysisResult = {
+      summary: analysis.summary || 'Strategic analysis completed',
+      sentiment: analysis.sentiment || 'neutral',
+      tone: analysis.tone || 'professional',
+      keywords: analysis.keywords || [],
+      confidence: analysis.confidence || '85%',
+      truthAnalysis: {
+        fact: analysis.truthAnalysis?.fact || 'Key facts identified',
+        observation: analysis.truthAnalysis?.observation || 'Patterns analyzed',
+        insight: analysis.truthAnalysis?.insight || 'Strategic insights generated',
+        humanTruth: analysis.truthAnalysis?.humanTruth || 'Human motivations explored',
+        culturalMoment: analysis.truthAnalysis?.culturalMoment || 'Cultural context evaluated',
+        attentionValue: analysis.truthAnalysis?.attentionValue || 'medium',
+        platform: analysis.truthAnalysis?.platform || 'multi-platform',
+        cohortOpportunities: analysis.truthAnalysis?.cohortOpportunities || []
+      },
+      cohortSuggestions: analysis.cohortSuggestions || [],
+      platformContext: analysis.platformContext || 'Cross-platform analysis completed',
+      viralPotential: analysis.viralPotential || 'medium',
+      competitiveInsights: analysis.competitiveInsights || [],
+      strategicInsights: analysis.strategicInsights || [],
+      strategicActions: analysis.strategicActions || []
+    };
+
+    return result;
+  }
+
+  private async expandAnalysis(shortAnalysis: EnhancedAnalysisResult, lengthPreference: 'medium' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
+    const expansionPrompt = `You are expanding an existing strategic analysis to ${lengthPreference} length format. 
+
+EXISTING SHORT ANALYSIS:
+${JSON.stringify(shortAnalysis, null, 2)}
+
+EXPANSION REQUIREMENTS:
+- ${lengthPreference === 'medium' ? 'Expand each truthAnalysis field to exactly 3-4 sentences' : lengthPreference === 'long' ? 'Expand each truthAnalysis field to exactly 4-6 sentences' : 'Convert each truthAnalysis field to exactly 2-3 bullet points'}
+- Keep the same core insights and strategic direction
+- Add more depth, context, and specific details
+- Maintain the same JSON structure exactly
+- MANDATORY: Follow the exact sentence/bullet point counts specified
+- Do not change the sentiment, tone, or keywords
+- Only expand the truthAnalysis fields (fact, observation, insight, humanTruth, culturalMoment)
+
+Return the expanded analysis in the exact same JSON format with ${lengthPreference} length responses.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: "You are a strategic analyst expanding existing analysis with more detail and context. Maintain the same JSON structure and only expand the truthAnalysis fields." },
+        { role: "user", content: expansionPrompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.05,
+      max_tokens: lengthPreference === 'long' ? 2500 : 1800
+    });
+
+    const responseContent = response.choices[0]?.message?.content;
+    if (!responseContent) {
+      throw new Error('No response content from OpenAI expansion');
+    }
+
+    let expandedAnalysis;
+    try {
+      expandedAnalysis = JSON.parse(responseContent);
+      debugLogger.info('Successfully expanded analysis', { 
+        lengthPreference,
+        factLength: expandedAnalysis.truthAnalysis?.fact?.length || 0,
+        observationLength: expandedAnalysis.truthAnalysis?.observation?.length || 0
+      });
+    } catch (parseError) {
+      debugLogger.error('JSON parsing failed for expansion', { response: responseContent, error: parseError });
+      // Return original analysis if expansion fails
+      return shortAnalysis;
+    }
+
+    const result: EnhancedAnalysisResult = {
+      summary: expandedAnalysis.summary || shortAnalysis.summary,
+      sentiment: expandedAnalysis.sentiment || shortAnalysis.sentiment,
+      tone: expandedAnalysis.tone || shortAnalysis.tone,
+      keywords: expandedAnalysis.keywords || shortAnalysis.keywords,
+      confidence: expandedAnalysis.confidence || shortAnalysis.confidence,
+      truthAnalysis: {
+        fact: expandedAnalysis.truthAnalysis?.fact || shortAnalysis.truthAnalysis.fact,
+        observation: expandedAnalysis.truthAnalysis?.observation || shortAnalysis.truthAnalysis.observation,
+        insight: expandedAnalysis.truthAnalysis?.insight || shortAnalysis.truthAnalysis.insight,
+        humanTruth: expandedAnalysis.truthAnalysis?.humanTruth || shortAnalysis.truthAnalysis.humanTruth,
+        culturalMoment: expandedAnalysis.truthAnalysis?.culturalMoment || shortAnalysis.truthAnalysis.culturalMoment,
+        attentionValue: expandedAnalysis.truthAnalysis?.attentionValue || shortAnalysis.truthAnalysis.attentionValue,
+        platform: expandedAnalysis.truthAnalysis?.platform || shortAnalysis.truthAnalysis.platform,
+        cohortOpportunities: expandedAnalysis.truthAnalysis?.cohortOpportunities || shortAnalysis.truthAnalysis.cohortOpportunities
+      },
+      cohortSuggestions: expandedAnalysis.cohortSuggestions || shortAnalysis.cohortSuggestions,
+      platformContext: expandedAnalysis.platformContext || shortAnalysis.platformContext,
+      viralPotential: expandedAnalysis.viralPotential || shortAnalysis.viralPotential,
+      competitiveInsights: expandedAnalysis.competitiveInsights || shortAnalysis.competitiveInsights,
+      strategicInsights: expandedAnalysis.strategicInsights || shortAnalysis.strategicInsights,
+      strategicActions: expandedAnalysis.strategicActions || shortAnalysis.strategicActions
+    };
+
+    return result;
   }
 }
 
