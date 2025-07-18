@@ -50,9 +50,9 @@ export class OpenAIService {
 
   private getSystemPrompt(lengthPreference: string, isDeepAnalysis: boolean): string {
     const lengthInstructions = {
-      'short': 'Keep all responses concise (1-2 sentences each field)',
-      'medium': 'Provide balanced responses (2-3 sentences each field)', 
-      'long': 'Provide detailed responses (3-5 sentences each field)',
+      'short': 'Keep all responses concise (2 sentences minimum, 3 sentences maximum each field)',
+      'medium': 'Provide balanced responses (3-4 sentences each field)', 
+      'long': 'Provide detailed responses (4-6 sentences each field)',
       'bulletpoints': 'Use bullet points for key information where applicable'
     };
 
@@ -142,14 +142,14 @@ export class OpenAIService {
 
 Title: ${title}
 Content: ${content.substring(0, 4000)}${content.length > 4000 ? '...' : ''}
-Length Preference: ${lengthPreference} (${lengthPreference === 'short' ? '1-2 sentences per field' : lengthPreference === 'medium' ? '2-3 sentences per field' : lengthPreference === 'long' ? '3-5 sentences per field' : 'bullet points where applicable'})
+Length Preference: ${lengthPreference} (${lengthPreference === 'short' ? '2-3 sentences per field' : lengthPreference === 'medium' ? '3-4 sentences per field' : lengthPreference === 'long' ? '4-6 sentences per field' : 'bullet points where applicable'})
 
 Focus on deep strategic insights, complex human motivations, cultural context, competitive landscape, and actionable recommendations. Return JSON only.` :
         `Analyze this content with ${lengthPreference} length responses:
 
 Title: ${title}
 Content: ${content.substring(0, 1500)}${content.length > 1500 ? '...' : ''}
-Length Preference: ${lengthPreference} (${lengthPreference === 'short' ? '1-2 sentences per field' : lengthPreference === 'medium' ? '2-3 sentences per field' : lengthPreference === 'long' ? '3-5 sentences per field' : 'bullet points where applicable'})
+Length Preference: ${lengthPreference} (${lengthPreference === 'short' ? '2-3 sentences per field' : lengthPreference === 'medium' ? '3-4 sentences per field' : lengthPreference === 'long' ? '4-6 sentences per field' : 'bullet points where applicable'})
 
 Return JSON only.`;
       
