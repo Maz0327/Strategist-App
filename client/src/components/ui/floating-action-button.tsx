@@ -12,7 +12,7 @@ export function FloatingActionButton({ onNewSignal, onQuickAnalysis, onNewBrief 
   const [isOpen, setIsOpen] = useState(false)
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-20 left-4 z-50 md:bottom-6 md:right-6">
       {isOpen && (
         <div className="absolute bottom-16 right-0 space-y-2 animate-in fade-in-0 zoom-in-95">
           <Button
