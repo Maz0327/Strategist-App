@@ -61,24 +61,30 @@ export function ExploreSignals({ activeSubTab }: ExploreSignalsProps) {
 
       {/* Explore Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4" data-tutorial="explore-tabs">
-          <TabsTrigger value="trending" className="flex items-center space-x-2">
-            <TrendingUp className="h-4 w-4" />
-            <span>Trending Topics</span>
-          </TabsTrigger>
-          <TabsTrigger value="signals" className="flex items-center space-x-2">
-            <Activity className="h-4 w-4" />
-            <span>Signal Mining</span>
-          </TabsTrigger>
-          <TabsTrigger value="opportunities" className="flex items-center space-x-2">
-            <Zap className="h-4 w-4" />
-            <span>Real-time Opportunities</span>
-          </TabsTrigger>
-          <TabsTrigger value="suggestions" className="flex items-center space-x-2">
-            <Brain className="h-4 w-4" />
-            <span>Smart Prompts</span>
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList className="grid w-full grid-cols-4 md:grid-cols-4 min-w-max" data-tutorial="explore-tabs">
+            <TabsTrigger value="trending" className="flex items-center space-x-2 whitespace-nowrap">
+              <TrendingUp className="h-4 w-4" />
+              <span className="hidden sm:inline">Trending Topics</span>
+              <span className="sm:hidden">Trending</span>
+            </TabsTrigger>
+            <TabsTrigger value="signals" className="flex items-center space-x-2 whitespace-nowrap">
+              <Activity className="h-4 w-4" />
+              <span className="hidden sm:inline">Signal Mining</span>
+              <span className="sm:hidden">Mining</span>
+            </TabsTrigger>
+            <TabsTrigger value="opportunities" className="flex items-center space-x-2 whitespace-nowrap">
+              <Zap className="h-4 w-4" />
+              <span className="hidden sm:inline">Real-time Opportunities</span>
+              <span className="sm:hidden">Opportunities</span>
+            </TabsTrigger>
+            <TabsTrigger value="suggestions" className="flex items-center space-x-2 whitespace-nowrap">
+              <Brain className="h-4 w-4" />
+              <span className="hidden sm:inline">Smart Prompts</span>
+              <span className="sm:hidden">Prompts</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="trending" className="space-y-4">
           <Card>
