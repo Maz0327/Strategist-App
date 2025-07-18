@@ -131,16 +131,16 @@ export class OpenAIService {
               `Provide comprehensive strategic analysis of this content:
 
 Title: ${title}
-Content: ${content}
+Content: ${content.substring(0, 4000)}${content.length > 4000 ? '...' : ''}
 Length Preference: ${lengthPreference}
 
 Focus on deep strategic insights, complex human motivations, cultural context, competitive landscape, and actionable recommendations. Return JSON only.` :
-              `Analyze: ${content.substring(0, 2000)}${content.length > 2000 ? '...' : ''}\n\nTitle: ${title}\nReturn JSON only.` 
+              `Analyze: ${content.substring(0, 1500)}${content.length > 1500 ? '...' : ''}\n\nTitle: ${title}\nReturn JSON only.` 
           }
         ],
         response_format: { type: "json_object" },
-        temperature: 0.1,
-        max_tokens: isDeepAnalysis ? 3000 : 1000
+        temperature: 0.05,
+        max_tokens: isDeepAnalysis ? 2500 : 800
       });
 
       const responseContent = response.choices[0]?.message?.content;

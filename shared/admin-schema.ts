@@ -79,7 +79,7 @@ export const externalApiCalls = pgTable("external_api_calls", {
   method: text("method").notNull(),
   statusCode: integer("status_code"),
   responseTime: integer("response_time").notNull(),
-  tokensUsed: integer("tokens_used"), // for OpenAI calls
+  tokenUsage: integer("token_usage"), // for OpenAI calls
   cost: integer("cost"), // cost in cents
   timestamp: timestamp("timestamp").defaultNow(),
   errorMessage: text("error_message"),
@@ -135,6 +135,16 @@ export const insertAbTestResultsSchema = createInsertSchema(abTestResults).omit(
   timestamp: true,
 });
 
+export const insertApiCallSchema = createInsertSchema(apiCalls).omit({
+  id: true,
+  timestamp: true,
+});
+
+export const insertExternalApiCallSchema = createInsertSchema(externalApiCalls).omit({
+  id: true,
+  timestamp: true,
+});
+
 // Types
 export type UserAnalytics = typeof userAnalytics.$inferSelect;
 export type InsertUserAnalytics = z.infer<typeof insertUserAnalyticsSchema>;
@@ -152,10 +162,10 @@ export type AbTestResults = typeof abTestResults.$inferSelect;
 export type InsertAbTestResults = z.infer<typeof insertAbTestResultsSchema>;
 
 export type ApiCalls = typeof apiCalls.$inferSelect;
-export type InsertApiCalls = z.infer<typeof insertApiCallsSchema>;
+export type InsertApiCalls = z.infer<typeof insertApiCallSchema>;
 
 export type ExternalApiCalls = typeof externalApiCalls.$inferSelect;
-export type InsertExternalApiCalls = z.infer<typeof insertExternalApiCallsSchema>;
+export type InsertExternalApiCalls = z.infer<typeof insertExternalApiCallSchema>;
 
 // Import users table reference
 import { users } from "./schema";
