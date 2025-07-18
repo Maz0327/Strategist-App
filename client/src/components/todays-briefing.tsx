@@ -608,75 +608,10 @@ export function TodaysBriefing({ activeSubTab, onNavigateToExplore, onNavigateTo
               </div>
             </div>
 
-            {/* Mobile Header with Horizontal Scrollable Navigation */}
-            <div className="md:hidden">
-              {/* Mobile Title */}
-              <div className="mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Today's Briefing</h2>
-                <p className="text-sm text-gray-600">Your strategic intelligence for today</p>
-              </div>
-
-              {/* Horizontal Scrollable Tab Bar */}
-              <div className="relative mb-4">
-                <div className="flex overflow-x-auto pb-2 scrollbar-hide">
-                  <div className="flex space-x-2 min-w-max px-1">
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={() => onNavigate?.('briefing', 'client-feeds')}
-                      className="whitespace-nowrap flex-shrink-0"
-                    >
-                      <Users className="w-4 h-4 mr-1" />
-                      Client Channels
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onNavigate?.('briefing', 'custom-feeds')}
-                      className="whitespace-nowrap flex-shrink-0"
-                    >
-                      <Rss className="w-4 h-4 mr-1" />
-                      Custom Feeds
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onNavigate?.('briefing', 'project-feeds')}
-                      className="whitespace-nowrap flex-shrink-0"
-                    >
-                      <BarChart3 className="w-4 h-4 mr-1" />
-                      Project Intel
-                    </Button>
-                    {/* Settings buttons */}
-                    <div className="flex space-x-2 ml-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleRefresh}
-                        disabled={refreshing}
-                        className="whitespace-nowrap flex-shrink-0"
-                      >
-                        <RefreshCw className={`w-4 h-4 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
-                        Refresh
-                      </Button>
-                      <Dialog open={isSourcesOpen} onOpenChange={setIsSourcesOpen}>
-                        <DialogTrigger asChild>
-                          <Button variant="outline" size="sm" className="whitespace-nowrap flex-shrink-0">
-                            <Rss className="w-4 h-4 mr-1" />
-                            Sources
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                          <DialogHeader>
-                            <DialogTitle>Manage Feed Sources</DialogTitle>
-                          </DialogHeader>
-                          <FeedSourceManager onSourcesChange={() => setIsSourcesOpen(false)} />
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            {/* Mobile Header - Simplified */}
+            <div className="md:hidden mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Today's Briefing</h2>
+              <p className="text-sm text-gray-600">Your strategic intelligence for today</p>
             </div>
 
       {/* Quick Stats */}

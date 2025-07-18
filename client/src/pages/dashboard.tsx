@@ -150,6 +150,79 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
         </div>
       </header>
 
+      {/* Mobile-Only Persistent Navigation Bar */}
+      {isMobile && (
+        <div className="bg-white border-b border-gray-200 px-4 py-2">
+          <div className="flex overflow-x-auto pb-2 scrollbar-hide">
+            <div className="flex space-x-2 min-w-max">
+              <Button
+                variant={activeTab === "briefing" && activeSubTab === "client-feeds" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setActiveTab("briefing");
+                  setActiveSubTab("client-feeds");
+                }}
+                className="whitespace-nowrap flex-shrink-0"
+              >
+                <Home className="w-4 h-4 mr-1" />
+                Client Channels
+              </Button>
+              <Button
+                variant={activeTab === "briefing" && activeSubTab === "custom-feeds" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setActiveTab("briefing");
+                  setActiveSubTab("custom-feeds");
+                }}
+                className="whitespace-nowrap flex-shrink-0"
+              >
+                <Brain className="w-4 h-4 mr-1" />
+                Custom Feeds
+              </Button>
+              <Button
+                variant={activeTab === "briefing" && activeSubTab === "project-feeds" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setActiveTab("briefing");
+                  setActiveSubTab("project-feeds");
+                }}
+                className="whitespace-nowrap flex-shrink-0"
+              >
+                <BarChart3 className="w-4 h-4 mr-1" />
+                Project Intel
+              </Button>
+              <Button
+                variant={activeTab === "explore" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveTab("explore")}
+                className="whitespace-nowrap flex-shrink-0"
+              >
+                <Search className="w-4 h-4 mr-1" />
+                Explore
+              </Button>
+              <Button
+                variant={activeTab === "capture" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveTab("capture")}
+                className="whitespace-nowrap flex-shrink-0"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Capture
+              </Button>
+              <Button
+                variant={activeTab === "brief" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveTab("brief")}
+                className="whitespace-nowrap flex-shrink-0"
+              >
+                <Target className="w-4 h-4 mr-1" />
+                Brief Lab
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 flex overflow-hidden">
         {/* Mobile Menu Overlay */}
         {isMobile && mobileMenuOpen && (
