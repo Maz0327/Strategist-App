@@ -20,7 +20,7 @@ export class CohortBuilderService {
     
     // Check cache first
     const cached = cohortCache.get(cacheKey);
-    if (cached) {
+    if (cached && Array.isArray(cached) && cached.length > 0) {
       debugLogger.info('Cohort analysis cache hit', { cacheKey, duration: Date.now() - startTime });
       return cached;
     }
@@ -120,18 +120,34 @@ Return only valid JSON without markdown formatting.`;
   private getFallbackCohorts(): CohortSuggestion[] {
     return [
       {
-        name: "Industry Professionals",
-        description: "Working professionals in the relevant industry",
-        behaviorPatterns: ["Industry networking", "Professional development", "Thought leadership"],
-        platforms: ["LinkedIn", "Industry forums"],
+        name: "AI-Curious Content Creators",
+        description: "Content creators exploring AI tools for efficiency while maintaining authenticity",
+        behaviorPatterns: ["Early adopters of AI tools", "Experimentation-focused approach", "Efficiency-seeking behavior"],
+        platforms: ["YouTube", "LinkedIn", "Twitter"],
+        size: "medium",
+        engagement: "high"
+      },
+      {
+        name: "Authentic Brand Advocates",
+        description: "Consumers who prioritize genuine human connection in brand messaging",
+        behaviorPatterns: ["Values-driven purchasing", "Brand authenticity verification", "Community-focused engagement"],
+        platforms: ["Instagram", "TikTok", "Facebook"],
         size: "large",
         engagement: "medium"
       },
       {
-        name: "Early Adopters",
-        description: "Users who embrace new trends and technologies",
-        behaviorPatterns: ["Innovation seeking", "Community participation", "Influence sharing"],
-        platforms: ["Twitter", "Reddit", "Discord"],
+        name: "Tech-Savvy Marketing Strategists",
+        description: "Marketing professionals leveraging AI for strategic advantage",
+        behaviorPatterns: ["Data-driven decision making", "Strategic AI implementation", "Innovation-focused campaigns"],
+        platforms: ["LinkedIn", "Twitter", "Industry forums"],
+        size: "small",
+        engagement: "high"
+      },
+      {
+        name: "Cultural Moment Seekers",
+        description: "Audiences who engage with timely, culturally relevant content",
+        behaviorPatterns: ["Trend-conscious behavior", "Real-time engagement", "Cultural awareness"],
+        platforms: ["TikTok", "Twitter", "Instagram"],
         size: "medium",
         engagement: "high"
       }
