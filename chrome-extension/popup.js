@@ -42,6 +42,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     saveButton.addEventListener('click', handleSave);
     captureMode?.addEventListener('change', handleCaptureModeChange);
     userNotes.addEventListener('input', handleNotesChange);
+    
+    // Visual intelligence features
+    const screenshotButton = document.getElementById('screenshotButton');
+    const visualAnalysisButton = document.getElementById('visualAnalysisButton');
+    
+    screenshotButton?.addEventListener('click', handleScreenshot);
+    visualAnalysisButton?.addEventListener('click', handleVisualAnalysis);
 
     async function initializePopup() {
         try {
@@ -145,6 +152,138 @@ document.addEventListener('DOMContentLoaded', async () => {
                 selectedTextContainer.appendChild(contextDiv);
             }
         }
+    }
+
+    // Visual Intelligence Features
+    async function handleScreenshot() {
+        try {
+            showStatus('Capturing screenshot...', 'info');
+            
+            // Get current tab
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (!tab) {
+                showStatus('Could not access current tab', 'error');
+                return;
+            }
+
+            // Capture screenshot
+            const screenshot = await chrome.tabs.captureVisibleTab(tab.windowId, {
+                format: 'png',
+                quality: 90
+            });
+
+            // Store screenshot data
+            await chrome.storage.local.set({
+                screenshot: {
+                    dataUrl: screenshot,
+                    timestamp: Date.now(),
+                    url: currentPageInfo?.url || 'unknown',
+                    title: currentPageInfo?.title || 'Screenshot'
+                }
+            });
+
+            showStatus('Screenshot captured successfully!', 'success');
+            
+            // Update UI to show screenshot options
+            updateScreenshotUI(true);
+            
+        } catch (error) {
+            console.error('Screenshot capture failed:', error);
+            showStatus('Failed to capture screenshot', 'error');
+        }
+    }
+
+    async function handleVisualAnalysis() {
+        try {
+            showStatus('Analyzing visual content...', 'info');
+            
+            // Get stored screenshot
+            const storage = await chrome.storage.local.get(['screenshot']);
+            if (!storage.screenshot) {
+                showStatus('No screenshot found. Please capture a screenshot first.', 'error');
+                return;
+            }
+
+            // Prepare visual analysis request
+            const analysisData = {
+                imageUrls: [storage.screenshot.dataUrl],
+                content: userNotes.value || currentPageInfo?.title || 'Visual content analysis',
+                context: `Screenshot from ${currentPageInfo?.url || 'webpage'}`,
+                sourceUrl: currentPageInfo?.url
+            };
+
+            // Send to visual analysis API
+            const response = await fetch(`${currentConfig.backendUrl}${currentConfig.apiPrefix}/analyze/visual`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify(analysisData)
+            });
+
+            if (!response.ok) {
+                throw new Error(`Visual analysis failed: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            // Display results
+            displayVisualAnalysis(result.visualAnalysis);
+            showStatus('Visual analysis completed!', 'success');
+            
+        } catch (error) {
+            console.error('Visual analysis failed:', error);
+            showStatus('Visual analysis failed. Please try again.', 'error');
+        }
+    }
+
+    function updateScreenshotUI(hasScreenshot) {
+        const screenshotIndicator = document.getElementById('screenshotIndicator');
+        const visualAnalysisButton = document.getElementById('visualAnalysisButton');
+        
+        if (hasScreenshot) {
+            screenshotIndicator.style.display = 'block';
+            visualAnalysisButton.disabled = false;
+            visualAnalysisButton.textContent = '🔍 Analyze Visual';
+        } else {
+            screenshotIndicator.style.display = 'none';
+            visualAnalysisButton.disabled = true;
+            visualAnalysisButton.textContent = '📸 Capture Screenshot First';
+        }
+    }
+
+    function displayVisualAnalysis(analysis) {
+        const visualResultsContainer = document.getElementById('visualResults');
+        if (!visualResultsContainer) return;
+
+        // Create visual analysis display
+        const html = `
+            <div class="visual-analysis-results">
+                <h3>🎨 Visual Intelligence</h3>
+                <div class="analysis-section">
+                    <h4>Brand Elements</h4>
+                    <p><strong>Color Trend:</strong> ${analysis.brandElements?.colorPalette?.trend || 'N/A'}</p>
+                    <p><strong>Typography:</strong> ${analysis.brandElements?.typography?.trend || 'N/A'}</p>
+                    <p><strong>Layout:</strong> ${analysis.brandElements?.layoutComposition?.style || 'N/A'}</p>
+                </div>
+                <div class="analysis-section">
+                    <h4>Cultural Moments</h4>
+                    <p><strong>Viral Potential:</strong> ${analysis.culturalVisualMoments?.viralPatterns?.shareability || 'N/A'}</p>
+                    <p><strong>Generation:</strong> ${analysis.culturalVisualMoments?.generationalAesthetics?.primary || 'N/A'}</p>
+                </div>
+                <div class="analysis-section">
+                    <h4>Strategic Recommendations</h4>
+                    ${analysis.strategicRecommendations?.map(rec => `<p>• ${rec}</p>`).join('') || '<p>No recommendations available</p>'}
+                </div>
+                <div class="confidence-score">
+                    <p><strong>Confidence Score:</strong> ${analysis.confidenceScore || 0}%</p>
+                </div>
+            </div>
+        `;
+
+        visualResultsContainer.innerHTML = html;
+        visualResultsContainer.style.display = 'block';
     }
 
     async function generateAutoSuggestions() {

@@ -53,6 +53,22 @@
                 ></textarea>
             </div>
 
+            <!-- Visual Intelligence Features -->
+            <div class="visual-intelligence">
+                <h3>Visual Intelligence</h3>
+                <div class="visual-actions">
+                    <button type="button" class="btn btn-secondary" id="screenshotButton">
+                        📸 Screenshot
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="visualAnalysisButton" disabled>
+                        🔍 Analyze Visual
+                    </button>
+                </div>
+                <div class="screenshot-indicator" id="screenshotIndicator" style="display: none;">
+                    ✅ Screenshot captured
+                </div>
+            </div>
+
             <!-- Quick Actions -->
             <div class="quick-actions" id="quickActionsContainer">
                 <button type="button" class="btn btn-secondary" id="analyzeButton">
@@ -69,6 +85,9 @@
                     <span id="saveButtonText">Save to Drafts</span>
                 </button>
             </div>
+
+            <!-- Visual Analysis Results -->
+            <div class="visual-results" id="visualResults" style="display: none;"></div>
 
             <!-- Status Messages -->
             <div id="statusMessage" class="status-message"></div>

@@ -8,7 +8,9 @@
     "storage",
     "contextMenus",
     "notifications",
-    "alarms"
+    "alarms",
+    "tabs",
+    "scripting"
   ],
   "commands": {
     "quick-capture": {

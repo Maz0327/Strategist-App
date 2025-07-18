@@ -45,6 +45,12 @@ export const signals = pgTable("signals", {
   isDraft: boolean("is_draft").default(false),
   capturedAt: timestamp("captured_at"),
   browserContext: jsonb("browser_context"), // JSON for domain, meta description, etc.
+  // Visual intelligence fields
+  visualAssets: jsonb("visual_assets"), // {images: [], videos: [], screenshots: []}
+  visualAnalysis: jsonb("visual_analysis"), // Visual trend analysis results
+  brandElements: jsonb("brand_elements"), // Logo, colors, typography, layout patterns
+  culturalVisualMoments: jsonb("cultural_visual_moments"), // Meme tracking, viral patterns
+  competitiveVisualInsights: jsonb("competitive_visual_insights"), // Visual strategy analysis
   createdAt: timestamp("created_at").defaultNow(),
 });
 

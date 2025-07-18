@@ -10,6 +10,7 @@ import { scraperService } from "./services/scraper";
 import { sourceManagerService } from "./services/source-manager";
 import { dailyReportsService } from "./services/daily-reports";
 import { feedManagerService } from "./services/feed-manager";
+import { visualAnalysisService } from "./services/visual-analysis";
 import { 
   loginSchema, 
   registerSchema, 
@@ -281,13 +282,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const analysisMode = req.body.analysisMode || 'quick';
       
+      // Extract content and visual assets if URL provided
+      let extractedContent = null;
+      let visualAnalysis = null;
+      
+      if (data.url) {
+        res.write(`data: ${JSON.stringify({ type: 'status', message: 'Extracting content and visuals...', progress: 35 })}\n\n`);
+        res.flush?.();
+        
+        try {
+          extractedContent = await scraperService.extractContent(data.url);
+          
+          // Perform visual analysis if visual assets found
+          if (extractedContent.visualAssets && extractedContent.visualAssets.length > 0) {
+            res.write(`data: ${JSON.stringify({ type: 'status', message: 'Analyzing visual content...', progress: 40 })}\n\n`);
+            res.flush?.();
+            
+            visualAnalysis = await visualAnalysisService.analyzeVisualAssets(
+              extractedContent.visualAssets,
+              data.content || extractedContent.content,
+              data.url
+            );
+          }
+        } catch (error) {
+          debugLogger.error('Visual analysis failed, continuing with text analysis', error, req);
+        }
+      }
+      
       // Send progress updates during analysis
-      res.write(`data: ${JSON.stringify({ type: 'status', message: 'Processing with AI...', progress: 40 })}\n\n`);
+      res.write(`data: ${JSON.stringify({ type: 'status', message: 'Processing with AI...', progress: 50 })}\n\n`);
       res.flush?.();
       
       const analysis = await openaiService.analyzeContent(data, lengthPreference, analysisMode);
       
-      res.write(`data: ${JSON.stringify({ type: 'status', message: 'Generating insights...', progress: 60 })}\n\n`);
+      res.write(`data: ${JSON.stringify({ type: 'status', message: 'Generating insights...', progress: 70 })}\n\n`);
       res.flush?.();
       
       // Send more detailed progress
@@ -320,7 +348,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         viralPotential: analysis.viralPotential,
         cohortSuggestions: analysis.cohortSuggestions,
         competitiveInsights: analysis.competitiveInsights,
-        userNotes: userNotes
+        userNotes: userNotes,
+        // Visual intelligence fields
+        visualAssets: extractedContent?.visualAssets || null,
+        visualAnalysis: visualAnalysis || null,
+        brandElements: visualAnalysis?.brandElements || null,
+        culturalVisualMoments: visualAnalysis?.culturalVisualMoments || null,
+        competitiveVisualInsights: visualAnalysis?.competitiveVisualInsights || null
       };
       
       const signal = await storage.createSignal(signalData);
@@ -359,6 +393,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Visual Analysis API - dedicated endpoint for image analysis
+  app.post("/api/analyze/visual", requireAuth, async (req, res) => {
+    try {
+      const { imageUrls, content, context } = req.body;
+      
+      if (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) {
+        return res.status(400).json({ 
+          error: "Image URLs are required",
+          message: "Please provide an array of image URLs to analyze"
+        });
+      }
+
+      // Convert URLs to VisualAsset format
+      const visualAssets = imageUrls.map(url => ({
+        type: 'image' as const,
+        url
+      }));
+
+      // Perform visual analysis
+      const visualAnalysis = await visualAnalysisService.analyzeVisualAssets(
+        visualAssets,
+        content || context || "Visual content analysis",
+        req.body.sourceUrl
+      );
+
+      res.json({ 
+        success: true, 
+        visualAnalysis,
+        metadata: {
+          imagesAnalyzed: visualAssets.length,
+          confidenceScore: visualAnalysis.confidenceScore
+        }
+      });
+
+    } catch (error: any) {
+      debugLogger.error('Visual analysis API failed', error, req);
+      res.status(500).json({ 
+        error: "Visual analysis failed",
+        message: error.message
+      });
+    }
+  });
+
   // Content analysis routes (standard version)
   app.post("/api/analyze", requireAuth, async (req, res) => {
     try {
@@ -369,6 +446,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const lengthPreference = req.body.lengthPreference || 'medium';
       const userNotes = req.body.userNotes || '';
       const analysisMode = req.body.analysisMode || 'quick';
+      
+      // Extract content and visual assets if URL provided
+      let extractedContent = null;
+      let visualAnalysis = null;
+      
+      if (data.url) {
+        try {
+          extractedContent = await scraperService.extractContent(data.url);
+          
+          // Perform visual analysis if visual assets found
+          if (extractedContent.visualAssets && extractedContent.visualAssets.length > 0) {
+            visualAnalysis = await visualAnalysisService.analyzeVisualAssets(
+              extractedContent.visualAssets,
+              data.content || extractedContent.content,
+              data.url
+            );
+          }
+        } catch (error) {
+          debugLogger.error('Visual analysis failed, continuing with text analysis', error, req);
+        }
+      }
+      
       const analysis = await openaiService.analyzeContent(data, lengthPreference, analysisMode);
       debugLogger.info("OpenAI analysis completed", { sentiment: analysis.sentiment, confidence: analysis.confidence, keywordCount: analysis.keywords.length }, req);
       
