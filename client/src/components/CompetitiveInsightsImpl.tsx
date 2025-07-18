@@ -15,6 +15,7 @@ interface CompetitiveInsightsImplProps {
   content: string;
   title?: string;
   onClose?: () => void;
+  truthAnalysis?: any;
 }
 
 const categoryIcons = {
@@ -43,7 +44,7 @@ const timeframeColors = {
   'long-term': 'bg-blue-100 text-blue-800'
 };
 
-export default function CompetitiveInsightsImpl({ content, title, onClose }: CompetitiveInsightsImplProps) {
+export default function CompetitiveInsightsImpl({ content, title, onClose, truthAnalysis }: CompetitiveInsightsImplProps) {
   const [insights, setInsights] = useState<CompetitiveInsight[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

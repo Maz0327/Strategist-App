@@ -156,8 +156,15 @@ export default function LazyStrategicRecommendations({ content, title, truthAnal
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <p className="italic text-gray-500">
-              No strategic recommendations available for this content.
+            <button
+              onClick={loadStrategicRecommendations}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 mx-auto"
+            >
+              <Zap className="h-4 w-4" />
+              Analyze Analysis for Strategic Recommendations
+            </button>
+            <p className="text-sm text-gray-500 mt-3">
+              Generate strategic recommendations by analyzing all components together
             </p>
           </div>
         </CardContent>

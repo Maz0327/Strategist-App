@@ -586,9 +586,9 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
                   <Label>Extracted Content</Label>
                   <Textarea
                     value={form.watch("content")}
-                    readOnly
+                    onChange={(e) => form.setValue("content", e.target.value)}
                     rows={4}
-                    className="bg-gray-50"
+                    className="bg-white"
                   />
                 </div>
                 

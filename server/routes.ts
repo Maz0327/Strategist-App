@@ -1544,7 +1544,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
         return res.status(400).json({ error: 'Content is required' });
       }
       
-      const cohorts = await cohortBuilderService.getCohortSuggestions(content, title, truthAnalysis);
+      const cohorts = await cohortBuilderService.generateCohorts(content, title, truthAnalysis);
       res.json({ cohorts });
       
     } catch (error: any) {
@@ -1580,7 +1580,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
         return res.status(400).json({ error: 'Content is required' });
       }
       
-      const insights = await strategicInsightsService.getStrategicInsights(content, title, truthAnalysis);
+      const insights = await strategicInsightsService.generateInsights(content, title, truthAnalysis);
       res.json({ insights });
       
     } catch (error: any) {
@@ -1598,7 +1598,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
         return res.status(400).json({ error: 'Content is required' });
       }
       
-      const actions = await strategicActionsService.getStrategicActions(content, title, truthAnalysis);
+      const actions = await strategicActionsService.generateActions(content, title, truthAnalysis);
       res.json({ actions });
       
     } catch (error: any) {
