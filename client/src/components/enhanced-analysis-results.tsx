@@ -30,30 +30,28 @@ import {
 
 interface EnhancedAnalysisResultsProps {
   analysis: {
-    analysis: {
-      summary: string;
-      sentiment: string;
-      tone: string;
-      keywords: string[];
-      confidence: string;
-      truthAnalysis: {
-        fact: string;
-        observation: string;
-        insight: string;
-        humanTruth: string;
-        culturalMoment: string;
-        attentionValue: 'high' | 'medium' | 'low';
-        platform: string;
-        cohortOpportunities: string[];
-      };
-      cohortSuggestions: string[];
-      platformContext: string;
-      viralPotential: 'high' | 'medium' | 'low';
-      competitiveInsights: string[];
-      strategicInsights: string[];
-      strategicActions: string[];
+    summary: string;
+    sentiment: string;
+    tone: string;
+    keywords: string[];
+    confidence: string;
+    truthAnalysis: {
+      fact: string;
+      observation: string;
+      insight: string;
+      humanTruth: string;
+      culturalMoment: string;
+      attentionValue: 'high' | 'medium' | 'low';
+      platform: string;
+      cohortOpportunities: string[];
     };
-    signalId: number;
+    cohortSuggestions: string[];
+    platformContext: string;
+    viralPotential: 'high' | 'medium' | 'low';
+    competitiveInsights: string[];
+    strategicInsights: string[];
+    strategicActions: string[];
+    signalId?: number;
   };
   originalContent?: {
     content: string;
@@ -63,8 +61,8 @@ interface EnhancedAnalysisResultsProps {
 }
 
 export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedAnalysisResultsProps) {
-  // Fix: analysis is the data itself, not nested under analysis.analysis
-  const data = analysis.analysis || analysis;
+  // Analysis data is passed directly from API response
+  const data = analysis;
   const { toast } = useToast();
 
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS

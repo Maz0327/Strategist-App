@@ -113,8 +113,9 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart }: ContentInp
                 setAnalysisProgress({ stage: eventData.stage, progress: eventData.progress });
               } else if (eventData.type === 'complete') {
                 console.log('Analysis complete event received:', eventData);
-                console.log('Analysis data:', eventData.analysis);
-                onAnalysisComplete?.(eventData.analysis, data);
+                console.log('Complete event data:', eventData.data);
+                // eventData.data contains { analysis, signalId }
+                onAnalysisComplete?.(eventData.data.analysis, data);
                 toast({
                   title: "Analysis Complete", 
                   description: "Content captured and analyzed with real-time progress tracking.",
@@ -162,7 +163,8 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart }: ContentInp
           return await response.json();
         });
         
-        onAnalysisComplete?.(result, data);
+        // result contains { success: true, analysis, signalId }
+        onAnalysisComplete?.(result.analysis, data);
         
         toast({
           title: "Analysis Complete", 
