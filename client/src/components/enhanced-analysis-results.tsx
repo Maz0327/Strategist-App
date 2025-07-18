@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { apiRequest } from "@/lib/queryClient";
 import ErrorBoundary from "./ErrorBoundary";
 import LazyCompetitiveInsights from "./LazyCompetitiveInsights";
@@ -73,6 +74,7 @@ export function EnhancedAnalysisResults({
   // Analysis data is passed directly from API response
   const data = analysis;
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   const [lengthPreference, setLengthPreference] = useState<'short' | 'medium' | 'long' | 'bulletpoints'>(currentLengthPreference);
@@ -250,10 +252,10 @@ export function EnhancedAnalysisResults({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <h4 className="text-lg font-bold text-gray-900">Sentiment</h4>
+                <h4 className="text-base sm:text-lg font-bold text-gray-900">Sentiment</h4>
                 <Button variant="ghost" size="sm" className="p-0 h-auto">
                   <Info size={14} className="text-gray-400" />
                 </Button>
@@ -264,7 +266,7 @@ export function EnhancedAnalysisResults({
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <h4 className="text-lg font-bold text-gray-900">Attention Value</h4>
+                <h4 className="text-base sm:text-lg font-bold text-gray-900">Attention Value</h4>
                 <Button variant="ghost" size="sm" className="p-0 h-auto">
                   <Info size={14} className="text-gray-400" />
                 </Button>
@@ -273,9 +275,9 @@ export function EnhancedAnalysisResults({
                 {data.truthAnalysis?.attentionValue || 'medium'}
               </Badge>
             </div>
-            <div className="text-center">
+            <div className="text-center sm:col-span-2 lg:col-span-1">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <h4 className="text-lg font-bold text-gray-900">Viral Potential</h4>
+                <h4 className="text-base sm:text-lg font-bold text-gray-900">Viral Potential</h4>
                 <Button variant="ghost" size="sm" className="p-0 h-auto">
                   <Info size={14} className="text-gray-400" />
                 </Button>
@@ -286,24 +288,25 @@ export function EnhancedAnalysisResults({
             </div>
           </div>
           <Separator className="my-4" />
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-4">
             <p className="text-sm text-gray-700 flex-1">{data.summary}</p>
-            <div className="flex items-center gap-2 ml-4">
+            <div className="flex flex-col sm:flex-row gap-2 lg:ml-4">
               <Button 
                 size="sm" 
                 variant="outline" 
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 w-full sm:w-auto"
                 onClick={() => toast({
                   title: "Analysis Saved",
                   description: "This analysis has been saved to your dashboard as a capture.",
                 })}
               >
                 <Save size={14} />
-                Save Analysis
+                <span className="hidden sm:inline">Save Analysis</span>
+                <span className="sm:hidden">Save</span>
               </Button>
               <Button 
                 size="sm" 
-                className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
+                className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2 w-full sm:w-auto"
                 onClick={handleFlagAsPotentialSignal}
                 disabled={isFlagging}
               >
@@ -312,7 +315,8 @@ export function EnhancedAnalysisResults({
                 ) : (
                   <Target size={14} />
                 )}
-                Flag as Worth Researching
+                <span className="hidden sm:inline">Flag as Worth Researching</span>
+                <span className="sm:hidden">Flag</span>
               </Button>
             </div>
           </div>
@@ -321,17 +325,29 @@ export function EnhancedAnalysisResults({
 
       {/* Detailed Analysis Tabs */}
       <Tabs defaultValue="truth" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="truth">Truth Analysis</TabsTrigger>
-          <TabsTrigger value="cohorts">Cohorts</TabsTrigger>
-          <TabsTrigger value="insights">Insights</TabsTrigger>
-          <TabsTrigger value="actions">Actions</TabsTrigger>
+        <TabsList className={`grid w-full ${isMobile ? 'grid-cols-2' : 'grid-cols-4'}`}>
+          <TabsTrigger value="truth" className="text-xs sm:text-sm">
+            <span className="hidden sm:inline">Truth Analysis</span>
+            <span className="sm:hidden">Truth</span>
+          </TabsTrigger>
+          <TabsTrigger value="cohorts" className="text-xs sm:text-sm">
+            <span className="hidden sm:inline">Cohorts</span>
+            <span className="sm:hidden">Cohorts</span>
+          </TabsTrigger>
+          <TabsTrigger value="insights" className="text-xs sm:text-sm">
+            <span className="hidden sm:inline">Insights</span>
+            <span className="sm:hidden">Insights</span>
+          </TabsTrigger>
+          <TabsTrigger value="actions" className="text-xs sm:text-sm">
+            <span className="hidden sm:inline">Actions</span>
+            <span className="sm:hidden">Actions</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="truth" className="space-y-4">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <CardTitle className="flex items-center gap-2">
                   <Eye className="h-5 w-5" />
                   Truth Framework Analysis
@@ -339,7 +355,7 @@ export function EnhancedAnalysisResults({
                 <div className="flex items-center gap-2">
                   <Label htmlFor="length-preference" className="text-sm">Length:</Label>
                   <Select value={lengthPreference} onValueChange={(value: any) => handleLengthPreferenceChange(value)} disabled={isReanalyzing}>
-                    <SelectTrigger className="w-32">
+                    <SelectTrigger className="w-full sm:w-32">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

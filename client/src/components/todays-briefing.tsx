@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Brain, TrendingUp, Clock, ArrowRight, RefreshCw, Bookmark, CheckCircle, BarChart3, Rss, Zap, ExternalLink, Settings, Users, HelpCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { Signal } from "@shared/schema";
 import { TopicPreferences } from "./topic-preferences";
 import { FeedSourceManager } from "./feed-source-manager";
@@ -24,6 +25,7 @@ export function TodaysBriefing({ activeSubTab, onNavigateToExplore, onNavigateTo
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   const [isSourcesOpen, setIsSourcesOpen] = useState(false);
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
 
   // Fetch recent signals for today's briefing
   const { data: signalsData, isLoading, refetch } = useQuery<{ signals: Signal[] }>({
@@ -170,7 +172,7 @@ export function TodaysBriefing({ activeSubTab, onNavigateToExplore, onNavigateTo
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-10 w-24" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map(i => (
             <Skeleton key={i} className="h-24" />
           ))}
@@ -190,12 +192,12 @@ export function TodaysBriefing({ activeSubTab, onNavigateToExplore, onNavigateTo
       case "client-feeds":
         return (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Client Pulse</h3>
-                <p className="text-gray-600">Project data, analytics, and client performance metrics</p>
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Client Pulse</h3>
+                <p className="text-sm sm:text-base text-gray-600">Project data, analytics, and client performance metrics</p>
               </div>
-              <Button onClick={refreshFeeds} variant="outline" size="sm">
+              <Button onClick={refreshFeeds} variant="outline" size="sm" className="w-full sm:w-auto">
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Refresh
               </Button>
@@ -216,13 +218,13 @@ export function TodaysBriefing({ activeSubTab, onNavigateToExplore, onNavigateTo
               <div className="space-y-3">
                 {projectData.feedItems.map((item: any) => (
                   <Card key={item.id} className="border-l-4 border-blue-500">
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start">
+                    <CardContent className="p-3 sm:p-4">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-gray-900 mb-1 break-words leading-tight">{item.title}</h4>
-                          <p className="text-sm text-gray-600 mb-2 break-words leading-relaxed">{item.summary}</p>
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <Badge variant="outline">{item.urgencyLevel}</Badge>
+                          <h4 className="font-medium text-gray-900 mb-1 break-words leading-tight text-sm sm:text-base">{item.title}</h4>
+                          <p className="text-xs sm:text-sm text-gray-600 mb-2 break-words leading-relaxed">{item.summary}</p>
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                            <Badge variant="outline" className="text-xs">{item.urgencyLevel}</Badge>
                             <span>•</span>
                             <span>{formatDistanceToNow(new Date(item.publishedAt))} ago</span>
                           </div>

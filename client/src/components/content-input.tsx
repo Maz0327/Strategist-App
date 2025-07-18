@@ -293,72 +293,81 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
 
   return (
     <Card className="card-shadow">
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold text-gray-900">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">
           Content Analysis
         </CardTitle>
         <p className="text-sm text-gray-600 mt-1">
           Analyze content to create captures for your strategic pipeline
         </p>
-        <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-800">
+        <div className="mt-2 p-3 bg-blue-50 rounded-lg text-xs sm:text-sm text-blue-800">
           <strong>Process:</strong> Analysis creates captures → Flag as potential signals → Validate to signals → Use in briefs
         </div>
-        <div className="mt-3 space-y-3">
-          <div className="flex items-center gap-2">
-            <Label htmlFor="analysis-mode" className="text-sm font-medium">Analysis Mode:</Label>
-            <InfoTooltip content="Quick Analysis: 2-3 seconds, focused insights. Deep Analysis: 8-15 seconds, comprehensive strategic analysis with richer context." />
-            <Select value={analysisMode} onValueChange={(value: any) => setAnalysisMode(value)}>
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="quick">
-                  <div className="flex items-center gap-2">
-                    <Zap size={14} />
-                    Quick (2-3s)
-                  </div>
-                </SelectItem>
-                <SelectItem value="deep">
-                  <div className="flex items-center gap-2">
-                    <Search size={14} />
-                    Deep (8-15s)
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Label htmlFor="analysis-length" className="text-sm font-medium">Response Length:</Label>
-            <InfoTooltip content="Choose how detailed you want the strategic insights to be. Short for quick overviews, Long for comprehensive analysis." />
-            <Select value={lengthPreference} onValueChange={(value: any) => setLengthPreference(value)}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="short">Short</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="long">Long</SelectItem>
-                <SelectItem value="bulletpoints">Bulletpoints</SelectItem>
-              </SelectContent>
-            </Select>
+        <div className="mt-4 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="analysis-mode" className="text-sm font-medium">Analysis Mode:</Label>
+              <div className="flex items-center gap-2">
+                <InfoTooltip content="Quick Analysis: 2-3 seconds, focused insights. Deep Analysis: 8-15 seconds, comprehensive strategic analysis with richer context." />
+                <Select value={analysisMode} onValueChange={(value: any) => setAnalysisMode(value)}>
+                  <SelectTrigger className="w-full sm:w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="quick">
+                      <div className="flex items-center gap-2">
+                        <Zap size={14} />
+                        Quick (2-3s)
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="deep">
+                      <div className="flex items-center gap-2">
+                        <Search size={14} />
+                        Deep (8-15s)
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="analysis-length" className="text-sm font-medium">Response Length:</Label>
+              <div className="flex items-center gap-2">
+                <InfoTooltip content="Choose how detailed you want the strategic insights to be. Short for quick overviews, Long for comprehensive analysis." />
+                <Select value={lengthPreference} onValueChange={(value: any) => setLengthPreference(value)}>
+                  <SelectTrigger className="w-full sm:w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="short">Short</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="long">Long</SelectItem>
+                    <SelectItem value="bulletpoints">Bulletpoints</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
         </div>
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="text" className="flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 gap-1">
+            <TabsTrigger value="text" className="flex items-center gap-2 px-2 sm:px-4">
               <Edit size={16} />
-              Manual Text
+              <span className="hidden sm:inline">Manual Text</span>
+              <span className="sm:hidden">Text</span>
             </TabsTrigger>
-            <TabsTrigger value="url" className="flex items-center gap-2">
+            <TabsTrigger value="url" className="flex items-center gap-2 px-2 sm:px-4">
               <Link size={16} />
-              URL Analysis
+              <span className="hidden sm:inline">URL Analysis</span>
+              <span className="sm:hidden">URL</span>
             </TabsTrigger>
-            <TabsTrigger value="selection" className="flex items-center gap-2">
+            <TabsTrigger value="selection" className="flex items-center gap-2 px-2 sm:px-4">
               <Highlighter size={16} />
-              Text Selection
+              <span className="hidden sm:inline">Text Selection</span>
+              <span className="sm:hidden">Selection</span>
             </TabsTrigger>
           </TabsList>
 
@@ -372,7 +381,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
               })(e);
             }} className="space-y-4">
               {/* Analysis Mode Toggle */}
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-gray-50 rounded-lg gap-3">
                 <div className="flex items-center gap-2">
                   {analysisMode === 'quick' ? (
                     <Zap className="h-4 w-4 text-blue-600" />
@@ -383,7 +392,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
                     {analysisMode === 'quick' ? 'Quick Analysis' : 'Deep Analysis'}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between sm:justify-end gap-2">
                   <div className="text-xs text-gray-500">
                     Est. {analysisMode === 'quick' ? '2-3 seconds' : '8-15 seconds'}
                   </div>
@@ -394,7 +403,12 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
                     onClick={() => setAnalysisMode(analysisMode === 'quick' ? 'deep' : 'quick')}
                     className="h-8 px-3"
                   >
-                    {analysisMode === 'quick' ? 'Switch to Deep' : 'Switch to Quick'}
+                    <span className="hidden sm:inline">
+                      {analysisMode === 'quick' ? 'Switch to Deep' : 'Switch to Quick'}
+                    </span>
+                    <span className="sm:hidden">
+                      {analysisMode === 'quick' ? 'Deep' : 'Quick'}
+                    </span>
                   </Button>
                 </div>
               </div>
@@ -403,7 +417,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
                   <Label htmlFor="manual-text">Enter content to analyze</Label>
                   <InfoTooltip content="Paste any text content here for AI analysis. The system will analyze sentiment, tone, keywords, and provide strategic insights." />
                 </div>
-                <div className="flex gap-2 mb-2">
+                <div className="flex flex-wrap gap-2 mb-2">
                   <Button
                     type="button"
                     variant="outline"
@@ -412,7 +426,8 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
                     className="flex items-center gap-2"
                   >
                     <Sparkles className="h-4 w-4" />
-                    Try Example
+                    <span className="hidden sm:inline">Try Example</span>
+                    <span className="sm:hidden">Example</span>
                   </Button>
                 </div>
                 <div className="relative">
@@ -502,7 +517,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
                 </div>
               )}
 
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                 <span className={`text-sm ${charCount > 4500 ? 'text-warning' : 'text-gray-500'}`}>
                   {charCount}/5000 characters
                 </span>
@@ -512,6 +527,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
                     type="submit" 
                     disabled={isLoading || !form.watch("content")?.trim()}
                     data-tutorial="analyze-button"
+                    className="w-full sm:w-auto"
                   >
                     {isLoading ? (
                       <div className="flex items-center">
@@ -533,15 +549,20 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
           <TabsContent value="url" className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="url-field">Website URL</Label>
-              <div className="flex space-x-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Input
                   id="url-field"
                   type="url"
                   placeholder="https://example.com/article"
                   {...form.register("url")}
                   disabled={isLoading}
+                  className="flex-1"
                 />
-                <Button onClick={handleExtractUrl} disabled={isLoading || !form.watch("url")}>
+                <Button 
+                  onClick={handleExtractUrl} 
+                  disabled={isLoading || !form.watch("url")}
+                  className="w-full sm:w-auto"
+                >
                   {isLoading ? <LoadingSpinner size="sm" /> : (
                     <>
                       <Download size={16} className="mr-2" />
@@ -587,7 +608,11 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
                   </p>
                 </div>
                 
-                <Button onClick={form.handleSubmit(handleAnalyze)} disabled={isLoading}>
+                <Button 
+                  onClick={form.handleSubmit(handleAnalyze)} 
+                  disabled={isLoading}
+                  className="w-full sm:w-auto"
+                >
                   {isLoading ? <LoadingSpinner size="sm" /> : (
                     <>
                       <Brain size={16} className="mr-2" />
@@ -649,7 +674,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
               <Button 
                 onClick={handleAnalyzeSelection} 
                 disabled={isLoading || !selectedText}
-                className="bg-orange-600 hover:bg-orange-700"
+                className="bg-orange-600 hover:bg-orange-700 w-full sm:w-auto"
               >
                 {isLoading ? <LoadingSpinner size="sm" /> : (
                   <>
