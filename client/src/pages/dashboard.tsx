@@ -366,15 +366,7 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
             )}
           </main>
           
-          {/* Sidebar for larger screens */}
-          {!isMobile && (
-            <SignalsSidebar 
-              onNavigateToTrending={handleNavigateToTrending}
-              onNavigateToCapture={handleNavigateToCapture}
-              onNavigateToBrief={handleNavigateToBrief}
-              collapsed={sidebarCollapsed}
-            />
-          )}
+
         </div>
       </div>
       
