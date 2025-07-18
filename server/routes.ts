@@ -393,6 +393,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Strategic Recommendations endpoint
+  app.post("/api/strategic-recommendations", requireAuth, async (req, res) => {
+    try {
+      const { content, title, truthAnalysis } = req.body;
+      
+      if (!content || !title || !truthAnalysis) {
+        return res.status(400).json({ error: "Content, title, and truth analysis are required" });
+      }
+
+      debugLogger.info("Strategic recommendations request", { contentLength: content.length, title });
+
+      const recommendations = await openaiService.generateStrategicRecommendations(content, title, truthAnalysis);
+      
+      res.json({ recommendations });
+    } catch (error: any) {
+      debugLogger.error("Strategic recommendations failed", error);
+      res.status(500).json({ error: error.message || "Failed to generate strategic recommendations" });
+    }
+  });
+
   // Visual Analysis API - dedicated endpoint for image analysis
   app.post("/api/analyze/visual", requireAuth, async (req, res) => {
     try {
@@ -1498,13 +1518,13 @@ The analyzed signals provide a comprehensive view of current market trends and s
   // Cohort Builder Service - Load on demand
   app.post("/api/cohorts", requireAuth, async (req, res) => {
     try {
-      const { content, title } = req.body;
+      const { content, title, truthAnalysis } = req.body;
       
       if (!content) {
         return res.status(400).json({ error: 'Content is required' });
       }
       
-      const cohorts = await cohortBuilderService.getCohortSuggestions(content, title);
+      const cohorts = await cohortBuilderService.getCohortSuggestions(content, title, truthAnalysis);
       res.json({ cohorts });
       
     } catch (error: any) {

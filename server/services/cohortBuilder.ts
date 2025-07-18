@@ -1,4 +1,4 @@
-import { openai } from './openai';
+import { OpenAIService } from './openai';
 import { debugLogger } from './debug-logger';
 import { cohortCache, createCacheKey } from './cache';
 
@@ -12,7 +12,7 @@ export interface CohortSuggestion {
 }
 
 export class CohortBuilderService {
-  async getCohortSuggestions(content: string, title: string = ''): Promise<CohortSuggestion[]> {
+  async getCohortSuggestions(content: string, title: string = '', truthAnalysis?: any): Promise<CohortSuggestion[]> {
     debugLogger.info('Starting cohort analysis', { contentLength: content.length, title });
     
     const startTime = Date.now();
@@ -26,9 +26,10 @@ export class CohortBuilderService {
     }
     
     try {
-      const prompt = this.buildCohortPrompt(content, title);
+      const prompt = this.buildCohortPrompt(content, title, truthAnalysis);
       
-      const response = await openai.chat.completions.create({
+      const openaiService = new OpenAIService();
+      const response = await openaiService.client.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
           { role: "system", content: "You are an expert audience segmentation strategist. Analyze content and return structured JSON with cohort suggestions." },
@@ -62,11 +63,43 @@ export class CohortBuilderService {
     }
   }
 
-  private buildCohortPrompt(content: string, title: string): string {
-    return `Analyze this content and suggest 3-5 specific behavioral audience cohorts:
+  private buildCohortPrompt(content: string, title: string, truthAnalysis?: any): string {
+    const basePrompt = `Analyze this content and suggest 3-5 specific behavioral audience cohorts:
 
 Title: ${title}
-Content: ${content}
+Content: ${content}`;
+
+    if (truthAnalysis) {
+      return `${basePrompt}
+
+TRUTH FRAMEWORK ANALYSIS:
+Fact: ${truthAnalysis.fact}
+Observation: ${truthAnalysis.observation}
+Insight: ${truthAnalysis.insight}
+Human Truth: ${truthAnalysis.humanTruth}
+Cultural Moment: ${truthAnalysis.culturalMoment}
+Attention Value: ${truthAnalysis.attentionValue}
+
+Base your cohort suggestions on these truth insights to ensure consistency.
+
+Provide cohort suggestions in JSON format:
+{
+  "cohorts": [
+    {
+      "name": "Early Tech Adopters",
+      "description": "Tech-savvy professionals who embrace new tools early",
+      "behaviorPatterns": ["Early adoption", "Tech evangelism", "Community building"],
+      "platforms": ["Twitter", "LinkedIn", "Product Hunt"],
+      "size": "medium",
+      "engagement": "high"
+    }
+  ]
+}
+
+Return only valid JSON without markdown formatting.`;
+    }
+    
+    return `${basePrompt}
 
 Provide cohort suggestions in JSON format:
 {

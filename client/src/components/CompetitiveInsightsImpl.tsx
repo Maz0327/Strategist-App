@@ -63,7 +63,7 @@ export default function CompetitiveInsightsImpl({ content, title, onClose }: Com
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ content, title })
+        body: JSON.stringify({ content, title, truthAnalysis })
       });
 
       if (!response.ok) {

@@ -9,6 +9,7 @@ interface LazyCohortBuilderProps {
   content: string;
   title?: string;
   onClose?: () => void;
+  truthAnalysis?: any;
 }
 
 function CohortBuilderLoading() {

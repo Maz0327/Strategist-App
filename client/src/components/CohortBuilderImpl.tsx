@@ -16,6 +16,7 @@ interface CohortBuilderImplProps {
   content: string;
   title?: string;
   onClose?: () => void;
+  truthAnalysis?: any;
 }
 
 const sizeColors = {
@@ -30,7 +31,7 @@ const engagementColors = {
   low: 'bg-gray-100 text-gray-800'
 };
 
-export default function CohortBuilderImpl({ content, title, onClose }: CohortBuilderImplProps) {
+export default function CohortBuilderImpl({ content, title, onClose, truthAnalysis }: CohortBuilderImplProps) {
   const [cohorts, setCohorts] = useState<CohortSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +40,7 @@ export default function CohortBuilderImpl({ content, title, onClose }: CohortBui
     if (content) {
       fetchCohorts();
     }
-  }, [content, title]);
+  }, [content, title, truthAnalysis]);
 
   const fetchCohorts = async () => {
     setIsLoading(true);
@@ -50,7 +51,7 @@ export default function CohortBuilderImpl({ content, title, onClose }: CohortBui
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ content, title })
+        body: JSON.stringify({ content, title, truthAnalysis })
       });
 
       if (!response.ok) {

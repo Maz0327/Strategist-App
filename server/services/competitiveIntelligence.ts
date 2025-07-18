@@ -61,11 +61,42 @@ export class CompetitiveIntelligenceService {
     }
   }
 
-  private buildCompetitivePrompt(content: string, title: string): string {
-    return `Analyze this content for competitive intelligence and market opportunities:
+  private buildCompetitivePrompt(content: string, title: string, truthAnalysis?: any): string {
+    const basePrompt = `Analyze this content for competitive intelligence and market opportunities:
 
 Title: ${title}
-Content: ${content}
+Content: ${content}`;
+
+    if (truthAnalysis) {
+      return `${basePrompt}
+
+TRUTH FRAMEWORK ANALYSIS:
+Fact: ${truthAnalysis.fact}
+Observation: ${truthAnalysis.observation}
+Insight: ${truthAnalysis.insight}
+Human Truth: ${truthAnalysis.humanTruth}
+Cultural Moment: ${truthAnalysis.culturalMoment}
+Attention Value: ${truthAnalysis.attentionValue}
+
+Base your competitive intelligence on these truth insights to ensure consistency.
+
+Provide competitive insights in JSON format:
+{
+  "insights": [
+    {
+      "insight": "Competitors are missing authentic creator partnerships",
+      "category": "opportunity",
+      "confidence": "high",
+      "actionable": true,
+      "timeframe": "immediate"
+    }
+  ]
+}
+
+Return only valid JSON without markdown formatting.`;
+    }
+    
+    return `${basePrompt}
 
 Provide competitive insights in JSON format:
 {

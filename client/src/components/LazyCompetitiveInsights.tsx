@@ -9,6 +9,7 @@ interface LazyCompetitiveInsightsProps {
   content: string;
   title?: string;
   onClose?: () => void;
+  truthAnalysis?: any;
 }
 
 function CompetitiveInsightsLoading() {

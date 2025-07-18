@@ -112,9 +112,9 @@ Return valid JSON:
   "cohortSuggestions": ["cohort1", "cohort2"],
   "platformContext": "Multi-sentence platform context following length requirements",
   "viralPotential": "high|medium|low",
-  "competitiveInsights": ["insight1", "insight2"],
-  "strategicInsights": ["recommendation1", "recommendation2"],
-  "strategicActions": ["action1", "action2"]
+  "competitiveInsights": ["insight1", "insight2", "insight3", "insight4", "insight5"],
+  "strategicInsights": ["recommendation1", "recommendation2", "recommendation3", "recommendation4", "recommendation5"],
+  "strategicActions": ["action1", "action2", "action3", "action4", "action5"]
 }`;
     }
   }
@@ -147,7 +147,7 @@ Return valid JSON:
     let cachedAnalysis = await analysisCache.get(targetCacheKey);
     
     if (cachedAnalysis) {
-      debugLogger.info('Returning cached analysis for ' + lengthPreference);
+      debugLogger.info('Returning cached analysis for ' + lengthPreference, { cacheKey: targetCacheKey });
       return cachedAnalysis;
     }
     
@@ -174,7 +174,7 @@ Return valid JSON:
     const adjustedAnalysis = await this.adjustAnalysis(mediumAnalysis, lengthPreference, analysisMode);
     await analysisCache.set(targetCacheKey, adjustedAnalysis, 300);
     
-    debugLogger.info('Returning adjusted analysis');
+    debugLogger.info('Returning adjusted analysis', { cached: true, lengthPreference });
     return adjustedAnalysis;
   }
 
@@ -189,6 +189,7 @@ Title: ${title}
 Content: ${content.substring(0, 4000)}${content.length > 4000 ? '...' : ''}
 
 MANDATORY: Every field in truthAnalysis must contain exactly 3-5 sentences. This is CRITICAL for proper analysis.
+MANDATORY: strategicInsights, strategicActions, and competitiveInsights arrays must contain exactly 5 items each.
 
 Focus on deep strategic insights, complex human motivations, cultural context, competitive landscape, and actionable recommendations. Return JSON only.` :
       `Analyze this content with MEDIUM length responses (3-5 sentences per field):
@@ -197,6 +198,7 @@ Title: ${title}
 Content: ${content.substring(0, 1500)}${content.length > 1500 ? '...' : ''}
 
 MANDATORY: Every field in truthAnalysis must contain exactly 3-5 sentences. This is CRITICAL for proper analysis.
+MANDATORY: strategicInsights, strategicActions, and competitiveInsights arrays must contain exactly 5 items each.
 
 Return JSON only.`;
 
@@ -346,6 +348,71 @@ Return ONLY the truthAnalysis JSON object with adjusted fields.`;
 
     debugLogger.info('OpenAI adjustment complete', { lengthPreference });
     return result;
+  }
+
+  async generateStrategicRecommendations(content: string, title: string, truthAnalysis: any): Promise<any[]> {
+    debugLogger.info('Generating strategic recommendations based on truth analysis', { contentLength: content.length, title });
+    
+    const systemPrompt = `You are a strategic content analyst. Generate 5 specific, actionable strategic recommendations based on the provided Truth Framework Analysis.
+
+Each recommendation should include:
+- title: Brief, actionable title
+- description: 2-3 sentence detailed explanation
+- impact: "high", "medium", or "low"
+- timeframe: "immediate", "short-term", or "long-term"
+- confidence: Number between 0-100
+- category: "competitive", "cultural", "tactical", or "strategic"
+
+Base ALL recommendations on the Truth Framework Analysis provided, ensuring consistency with the identified facts, observations, insights, human truths, and cultural moments.
+
+Return JSON array of exactly 5 recommendations.`;
+
+    const userPrompt = `Based on this Truth Framework Analysis, provide 5 strategic recommendations:
+
+Title: ${title}
+Content: ${content.substring(0, 1500)}${content.length > 1500 ? '...' : ''}
+
+TRUTH FRAMEWORK ANALYSIS:
+Fact: ${truthAnalysis.fact}
+Observation: ${truthAnalysis.observation}
+Insight: ${truthAnalysis.insight}
+Human Truth: ${truthAnalysis.humanTruth}
+Cultural Moment: ${truthAnalysis.culturalMoment}
+Attention Value: ${truthAnalysis.attentionValue}
+
+Generate recommendations that are DIRECTLY derived from this truth analysis, ensuring consistency with the identified patterns and opportunities.
+
+Return JSON array of exactly 5 recommendation objects.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.05, // Lower temperature for more consistency
+      max_tokens: 1500
+    });
+
+    const responseContent = response.choices[0]?.message?.content;
+    if (!responseContent) {
+      throw new Error('No response content from OpenAI');
+    }
+
+    try {
+      const parsed = JSON.parse(responseContent);
+      const recommendations = parsed.recommendations || parsed;
+      
+      if (Array.isArray(recommendations)) {
+        return recommendations.slice(0, 5);
+      }
+      
+      return [];
+    } catch (error) {
+      debugLogger.error('Failed to parse strategic recommendations', error);
+      throw new Error('Failed to parse strategic recommendations');
+    }
   }
 }
 

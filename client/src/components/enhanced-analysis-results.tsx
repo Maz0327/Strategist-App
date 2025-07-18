@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,9 @@ import { apiRequest } from "@/lib/queryClient";
 import ErrorBoundary from "./ErrorBoundary";
 import LazyCompetitiveInsights from "./LazyCompetitiveInsights";
 import LazyCohortBuilder from "./LazyCohortBuilder";
+
+// Lazy load Strategic Recommendations component
+const LazyStrategicRecommendations = lazy(() => import('./LazyStrategicRecommendations'));
 import { 
   Eye, 
   Target, 
@@ -83,6 +86,8 @@ export function EnhancedAnalysisResults({
   const [analysisCache, setAnalysisCache] = useState<Record<string, any>>({
     [currentLengthPreference]: data // Cache the initial analysis with current length
   });
+  const [showDeepAnalysisDialog, setShowDeepAnalysisDialog] = useState(false);
+  const [dontAskAgain, setDontAskAgain] = useState(false);
 
   // Update analysis when new data arrives
   useEffect(() => {
@@ -174,6 +179,11 @@ export function EnhancedAnalysisResults({
   const handleFlagAsPotentialSignal = async () => {
     setIsFlagging(true);
     try {
+      // Check if we have a valid signal ID
+      if (!analysis.signalId || isNaN(Number(analysis.signalId))) {
+        throw new Error('Invalid signal ID');
+      }
+
       const response = await fetch(`/api/signals/${analysis.signalId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -187,16 +197,17 @@ export function EnhancedAnalysisResults({
 
       if (response.ok) {
         toast({
-          title: "Flagged as Potential Signal",
+          title: "Flagged for Research",
           description: "This content has been flagged for further research and moved to your potential signals.",
         });
       } else {
-        throw new Error('Failed to flag signal');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to flag signal');
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to flag as potential signal. Please try again.",
+        description: error.message || "Failed to flag as potential signal. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -288,44 +299,47 @@ export function EnhancedAnalysisResults({
             </div>
           </div>
           <Separator className="my-4" />
-          <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-            <p className="text-sm text-gray-700 flex-1">{data.summary}</p>
-            <div className="flex flex-col sm:flex-row gap-2 lg:ml-4">
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="flex items-center gap-2 w-full sm:w-auto"
-                onClick={() => toast({
-                  title: "Analysis Saved",
-                  description: "This analysis has been saved to your dashboard as a capture.",
-                })}
-              >
-                <Save size={14} />
-                <span className="hidden sm:inline">Save Analysis</span>
-                <span className="sm:hidden">Save</span>
-              </Button>
-              <Button 
-                size="sm" 
-                className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2 w-full sm:w-auto"
-                onClick={handleFlagAsPotentialSignal}
-                disabled={isFlagging}
-              >
-                {isFlagging ? (
-                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                ) : (
-                  <Target size={14} />
-                )}
-                <span className="hidden sm:inline">Flag as Worth Researching</span>
-                <span className="sm:hidden">Flag</span>
-              </Button>
-            </div>
+          {/* Analysis Overview Summary */}
+          <div className="mb-4">
+            <p className="text-sm text-gray-700 leading-relaxed">{data.summary}</p>
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-2 justify-center">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="flex items-center gap-2 w-full sm:w-auto"
+              onClick={() => toast({
+                title: "Analysis Saved",
+                description: "This analysis has been saved to your dashboard as a capture.",
+              })}
+            >
+              <Save size={14} />
+              <span className="hidden sm:inline">Save Analysis</span>
+              <span className="sm:hidden">Save</span>
+            </Button>
+            <Button 
+              size="sm" 
+              className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2 w-full sm:w-auto"
+              onClick={handleFlagAsPotentialSignal}
+              disabled={isFlagging}
+            >
+              {isFlagging ? (
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+              ) : (
+                <Target size={14} />
+              )}
+              <span className="hidden sm:inline">Flag for Research</span>
+              <span className="sm:hidden">Flag</span>
+            </Button>
           </div>
         </CardContent>
       </Card>
 
       {/* Detailed Analysis Tabs */}
       <Tabs defaultValue="truth" className="w-full">
-        <TabsList className={`grid w-full ${isMobile ? 'grid-cols-2' : 'grid-cols-4'}`}>
+        <TabsList className={`grid w-full ${isMobile ? 'grid-cols-2' : 'grid-cols-5'}`}>
           <TabsTrigger value="truth" className="text-xs sm:text-sm">
             <span className="hidden sm:inline">Truth Analysis</span>
             <span className="sm:hidden">Truth</span>
@@ -341,6 +355,10 @@ export function EnhancedAnalysisResults({
           <TabsTrigger value="actions" className="text-xs sm:text-sm">
             <span className="hidden sm:inline">Actions</span>
             <span className="sm:hidden">Actions</span>
+          </TabsTrigger>
+          <TabsTrigger value="strategic-recommendations" className="text-xs sm:text-sm">
+            <span className="hidden sm:inline">Strategic Recommendations</span>
+            <span className="sm:hidden">Strategic</span>
           </TabsTrigger>
         </TabsList>
 
@@ -448,6 +466,7 @@ export function EnhancedAnalysisResults({
             <LazyCohortBuilder 
               content={originalContent?.content || ''} 
               title={originalContent?.title || ''} 
+              truthAnalysis={currentAnalysis.truthAnalysis}
             />
           </ErrorBoundary>
           
@@ -495,6 +514,7 @@ export function EnhancedAnalysisResults({
             <LazyCompetitiveInsights 
               content={originalContent?.content || ''} 
               title={originalContent?.title || ''} 
+              truthAnalysis={currentAnalysis.truthAnalysis}
             />
           </ErrorBoundary>
 
@@ -591,6 +611,18 @@ export function EnhancedAnalysisResults({
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+        
+        <TabsContent value="strategic-recommendations" className="space-y-4">
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingSpinner />}>
+              <LazyStrategicRecommendations
+                content={data.content}
+                title={data.title}
+                truthAnalysis={currentAnalysis.truthAnalysis}
+              />
+            </Suspense>
+          </ErrorBoundary>
         </TabsContent>
       </Tabs>
     </div>
