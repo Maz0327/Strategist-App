@@ -198,6 +198,63 @@ export function EnhancedAnalysisResults({
     }
   };
 
+  const handleBuildAllInsights = async () => {
+    if (!currentAnalysis.truthAnalysis) {
+      toast({
+        title: "Error",
+        description: "Truth analysis required to build insights",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoadingStates(prev => ({ ...prev, insights: true, competitive: true }));
+    
+    try {
+      // Run both strategic insights and competitive intelligence in parallel
+      const [strategicResponse, competitiveResponse] = await Promise.all([
+        apiRequest(
+          'POST',
+          '/api/strategic-insights',
+          {
+            content: originalContent?.content || '',
+            title: originalContent?.title || '',
+            truthAnalysis: currentAnalysis.truthAnalysis
+          }
+        ),
+        apiRequest(
+          'POST',
+          '/api/competitive-intelligence',
+          {
+            content: originalContent?.content || '',
+            title: originalContent?.title || '',
+            truthAnalysis: currentAnalysis.truthAnalysis
+          }
+        )
+      ]);
+      
+      const strategicData = await strategicResponse.json();
+      const competitiveData = await competitiveResponse.json();
+      
+      setInsightsResults(strategicData.insights || []);
+      setCompetitiveResults(competitiveData.insights || []);
+      
+      toast({
+        title: "Success",
+        description: "All strategic insights and competitive intelligence completed",
+      });
+    } catch (error: any) {
+      console.error('All insights failed:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to build all insights. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingStates(prev => ({ ...prev, insights: false, competitive: false }));
+    }
+  };
+
   const handleBuildActions = async () => {
     if (!currentAnalysis.truthAnalysis) {
       toast({
@@ -691,88 +748,120 @@ export function EnhancedAnalysisResults({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Lightbulb className="h-5 w-5" />
-                Strategic Insights
+                All Strategic Insights
               </CardTitle>
               <p className="text-sm text-gray-600">
-                Generate exactly 5 strategic insights from truth analysis
+                Generate comprehensive insights: Strategic Insights, Competitive Intelligence, and Analysis
               </p>
             </CardHeader>
             <CardContent>
               <div className="flex justify-center mb-4">
                 <Button 
-                  onClick={handleBuildInsights}
-                  disabled={loadingStates.insights || !currentAnalysis.truthAnalysis}
+                  onClick={handleBuildAllInsights}
+                  disabled={loadingStates.insights || loadingStates.competitive || !currentAnalysis.truthAnalysis}
                   className="flex items-center gap-2"
                 >
-                  {loadingStates.insights ? (
+                  {(loadingStates.insights || loadingStates.competitive) ? (
                     <>
                       <LoadingSpinner size="sm" />
-                      Building Insights...
+                      Building All Insights...
                     </>
                   ) : (
                     <>
                       <Lightbulb className="h-4 w-4" />
-                      Build Strategic Insights
+                      Build All Strategic Insights
                     </>
                   )}
                 </Button>
               </div>
               
+              {/* Strategic Insights Section */}
               {insightsResults.length > 0 && (
-                <div className="space-y-3">
-                  {insightsResults.map((insight, index) => (
-                    <div key={index} className="p-3 bg-yellow-50 rounded border border-yellow-200">
-                      <h4 className="font-medium text-yellow-900 mb-1">{insight.title}</h4>
-                      <p className="text-sm text-gray-700 mb-2">{insight.description}</p>
-                      {insight.rationale && (
-                        <div className="text-xs text-gray-600">
-                          <strong>Rationale:</strong> {insight.rationale}
-                        </div>
-                      )}
-                      {insight.confidence && (
-                        <div className="text-xs text-yellow-700 bg-yellow-100 p-2 rounded mt-2">
-                          <strong>Confidence:</strong> {insight.confidence}%
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              {insightsResults.length === 0 && !loadingStates.insights && (
-                <div className="text-center py-8 text-gray-500">
-                  <Lightbulb className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                  <p>No strategic insights yet</p>
-                  <p className="text-sm">Click "Build Strategic Insights" to generate 5 insights</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Keywords & Tone Analysis</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Strategic Keywords</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {data.keywords.map((keyword, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs">
-                        {keyword}
-                      </Badge>
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    <Lightbulb className="h-5 w-5" />
+                    Strategic Insights
+                  </h3>
+                  <div className="space-y-3">
+                    {insightsResults.map((insight, index) => (
+                      <div key={index} className="p-3 bg-yellow-50 rounded border border-yellow-200">
+                        <h4 className="font-medium text-yellow-900 mb-1">{insight.title}</h4>
+                        <p className="text-sm text-gray-700 mb-2">{insight.description}</p>
+                        {insight.rationale && (
+                          <div className="text-xs text-gray-600">
+                            <strong>Rationale:</strong> {insight.rationale}
+                          </div>
+                        )}
+                        {insight.confidence && (
+                          <div className="text-xs text-yellow-700 bg-yellow-100 p-2 rounded mt-2">
+                            <strong>Confidence:</strong> {insight.confidence}%
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
                 </div>
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Tone & Confidence</h4>
-                  <div className="flex gap-2">
-                    <Badge variant="outline">{data.tone}</Badge>
-                    <Badge variant="outline">{data.confidence}</Badge>
+              )}
+
+              {/* Competitive Intelligence Section */}
+              {competitiveResults.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    <Target className="h-5 w-5" />
+                    Competitive Intelligence
+                  </h3>
+                  <div className="space-y-3">
+                    {competitiveResults.map((competitive, index) => (
+                      <div key={index} className="p-3 bg-blue-50 rounded border border-blue-200">
+                        <h4 className="font-medium text-blue-900 mb-1">{competitive.title}</h4>
+                        <p className="text-sm text-gray-700 mb-2">{competitive.description}</p>
+                        {competitive.opportunity && (
+                          <div className="text-xs text-gray-600">
+                            <strong>Opportunity:</strong> {competitive.opportunity}
+                          </div>
+                        )}
+                        {competitive.risk && (
+                          <div className="text-xs text-blue-700 bg-blue-100 p-2 rounded mt-2">
+                            <strong>Risk Level:</strong> {competitive.risk}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Keywords & Tone Analysis Section */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-3">Keywords & Tone Analysis</h3>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-2">Strategic Keywords</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {data.keywords.map((keyword, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {keyword}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-2">Tone & Confidence</h4>
+                    <div className="flex gap-2">
+                      <Badge variant="outline">{data.tone}</Badge>
+                      <Badge variant="outline">{data.confidence}</Badge>
+                    </div>
                   </div>
                 </div>
               </div>
+              
+              {insightsResults.length === 0 && competitiveResults.length === 0 && !loadingStates.insights && !loadingStates.competitive && (
+                <div className="text-center py-8 text-gray-500">
+                  <Lightbulb className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p>No strategic insights yet</p>
+                  <p className="text-sm">Click "Build All Strategic Insights" to generate comprehensive insights</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
