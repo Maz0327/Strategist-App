@@ -31,7 +31,8 @@ import {
   Brain,
   Save,
   Info,
-  Flag
+  Flag,
+  Hash
 } from "lucide-react";
 
 // Enhanced Loading Component with animated progress bar
@@ -141,6 +142,7 @@ export function EnhancedAnalysisResults({
   const [advancedInsightsResults, setAdvancedInsightsResults] = useState<any[]>([]);
   const [insightViewMode, setInsightViewMode] = useState<'insights' | 'aia'>('insights');
   const [showAdvancedInsightsButton, setShowAdvancedInsightsButton] = useState(false);
+  const [enhancedKeywords, setEnhancedKeywords] = useState<string[]>([]);
 
   // Update analysis when new data arrives
   useEffect(() => {
@@ -361,6 +363,11 @@ export function EnhancedAnalysisResults({
       const advancedData = await response.json();
       setAdvancedInsightsResults(advancedData.advancedInsights || []);
       setInsightViewMode('aia'); // Switch to advanced view
+      
+      // Extract enhanced keywords from advanced analysis
+      if (advancedData.enhancedKeywords && advancedData.enhancedKeywords.length > 0) {
+        setEnhancedKeywords(advancedData.enhancedKeywords);
+      }
 
       toast({
         title: "Success",
@@ -665,13 +672,9 @@ export function EnhancedAnalysisResults({
       </Card>
 
       {/* Detailed Analysis Tabs */}
-      <Tabs defaultValue="insights" className="w-full">
+      <Tabs defaultValue="truth" className="w-full">
         <div className="overflow-x-auto">
           <TabsList className={`${isMobile ? 'flex w-max' : 'grid w-full grid-cols-4'}`}>
-            <TabsTrigger value="insights" className="text-xs sm:text-sm whitespace-nowrap">
-              <span className="hidden sm:inline">Strategic Insights</span>
-              <span className="sm:hidden">Insights</span>
-            </TabsTrigger>
             <TabsTrigger value="truth" className="text-xs sm:text-sm whitespace-nowrap">
               <span className="hidden sm:inline">Truth Analysis</span>
               <span className="sm:hidden">Truth</span>
@@ -679,6 +682,10 @@ export function EnhancedAnalysisResults({
             <TabsTrigger value="cohorts" className="text-xs sm:text-sm whitespace-nowrap">
               <span className="hidden sm:inline">Cohorts</span>
               <span className="sm:hidden">Cohorts</span>
+            </TabsTrigger>
+            <TabsTrigger value="insights" className="text-xs sm:text-sm whitespace-nowrap">
+              <span className="hidden sm:inline">Insights</span>
+              <span className="sm:hidden">Insights</span>
             </TabsTrigger>
             <TabsTrigger value="strategic-recommendations" className="text-xs sm:text-sm whitespace-nowrap">
               <span className="hidden sm:inline">Strategic Recommendations</span>
@@ -688,6 +695,35 @@ export function EnhancedAnalysisResults({
         </div>
 
         <TabsContent value="insights" className="space-y-4">
+          {/* Build Strategic Insights Button */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-center gap-2">
+                <Button 
+                  onClick={handleBuildAllInsights}
+                  disabled={loadingStates.insights || loadingStates.actions || loadingStates.competitive || !currentAnalysis.truthAnalysis}
+                  className="flex items-center gap-2"
+                >
+                  {(loadingStates.insights || loadingStates.actions || loadingStates.competitive) ? (
+                    <>
+                      <LoadingSpinner size="sm" />
+                      Building Strategic Insights...
+                    </>
+                  ) : (
+                    <>
+                      <Lightbulb className="h-4 w-4" />
+                      Build Strategic Insights
+                    </>
+                  )}
+                </Button>
+              </CardTitle>
+              <p className="text-sm text-gray-600 text-center mt-4">
+                Generate strategic insights, competitive intelligence, and actionable recommendations
+              </p>
+            </CardHeader>
+          </Card>
+
+          {/* i. Strategic Insights (exactly 5 items) */}
           <Card>
             <CardHeader>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -734,7 +770,7 @@ export function EnhancedAnalysisResults({
                 </div>
               </div>
               <p className="text-sm text-gray-600">
-                Why there are business opportunities here
+                Why there are business opportunities here (exactly 5 items)
               </p>
             </CardHeader>
             <CardContent>
@@ -748,7 +784,7 @@ export function EnhancedAnalysisResults({
                   {insightViewMode === 'insights' ? (
                     insightsResults.length > 0 ? (
                       <div className="space-y-3">
-                        {insightsResults.map((insight, index) => (
+                        {insightsResults.slice(0, 5).map((insight, index) => (
                           <div key={index} className="flex items-start gap-3">
                             <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
                               <span className="text-xs font-bold text-blue-600">{index + 1}</span>
@@ -776,13 +812,13 @@ export function EnhancedAnalysisResults({
                     ) : (
                       <div className="text-center py-8 text-gray-500">
                         <Lightbulb className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                        <p>Click "Build Strategic Insights" below to generate initial strategic insights</p>
+                        <p>Click "Build Strategic Insights" above to generate strategic insights</p>
                       </div>
                     )
                   ) : (
                     advancedInsightsResults.length > 0 ? (
                       <div className="space-y-4">
-                        {advancedInsightsResults.map((insight, index) => (
+                        {advancedInsightsResults.slice(0, 5).map((insight, index) => (
                           <div key={index} className="border rounded-lg p-4 bg-gradient-to-r from-blue-50 to-purple-50">
                             <div className="flex items-start gap-3">
                               <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
@@ -831,33 +867,144 @@ export function EnhancedAnalysisResults({
             </CardContent>
           </Card>
 
-
-
+          {/* ii. Competitive Insights (exactly 5 items) */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Button 
-                  onClick={handleBuildAllInsights}
-                  disabled={loadingStates.insights || loadingStates.actions || loadingStates.competitive || !currentAnalysis.truthAnalysis}
-                  className="flex items-center gap-2"
-                >
-                  {(loadingStates.insights || loadingStates.actions || loadingStates.competitive) ? (
-                    <>
-                      <LoadingSpinner size="sm" />
-                      Building Strategic Insights...
-                    </>
-                  ) : (
-                    <>
-                      <Lightbulb className="h-4 w-4" />
-                      Build Strategic Insights
-                    </>
-                  )}
-                </Button>
+                <TrendingUp className="h-5 w-5" />
+                Competitive Insights
               </CardTitle>
-              <p className="text-sm text-gray-600 text-center mt-4">
-                This button generates insights for the upper sections only. Advanced Strategic Analysis is in the separate Strategic Recommendations tab.
+              <p className="text-sm text-gray-600">
+                What competitors are missing or doing wrong (exactly 5 items)
               </p>
             </CardHeader>
+            <CardContent>
+              {competitiveResults.length > 0 ? (
+                <div className="space-y-3">
+                  {competitiveResults.slice(0, 5).map((insight, index) => (
+                    <div key={index} className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center">
+                        <span className="text-xs font-bold text-orange-600">{index + 1}</span>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-700 font-medium mb-1">
+                          {typeof insight === 'string' ? insight : insight.insight || insight.title || `Competitive Insight ${index + 1}`}
+                        </p>
+                        {typeof insight === 'object' && insight.category && (
+                          <div className="text-xs text-gray-600">
+                            <strong>Category:</strong> {insight.category}
+                            {insight.priority && ` | Priority: ${insight.priority}`}
+                            {insight.impact && ` | Impact: ${insight.impact}`}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : loadingStates.competitive ? (
+                <AnimatedLoadingState 
+                  title="Building Competitive Intelligence"
+                  subtitle="Analyzing competitive landscape and opportunities..."
+                />
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <TrendingUp className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p>Click "Build Strategic Insights" above to generate competitive insights</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* iii. Strategic Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Strategic Actions
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                What specific actions brands should take based on these insights
+              </p>
+            </CardHeader>
+            <CardContent>
+              {actionsResults.length > 0 ? (
+                <div className="space-y-3">
+                  {actionsResults.map((action, index) => (
+                    <div key={index} className="flex items-start gap-3">
+                      <CheckCircle className="h-4 w-4 text-green-600 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-700 font-medium mb-1">
+                          {typeof action === 'string' ? action : action.action || action.title || `Strategic Action ${index + 1}`}
+                        </p>
+                        {typeof action === 'object' && action.category && (
+                          <div className="text-xs text-gray-600">
+                            <strong>Category:</strong> {action.category}
+                            {action.priority && ` | Priority: ${action.priority}`}
+                            {action.effort && ` | Effort: ${action.effort}`}
+                            {action.impact && ` | Impact: ${action.impact}`}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : loadingStates.actions ? (
+                <AnimatedLoadingState 
+                  title="Building Strategic Actions"
+                  subtitle="Generating actionable recommendations..."
+                />
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Target className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p>Click "Build Strategic Insights" above to generate strategic actions</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* iv. Keywords */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Hash className="h-5 w-5" />
+                Keywords
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                Key terms and concepts from the analysis
+              </p>
+            </CardHeader>
+            <CardContent>
+              {currentAnalysis.keywords && currentAnalysis.keywords.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {currentAnalysis.keywords.map((keyword, index) => (
+                    <Badge key={index} variant="outline" className="text-xs">
+                      {keyword}
+                    </Badge>
+                  ))}
+                  {/* Enhanced keywords from Advanced Strategic Analysis */}
+                  {advancedInsightsResults.length > 0 && enhancedKeywords.length > 0 && (
+                    <>
+                      <Separator className="w-full my-2" />
+                      <div className="w-full">
+                        <p className="text-xs text-gray-500 mb-2">Enhanced keywords from Advanced Analysis:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {enhancedKeywords.map((keyword, index) => (
+                            <Badge key={`enhanced-${index}`} variant="secondary" className="text-xs bg-purple-100 text-purple-700">
+                              {keyword}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Hash className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p>Keywords will appear here after content analysis</p>
+                </div>
+              )}
+            </CardContent>
           </Card>
         </TabsContent>
 

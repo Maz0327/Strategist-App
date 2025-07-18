@@ -445,47 +445,41 @@ Successfully restructured the main navigation according to user specifications:
 
 ### Insights Tab Restructure & Strategic Workflow - July 18, 2025
 
-#### ✅ **Complete Strategic Workflow Restructure - IMPLEMENTED**:
-Successfully implemented the user's exact requirements for strategic analysis workflow:
+#### ✅ **Tab Structure Correction - IMPLEMENTED**:
+Successfully corrected the tab order and insights content structure based on user specifications:
 
-**✅ Strategic Actions Moved Under Insights Tab:**
-- Strategic Actions tab completely removed as separate tab
-- Strategic Actions now appears as integrated section within Insights tab
-- All Strategic Actions functionality preserved and enhanced
+**✅ Correct Tab Order Implemented:**
+- Tab 1: Truth Analysis (moved from position 2)
+- Tab 2: Cohorts (moved from position 3) 
+- Tab 3: Insights (moved from position 1)
+- Tab 4: Strategic Recommendations (unchanged position)
 
-**✅ Unified "Build Strategic Insights" Button:**
-- Single button in Insights tab triggers all three analyses in parallel:
-  - Strategic Insights (5 items)
-  - Competitive Intelligence (5 items) 
-  - Strategic Actions (5 items)
-- Button shows comprehensive loading states for all three processes
-- Results displayed in separate sections within the Insights tab
+**✅ Insights Tab Content Structure:**
+- Single "Build Strategic Insights" button at top triggers all 4 sections
+- i. Strategic Insights (exactly 5 items) - with Advanced Strategic Analysis toggle
+- ii. Competitive Insights (exactly 5 items) - parallel API call
+- iii. Strategic Actions - actionable recommendations
+- iv. Keywords - existing keywords + enhanced keywords from advanced analysis
 
 **✅ Advanced Strategic Analysis Implementation:**
-- Strategic Recommendations tab now serves as "Advanced Strategic Analysis"
-- Analyzes existing insights rather than raw content when components are available
-- Synthesizes ALL previous analysis components: Truth Framework → Cohorts → Strategic Insights → Competitive Intelligence → Strategic Actions
-- Auto-loads when sufficient component results exist from other tabs
-- Provides comprehensive strategic recommendations based on all gathered intelligence
+- Advanced Strategic Analysis button remains within Strategic Insights section
+- Toggle between "Insights" and "A.I.A." views maintained
+- Enhanced keywords added to keyword section when advanced analysis is triggered
+- All existing functionality preserved with improved organization
 
-**✅ Navigation Structure Simplified:**
-- Tab structure now: Truth Analysis → Cohorts → Insights → Strategic Recommendations
-- Grid layout changed from 5 columns to 4 columns for proper spacing
-- All strategic analysis consolidated under unified workflow
-
-**Technical Implementation Details:**
-- **Frontend Changes**: Enhanced `handleBuildAllInsights` to trigger strategic insights, competitive intelligence, and strategic actions in parallel
-- **Backend Integration**: `/api/strategic-recommendations` endpoint enhanced to accept existing component results for advanced analysis mode
-- **Component Updates**: `LazyStrategicRecommendations` updated to receive and utilize all component results for comprehensive analysis
-- **Cache Optimization**: All three strategic analysis services use existing caching system for performance
-- **Error Handling**: Comprehensive error boundaries and loading states for all three parallel processes
+**✅ Technical Implementation:**
+- Tab navigation reordered with Truth Analysis as default tab
+- `handleBuildAllInsights` calls strategic insights, competitive intelligence, and strategic actions in parallel
+- `handleAdvancedInsights` enhanced to extract and display enhanced keywords
+- All four subsections properly structured with loading states and error handling
+- Backend API `/api/competitive-intelligence` confirmed operational
 
 **User Experience Benefits:**
-- **Simplified Workflow**: Single button generates all strategic insights instead of three separate buttons
-- **Comprehensive Analysis**: Strategic Recommendations now truly synthesizes all collected intelligence
-- **Logical Progression**: Clear flow from Truth Analysis → Cohorts → Insights → Advanced Strategic Analysis
-- **Performance Optimized**: Parallel processing for faster results, cached responses for repeated analysis
-- **Professional Interface**: Clean, organized presentation of all strategic analysis components
+- **Logical Flow**: Truth Analysis → Cohorts → Insights → Strategic Recommendations
+- **Comprehensive Insights**: All 4 required subsections in single Insights tab
+- **Exact Item Counts**: Strategic and Competitive insights limited to exactly 5 items
+- **Enhanced Keywords**: Advanced analysis adds relevant keywords to existing list
+- **Consistent Interface**: Maintains existing advanced analysis toggle functionality
 
 ### Strategic Component Workflow Implementation - July 18, 2025
 
