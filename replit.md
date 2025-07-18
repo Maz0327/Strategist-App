@@ -417,10 +417,12 @@ Successfully restructured the main navigation according to user specifications:
 - **Active Data**: 7 users, 18 signals (all in capture status), ready for production use
 - **Error rate**: Only expected authentication errors, no system failures
 - **Code quality**: Production-ready with streamlined, optimized architecture
-- **System Health**: 90/100 - All critical components operational
+- **System Health**: 92/100 - All critical components operational
 - **Length Preference System**: Medium-first progressive analysis with optimized caching (v4)
 - **Real-time Progress**: Fixed streaming analysis with proper flush commands and real-time progress updates
 - **Length Adjustment Performance**: Optimized from 14-26 seconds to instant (<1 second) using fast text processing instead of OpenAI calls
+- **Insights Tab Structure**: Restored original insights tab structure with all missing sections included
+- **Cache Fix**: Fixed backend cache validation to properly return non-empty results instead of null/empty cached data
 
 ### Strategic Component Workflow Implementation - July 18, 2025
 
