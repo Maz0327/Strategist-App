@@ -1241,74 +1241,46 @@ export function EnhancedAnalysisResults({
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5" />
-                Competitive Intelligence
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {competitiveResults.length > 0 ? (
-                <div className="space-y-3">
-                  {competitiveResults.map((insight, index) => (
-                    <div key={index} className="flex items-start gap-3">
-                      <AlertCircle className="h-4 w-4 text-orange-600 mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-700 font-medium mb-1">
-                          {typeof insight === 'string' ? insight : insight.insight || insight.title || `Competitive Insight ${index + 1}`}
-                        </p>
-                        {typeof insight === 'object' && insight.category && (
-                          <div className="text-xs text-gray-600">
-                            <strong>Category:</strong> {insight.category}
-                            {insight.confidence && ` | Confidence: ${insight.confidence}`}
-                            {insight.actionable && ` | Actionable: ${insight.actionable}`}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : loadingStates.competitive ? (
-                <AnimatedLoadingState 
-                  title="Building Competitive Intelligence"
-                  subtitle="Analyzing competitive landscape and opportunities..."
-                />
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <Zap className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                  <p>Click "Build Strategic Insights" below to generate competitive intelligence</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Keywords & Tone Analysis</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Strategic Keywords</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {data.keywords.map((keyword, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs">
-                        {keyword}
-                      </Badge>
-                    ))}
-                  </div>
+
+          {/* Advanced Strategic Analysis Button - Only show after initial insights are generated */}
+          {showAdvancedInsightsButton && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="h-5 w-5" />
+                  Advanced Strategic Analysis
+                </CardTitle>
+                <p className="text-sm text-gray-600">
+                  Generate comprehensive detailed analysis based on the strategic insights above
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-center mb-4">
+                  <Button 
+                    onClick={handleAdvancedInsights}
+                    disabled={loadingStates.advancedInsights || !insightsResults.length}
+                    className="flex items-center gap-2"
+                  >
+                    {loadingStates.advancedInsights ? (
+                      <>
+                        <LoadingSpinner size="sm" />
+                        Generating Advanced Analysis...
+                      </>
+                    ) : (
+                      <>
+                        <Brain className="h-4 w-4" />
+                        Advanced Strategic Analysis
+                      </>
+                    )}
+                  </Button>
                 </div>
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Tone & Confidence</h4>
-                  <div className="flex gap-2">
-                    <Badge variant="outline">{data.tone}</Badge>
-                    <Badge variant="outline">{data.confidence}</Badge>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                <p className="text-sm text-gray-600 text-center">
+                  This provides deeper, more comprehensive analysis of the strategic insights above
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>
