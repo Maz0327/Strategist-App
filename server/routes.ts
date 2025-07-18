@@ -258,6 +258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Send initial status
       res.write(`data: ${JSON.stringify({ type: 'status', message: 'Starting analysis...', progress: 10 })}\n\n`);
+      res.flush?.();
       
       // Check cache first
       const cacheKey = `${data.content?.slice(0, 100)}-${lengthPreference}`;
@@ -265,29 +266,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (cached) {
         res.write(`data: ${JSON.stringify({ type: 'status', message: 'Using cached analysis...', progress: 50 })}\n\n`);
+        res.flush?.();
         res.write(`data: ${JSON.stringify({ type: 'analysis', data: cached })}\n\n`);
+        res.flush?.();
         res.write(`data: ${JSON.stringify({ type: 'complete', progress: 100 })}\n\n`);
+        res.flush?.();
         res.end();
         return;
       }
       
       // Start analysis
       res.write(`data: ${JSON.stringify({ type: 'status', message: 'Analyzing content...', progress: 30 })}\n\n`);
+      res.flush?.();
       
       const analysisMode = req.body.analysisMode || 'quick';
       
       // Send progress updates during analysis
       res.write(`data: ${JSON.stringify({ type: 'status', message: 'Processing with AI...', progress: 40 })}\n\n`);
+      res.flush?.();
       
       const analysis = await openaiService.analyzeContent(data, lengthPreference, analysisMode);
       
       res.write(`data: ${JSON.stringify({ type: 'status', message: 'Generating insights...', progress: 60 })}\n\n`);
+      res.flush?.();
       
       // Send more detailed progress
       res.write(`data: ${JSON.stringify({ type: 'status', message: 'Creating strategic analysis...', progress: 80 })}\n\n`);
+      res.flush?.();
       
       // Save as signal
       res.write(`data: ${JSON.stringify({ type: 'status', message: 'Saving analysis...', progress: 85 })}\n\n`);
+      res.flush?.();
       
       const signalData = {
         userId: req.session.userId!,
@@ -317,6 +326,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const signal = await storage.createSignal(signalData);
       
       res.write(`data: ${JSON.stringify({ type: 'status', message: 'Finalizing...', progress: 90 })}\n\n`);
+      res.flush?.();
       
       // Track source if URL provided
       if (data.url) {
@@ -339,6 +349,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data: { analysis, signalId: signal.id }, 
         progress: 100 
       })}\n\n`);
+      res.flush?.();
       
       res.end();
     } catch (error: any) {
