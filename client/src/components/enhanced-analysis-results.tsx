@@ -129,25 +129,27 @@ export function EnhancedAnalysisResults({
     setLoadingStates(prev => ({ ...prev, cohorts: true }));
     
     try {
-      const response = await apiRequest('/api/cohorts', {
-        method: 'POST',
-        body: JSON.stringify({
+      const response = await apiRequest(
+        'POST',
+        '/api/cohorts',
+        {
           content: originalContent?.content || '',
           title: originalContent?.title || '',
           truthAnalysis: currentAnalysis.truthAnalysis
-        })
-      });
+        }
+      );
       
-      setCohortResults(response.cohorts || []);
+      const data = await response.json();
+      setCohortResults(data.cohorts || []);
       toast({
         title: "Success",
         description: "Cohort analysis completed",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Cohort building failed:', error);
       toast({
         title: "Error",
-        description: "Failed to build cohorts. Please try again.",
+        description: error.message || "Failed to build cohorts. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -168,25 +170,27 @@ export function EnhancedAnalysisResults({
     setLoadingStates(prev => ({ ...prev, insights: true }));
     
     try {
-      const response = await apiRequest('/api/strategic-insights', {
-        method: 'POST',
-        body: JSON.stringify({
+      const response = await apiRequest(
+        'POST',
+        '/api/strategic-insights',
+        {
           content: originalContent?.content || '',
           title: originalContent?.title || '',
           truthAnalysis: currentAnalysis.truthAnalysis
-        })
-      });
+        }
+      );
       
-      setInsightsResults(response.insights || []);
+      const data = await response.json();
+      setInsightsResults(data.insights || []);
       toast({
         title: "Success",
         description: "Strategic insights completed",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Strategic insights failed:', error);
       toast({
         title: "Error",
-        description: "Failed to build strategic insights. Please try again.",
+        description: error.message || "Failed to build strategic insights. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -207,25 +211,27 @@ export function EnhancedAnalysisResults({
     setLoadingStates(prev => ({ ...prev, actions: true }));
     
     try {
-      const response = await apiRequest('/api/strategic-actions', {
-        method: 'POST',
-        body: JSON.stringify({
+      const response = await apiRequest(
+        'POST',
+        '/api/strategic-actions',
+        {
           content: originalContent?.content || '',
           title: originalContent?.title || '',
           truthAnalysis: currentAnalysis.truthAnalysis
-        })
-      });
+        }
+      );
       
-      setActionsResults(response.actions || []);
+      const data = await response.json();
+      setActionsResults(data.actions || []);
       toast({
         title: "Success",
         description: "Strategic actions completed",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Strategic actions failed:', error);
       toast({
         title: "Error",
-        description: "Failed to build strategic actions. Please try again.",
+        description: error.message || "Failed to build strategic actions. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -469,28 +475,30 @@ export function EnhancedAnalysisResults({
 
       {/* Detailed Analysis Tabs */}
       <Tabs defaultValue="truth" className="w-full">
-        <TabsList className={`grid w-full ${isMobile ? 'grid-cols-2' : 'grid-cols-5'}`}>
-          <TabsTrigger value="truth" className="text-xs sm:text-sm">
-            <span className="hidden sm:inline">Truth Analysis</span>
-            <span className="sm:hidden">Truth</span>
-          </TabsTrigger>
-          <TabsTrigger value="cohorts" className="text-xs sm:text-sm">
-            <span className="hidden sm:inline">Cohorts</span>
-            <span className="sm:hidden">Cohorts</span>
-          </TabsTrigger>
-          <TabsTrigger value="insights" className="text-xs sm:text-sm">
-            <span className="hidden sm:inline">Insights</span>
-            <span className="sm:hidden">Insights</span>
-          </TabsTrigger>
-          <TabsTrigger value="actions" className="text-xs sm:text-sm">
-            <span className="hidden sm:inline">Actions</span>
-            <span className="sm:hidden">Actions</span>
-          </TabsTrigger>
-          <TabsTrigger value="strategic-recommendations" className="text-xs sm:text-sm">
-            <span className="hidden sm:inline">Strategic Recommendations</span>
-            <span className="sm:hidden">Strategic</span>
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList className={`${isMobile ? 'flex w-max' : 'grid w-full grid-cols-5'}`}>
+            <TabsTrigger value="truth" className="text-xs sm:text-sm whitespace-nowrap">
+              <span className="hidden sm:inline">Truth Analysis</span>
+              <span className="sm:hidden">Truth</span>
+            </TabsTrigger>
+            <TabsTrigger value="cohorts" className="text-xs sm:text-sm whitespace-nowrap">
+              <span className="hidden sm:inline">Cohorts</span>
+              <span className="sm:hidden">Cohorts</span>
+            </TabsTrigger>
+            <TabsTrigger value="insights" className="text-xs sm:text-sm whitespace-nowrap">
+              <span className="hidden sm:inline">Insights</span>
+              <span className="sm:hidden">Insights</span>
+            </TabsTrigger>
+            <TabsTrigger value="actions" className="text-xs sm:text-sm whitespace-nowrap">
+              <span className="hidden sm:inline">Actions</span>
+              <span className="sm:hidden">Actions</span>
+            </TabsTrigger>
+            <TabsTrigger value="strategic-recommendations" className="text-xs sm:text-sm whitespace-nowrap">
+              <span className="hidden sm:inline">Strategic Recommendations</span>
+              <span className="sm:hidden">Strategic</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="truth" className="space-y-4">
           <Card>
