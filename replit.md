@@ -384,6 +384,33 @@ app.post("/api/signals/draft", requireAuth, async (req, res) => {
 - **Memory Management**: Comprehensive documentation preventing context loss
 - **Efficiency**: Parallel processing and extended work sessions maximize productivity
 
+### Navigation Restructure - July 18, 2025
+
+#### ✅ **Major Navigation Overhaul - COMPLETED**:
+Successfully restructured the main navigation according to user specifications:
+
+**New Navigation Order:**
+1. **Today's Briefing** - Standalone homepage with intelligence overview
+2. **Signal Capture** - Content analysis and signal creation
+3. **Feeds** - RSS feeds and data sources (Client Channels, Custom Feeds, Project Intelligence)
+4. **Explore Signals** - Trending topics and signal mining
+5. **Strategic Brief Lab** - Brief generation and templates
+6. **Manage** - Dashboard and settings
+7. **Admin Panel** - Only visible to admin users (hidden for standard accounts)
+
+**Key Changes:**
+- **Today's Briefing**: Now standalone page with overview cards linking to feeds
+- **Feeds Section**: New dedicated section with Client Channels, Custom Feeds, Project Intelligence
+- **Admin Controls**: Admin Panel hidden for non-admin users (based on email check)
+- **Chevron Indicators**: Desktop navigation shows arrows for sections with sub-menus
+- **Responsive Design**: All navigation improvements work on mobile and desktop
+
+**Technical Implementation:**
+- Updated navigationItems array with new structure and admin visibility logic
+- Modified TodaysBriefing component to handle standalone vs. feeds modes
+- Added chevron arrows with smooth rotation animations
+- Implemented admin permission checks for navigation visibility
+
 ### Current System Status - July 18, 2025
 - **Performance**: System optimized and restored to 2-3 seconds for analysis (GPT-4o-mini with token limits)
 - **Database**: 14 tables operational with complete schema (users, signals, sources, feed_items, user_feed_sources, user_topic_profiles, signal_sources, user_analytics, user_feedback, feature_usage, system_performance, ab_test_results, api_calls, external_api_calls)

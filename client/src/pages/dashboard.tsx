@@ -59,12 +59,27 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
     // TODO: Could add platform filtering here if needed
   };
 
+  // Check if user is admin (assuming admin check logic)
+  const isAdmin = user?.email === "Maz0327@gmail.com"; // Replace with proper admin check
+
   // Sidebar navigation items
   const navigationItems = [
     {
       id: "briefing",
       label: "Today's Briefing",
       icon: Home,
+      subItems: []
+    },
+    {
+      id: "capture",
+      label: "Signal Capture",
+      icon: Plus,
+      subItems: []
+    },
+    {
+      id: "feeds",
+      label: "Feeds",
+      icon: Brain,
       subItems: [
         { id: "client-feeds", label: "Client Channels" },
         { id: "custom-feeds", label: "Custom Feeds" },
@@ -81,12 +96,6 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
         { id: "opportunities", label: "Reactive Opportunities" },
         { id: "cultural", label: "Cultural Moments" }
       ]
-    },
-    {
-      id: "capture",
-      label: "Signal Capture",
-      icon: Plus,
-      subItems: []
     },
     {
       id: "brief",
@@ -108,7 +117,7 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
         { id: "insights", label: "Audience Insights" }
       ]
     },
-    {
+    ...(isAdmin ? [{
       id: "admin",
       label: "Admin Panel",
       icon: BarChart3,
@@ -117,7 +126,7 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
         { id: "feedback", label: "Feedback Management" },
         { id: "performance", label: "System Performance" }
       ]
-    }
+    }] : [])
   ];
 
   return (
@@ -308,6 +317,19 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
         <div className="flex-1 flex overflow-hidden">
           <main className="flex-1 overflow-y-auto p-4 sm:p-6">
             {activeTab === "briefing" && (
+              <TodaysBriefing 
+                activeSubTab=""
+                onNavigateToExplore={handleNavigateToExplore}
+                onNavigateToCapture={handleNavigateToCapture}
+                onNavigateToBrief={handleNavigateToBrief}
+                onNavigate={(tab, subTab) => {
+                  setActiveTab(tab);
+                  if (subTab) setActiveSubTab(subTab);
+                }}
+              />
+            )}
+            
+            {activeTab === "feeds" && (
               <TodaysBriefing 
                 activeSubTab={activeSubTab}
                 onNavigateToExplore={handleNavigateToExplore}

@@ -830,5 +830,247 @@ export function TodaysBriefing({ activeSubTab, onNavigateToExplore, onNavigateTo
     }
   };
 
+  // If no activeSubTab, show standalone briefing page
+  if (!activeSubTab) {
+    return (
+      <div className="space-y-6">
+        {/* Desktop Header */}
+        <div className="hidden md:flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Today's Briefing</h2>
+            <p className="text-gray-600 mt-1">Your strategic intelligence for today</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={refreshing}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
+        </div>
+
+        {/* Mobile Header */}
+        <div className="md:hidden mb-4">
+          <h2 className="text-xl font-bold text-gray-900">Today's Briefing</h2>
+          <p className="text-sm text-gray-600">Your strategic intelligence for today</p>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Total Items</p>
+                  <p className="text-2xl font-bold">{statusCounts.total}</p>
+                </div>
+                <Brain className="h-8 w-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Validated Signals</p>
+                  <p className="text-2xl font-bold">{statusCounts.signals}</p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Potential Signals</p>
+                  <p className="text-2xl font-bold">{statusCounts.potential}</p>
+                </div>
+                <Clock className="h-8 w-8 text-orange-500" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Insights</p>
+                  <p className="text-2xl font-bold">{statusCounts.insights}</p>
+                </div>
+                <ArrowRight className="h-8 w-8 text-purple-500" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Daily Intelligence Channels */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <Card 
+            className="card-shadow cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => onNavigate?.('feeds', 'client-feeds')}
+          >
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold text-gray-900 flex items-center gap-2">
+                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Users className="h-4 w-4 text-blue-600" />
+                </div>
+                Client Channels
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 mb-3">
+                Industry updates and competitive intelligence for your clients
+              </p>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">
+                  {projectData?.feedItems?.length || 0} updates
+                </span>
+                <ArrowRight className="h-4 w-4 text-gray-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className="card-shadow cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => onNavigate?.('feeds', 'custom-feeds')}
+          >
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold text-gray-900 flex items-center gap-2">
+                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                  <Rss className="h-4 w-4 text-green-600" />
+                </div>
+                Custom Feeds
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 mb-3">
+                Your RSS feeds and curated sources for specialized insights
+              </p>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">
+                  {customFeedData?.feedItems?.length || 0} articles
+                </span>
+                <ArrowRight className="h-4 w-4 text-gray-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className="card-shadow cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => onNavigate?.('feeds', 'project-feeds')}
+          >
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold text-gray-900 flex items-center gap-2">
+                <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="h-4 w-4 text-purple-600" />
+                </div>
+                Project Intelligence
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 mb-3">
+                Market intelligence and trending insights for strategic planning
+              </p>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">
+                  {intelligenceData?.feedItems?.length || 0} insights
+                </span>
+                <ArrowRight className="h-4 w-4 text-gray-400" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Recent Signals */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">Recent Signals</h3>
+          </div>
+          
+          {topSignals.length === 0 ? (
+            <Card>
+              <CardContent className="p-6 text-center">
+                <p className="text-gray-500 mb-4">No signals captured yet</p>
+                <Button onClick={onNavigateToCapture}>
+                  Capture Your First Signal
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {topSignals.map((signal) => (
+                <Card key={signal.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant={
+                            signal.status === 'signal' ? 'default' :
+                            signal.status === 'potential_signal' ? 'secondary' :
+                            'outline'
+                          }>
+                            {signal.status === 'potential_signal' ? 'Potential Signal' : 
+                             signal.status === 'signal' ? 'Signal' :
+                             signal.status === 'insight' ? 'Insight' : 'Capture'}
+                          </Badge>
+                          {signal.confidence && (
+                            <span className="text-sm text-gray-500">
+                              {Math.round(signal.confidence * 100)}% confidence
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="font-medium text-gray-900 mb-1">{signal.title}</h4>
+                        <p className="text-sm text-gray-600 mb-2 line-clamp-2">{signal.summary}</p>
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <span>{formatDistanceToNow(new Date(signal.createdAt))} ago</span>
+                          {signal.tags && signal.tags.length > 0 && (
+                            <span>{signal.tags.join(', ')}</span>
+                          )}
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={onNavigateToBrief}>
+                        Add to Brief
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={onNavigateToCapture}>
+            <CardContent className="p-6 text-center">
+              <Brain className="h-8 w-8 text-blue-500 mx-auto mb-3" />
+              <h4 className="font-medium text-gray-900 mb-2">Capture New Signal</h4>
+              <p className="text-sm text-gray-600">Add content from URL or text</p>
+            </CardContent>
+          </Card>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={onNavigateToExplore}>
+            <CardContent className="p-6 text-center">
+              <TrendingUp className="h-8 w-8 text-green-500 mx-auto mb-3" />
+              <h4 className="font-medium text-gray-900 mb-2">Explore Signals</h4>
+              <p className="text-sm text-gray-600">Discover trending topics across platforms</p>
+            </CardContent>
+          </Card>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={onNavigateToBrief}>
+            <CardContent className="p-6 text-center">
+              <ArrowRight className="h-8 w-8 text-purple-500 mx-auto mb-3" />
+              <h4 className="font-medium text-gray-900 mb-2">Strategic Brief Lab</h4>
+              <p className="text-sm text-gray-600">Build strategic briefs from your signals</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Otherwise, show feeds content
   return renderFeedContent();
 }
