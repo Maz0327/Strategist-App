@@ -12,7 +12,7 @@ export interface CohortSuggestion {
 }
 
 export class CohortBuilderService {
-  async getCohortSuggestions(content: string, title: string = '', truthAnalysis?: any): Promise<CohortSuggestion[]> {
+  async generateCohorts(content: string, title: string = '', truthAnalysis?: any): Promise<CohortSuggestion[]> {
     debugLogger.info('Starting cohort analysis', { contentLength: content.length, title });
     
     const startTime = Date.now();

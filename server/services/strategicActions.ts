@@ -12,7 +12,7 @@ export interface StrategicAction {
 }
 
 export class StrategicActionsService {
-  async getStrategicActions(content: string, title: string = '', truthAnalysis?: any): Promise<StrategicAction[]> {
+  async generateActions(content: string, title: string = '', truthAnalysis?: any): Promise<StrategicAction[]> {
     debugLogger.info('Starting strategic actions analysis', { contentLength: content.length, title });
     
     const startTime = Date.now();

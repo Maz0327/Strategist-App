@@ -11,7 +11,7 @@ export interface StrategicInsight {
 }
 
 export class StrategicInsightsService {
-  async getStrategicInsights(content: string, title: string = '', truthAnalysis?: any): Promise<StrategicInsight[]> {
+  async generateInsights(content: string, title: string = '', truthAnalysis?: any): Promise<StrategicInsight[]> {
     debugLogger.info('Starting strategic insights analysis', { contentLength: content.length, title });
     
     const startTime = Date.now();

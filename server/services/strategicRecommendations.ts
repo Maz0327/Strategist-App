@@ -1,5 +1,5 @@
 import { OpenAI } from 'openai';
-import { debugLogger } from '../index';
+import { debugLogger } from './debug-logger';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,

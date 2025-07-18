@@ -61,12 +61,14 @@ export class OpenAIService {
 
 CRITICAL: Write your responses in a conversational, human tone - like you're discussing insights with your strategy team. Avoid robotic language. Be professional but natural and engaging.
 
+KEYWORDS REQUIREMENT: Extract 3-20 strategically and culturally relevant keywords only. Include trending terms, industry-specific language, cultural references, and strategic concepts. ONLY include keywords that have genuine strategic or cultural relevance - no generic filler words. Minimum 3, maximum 20, but only if they are truly strategic/cultural.
+
 Return valid JSON:
 {
   "summary": "Multi-sentence strategic summary providing comprehensive analysis of the content's strategic value and implications. Each response field must follow the exact sentence count requirements specified.",
   "sentiment": "positive|negative|neutral",
   "tone": "professional|casual|urgent|analytical|conversational|authoritative",
-  "keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
+  "keywords": ["strategic keyword1", "cultural keyword2", "relevant keyword3", "strategic keyword4", "cultural keyword5"],
   "confidence": "85%",
   "truthAnalysis": {
     "fact": "Multiple sentences providing comprehensive factual analysis with context and implications. Must contain the exact number of sentences specified in the length preference.",
@@ -88,12 +90,14 @@ Return valid JSON:
 
 CRITICAL: Write your responses in a conversational, human tone - like you're discussing insights with your strategy team. Avoid robotic language. Be professional but natural and engaging.
 
+KEYWORDS REQUIREMENT: Extract 3-20 strategically and culturally relevant keywords only. Include trending terms, industry-specific language, cultural references, and strategic concepts. ONLY include keywords that have genuine strategic or cultural relevance - no generic filler words. Minimum 3, maximum 20, but only if they are truly strategic/cultural.
+
 Return valid JSON:
 {
   "summary": "Multi-sentence strategic summary following the exact sentence count requirements specified in the length preference",
   "sentiment": "positive|negative|neutral",
   "tone": "professional|casual|urgent|analytical|conversational|authoritative",
-  "keywords": ["keyword1", "keyword2"],
+  "keywords": ["strategic keyword1", "cultural keyword2", "relevant keyword3", "strategic keyword4", "cultural keyword5"],
   "confidence": "85%",
   "truthAnalysis": {
     "fact": "Multiple sentences providing key factual analysis. Must contain the exact number of sentences specified in the length preference.",
