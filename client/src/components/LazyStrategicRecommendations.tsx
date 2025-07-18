@@ -13,6 +13,7 @@ interface StrategicRecommendation {
   timeframe: 'immediate' | 'short-term' | 'long-term';
   confidence: number;
   category: 'competitive' | 'cultural' | 'tactical' | 'strategic';
+  rationale?: string;
 }
 
 interface LazyStrategicRecommendationsProps {
@@ -111,7 +112,7 @@ export default function LazyStrategicRecommendations({ content, title, truthAnal
               <LoadingSpinner size="md" />
               <div className="text-sm text-gray-600">
                 <div className="font-medium">Analyzing strategic opportunities...</div>
-                <div className="text-xs text-gray-500 mt-1">Processing competitive landscape and cultural context</div>
+                <div className="text-xs text-gray-500 mt-1">Analyzing all components: Truth Analysis → Cohorts → Strategic Insights → Actions → Competitive Intelligence</div>
               </div>
             </div>
           </div>
@@ -172,7 +173,7 @@ export default function LazyStrategicRecommendations({ content, title, truthAnal
           Strategic Recommendations
         </CardTitle>
         <p className="text-sm text-gray-600">
-          AI-powered strategic recommendations based on comprehensive analysis
+          Synthesized recommendations from Truth Analysis, Cohorts, Strategic Insights, Actions, and Competitive Intelligence
         </p>
       </CardHeader>
       <CardContent>

@@ -25,6 +25,7 @@ import { cohortBuilderService } from "./services/cohortBuilder";
 import { competitiveIntelligenceService } from "./services/competitiveIntelligence";
 import { strategicInsightsService } from "./services/strategicInsights";
 import { strategicActionsService } from "./services/strategicActions";
+import { strategicRecommendationsService } from "./services/strategicRecommendations";
 import { getCacheStats } from "./services/cache";
 import { 
   insertUserFeedbackSchema,
@@ -395,7 +396,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Strategic Recommendations endpoint
+  // Strategic Recommendations endpoint - analyzes ALL components
   app.post("/api/strategic-recommendations", requireAuth, async (req, res) => {
     try {
       const { content, title, truthAnalysis } = req.body;
@@ -406,7 +407,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       debugLogger.info("Strategic recommendations request", { contentLength: content.length, title });
 
-      const recommendations = await openaiService.generateStrategicRecommendations(content, title, truthAnalysis);
+      // First, generate all component results
+      const [cohorts, strategicInsights, strategicActions, competitiveInsights] = await Promise.all([
+        cohortBuilderService.generateCohorts(content, title, truthAnalysis),
+        strategicInsightsService.generateInsights(content, title, truthAnalysis),
+        strategicActionsService.generateActions(content, title, truthAnalysis),
+        competitiveIntelligenceService.generateInsights(content, title, truthAnalysis)
+      ]);
+
+      // Then generate strategic recommendations from all components
+      const componentResults = {
+        truthAnalysis,
+        cohorts,
+        strategicInsights,
+        strategicActions,
+        competitiveInsights
+      };
+
+      const recommendations = await strategicRecommendationsService.generateRecommendations(componentResults);
       
       res.json({ recommendations });
     } catch (error: any) {
