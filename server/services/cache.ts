@@ -2,17 +2,31 @@ import { createHash } from 'crypto';
 import { debugLogger } from './debug-logger';
 import Redis from 'ioredis';
 
-// Redis configuration
-const redis = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  password: process.env.REDIS_PASSWORD,
-  retryDelayOnFailure: 3000,
-  maxRetriesPerRequest: 3,
-  lazyConnect: true,
-  // Fallback to memory cache if Redis is unavailable
-  enableOfflineQueue: false
-});
+// Redis configuration - only initialize if Redis is available
+let redis: Redis | null = null;
+const REDIS_ENABLED = process.env.REDIS_URL || process.env.REDIS_HOST;
+
+if (REDIS_ENABLED) {
+  try {
+    redis = new Redis({
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT || '6379'),
+      password: process.env.REDIS_PASSWORD,
+      retryDelayOnFailure: 3000,
+      maxRetriesPerRequest: 1,
+      lazyConnect: true,
+      enableOfflineQueue: false
+    });
+    
+    // Handle connection errors gracefully
+    redis.on('error', (err) => {
+      debugLogger.warn('Redis connection error, falling back to memory cache', { error: err.message });
+    });
+  } catch (error) {
+    debugLogger.warn('Redis initialization failed, using memory cache only', { error: error.message });
+    redis = null;
+  }
+}
 
 interface CacheEntry<T> {
   data: T;
@@ -30,6 +44,11 @@ class DistributedCache<T> {
   }
 
   private async checkRedisConnection(): Promise<void> {
+    if (!redis) {
+      this.redisAvailable = false;
+      return;
+    }
+    
     try {
       await redis.ping();
       this.redisAvailable = true;
@@ -43,7 +62,7 @@ class DistributedCache<T> {
   async set(key: string, data: T, ttl: number = this.defaultTTL): Promise<void> {
     const ttlSeconds = Math.floor(ttl / 1000);
     
-    if (this.redisAvailable) {
+    if (this.redisAvailable && redis) {
       try {
         await redis.setex(key, ttlSeconds, JSON.stringify(data));
         debugLogger.info('Data cached in Redis', { key, ttl: ttlSeconds });
@@ -66,7 +85,7 @@ class DistributedCache<T> {
   }
 
   async get(key: string): Promise<T | null> {
-    if (this.redisAvailable) {
+    if (this.redisAvailable && redis) {
       try {
         const cached = await redis.get(key);
         if (cached) {
@@ -100,7 +119,7 @@ class DistributedCache<T> {
   }
 
   async delete(key: string): Promise<void> {
-    if (this.redisAvailable) {
+    if (this.redisAvailable && redis) {
       try {
         await redis.del(key);
       } catch (error) {
@@ -112,7 +131,7 @@ class DistributedCache<T> {
   }
 
   async clear(): Promise<void> {
-    if (this.redisAvailable) {
+    if (this.redisAvailable && redis) {
       try {
         await redis.flushall();
       } catch (error) {
