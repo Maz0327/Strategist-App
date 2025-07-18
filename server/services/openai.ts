@@ -8,7 +8,7 @@ import { performanceMonitor } from "./monitoring";
 // Using gpt-4o-mini for cost-efficient testing phase, can upgrade to gpt-4o later
 export const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || process.env.API_KEY,
-  timeout: 45 * 1000, // 45 second timeout
+  timeout: 30 * 1000, // 30 second timeout
   maxRetries: 2, // Built-in retries
 });
 
@@ -21,11 +21,11 @@ export interface AnalysisResult {
 }
 
 export interface TruthAnalysis {
-  fact: string[];
-  observation: string[];
-  insight: string[];
-  humanTruth: string[];
-  culturalMoment: string[];
+  fact: string;
+  observation: string;
+  insight: string;
+  humanTruth: string;
+  culturalMoment: string;
   attentionValue: 'high' | 'medium' | 'low';
   platform: string;
   cohortOpportunities: string[];
@@ -34,7 +34,7 @@ export interface TruthAnalysis {
 export interface EnhancedAnalysisResult extends AnalysisResult {
   truthAnalysis: TruthAnalysis;
   cohortSuggestions: string[];
-  platformContext: string[];
+  platformContext: string;
   viralPotential: 'high' | 'medium' | 'low';
   competitiveInsights: string[];
   strategicInsights: string[];
@@ -69,130 +69,37 @@ export class OpenAIService {
     }
     
     try {
-      // Use function calling for strict JSON schema enforcement
-      const functions = [{
-        name: "analyzeContent",
-        description: "Returns structured analysis with arrays enforcing sentence counts",
-        parameters: {
-          type: "object",
-          properties: {
-            summary: { 
-              type: "string", 
-              description: "EXACTLY 3-5 sentences summarizing the content strategically"
-            },
-            sentiment: { 
-              type: "string", 
-              enum: ["positive", "negative", "neutral"]
-            },
-            tone: { 
-              type: "string", 
-              enum: ["professional", "casual", "urgent", "analytical", "conversational", "authoritative"]
-            },
-            keywords: { 
-              type: "array", 
-              items: { type: "string" },
-              description: "5-8 strategic keywords"
-            },
-            confidence: { 
-              type: "string",
-              description: "Confidence level as percentage (e.g., '85%')"
-            },
-            truthAnalysis: {
-              type: "object",
-              properties: {
-                fact: { 
-                  type: "array", 
-                  items: { type: "string" },
-                  minItems: 3,
-                  maxItems: 5,
-                  description: "3-5 sentences stating objective facts"
-                },
-                observation: { 
-                  type: "array", 
-                  items: { type: "string" },
-                  minItems: 3,
-                  maxItems: 5,
-                  description: "3-5 sentences describing observed patterns"
-                },
-                insight: { 
-                  type: "array", 
-                  items: { type: "string" },
-                  minItems: 3,
-                  maxItems: 5,
-                  description: "3-5 sentences providing strategic insights"
-                },
-                humanTruth: { 
-                  type: "array", 
-                  items: { type: "string" },
-                  minItems: 3,
-                  maxItems: 5,
-                  description: "3-5 sentences explaining human motivations"
-                },
-                culturalMoment: { 
-                  type: "array", 
-                  items: { type: "string" },
-                  minItems: 3,
-                  maxItems: 5,
-                  description: "3-5 sentences identifying cultural context"
-                },
-                attentionValue: { 
-                  type: "string", 
-                  enum: ["high", "medium", "low"]
-                },
-                platform: { 
-                  type: "string",
-                  description: "Most relevant platform for this content"
-                },
-                cohortOpportunities: { 
-                  type: "array", 
-                  items: { type: "string" },
-                  description: "Specific audience segments"
-                }
-              },
-              required: ["fact", "observation", "insight", "humanTruth", "culturalMoment", "attentionValue", "platform", "cohortOpportunities"]
-            },
-            cohortSuggestions: { 
-              type: "array", 
-              items: { type: "string" },
-              description: "Suggested audience cohorts"
-            },
-            platformContext: { 
-              type: "array", 
-              items: { type: "string" },
-              minItems: 3,
-              maxItems: 5,
-              description: "3-5 sentences explaining platform-specific context"
-            },
-            viralPotential: { 
-              type: "string", 
-              enum: ["high", "medium", "low"]
-            },
-            competitiveInsights: { 
-              type: "array", 
-              items: { type: "string" },
-              description: "Competitive analysis points"
-            },
-            strategicInsights: { 
-              type: "array", 
-              items: { type: "string" },
-              description: "Strategic recommendations"
-            },
-            strategicActions: { 
-              type: "array", 
-              items: { type: "string" },
-              description: "Specific actionable steps"
-            }
-          },
-          required: ["summary", "sentiment", "tone", "keywords", "confidence", "truthAnalysis", "cohortSuggestions", "platformContext", "viralPotential", "competitiveInsights", "strategicInsights", "strategicActions"]
-        }
-      }];
-      
+      // Use standard chat completions with JSON mode for fast response
       const response = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
           { 
             role: "system", 
-            content: "You are an expert content strategist. Always return exactly the requested number of sentences in each array field. Each sentence should be complete and strategic." 
+            content: `You are an expert content strategist. Analyze content for strategic insights, human motivations, and cultural context. Always respond with valid JSON in this exact format:
+
+{
+  "summary": "Strategic summary of the content",
+  "sentiment": "positive|negative|neutral",
+  "tone": "professional|casual|urgent|analytical|conversational|authoritative",
+  "keywords": ["keyword1", "keyword2", "etc"],
+  "confidence": "percentage like 85%",
+  "truthAnalysis": {
+    "fact": "3-5 sentences stating objective facts",
+    "observation": "3-5 sentences describing observed patterns", 
+    "insight": "3-5 sentences providing strategic insights",
+    "humanTruth": "3-5 sentences explaining human motivations",
+    "culturalMoment": "3-5 sentences identifying cultural context",
+    "attentionValue": "high|medium|low",
+    "platform": "most relevant platform",
+    "cohortOpportunities": ["audience1", "audience2"]
+  },
+  "cohortSuggestions": ["cohort1", "cohort2"],
+  "platformContext": "3-5 sentences explaining platform-specific context",
+  "viralPotential": "high|medium|low",
+  "competitiveInsights": ["insight1", "insight2"],
+  "strategicInsights": ["recommendation1", "recommendation2"],
+  "strategicActions": ["action1", "action2"]
+}` 
           },
           { 
             role: "user", 
@@ -203,57 +110,53 @@ Content: ${content}
 URL: ${url}
 Length Preference: ${lengthPreference}
 
-Focus on strategic insights, human motivations, and cultural context. Return arrays with exactly 3-5 sentences per field as specified.` 
+Focus on strategic insights, human motivations, and cultural context. Return valid JSON only.` 
           }
         ],
-        functions,
-        function_call: { name: "analyzeContent" },
+        response_format: { type: "json_object" },
         temperature: 0.1
       });
 
-      const functionCall = response.choices[0]?.message?.function_call;
-      if (!functionCall || !functionCall.arguments) {
-        throw new Error('No function call response from OpenAI');
+      const responseContent = response.choices[0]?.message?.content;
+      if (!responseContent) {
+        throw new Error('No response content from OpenAI');
       }
 
-      debugLogger.info(`OpenAI function call received, arguments length: ${functionCall.arguments.length}`);
+      debugLogger.info(`OpenAI response received, content length: ${responseContent.length}`);
       
       let analysis;
       try {
-        analysis = JSON.parse(functionCall.arguments);
-        debugLogger.info('Successfully parsed OpenAI function call', { 
+        analysis = JSON.parse(responseContent);
+        debugLogger.info('Successfully parsed OpenAI response', { 
           hasSummary: !!analysis.summary,
           hasTruthAnalysis: !!analysis.truthAnalysis,
           hasKeywords: !!analysis.keywords
         });
       } catch (parseError) {
-        debugLogger.error('JSON parsing failed', { response: functionCall.arguments, error: parseError });
-        throw new Error('Invalid JSON response from OpenAI function call');
+        debugLogger.error('JSON parsing failed', { response: responseContent, error: parseError });
+        throw new Error('Invalid JSON response from OpenAI');
       }
       
       debugLogger.info(`Analysis completed in ${Date.now() - startTime}ms`);
 
-      // Convert arrays to strings for backward compatibility
-      const processedTruthAnalysis = {
-        fact: Array.isArray(analysis.truthAnalysis?.fact) ? analysis.truthAnalysis.fact.join(' ') : 'Analysis pending',
-        observation: Array.isArray(analysis.truthAnalysis?.observation) ? analysis.truthAnalysis.observation.join(' ') : 'Patterns being analyzed',
-        insight: Array.isArray(analysis.truthAnalysis?.insight) ? analysis.truthAnalysis.insight.join(' ') : 'Insights being generated',
-        humanTruth: Array.isArray(analysis.truthAnalysis?.humanTruth) ? analysis.truthAnalysis.humanTruth.join(' ') : 'Motivations being explored',
-        culturalMoment: Array.isArray(analysis.truthAnalysis?.culturalMoment) ? analysis.truthAnalysis.culturalMoment.join(' ') : 'Context being evaluated',
-        attentionValue: analysis.truthAnalysis?.attentionValue || 'medium',
-        platform: analysis.truthAnalysis?.platform || 'unknown',
-        cohortOpportunities: analysis.truthAnalysis?.cohortOpportunities || []
-      };
-
-      const result = {
+      const result: EnhancedAnalysisResult = {
         summary: analysis.summary || 'Strategic analysis completed',
         sentiment: analysis.sentiment || 'neutral',
         tone: analysis.tone || 'professional',
         keywords: analysis.keywords || [],
         confidence: analysis.confidence || '85%',
-        truthAnalysis: processedTruthAnalysis,
+        truthAnalysis: {
+          fact: analysis.truthAnalysis?.fact || 'Analysis pending',
+          observation: analysis.truthAnalysis?.observation || 'Patterns being analyzed',
+          insight: analysis.truthAnalysis?.insight || 'Insights being generated',
+          humanTruth: analysis.truthAnalysis?.humanTruth || 'Motivations being explored',
+          culturalMoment: analysis.truthAnalysis?.culturalMoment || 'Context being evaluated',
+          attentionValue: analysis.truthAnalysis?.attentionValue || 'medium',
+          platform: analysis.truthAnalysis?.platform || 'unknown',
+          cohortOpportunities: analysis.truthAnalysis?.cohortOpportunities || []
+        },
         cohortSuggestions: analysis.cohortSuggestions || [],
-        platformContext: Array.isArray(analysis.platformContext) ? analysis.platformContext.join(' ') : 'Platform analysis pending',
+        platformContext: analysis.platformContext || 'Platform analysis pending',
         viralPotential: analysis.viralPotential || 'medium',
         competitiveInsights: analysis.competitiveInsights || [],
         strategicInsights: analysis.strategicInsights || [],
@@ -273,57 +176,35 @@ Focus on strategic insights, human motivations, and cultural context. Return arr
       const processingTime = Date.now() - startTime;
       performanceMonitor.logRequest('/api/analyze', 'POST', processingTime, true, false);
       
+      // Track API usage
+      try {
+        await analyticsService.trackExternalAPICall('openai', 'analyze', processingTime, null, processingTime / 1000);
+      } catch (trackingError) {
+        debugLogger.warn('Failed to track API call', { error: trackingError });
+      }
+      
       return result;
-    } catch (error: any) {
-      debugLogger.error('OpenAI analysis failed', error);
-      const processingTime = Date.now() - startTime;
-      performanceMonitor.logRequest('/api/analyze', 'POST', processingTime, false, false);
-      throw new Error(`Analysis failed: ${error.message}`);
+    } catch (error) {
+      const errorTime = Date.now() - startTime;
+      debugLogger.error('OpenAI analysis failed', { 
+        error: error.message,
+        duration: errorTime,
+        contentLength: content.length,
+        hasTitle: !!title,
+        hasUrl: !!url
+      });
+      
+      performanceMonitor.logRequest('/api/analyze', 'POST', errorTime, false, false);
+      
+      // Track error
+      try {
+        await analyticsService.trackExternalAPICall('openai', 'analyze', errorTime, error.message, 0);
+      } catch (trackingError) {
+        debugLogger.warn('Failed to track API error', { error: trackingError });
+      }
+      
+      throw error;
     }
-  }
-
-  private buildAnalysisPrompt(content: string, title: string, url: string, lengthPreference: string): string {
-    const lengthGuidance = {
-      short: "2 sentences",
-      medium: "3-5 sentences",
-      long: "6-9 sentences",
-      bulletpoints: "multiple important points"
-    }[lengthPreference] || "3-5 sentences";
-
-    return `Analyze this content for strategic insights:
-
-Title: ${title}
-Content: ${content}
-URL: ${url}
-
-CRITICAL LENGTH REQUIREMENT: You must write exactly ${lengthGuidance} for ALL descriptive text fields. This is mandatory.
-
-Provide comprehensive strategic analysis in JSON format:
-{
-  "summary": "Strategic overview that contains exactly ${lengthGuidance}",
-  "sentiment": "positive/negative/neutral",
-  "tone": "professional/casual/urgent/analytical",
-  "keywords": ["strategic", "keywords", "here"],
-  "confidence": "85%",
-  "truthAnalysis": {
-    "fact": "What factually happened - write exactly ${lengthGuidance}",
-    "observation": "What patterns you observe - write exactly ${lengthGuidance}", 
-    "insight": "Why this is happening - write exactly ${lengthGuidance}",
-    "humanTruth": "Deep psychological driver - write exactly ${lengthGuidance}",
-    "culturalMoment": "Larger cultural shift this represents - write exactly ${lengthGuidance}",
-    "attentionValue": "high/medium/low",
-    "platform": "Platform or context",
-    "cohortOpportunities": ["behavioral audience segments"]
-  },
-  "cohortSuggestions": ["audience cohort suggestions"],
-  "platformContext": "Platform relevance explanation - write exactly ${lengthGuidance}",
-  "viralPotential": "high/medium/low",
-  "competitiveInsights": ["competitive insights"],
-  "strategicInsights": ["strategic business insights"],
-  "strategicActions": ["actionable next steps"]
-}
-
-MANDATORY: Every descriptive text field must contain exactly ${lengthGuidance}. Count your sentences carefully. Return only valid JSON without markdown formatting.`;
   }
 }
 
