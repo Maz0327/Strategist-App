@@ -1,13 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { Lightbulb, Target, Users, Eye, CheckCircle, Zap, AlertCircle, Brain, BarChart3, TrendingUp, MapPin, Compass, Share2 } from 'lucide-react';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect, lazy, Suspense } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { apiRequest } from "@/lib/queryClient";
+import ErrorBoundary from "./ErrorBoundary";
+import LazyCompetitiveInsights from "./LazyCompetitiveInsights";
+import LazyCohortBuilder from "./LazyCohortBuilder";
+import LazyStrategicInsights from "./LazyStrategicInsights";
+import LazyStrategicActions from "./LazyStrategicActions";
+
+// Lazy load Strategic Recommendations component
+const LazyStrategicRecommendations = lazy(() => import('./LazyStrategicRecommendations'));
+import { 
+  Eye, 
+  Target, 
+  TrendingUp, 
+  Users, 
+  Lightbulb, 
+  Zap, 
+  Globe, 
+  CheckCircle,
+  AlertCircle,
+  Brain,
+  Save,
+  Info,
+  Flag
+} from "lucide-react";
 
 // Enhanced Loading Component with animated progress bar
 const AnimatedLoadingState = ({ title, subtitle, progress = 0 }) => {
@@ -45,316 +70,689 @@ const AnimatedLoadingState = ({ title, subtitle, progress = 0 }) => {
 };
 
 interface EnhancedAnalysisResultsProps {
-  analysis: any;
-  isLoading: boolean;
-  signalId?: number;
-  onAnalysisUpdate?: (analysis: any) => void;
+  analysis: {
+    summary: string;
+    sentiment: string;
+    tone: string;
+    keywords: string[];
+    confidence: string;
+    truthAnalysis: {
+      fact: string;
+      observation: string;
+      insight: string;
+      humanTruth: string;
+      culturalMoment: string;
+      attentionValue: 'high' | 'medium' | 'low';
+      platform: string;
+      cohortOpportunities: string[];
+    };
+    cohortSuggestions: string[];
+    platformContext: string;
+    viralPotential: 'high' | 'medium' | 'low';
+    competitiveInsights: string[];
+    signalId?: number;
+  };
+  originalContent?: {
+    content: string;
+    title?: string;
+    url?: string;
+  };
+  currentLengthPreference?: 'short' | 'medium' | 'long' | 'bulletpoints';
+  onLengthPreferenceChange?: (newPreference: 'short' | 'medium' | 'long' | 'bulletpoints') => void;
+  isReanalyzing?: boolean;
 }
 
-const EnhancedAnalysisResults: React.FC<EnhancedAnalysisResultsProps> = ({ 
+export function EnhancedAnalysisResults({ 
   analysis, 
-  isLoading, 
-  signalId,
-  onAnalysisUpdate 
-}) => {
-  const [currentAnalysis, setCurrentAnalysis] = useState(analysis || {});
-  const [activeTab, setActiveTab] = useState('strategic-insights');
-  const [lengthPreference, setLengthPreference] = useState('medium');
-  const [isReanalyzing, setIsReanalyzing] = useState(false);
-  const [showAdvancedInsightsButton, setShowAdvancedInsightsButton] = useState(false);
-  const [insightsMode, setInsightsMode] = useState<'insights' | 'advanced'>('insights');
+  originalContent, 
+  currentLengthPreference = 'medium',
+  onLengthPreferenceChange,
+  isReanalyzing = false
+}: EnhancedAnalysisResultsProps) {
+  // Analysis data is passed directly from API response
+  const data = analysis;
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
-  // Results states
+  // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
+  const [lengthPreference, setLengthPreference] = useState<'short' | 'medium' | 'long' | 'bulletpoints'>(currentLengthPreference);
+  const [isFlagging, setIsFlagging] = useState(false);
+  const [currentAnalysis, setCurrentAnalysis] = useState(data);
+  const [analysisCache, setAnalysisCache] = useState<Record<string, any>>({
+    [currentLengthPreference]: data // Cache the initial analysis with current length
+  });
+  const [showDeepAnalysisDialog, setShowDeepAnalysisDialog] = useState(false);
+  const [dontAskAgain, setDontAskAgain] = useState(false);
+  
+  // Tab-level component state
+  const [cohortResults, setCohortResults] = useState<any[]>([]);
   const [insightsResults, setInsightsResults] = useState<any[]>([]);
   const [actionsResults, setActionsResults] = useState<any[]>([]);
   const [competitiveResults, setCompetitiveResults] = useState<any[]>([]);
-  const [cohortResults, setCohortResults] = useState<any[]>([]);
-  const [strategicRecommendations, setStrategicRecommendations] = useState<any[]>([]);
-  const [advancedInsightsResults, setAdvancedInsightsResults] = useState<any[]>([]);
-
-  // Loading states
   const [loadingStates, setLoadingStates] = useState({
+    cohorts: false,
     insights: false,
     actions: false,
     competitive: false,
-    cohorts: false,
-    strategicRecommendations: false,
     advancedInsights: false
   });
 
-  const resetLoadingState = (key: keyof typeof loadingStates) => {
-    setLoadingStates(prev => ({ ...prev, [key]: false }));
-  };
+  // Advanced Strategic Insights state
+  const [advancedInsightsResults, setAdvancedInsightsResults] = useState<any[]>([]);
+  const [insightViewMode, setInsightViewMode] = useState<'insights' | 'aia'>('insights');
+  const [showAdvancedInsightsButton, setShowAdvancedInsightsButton] = useState(false);
 
-  // Update analysis when prop changes
+  // Update analysis when new data arrives
   useEffect(() => {
-    if (analysis) {
-      setCurrentAnalysis(analysis);
-      console.log('EnhancedAnalysisResults received analysis:', analysis);
-      
-      // Check if we should show advanced insights button
-      if (analysis.strategicInsights && analysis.strategicInsights.length > 0) {
-        setShowAdvancedInsightsButton(true);
-      }
-    }
-  }, [analysis]);
+    setCurrentAnalysis(data);
+  }, [data]);
 
-  // Handle length preference change
-  const handleLengthPreferenceChange = async (newPreference: string) => {
-    if (!signalId) return;
-    
-    setLengthPreference(newPreference);
-    setIsReanalyzing(true);
-    
-    try {
-      const response = await fetch(`/api/reanalyze/${signalId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          lengthPreference: newPreference,
-          analysisMode: 'deep'
-        }),
-      });
+  // Sync length preference with parent component
+  useEffect(() => {
+    setLengthPreference(currentLengthPreference);
+  }, [currentLengthPreference]);
 
-      if (!response.ok) {
-        throw new Error('Failed to reanalyze');
-      }
+  // Debug logging for analysis data
+  console.log("EnhancedAnalysisResults received analysis:", analysis);
+  console.log("Analysis data:", data);
 
-      const data = await response.json();
-      
-      if (data.success) {
-        setCurrentAnalysis(data.analysis);
-        if (onAnalysisUpdate) {
-          onAnalysisUpdate(data.analysis);
-        }
-        toast({
-          title: "Analysis Updated",
-          description: "Content has been reanalyzed with new length preference.",
-        });
-      }
-    } catch (error) {
-      console.error('Error reanalyzing:', error);
-      toast({
-        title: "Error",
-        description: "Failed to reanalyze content. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsReanalyzing(false);
-    }
-  };
-
-  // Handle strategic insights generation
-  const handleBuildAllInsights = async () => {
-    if (!signalId) return;
-    
-    setLoadingStates(prev => ({ ...prev, insights: true, actions: true, competitive: true }));
-    
-    try {
-      // Build strategic insights
-      const insightsResponse = await fetch(`/api/strategic-insights/${signalId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ truthAnalysis: currentAnalysis.truthAnalysis }),
-      });
-
-      if (insightsResponse.ok) {
-        const insightsData = await insightsResponse.json();
-        setInsightsResults(insightsData.insights || []);
-        setShowAdvancedInsightsButton(true);
-      }
-
-      // Build strategic actions
-      const actionsResponse = await fetch(`/api/strategic-actions/${signalId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ truthAnalysis: currentAnalysis.truthAnalysis }),
-      });
-
-      if (actionsResponse.ok) {
-        const actionsData = await actionsResponse.json();
-        setActionsResults(actionsData.actions || []);
-      }
-
-      // Build competitive intelligence
-      const competitiveResponse = await fetch(`/api/competitive-intelligence/${signalId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ truthAnalysis: currentAnalysis.truthAnalysis }),
-      });
-
-      if (competitiveResponse.ok) {
-        const competitiveData = await competitiveResponse.json();
-        setCompetitiveResults(competitiveData.intelligence || []);
-      }
-
-      toast({
-        title: "Strategic Insights Generated",
-        description: "All strategic insights have been generated successfully.",
-      });
-    } catch (error) {
-      console.error('Error building strategic insights:', error);
-      toast({
-        title: "Error",
-        description: "Failed to generate strategic insights. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingStates(prev => ({ ...prev, insights: false, actions: false, competitive: false }));
-    }
-  };
-
-  // Handle advanced insights generation
-  const handleAdvancedInsights = async () => {
-    if (!signalId) return;
-    
-    setLoadingStates(prev => ({ ...prev, advancedInsights: true }));
-    
-    try {
-      const response = await fetch(`/api/advanced-strategic-insights/${signalId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          truthAnalysis: currentAnalysis.truthAnalysis,
-          strategicInsights: insightsResults,
-          strategicActions: actionsResults,
-          competitiveIntelligence: competitiveResults
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setAdvancedInsightsResults(data.insights || []);
-        setInsightsMode('advanced');
-        
-        toast({
-          title: "Advanced Strategic Analysis Generated",
-          description: "Comprehensive strategic analysis has been generated successfully.",
-        });
-      }
-    } catch (error) {
-      console.error('Error generating advanced insights:', error);
-      toast({
-        title: "Error",
-        description: "Failed to generate advanced strategic analysis. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingStates(prev => ({ ...prev, advancedInsights: false }));
-    }
-  };
-
-  // Handle cohort building
+  // Tab-level button handlers
   const handleBuildCohorts = async () => {
-    if (!signalId) return;
-    
+    if (!currentAnalysis.truthAnalysis) {
+      toast({
+        title: "Error",
+        description: "Truth analysis required to build cohorts",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoadingStates(prev => ({ ...prev, cohorts: true }));
     
     try {
-      const response = await fetch(`/api/cohorts/${signalId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ truthAnalysis: currentAnalysis.truthAnalysis }),
+      const response = await apiRequest(
+        'POST',
+        '/api/cohorts',
+        {
+          content: originalContent?.content || data.content || '',
+          title: originalContent?.title || data.title || '',
+          truthAnalysis: currentAnalysis.truthAnalysis
+        }
+      );
+      
+      const responseData = await response.json();
+      console.log('Cohort API response:', responseData);
+      console.log('Cohort results:', responseData.cohorts);
+      setCohortResults(responseData.cohorts || []);
+      toast({
+        title: "Success",
+        description: "Cohort analysis completed",
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        setCohortResults(data.cohorts || []);
-        
-        toast({
-          title: "Cohorts Generated",
-          description: "Audience cohorts have been generated successfully.",
-        });
-      }
-    } catch (error) {
-      console.error('Error building cohorts:', error);
+    } catch (error: any) {
+      console.error('Cohort building failed:', error);
       toast({
         title: "Error",
-        description: "Failed to generate cohorts. Please try again.",
-        variant: "destructive",
+        description: error.message || "Failed to build cohorts. Please try again.",
+        variant: "destructive"
       });
     } finally {
       setLoadingStates(prev => ({ ...prev, cohorts: false }));
     }
   };
 
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
+  const handleBuildInsights = async () => {
+    if (!currentAnalysis.truthAnalysis) {
+      toast({
+        title: "Error", 
+        description: "Truth analysis required to build insights",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoadingStates(prev => ({ ...prev, insights: true }));
+    
+    try {
+      const response = await apiRequest(
+        'POST',
+        '/api/strategic-insights',
+        {
+          content: originalContent?.content || data.content || '',
+          title: originalContent?.title || data.title || '',
+          truthAnalysis: currentAnalysis.truthAnalysis
+        }
+      );
+      
+      const responseData = await response.json();
+      console.log('Insights API response:', responseData);
+      setInsightsResults(responseData.insights || []);
+      toast({
+        title: "Success",
+        description: "Strategic insights completed",
+      });
+    } catch (error: any) {
+      console.error('Strategic insights failed:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to build strategic insights. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingStates(prev => ({ ...prev, insights: false }));
+    }
   };
 
-  if (isLoading) {
+  const handleBuildAllInsights = async () => {
+    if (!currentAnalysis.truthAnalysis) {
+      toast({
+        title: "Error",
+        description: "Truth analysis required to build insights",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoadingStates(prev => ({ ...prev, insights: true, competitive: true, actions: true }));
+    
+    try {
+      // Run strategic insights, competitive intelligence, and strategic actions in parallel
+      const [strategicResponse, competitiveResponse, actionsResponse] = await Promise.all([
+        apiRequest(
+          'POST',
+          '/api/strategic-insights',
+          {
+            content: originalContent?.content || data.content || '',
+            title: originalContent?.title || data.title || '',
+            truthAnalysis: currentAnalysis.truthAnalysis
+          }
+        ),
+        apiRequest(
+          'POST',
+          '/api/competitive-intelligence',
+          {
+            content: originalContent?.content || data.content || '',
+            title: originalContent?.title || data.title || '',
+            truthAnalysis: currentAnalysis.truthAnalysis
+          }
+        ),
+        apiRequest(
+          'POST',
+          '/api/strategic-actions',
+          {
+            content: originalContent?.content || data.content || '',
+            title: originalContent?.title || data.title || '',
+            truthAnalysis: currentAnalysis.truthAnalysis
+          }
+        )
+      ]);
+      
+      const strategicData = await strategicResponse.json();
+      const competitiveData = await competitiveResponse.json();
+      const actionsData = await actionsResponse.json();
+      
+      console.log('Strategic Data:', strategicData);
+      console.log('Competitive Data:', competitiveData);
+      console.log('Actions Data:', actionsData);
+      
+      // Force state updates with validation
+      const newInsights = strategicData.insights || [];
+      const newCompetitive = competitiveData.insights || [];
+      const newActions = actionsData.actions || [];
+      
+      console.log('Setting insights:', newInsights.length);
+      console.log('Setting competitive:', newCompetitive.length);
+      console.log('Setting actions:', newActions.length);
+      
+      setInsightsResults(newInsights);
+      setCompetitiveResults(newCompetitive);
+      setActionsResults(newActions);
+      
+      // Show advanced insights button after initial insights are generated
+      if (newInsights.length > 0) {
+        setShowAdvancedInsightsButton(true);
+      }
+      
+      // Force re-render with immediate logging
+      setTimeout(() => {
+        console.log('Current state after update:');
+        console.log('insightsResults length:', newInsights.length);
+        console.log('competitiveResults length:', newCompetitive.length);
+        console.log('actionsResults length:', newActions.length);
+      }, 100);
+      
+      toast({
+        title: "Success",
+        description: "All strategic insights, competitive intelligence, and strategic actions completed",
+      });
+    } catch (error: any) {
+      console.error('All insights failed:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to build all insights. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingStates(prev => ({ ...prev, insights: false, competitive: false, actions: false }));
+    }
+  };
+
+  const handleAdvancedInsights = async () => {
+    if (!insightsResults.length) {
+      toast({
+        title: "Error",
+        description: "Initial strategic insights required for advanced analysis",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoadingStates(prev => ({ ...prev, advancedInsights: true }));
+    
+    try {
+      const response = await apiRequest('POST', '/api/advanced-strategic-insights', {
+        content: originalContent?.content || data.content || '',
+        title: originalContent?.title || data.title || '',
+        truthAnalysis: currentAnalysis.truthAnalysis,
+        initialInsights: insightsResults,
+        strategicActions: actionsResults,
+        competitiveIntelligence: competitiveResults
+      });
+
+      const advancedData = await response.json();
+      setAdvancedInsightsResults(advancedData.advancedInsights || []);
+      setInsightViewMode('aia'); // Switch to advanced view
+
+      toast({
+        title: "Success",
+        description: "Advanced strategic analysis completed",
+      });
+    } catch (error: any) {
+      console.error('Advanced insights failed:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate advanced analysis. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingStates(prev => ({ ...prev, advancedInsights: false }));
+    }
+  };
+
+  const handleBuildActions = async () => {
+    if (!currentAnalysis.truthAnalysis) {
+      toast({
+        title: "Error",
+        description: "Truth analysis required to build actions",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoadingStates(prev => ({ ...prev, actions: true }));
+    
+    try {
+      const response = await apiRequest(
+        'POST',
+        '/api/strategic-actions',
+        {
+          content: originalContent?.content || data.content || '',
+          title: originalContent?.title || data.title || '',
+          truthAnalysis: currentAnalysis.truthAnalysis
+        }
+      );
+      
+      const responseData = await response.json();
+      console.log('Actions API response:', responseData);
+      setActionsResults(responseData.actions || []);
+      toast({
+        title: "Success",
+        description: "Strategic actions completed",
+      });
+    } catch (error: any) {
+      console.error('Strategic actions failed:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to build strategic actions. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingStates(prev => ({ ...prev, actions: false }));
+    }
+  };
+
+  // Early return if no data - AFTER all hooks are called
+  if (!data) {
     return (
-      <Card className="w-full">
-        <CardContent className="p-6">
-          <AnimatedLoadingState title="Analyzing Content" subtitle="Please wait while we process your content..." />
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <p className="text-center text-gray-500">No analysis data available</p>
+      </div>
     );
   }
 
-  if (!currentAnalysis || Object.keys(currentAnalysis).length === 0) {
-    return (
-      <Card className="w-full">
-        <CardContent className="p-6">
-          <div className="text-center py-8 text-gray-500">
-            <Lightbulb className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-            <p>No analysis data available</p>
+  const handleLengthPreferenceChange = async (newLength: 'short' | 'medium' | 'long' | 'bulletpoints') => {
+    setLengthPreference(newLength);
+    
+    // If parent handler is provided, use it for automatic re-analysis and caching
+    if (onLengthPreferenceChange) {
+      onLengthPreferenceChange(newLength);
+      return;
+    }
+    
+    // Fallback to local handling if no parent handler
+    if (analysisCache[newLength]) {
+      setCurrentAnalysis(analysisCache[newLength]);
+      toast({
+        title: "Length Switched",
+        description: `Showing ${newLength} analysis from cache.`,
+      });
+      return;
+    }
+    
+    // If not cached and we have original content, re-analyze
+    if (originalContent) {
+      try {
+        const response = await apiRequest("POST", "/api/reanalyze", {
+          content: originalContent.content,
+          title: originalContent.title,
+          url: originalContent.url,
+          lengthPreference: newLength
+        });
+        
+        if (!response.ok) {
+          throw new Error("Failed to re-analyze content");
+        }
+        
+        const result = await response.json();
+        const newAnalysis = result.analysis;
+        
+        // Cache the new analysis
+        setAnalysisCache(prev => ({
+          ...prev,
+          [newLength]: newAnalysis
+        }));
+        
+        setCurrentAnalysis(newAnalysis);
+        
+        toast({
+          title: "Analysis Updated",
+          description: `Generated new ${newLength} analysis.`,
+        });
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to re-analyze content",
+          variant: "destructive",
+        });
+      }
+    } else {
+      // No original content, just update preference
+      toast({
+        title: "Length Preference Updated",
+        description: `Truth analysis will use ${newLength} format for future analyses.`,
+      });
+    }
+  };
+
+  const handleFlagAsPotentialSignal = async () => {
+    setIsFlagging(true);
+    try {
+      // Check if we have a valid signal ID
+      if (!analysis.signalId || isNaN(Number(analysis.signalId))) {
+        throw new Error('Invalid signal ID');
+      }
+
+      const response = await fetch(`/api/signals/${analysis.signalId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          status: 'potential_signal',
+          promotionReason: 'User flagged as worth further research',
+          userNotes: 'Flagged from analysis results - contains strategic value'
+        })
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Flagged for Research",
+          description: "This content has been flagged for further research and moved to your potential signals.",
+        });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to flag signal');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to flag as potential signal. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsFlagging(false);
+    }
+  };
+
+  const getAttentionColor = (value: 'high' | 'medium' | 'low') => {
+    switch (value) {
+      case 'high':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'low':
+        return 'bg-green-100 text-green-800 border-green-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getViralColor = (value: 'high' | 'medium' | 'low') => {
+    switch (value) {
+      case 'high':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'medium':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'low':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getSentimentColor = (sentiment: string) => {
+    switch (sentiment?.toLowerCase()) {
+      case 'positive':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'negative':
+        return 'bg-red-100 text-red-800 border-red-200';
+      default:
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    }
+  };
+
+  return (
+    <div className="space-y-6 relative">
+      {/* Loading overlay when re-analyzing */}
+      {isReanalyzing && (
+        <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg">
+          <AnimatedLoadingState 
+            title="Re-analyzing Content"
+            subtitle="Updating analysis with new length preference..."
+          />
+        </div>
+      )}
+      
+      {/* Quick Overview */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Brain className="h-5 w-5" />
+            Analysis Overview
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <h4 className="text-base sm:text-lg font-bold text-gray-900">Sentiment</h4>
+                <Button variant="ghost" size="sm" className="p-0 h-auto">
+                  <Info size={14} className="text-gray-400" />
+                </Button>
+              </div>
+              <Badge className={getSentimentColor(data.sentiment)} variant="secondary">
+                {data.sentiment}
+              </Badge>
+            </div>
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <h4 className="text-base sm:text-lg font-bold text-gray-900">Attention Value</h4>
+                <Button variant="ghost" size="sm" className="p-0 h-auto">
+                  <Info size={14} className="text-gray-400" />
+                </Button>
+              </div>
+              <Badge className={getAttentionColor(data.truthAnalysis?.attentionValue || 'medium')} variant="secondary">
+                {data.truthAnalysis?.attentionValue || 'medium'}
+              </Badge>
+            </div>
+            <div className="text-center sm:col-span-2 lg:col-span-1">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <h4 className="text-base sm:text-lg font-bold text-gray-900">Viral Potential</h4>
+                <Button variant="ghost" size="sm" className="p-0 h-auto">
+                  <Info size={14} className="text-gray-400" />
+                </Button>
+              </div>
+              <Badge className={getViralColor(data.viralPotential || 'medium')} variant="secondary">
+                {data.viralPotential || 'medium'}
+              </Badge>
+            </div>
+          </div>
+          <Separator className="my-4" />
+          {/* Analysis Overview Summary */}
+          <div className="mb-4">
+            <p className="text-sm text-gray-700 leading-relaxed">{data.summary}</p>
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-2 justify-center">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="flex items-center gap-2 w-full sm:w-auto"
+              onClick={() => toast({
+                title: "Analysis Saved",
+                description: "This analysis has been saved to your dashboard as a capture.",
+              })}
+            >
+              <Save size={14} />
+              <span className="hidden sm:inline">Save Analysis</span>
+              <span className="sm:hidden">Save</span>
+            </Button>
+            <Button 
+              size="sm" 
+              className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2 w-full sm:w-auto"
+              onClick={handleFlagAsPotentialSignal}
+              disabled={isFlagging}
+            >
+              {isFlagging ? (
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+              ) : (
+                <Target size={14} />
+              )}
+              <span className="hidden sm:inline">Flag for Research</span>
+              <span className="sm:hidden">Flag</span>
+            </Button>
           </div>
         </CardContent>
       </Card>
-    );
-  }
 
-  return (
-    <div className="w-full max-w-none">
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="strategic-insights" className="flex items-center gap-2">
-            <Lightbulb className="h-4 w-4" />
-            <span className="hidden sm:inline">Strategic Insights</span>
-          </TabsTrigger>
-          <TabsTrigger value="cohorts" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Cohorts</span>
-          </TabsTrigger>
-          <TabsTrigger value="truth" className="flex items-center gap-2">
-            <Eye className="h-4 w-4" />
-            <span className="hidden sm:inline">Truth Analysis</span>
-          </TabsTrigger>
-          <TabsTrigger value="strategic-recommendations" className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
-            <span className="hidden sm:inline">Strategic Recommendations</span>
-          </TabsTrigger>
-        </TabsList>
+      {/* Detailed Analysis Tabs */}
+      <Tabs defaultValue="insights" className="w-full">
+        <div className="overflow-x-auto">
+          <TabsList className={`${isMobile ? 'flex w-max' : 'grid w-full grid-cols-4'}`}>
+            <TabsTrigger value="insights" className="text-xs sm:text-sm whitespace-nowrap">
+              <span className="hidden sm:inline">Strategic Insights</span>
+              <span className="sm:hidden">Insights</span>
+            </TabsTrigger>
+            <TabsTrigger value="truth" className="text-xs sm:text-sm whitespace-nowrap">
+              <span className="hidden sm:inline">Truth Analysis</span>
+              <span className="sm:hidden">Truth</span>
+            </TabsTrigger>
+            <TabsTrigger value="cohorts" className="text-xs sm:text-sm whitespace-nowrap">
+              <span className="hidden sm:inline">Cohorts</span>
+              <span className="sm:hidden">Cohorts</span>
+            </TabsTrigger>
+            <TabsTrigger value="strategic-recommendations" className="text-xs sm:text-sm whitespace-nowrap">
+              <span className="hidden sm:inline">Strategic Recommendations</span>
+              <span className="sm:hidden">Strategic</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-        <TabsContent value="strategic-insights" className="space-y-4">
+        <TabsContent value="insights" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Lightbulb className="h-5 w-5" />
-                Strategic Insights
-              </CardTitle>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <CardTitle className="flex items-center gap-2">
+                  <Lightbulb className="h-5 w-5" />
+                  Strategic Insights
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  {showAdvancedInsightsButton && (
+                    <Button 
+                      onClick={handleAdvancedInsights}
+                      disabled={loadingStates.advancedInsights}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      {loadingStates.advancedInsights ? (
+                        <>
+                          <LoadingSpinner size="sm" />
+                          Advanced Analysis...
+                        </>
+                      ) : (
+                        <>
+                          <Brain className="h-4 w-4" />
+                          Advanced Strategic Analysis
+                        </>
+                      )}
+                    </Button>
+                  )}
+                  {advancedInsightsResults.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="insight-view-mode" className="text-sm">View:</Label>
+                      <Select value={insightViewMode} onValueChange={(value: any) => setInsightViewMode(value)}>
+                        <SelectTrigger className="w-full sm:w-24">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="insights">Insights</SelectItem>
+                          <SelectItem value="aia">A.I.A.</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+              </div>
               <p className="text-sm text-gray-600">
-                What specific strategic insights brands should know about this content
+                Why there are business opportunities here
               </p>
             </CardHeader>
             <CardContent>
-              {!showAdvancedInsightsButton ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Lightbulb className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                  <p>Click "Build Strategic Insights" below to generate insights</p>
-                </div>
+              {loadingStates.advancedInsights ? (
+                <AnimatedLoadingState 
+                  title="Advanced Strategic Analysis"
+                  subtitle="Generating comprehensive detailed analysis for each strategic insight..."
+                />
               ) : (
                 <>
-                  {insightsMode === 'insights' ? (
+                  {insightViewMode === 'insights' ? (
                     insightsResults.length > 0 ? (
                       <div className="space-y-3">
                         {insightsResults.map((insight, index) => (
                           <div key={index} className="flex items-start gap-3">
-                            <Lightbulb className="h-4 w-4 text-blue-600 mt-0.5" />
+                            <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                              <span className="text-xs font-bold text-blue-600">{index + 1}</span>
+                            </div>
                             <div className="flex-1">
                               <p className="text-sm text-gray-700 font-medium mb-1">
                                 {typeof insight === 'string' ? insight : insight.insight || insight.title || `Strategic Insight ${index + 1}`}
@@ -433,7 +831,8 @@ const EnhancedAnalysisResults: React.FC<EnhancedAnalysisResultsProps> = ({
             </CardContent>
           </Card>
 
-          {/* Main Action Button */}
+
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -531,7 +930,7 @@ const EnhancedAnalysisResults: React.FC<EnhancedAnalysisResultsProps> = ({
                   {/* Human Truth */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <Users className="h-4 w-4 text-purple-600" />
+                      <Brain className="h-4 w-4 text-purple-600" />
                       <h4 className="font-semibold text-purple-900">Human Truth</h4>
                     </div>
                     <p className="text-sm text-gray-700 bg-purple-50 p-3 rounded">
@@ -542,18 +941,37 @@ const EnhancedAnalysisResults: React.FC<EnhancedAnalysisResultsProps> = ({
                   {/* Cultural Moment */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <Zap className="h-4 w-4 text-orange-600" />
-                      <h4 className="font-semibold text-orange-900">Cultural Moment</h4>
+                      <TrendingUp className="h-4 w-4 text-red-600" />
+                      <h4 className="font-semibold text-red-900">Cultural Moment</h4>
                     </div>
-                    <p className="text-sm text-gray-700 bg-orange-50 p-3 rounded">
+                    <p className="text-sm text-gray-700 bg-red-50 p-3 rounded">
                       {currentAnalysis.truthAnalysis.culturalMoment}
                     </p>
                   </div>
+
+                  {/* Image Display Section */}
+                  {originalContent?.url && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Eye className="h-4 w-4 text-indigo-600" />
+                        <h4 className="font-semibold text-indigo-900">Visual Analysis</h4>
+                      </div>
+                      <div className="bg-indigo-50 p-3 rounded">
+                        <p className="text-sm text-gray-700 mb-2">
+                          Images extracted from: {originalContent.url}
+                        </p>
+                        <div className="text-xs text-gray-500">
+                          Visual analysis feature available - upgrade to analyze images for brand elements, cultural moments, and competitive positioning
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <Eye className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                  <p>No truth analysis available</p>
+                <div className="text-center py-8">
+                  <p className="italic text-gray-500">
+                    Truth Analysis unavailable – please retry with more context or content.
+                  </p>
                 </div>
               )}
             </CardContent>
@@ -565,10 +983,10 @@ const EnhancedAnalysisResults: React.FC<EnhancedAnalysisResultsProps> = ({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                Audience Cohorts
+                Cohort Building Capabilities
               </CardTitle>
               <p className="text-sm text-gray-600">
-                Behavioral segments that would engage with this content
+                Build behavioral audience segments from truth analysis
               </p>
             </CardHeader>
             <CardContent>
@@ -591,40 +1009,39 @@ const EnhancedAnalysisResults: React.FC<EnhancedAnalysisResultsProps> = ({
                   )}
                 </Button>
               </div>
-
-              {cohortResults.length > 0 ? (
+              
+              {loadingStates.cohorts ? (
+                <AnimatedLoadingState 
+                  title="Building Cohorts"
+                  subtitle="Analyzing audience segments and behavioral patterns..."
+                />
+              ) : cohortResults.length > 0 ? (
                 <div className="space-y-3">
                   {cohortResults.map((cohort, index) => (
-                    <div key={index} className="border rounded-lg p-4">
-                      <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-sm font-bold text-blue-600">{index + 1}</span>
+                    <div key={index} className="p-3 bg-blue-50 rounded border border-blue-200">
+                      <h4 className="font-medium text-blue-900 mb-1">{cohort.name}</h4>
+                      <p className="text-sm text-gray-700 mb-2">{cohort.description}</p>
+                      {cohort.behaviorPatterns && cohort.behaviorPatterns.length > 0 && (
+                        <div className="text-xs text-gray-600 mb-1">
+                          <strong>Behavior Patterns:</strong> {cohort.behaviorPatterns.join(', ')}
                         </div>
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900 mb-1">
-                            {typeof cohort === 'string' ? `Cohort ${index + 1}` : cohort.name || `Cohort ${index + 1}`}
-                          </h4>
-                          <p className="text-sm text-gray-700 mb-2">
-                            {typeof cohort === 'string' ? cohort : cohort.description || `Description for cohort ${index + 1}`}
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            {typeof cohort === 'object' && cohort.category && (
-                              <Badge variant="secondary" className="text-xs">
-                                {cohort.category}
-                              </Badge>
-                            )}
-                            {cohort.size && (
-                              <Badge variant="outline" className="text-xs">
-                                Size: {cohort.size}
-                              </Badge>
-                            )}
-                            {cohort.engagement && (
-                              <Badge variant="outline" className="text-xs">
-                                Engagement: {cohort.engagement}
-                              </Badge>
-                            )}
-                          </div>
+                      )}
+                      {cohort.platforms && cohort.platforms.length > 0 && (
+                        <div className="text-xs text-gray-600 mb-1">
+                          <strong>Platforms:</strong> {cohort.platforms.join(', ')}
                         </div>
+                      )}
+                      <div className="flex gap-2 mt-2">
+                        {cohort.size && (
+                          <Badge variant="outline" className="text-xs">
+                            Size: {cohort.size}
+                          </Badge>
+                        )}
+                        {cohort.engagement && (
+                          <Badge variant="outline" className="text-xs">
+                            Engagement: {cohort.engagement}
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -639,28 +1056,207 @@ const EnhancedAnalysisResults: React.FC<EnhancedAnalysisResultsProps> = ({
           </Card>
         </TabsContent>
 
-        <TabsContent value="strategic-recommendations" className="space-y-4">
+        <TabsContent value="insights" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Strategic Recommendations
+                <Lightbulb className="h-5 w-5" />
+                Strategic Insights
               </CardTitle>
               <p className="text-sm text-gray-600">
-                Comprehensive strategic recommendations based on all analysis
+                Why there are business opportunities here
               </p>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8 text-gray-500">
-                <TrendingUp className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                <p>Strategic recommendations will be generated here</p>
-              </div>
+              {insightsResults.length > 0 ? (
+                <div className="space-y-3">
+                  {insightsResults.map((insight, index) => (
+                    <div key={index} className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-xs font-bold text-blue-600">{index + 1}</span>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-700 font-medium mb-1">
+                          {typeof insight === 'string' ? insight : insight.insight || insight.title || `Strategic Insight ${index + 1}`}
+                        </p>
+                        {typeof insight === 'object' && insight.category && (
+                          <div className="text-xs text-gray-600">
+                            <strong>Category:</strong> {insight.category} 
+                            {insight.priority && ` | Priority: ${insight.priority}`}
+                            {insight.impact && ` | Impact: ${insight.impact}`}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : loadingStates.insights ? (
+                <AnimatedLoadingState 
+                  title="Building Strategic Insights"
+                  subtitle="Analyzing content for strategic opportunities..."
+                />
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Lightbulb className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p>Click "Build Strategic Insights" below to generate initial strategic insights</p>
+                </div>
+              )}
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Strategic Actions
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                What specific actions brands should take based on these insights
+              </p>
+            </CardHeader>
+            <CardContent>
+              {actionsResults.length > 0 ? (
+                <div className="space-y-3">
+                  {actionsResults.map((action, index) => (
+                    <div key={index} className="flex items-start gap-3">
+                      <CheckCircle className="h-4 w-4 text-green-600 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-700 font-medium mb-1">
+                          {typeof action === 'string' ? action : action.action || action.title || `Strategic Action ${index + 1}`}
+                        </p>
+                        {typeof action === 'object' && action.category && (
+                          <div className="text-xs text-gray-600">
+                            <strong>Category:</strong> {action.category}
+                            {action.priority && ` | Priority: ${action.priority}`}
+                            {action.effort && ` | Effort: ${action.effort}`}
+                            {action.impact && ` | Impact: ${action.impact}`}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : loadingStates.actions ? (
+                <AnimatedLoadingState 
+                  title="Building Strategic Actions"
+                  subtitle="Generating actionable recommendations..."
+                />
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Target className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p>Click "Build Strategic Insights" below to generate initial strategic actions</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+
+
+          {/* Advanced Strategic Analysis Button - Only show after initial insights are generated */}
+          {showAdvancedInsightsButton && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="h-5 w-5" />
+                  Advanced Strategic Analysis
+                </CardTitle>
+                <p className="text-sm text-gray-600">
+                  Generate comprehensive detailed analysis based on the strategic insights above
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-center mb-4">
+                  <Button 
+                    onClick={handleAdvancedInsights}
+                    disabled={loadingStates.advancedInsights || !insightsResults.length}
+                    className="flex items-center gap-2"
+                  >
+                    {loadingStates.advancedInsights ? (
+                      <>
+                        <LoadingSpinner size="sm" />
+                        Generating Advanced Analysis...
+                      </>
+                    ) : (
+                      <>
+                        <Brain className="h-4 w-4" />
+                        Advanced Strategic Analysis
+                      </>
+                    )}
+                  </Button>
+                </div>
+                <p className="text-sm text-gray-600 text-center">
+                  This provides deeper, more comprehensive analysis of the strategic insights above
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lightbulb className="h-5 w-5" />
+                Build Strategic Insights
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                Generate enhanced insights: Strategic Insights, Competitive Intelligence, and Strategic Actions
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="flex justify-center mb-4">
+                <Button 
+                  onClick={handleBuildAllInsights}
+                  disabled={loadingStates.insights || loadingStates.competitive || loadingStates.actions || !currentAnalysis.truthAnalysis}
+                  className="flex items-center gap-2"
+                >
+                  {(loadingStates.insights || loadingStates.competitive || loadingStates.actions) ? (
+                    <>
+                      <LoadingSpinner size="sm" />
+                      Building Strategic Insights...
+                    </>
+                  ) : (
+                    <>
+                      <Lightbulb className="h-4 w-4" />
+                      Build Strategic Insights
+                    </>
+                  )}
+                </Button>
+              </div>
+
+
+
+
+
+              <p className="text-sm text-gray-600 text-center mt-4">
+                This button generates insights for the upper sections only. Advanced Strategic Analysis is in the separate Strategic Recommendations tab.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+
+        <TabsContent value="strategic-recommendations" className="space-y-4">
+          <ErrorBoundary>
+            <Suspense fallback={
+              <AnimatedLoadingState 
+                title="Loading Strategic Recommendations"
+                subtitle="Preparing comprehensive strategic analysis..."
+              />
+            }>
+              <LazyStrategicRecommendations
+                content={data.content}
+                title={data.title}
+                truthAnalysis={currentAnalysis.truthAnalysis}
+                cohorts={cohortResults}
+                strategicInsights={insightsResults}
+                strategicActions={actionsResults}
+                competitiveInsights={competitiveResults}
+              />
+            </Suspense>
+          </ErrorBoundary>
         </TabsContent>
       </Tabs>
     </div>
   );
-};
+}
 
 export default EnhancedAnalysisResults;
