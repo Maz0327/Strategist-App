@@ -34,6 +34,41 @@ import {
   Flag
 } from "lucide-react";
 
+// Enhanced Loading Component with animated progress bar
+const AnimatedLoadingState = ({ title, subtitle, progress = 0 }) => {
+  const [animatedProgress, setAnimatedProgress] = useState(0);
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setAnimatedProgress(prev => {
+        if (prev >= 95) return 10; // Reset to keep it moving
+        return prev + Math.random() * 15; // Add some randomness
+      });
+    }, 500);
+    
+    return () => clearInterval(interval);
+  }, []);
+  
+  return (
+    <div className="text-center py-8">
+      <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-50 rounded-full mb-4">
+        <LoadingSpinner size="lg" />
+      </div>
+      <h3 className="text-lg font-medium text-gray-900 mb-2">{title}</h3>
+      <p className="text-sm text-gray-600 mb-4">{subtitle}</p>
+      <div className="w-full max-w-xs mx-auto">
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div 
+            className="bg-blue-600 h-2 rounded-full transition-all duration-500 ease-out"
+            style={{ width: `${Math.min(animatedProgress, 100)}%` }}
+          ></div>
+        </div>
+        <p className="text-xs text-gray-500 mt-2">Analyzing content...</p>
+      </div>
+    </div>
+  );
+};
+
 interface EnhancedAnalysisResultsProps {
   analysis: {
     summary: string;
@@ -482,7 +517,17 @@ export function EnhancedAnalysisResults({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* Loading overlay when re-analyzing */}
+      {isReanalyzing && (
+        <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg">
+          <AnimatedLoadingState 
+            title="Re-analyzing Content"
+            subtitle="Updating analysis with new length preference..."
+          />
+        </div>
+      )}
+      
       {/* Quick Overview */}
       <Card>
         <CardHeader>
@@ -738,7 +783,12 @@ export function EnhancedAnalysisResults({
                 </Button>
               </div>
               
-              {cohortResults.length > 0 && (
+              {loadingStates.cohorts ? (
+                <AnimatedLoadingState 
+                  title="Building Cohorts"
+                  subtitle="Analyzing audience segments and behavioral patterns..."
+                />
+              ) : cohortResults.length > 0 ? (
                 <div className="space-y-3">
                   {cohortResults.map((cohort, index) => (
                     <div key={index} className="p-3 bg-blue-50 rounded border border-blue-200">
@@ -769,13 +819,10 @@ export function EnhancedAnalysisResults({
                     </div>
                   ))}
                 </div>
-              )}
-              
-              {cohortResults.length === 0 && !loadingStates.cohorts && (
+              ) : (
                 <div className="text-center py-8 text-gray-500">
                   <Users className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                  <p>No cohort analysis yet</p>
-                  <p className="text-sm">Click "Build Cohorts" to generate audience segments</p>
+                  <p>Click "Build Cohorts" to analyze audience segments</p>
                 </div>
               )}
             </CardContent>
@@ -805,6 +852,11 @@ export function EnhancedAnalysisResults({
                     </div>
                   ))}
                 </div>
+              ) : loadingStates.insights ? (
+                <AnimatedLoadingState 
+                  title="Building Strategic Insights"
+                  subtitle="Analyzing content for strategic opportunities..."
+                />
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   <Lightbulb className="h-8 w-8 mx-auto mb-2 text-gray-400" />
@@ -834,6 +886,11 @@ export function EnhancedAnalysisResults({
                     </div>
                   ))}
                 </div>
+              ) : loadingStates.actions ? (
+                <AnimatedLoadingState 
+                  title="Building Strategic Actions"
+                  subtitle="Generating actionable recommendations..."
+                />
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   <Target className="h-8 w-8 mx-auto mb-2 text-gray-400" />
@@ -860,6 +917,11 @@ export function EnhancedAnalysisResults({
                     </div>
                   ))}
                 </div>
+              ) : loadingStates.competitive ? (
+                <AnimatedLoadingState 
+                  title="Building Competitive Intelligence"
+                  subtitle="Analyzing competitive landscape and opportunities..."
+                />
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   <Zap className="h-8 w-8 mx-auto mb-2 text-gray-400" />
@@ -1023,6 +1085,13 @@ export function EnhancedAnalysisResults({
                 </div>
               )}
               
+              {(loadingStates.insights || loadingStates.competitive || loadingStates.actions) && (
+                <AnimatedLoadingState 
+                  title="Building Advanced Strategic Analysis"
+                  subtitle="Generating comprehensive insights, competitive intelligence, and strategic actions..."
+                />
+              )}
+              
               {insightsResults.length === 0 && competitiveResults.length === 0 && actionsResults.length === 0 && !loadingStates.insights && !loadingStates.competitive && !loadingStates.actions && (
                 <div className="text-center py-8 text-gray-500">
                   <Lightbulb className="h-8 w-8 mx-auto mb-2 text-gray-400" />
@@ -1037,7 +1106,12 @@ export function EnhancedAnalysisResults({
 
         <TabsContent value="strategic-recommendations" className="space-y-4">
           <ErrorBoundary>
-            <Suspense fallback={<LoadingSpinner />}>
+            <Suspense fallback={
+              <AnimatedLoadingState 
+                title="Loading Strategic Recommendations"
+                subtitle="Preparing comprehensive strategic analysis..."
+              />
+            }>
               <LazyStrategicRecommendations
                 content={data.content}
                 title={data.title}
