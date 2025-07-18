@@ -140,6 +140,8 @@ export function EnhancedAnalysisResults({
       );
       
       const data = await response.json();
+      console.log('Cohort API response:', data);
+      console.log('Cohort results:', data.cohorts);
       setCohortResults(data.cohorts || []);
       toast({
         title: "Success",
@@ -715,21 +717,28 @@ export function EnhancedAnalysisResults({
                     <div key={index} className="p-3 bg-blue-50 rounded border border-blue-200">
                       <h4 className="font-medium text-blue-900 mb-1">{cohort.name}</h4>
                       <p className="text-sm text-gray-700 mb-2">{cohort.description}</p>
-                      {cohort.demographics && (
-                        <div className="text-xs text-gray-600">
-                          <strong>Demographics:</strong> {cohort.demographics}
+                      {cohort.behaviorPatterns && cohort.behaviorPatterns.length > 0 && (
+                        <div className="text-xs text-gray-600 mb-1">
+                          <strong>Behavior Patterns:</strong> {cohort.behaviorPatterns.join(', ')}
                         </div>
                       )}
-                      {cohort.behavior && (
-                        <div className="text-xs text-gray-600">
-                          <strong>Behavior:</strong> {cohort.behavior}
+                      {cohort.platforms && cohort.platforms.length > 0 && (
+                        <div className="text-xs text-gray-600 mb-1">
+                          <strong>Platforms:</strong> {cohort.platforms.join(', ')}
                         </div>
                       )}
-                      {cohort.opportunity && (
-                        <div className="text-xs text-blue-700 bg-blue-50 p-2 rounded mt-2">
-                          <strong>Opportunity:</strong> {cohort.opportunity}
-                        </div>
-                      )}
+                      <div className="flex gap-2 mt-2">
+                        {cohort.size && (
+                          <Badge variant="outline" className="text-xs">
+                            Size: {cohort.size}
+                          </Badge>
+                        )}
+                        {cohort.engagement && (
+                          <Badge variant="outline" className="text-xs">
+                            Engagement: {cohort.engagement}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
