@@ -58,21 +58,39 @@ interface EnhancedAnalysisResultsProps {
     title?: string;
     url?: string;
   };
+  currentLengthPreference?: 'short' | 'medium' | 'long' | 'bulletpoints';
+  onLengthPreferenceChange?: (newPreference: 'short' | 'medium' | 'long' | 'bulletpoints') => void;
+  isReanalyzing?: boolean;
 }
 
-export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedAnalysisResultsProps) {
+export function EnhancedAnalysisResults({ 
+  analysis, 
+  originalContent, 
+  currentLengthPreference = 'medium',
+  onLengthPreferenceChange,
+  isReanalyzing = false
+}: EnhancedAnalysisResultsProps) {
   // Analysis data is passed directly from API response
   const data = analysis;
   const { toast } = useToast();
 
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
-  const [lengthPreference, setLengthPreference] = useState<'short' | 'medium' | 'long' | 'bulletpoints'>('medium');
+  const [lengthPreference, setLengthPreference] = useState<'short' | 'medium' | 'long' | 'bulletpoints'>(currentLengthPreference);
   const [isFlagging, setIsFlagging] = useState(false);
-  const [isReanalyzing, setIsReanalyzing] = useState(false);
   const [currentAnalysis, setCurrentAnalysis] = useState(data);
   const [analysisCache, setAnalysisCache] = useState<Record<string, any>>({
-    medium: data // Cache the initial analysis with medium length
+    [currentLengthPreference]: data // Cache the initial analysis with current length
   });
+
+  // Update analysis when new data arrives
+  useEffect(() => {
+    setCurrentAnalysis(data);
+  }, [data]);
+
+  // Sync length preference with parent component
+  useEffect(() => {
+    setLengthPreference(currentLengthPreference);
+  }, [currentLengthPreference]);
 
   // Debug logging for analysis data
   console.log("EnhancedAnalysisResults received analysis:", analysis);
@@ -90,7 +108,13 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
   const handleLengthPreferenceChange = async (newLength: 'short' | 'medium' | 'long' | 'bulletpoints') => {
     setLengthPreference(newLength);
     
-    // Check if we already have this analysis cached
+    // If parent handler is provided, use it for automatic re-analysis and caching
+    if (onLengthPreferenceChange) {
+      onLengthPreferenceChange(newLength);
+      return;
+    }
+    
+    // Fallback to local handling if no parent handler
     if (analysisCache[newLength]) {
       setCurrentAnalysis(analysisCache[newLength]);
       toast({
@@ -102,7 +126,6 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
     
     // If not cached and we have original content, re-analyze
     if (originalContent) {
-      setIsReanalyzing(true);
       try {
         const response = await apiRequest("POST", "/api/reanalyze", {
           content: originalContent.content,
@@ -136,8 +159,6 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
           description: error.message || "Failed to re-analyze content",
           variant: "destructive",
         });
-      } finally {
-        setIsReanalyzing(false);
       }
     } else {
       // No original content, just update preference
@@ -322,10 +343,10 @@ export function EnhancedAnalysisResults({ analysis, originalContent }: EnhancedA
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="short">Short</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="long">Long</SelectItem>
-                      <SelectItem value="bulletpoints">Bulletpoints</SelectItem>
+                      <SelectItem value="short">Short (2-3 sentences)</SelectItem>
+                      <SelectItem value="medium">Medium (3-4 sentences)</SelectItem>
+                      <SelectItem value="long">Long (4-6 sentences)</SelectItem>
+                      <SelectItem value="bulletpoints">Bulletpoints (2-3 points)</SelectItem>
                     </SelectContent>
                   </Select>
                   {isReanalyzing && (

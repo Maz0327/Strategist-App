@@ -20,6 +20,8 @@ export function NewSignalCapture({ activeSubTab, onNavigateToExplore, onNavigate
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [originalContent, setOriginalContent] = useState<any>(null);
+  const [analysisCache, setAnalysisCache] = useState<Map<string, any>>(new Map());
+  const [currentLengthPreference, setCurrentLengthPreference] = useState<'short' | 'medium' | 'long' | 'bulletpoints'>('medium');
   
   const handleAnalysisStart = () => {
     setIsAnalyzing(true);
@@ -27,6 +29,10 @@ export function NewSignalCapture({ activeSubTab, onNavigateToExplore, onNavigate
   };
   
   const handleAnalysisComplete = (result: any, content?: any) => {
+    // Cache the result for the current length preference
+    const cacheKey = `${currentLengthPreference}:${content?.content || ''}:${content?.url || ''}`;
+    setAnalysisCache(prev => new Map(prev).set(cacheKey, result));
+    
     setAnalysisResult(result);
     setOriginalContent(content);
     setIsAnalyzing(false);
@@ -38,6 +44,87 @@ export function NewSignalCapture({ activeSubTab, onNavigateToExplore, onNavigate
         block: 'start'
       });
     }, 100);
+  };
+
+  const handleLengthPreferenceChange = (newPreference: 'short' | 'medium' | 'long' | 'bulletpoints') => {
+    if (newPreference === currentLengthPreference) return;
+    
+    setCurrentLengthPreference(newPreference);
+    
+    // Check if we have cached result for this preference
+    if (originalContent) {
+      const cacheKey = `${newPreference}:${originalContent?.content || ''}:${originalContent?.url || ''}`;
+      const cachedResult = analysisCache.get(cacheKey);
+      
+      if (cachedResult) {
+        // Use cached result
+        setAnalysisResult(cachedResult);
+      } else {
+        // Trigger new analysis with the new preference
+        triggerReanalysis(newPreference);
+      }
+    }
+  };
+
+  const triggerReanalysis = async (lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints') => {
+    if (!originalContent) return;
+    
+    setIsAnalyzing(true);
+    setAnalysisResult(null);
+    
+    try {
+      // Import the analysis logic from ContentInput
+      const requestData = { 
+        ...originalContent, 
+        lengthPreference, 
+        userNotes: '', 
+        analysisMode: 'quick' 
+      };
+      
+      const response = await fetch('/api/analyze/stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(requestData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const eventData = JSON.parse(line.slice(6));
+                
+                if (eventData.type === 'complete') {
+                  handleAnalysisComplete(eventData.data.analysis, originalContent);
+                  return;
+                }
+              } catch (e) {
+                // Continue processing
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Re-analysis failed:', error);
+      setIsAnalyzing(false);
+    }
   };
   
   const breadcrumbSteps = [
@@ -136,6 +223,9 @@ export function NewSignalCapture({ activeSubTab, onNavigateToExplore, onNavigate
               <EnhancedAnalysisResults 
                 analysis={analysisResult} 
                 originalContent={originalContent}
+                currentLengthPreference={currentLengthPreference}
+                onLengthPreferenceChange={handleLengthPreferenceChange}
+                isReanalyzing={isAnalyzing}
               />
             ) : null}
           </CardContent>
