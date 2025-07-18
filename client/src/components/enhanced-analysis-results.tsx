@@ -88,6 +88,18 @@ export function EnhancedAnalysisResults({
   });
   const [showDeepAnalysisDialog, setShowDeepAnalysisDialog] = useState(false);
   const [dontAskAgain, setDontAskAgain] = useState(false);
+  
+  // Tab-level component state
+  const [cohortResults, setCohortResults] = useState<any[]>([]);
+  const [insightsResults, setInsightsResults] = useState<any[]>([]);
+  const [actionsResults, setActionsResults] = useState<any[]>([]);
+  const [competitiveResults, setCompetitiveResults] = useState<any[]>([]);
+  const [loadingStates, setLoadingStates] = useState({
+    cohorts: false,
+    insights: false,
+    actions: false,
+    competitive: false
+  });
 
   // Update analysis when new data arrives
   useEffect(() => {
@@ -102,6 +114,124 @@ export function EnhancedAnalysisResults({
   // Debug logging for analysis data
   console.log("EnhancedAnalysisResults received analysis:", analysis);
   console.log("Analysis data:", data);
+
+  // Tab-level button handlers
+  const handleBuildCohorts = async () => {
+    if (!currentAnalysis.truthAnalysis) {
+      toast({
+        title: "Error",
+        description: "Truth analysis required to build cohorts",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoadingStates(prev => ({ ...prev, cohorts: true }));
+    
+    try {
+      const response = await apiRequest('/api/cohorts', {
+        method: 'POST',
+        body: JSON.stringify({
+          content: originalContent?.content || '',
+          title: originalContent?.title || '',
+          truthAnalysis: currentAnalysis.truthAnalysis
+        })
+      });
+      
+      setCohortResults(response.cohorts || []);
+      toast({
+        title: "Success",
+        description: "Cohort analysis completed",
+      });
+    } catch (error) {
+      console.error('Cohort building failed:', error);
+      toast({
+        title: "Error",
+        description: "Failed to build cohorts. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingStates(prev => ({ ...prev, cohorts: false }));
+    }
+  };
+
+  const handleBuildInsights = async () => {
+    if (!currentAnalysis.truthAnalysis) {
+      toast({
+        title: "Error", 
+        description: "Truth analysis required to build insights",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoadingStates(prev => ({ ...prev, insights: true }));
+    
+    try {
+      const response = await apiRequest('/api/strategic-insights', {
+        method: 'POST',
+        body: JSON.stringify({
+          content: originalContent?.content || '',
+          title: originalContent?.title || '',
+          truthAnalysis: currentAnalysis.truthAnalysis
+        })
+      });
+      
+      setInsightsResults(response.insights || []);
+      toast({
+        title: "Success",
+        description: "Strategic insights completed",
+      });
+    } catch (error) {
+      console.error('Strategic insights failed:', error);
+      toast({
+        title: "Error",
+        description: "Failed to build strategic insights. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingStates(prev => ({ ...prev, insights: false }));
+    }
+  };
+
+  const handleBuildActions = async () => {
+    if (!currentAnalysis.truthAnalysis) {
+      toast({
+        title: "Error",
+        description: "Truth analysis required to build actions",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoadingStates(prev => ({ ...prev, actions: true }));
+    
+    try {
+      const response = await apiRequest('/api/strategic-actions', {
+        method: 'POST',
+        body: JSON.stringify({
+          content: originalContent?.content || '',
+          title: originalContent?.title || '',
+          truthAnalysis: currentAnalysis.truthAnalysis
+        })
+      });
+      
+      setActionsResults(response.actions || []);
+      toast({
+        title: "Success",
+        description: "Strategic actions completed",
+      });
+    } catch (error) {
+      console.error('Strategic actions failed:', error);
+      toast({
+        title: "Error",
+        description: "Failed to build strategic actions. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingStates(prev => ({ ...prev, actions: false }));
+    }
+  };
 
   // Early return if no data - AFTER all hooks are called
   if (!data) {
@@ -480,70 +610,134 @@ export function EnhancedAnalysisResults({
         </TabsContent>
 
         <TabsContent value="cohorts" className="space-y-4">
-          <ErrorBoundary>
-            <LazyCohortBuilder 
-              content={originalContent?.content || ''} 
-              title={originalContent?.title || ''} 
-              truthAnalysis={currentAnalysis.truthAnalysis}
-            />
-          </ErrorBoundary>
-          
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Globe className="h-5 w-5" />
-                Platform Context
+                <Users className="h-5 w-5" />
+                Cohort Building Capabilities
               </CardTitle>
+              <p className="text-sm text-gray-600">
+                Build behavioral audience segments from truth analysis
+              </p>
             </CardHeader>
             <CardContent>
-              <div className="bg-gray-50 p-4 rounded">
-                <p className="text-sm text-gray-700">{data.platformContext}</p>
+              <div className="flex justify-center mb-4">
+                <Button 
+                  onClick={handleBuildCohorts}
+                  disabled={loadingStates.cohorts || !currentAnalysis.truthAnalysis}
+                  className="flex items-center gap-2"
+                >
+                  {loadingStates.cohorts ? (
+                    <>
+                      <LoadingSpinner size="sm" />
+                      Building Cohorts...
+                    </>
+                  ) : (
+                    <>
+                      <Users className="h-4 w-4" />
+                      Build Cohorts
+                    </>
+                  )}
+                </Button>
               </div>
+              
+              {cohortResults.length > 0 && (
+                <div className="space-y-3">
+                  {cohortResults.map((cohort, index) => (
+                    <div key={index} className="p-3 bg-blue-50 rounded border border-blue-200">
+                      <h4 className="font-medium text-blue-900 mb-1">{cohort.name}</h4>
+                      <p className="text-sm text-gray-700 mb-2">{cohort.description}</p>
+                      {cohort.demographics && (
+                        <div className="text-xs text-gray-600">
+                          <strong>Demographics:</strong> {cohort.demographics}
+                        </div>
+                      )}
+                      {cohort.behavior && (
+                        <div className="text-xs text-gray-600">
+                          <strong>Behavior:</strong> {cohort.behavior}
+                        </div>
+                      )}
+                      {cohort.opportunity && (
+                        <div className="text-xs text-blue-700 bg-blue-50 p-2 rounded mt-2">
+                          <strong>Opportunity:</strong> {cohort.opportunity}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {cohortResults.length === 0 && !loadingStates.cohorts && (
+                <div className="text-center py-8 text-gray-500">
+                  <Users className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p>No cohort analysis yet</p>
+                  <p className="text-sm">Click "Build Cohorts" to generate audience segments</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="insights" className="space-y-4">
-          <ErrorBoundary>
-            <LazyStrategicInsights
-              content={originalContent?.content || ''} 
-              title={originalContent?.title || ''} 
-              truthAnalysis={currentAnalysis.truthAnalysis}
-            />
-          </ErrorBoundary>
-
-          <ErrorBoundary>
-            <LazyCompetitiveInsights 
-              content={originalContent?.content || ''} 
-              title={originalContent?.title || ''} 
-              truthAnalysis={currentAnalysis.truthAnalysis}
-            />
-          </ErrorBoundary>
-
-          <ErrorBoundary>
-            <LazyStrategicActions
-              content={originalContent?.content || ''} 
-              title={originalContent?.title || ''} 
-              truthAnalysis={currentAnalysis.truthAnalysis}
-            />
-          </ErrorBoundary>
-
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5" />
-                Competitive Intelligence
+                <Lightbulb className="h-5 w-5" />
+                Strategic Insights
               </CardTitle>
+              <p className="text-sm text-gray-600">
+                Generate exactly 5 strategic insights from truth analysis
+              </p>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {data.competitiveInsights.map((insight, index) => (
-                  <div key={index} className="flex items-start gap-3">
-                    <AlertCircle className="h-4 w-4 text-orange-600 mt-0.5" />
-                    <p className="text-sm text-gray-700">{insight}</p>
-                  </div>
-                ))}
+              <div className="flex justify-center mb-4">
+                <Button 
+                  onClick={handleBuildInsights}
+                  disabled={loadingStates.insights || !currentAnalysis.truthAnalysis}
+                  className="flex items-center gap-2"
+                >
+                  {loadingStates.insights ? (
+                    <>
+                      <LoadingSpinner size="sm" />
+                      Building Insights...
+                    </>
+                  ) : (
+                    <>
+                      <Lightbulb className="h-4 w-4" />
+                      Build Strategic Insights
+                    </>
+                  )}
+                </Button>
               </div>
+              
+              {insightsResults.length > 0 && (
+                <div className="space-y-3">
+                  {insightsResults.map((insight, index) => (
+                    <div key={index} className="p-3 bg-yellow-50 rounded border border-yellow-200">
+                      <h4 className="font-medium text-yellow-900 mb-1">{insight.title}</h4>
+                      <p className="text-sm text-gray-700 mb-2">{insight.description}</p>
+                      {insight.rationale && (
+                        <div className="text-xs text-gray-600">
+                          <strong>Rationale:</strong> {insight.rationale}
+                        </div>
+                      )}
+                      {insight.confidence && (
+                        <div className="text-xs text-yellow-700 bg-yellow-100 p-2 rounded mt-2">
+                          <strong>Confidence:</strong> {insight.confidence}%
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {insightsResults.length === 0 && !loadingStates.insights && (
+                <div className="text-center py-8 text-gray-500">
+                  <Lightbulb className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p>No strategic insights yet</p>
+                  <p className="text-sm">Click "Build Strategic Insights" to generate 5 insights</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -576,13 +770,67 @@ export function EnhancedAnalysisResults({
         </TabsContent>
 
         <TabsContent value="actions" className="space-y-4">
-          <ErrorBoundary>
-            <LazyStrategicActions
-              content={originalContent?.content || ''} 
-              title={originalContent?.title || ''} 
-              truthAnalysis={currentAnalysis.truthAnalysis}
-            />
-          </ErrorBoundary>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5" />
+                Strategic Actions
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                Generate exactly 5 strategic actions from truth analysis
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="flex justify-center mb-4">
+                <Button 
+                  onClick={handleBuildActions}
+                  disabled={loadingStates.actions || !currentAnalysis.truthAnalysis}
+                  className="flex items-center gap-2"
+                >
+                  {loadingStates.actions ? (
+                    <>
+                      <LoadingSpinner size="sm" />
+                      Building Actions...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="h-4 w-4" />
+                      Build Strategic Actions
+                    </>
+                  )}
+                </Button>
+              </div>
+              
+              {actionsResults.length > 0 && (
+                <div className="space-y-3">
+                  {actionsResults.map((action, index) => (
+                    <div key={index} className="p-3 bg-green-50 rounded border border-green-200">
+                      <h4 className="font-medium text-green-900 mb-1">{action.title}</h4>
+                      <p className="text-sm text-gray-700 mb-2">{action.description}</p>
+                      {action.timeframe && (
+                        <div className="text-xs text-gray-600">
+                          <strong>Timeframe:</strong> {action.timeframe}
+                        </div>
+                      )}
+                      {action.priority && (
+                        <div className="text-xs text-green-700 bg-green-100 p-2 rounded mt-2">
+                          <strong>Priority:</strong> {action.priority}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {actionsResults.length === 0 && !loadingStates.actions && (
+                <div className="text-center py-8 text-gray-500">
+                  <Zap className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p>No strategic actions yet</p>
+                  <p className="text-sm">Click "Build Strategic Actions" to generate 5 actions</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
         
         <TabsContent value="strategic-recommendations" className="space-y-4">
