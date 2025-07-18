@@ -18,11 +18,10 @@ import {
   type User 
 } from "@shared/schema";
 import { debugLogger } from "./services/debug-logger";
-import { performanceMonitor, performanceMiddleware } from "./services/performance-monitor";
+import { performanceMonitor, trackPerformance } from "./services/monitoring";
 import { analyticsService } from "./services/analytics";
 import { cohortBuilderService } from "./services/cohortBuilder";
 import { competitiveIntelligenceService } from "./services/competitiveIntelligence";
-import { performanceMonitor, trackPerformance } from "./services/monitoring";
 import { getCacheStats } from "./services/cache";
 import { 
   insertUserFeedbackSchema,
@@ -94,7 +93,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
 
   // Add performance monitoring middleware
-  app.use(performanceMiddleware);
+  app.use(trackPerformance);
 
   // Health endpoint - no authentication required
   app.get('/healthz', (req, res) => {

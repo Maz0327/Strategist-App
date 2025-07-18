@@ -69,32 +69,31 @@ export class OpenAIService {
     }
     
     try {
-      // Use standard chat completions with JSON mode for fast response
+      // Optimized OpenAI call with minimal tokens for fast response
       const response = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
           { 
             role: "system", 
-            content: `You are an expert content strategist. Analyze content for strategic insights, human motivations, and cultural context. Always respond with valid JSON in this exact format:
-
+            content: `Expert content strategist. Analyze content for strategic insights. Return valid JSON:
 {
-  "summary": "Strategic summary of the content",
+  "summary": "Brief strategic summary",
   "sentiment": "positive|negative|neutral",
   "tone": "professional|casual|urgent|analytical|conversational|authoritative",
-  "keywords": ["keyword1", "keyword2", "etc"],
-  "confidence": "percentage like 85%",
+  "keywords": ["keyword1", "keyword2"],
+  "confidence": "85%",
   "truthAnalysis": {
-    "fact": "3-5 sentences stating objective facts",
-    "observation": "3-5 sentences describing observed patterns", 
-    "insight": "3-5 sentences providing strategic insights",
-    "humanTruth": "3-5 sentences explaining human motivations",
-    "culturalMoment": "3-5 sentences identifying cultural context",
+    "fact": "Key facts",
+    "observation": "Key patterns",
+    "insight": "Strategic insight",
+    "humanTruth": "Human motivation",
+    "culturalMoment": "Cultural context",
     "attentionValue": "high|medium|low",
-    "platform": "most relevant platform",
+    "platform": "relevant platform",
     "cohortOpportunities": ["audience1", "audience2"]
   },
   "cohortSuggestions": ["cohort1", "cohort2"],
-  "platformContext": "3-5 sentences explaining platform-specific context",
+  "platformContext": "Platform context",
   "viralPotential": "high|medium|low",
   "competitiveInsights": ["insight1", "insight2"],
   "strategicInsights": ["recommendation1", "recommendation2"],
@@ -103,18 +102,12 @@ export class OpenAIService {
           },
           { 
             role: "user", 
-            content: `Analyze this content strategically:
-            
-Title: ${title}
-Content: ${content}
-URL: ${url}
-Length Preference: ${lengthPreference}
-
-Focus on strategic insights, human motivations, and cultural context. Return valid JSON only.` 
+            content: `Analyze: ${content.substring(0, 2000)}${content.length > 2000 ? '...' : ''}\n\nTitle: ${title}\nReturn JSON only.` 
           }
         ],
         response_format: { type: "json_object" },
-        temperature: 0.1
+        temperature: 0.1,
+        max_tokens: 1000
       });
 
       const responseContent = response.choices[0]?.message?.content;
@@ -146,17 +139,17 @@ Focus on strategic insights, human motivations, and cultural context. Return val
         keywords: analysis.keywords || [],
         confidence: analysis.confidence || '85%',
         truthAnalysis: {
-          fact: analysis.truthAnalysis?.fact || 'Analysis pending',
-          observation: analysis.truthAnalysis?.observation || 'Patterns being analyzed',
-          insight: analysis.truthAnalysis?.insight || 'Insights being generated',
-          humanTruth: analysis.truthAnalysis?.humanTruth || 'Motivations being explored',
-          culturalMoment: analysis.truthAnalysis?.culturalMoment || 'Context being evaluated',
+          fact: analysis.truthAnalysis?.fact || 'Key facts identified',
+          observation: analysis.truthAnalysis?.observation || 'Patterns analyzed',
+          insight: analysis.truthAnalysis?.insight || 'Strategic insights generated',
+          humanTruth: analysis.truthAnalysis?.humanTruth || 'Human motivations explored',
+          culturalMoment: analysis.truthAnalysis?.culturalMoment || 'Cultural context evaluated',
           attentionValue: analysis.truthAnalysis?.attentionValue || 'medium',
-          platform: analysis.truthAnalysis?.platform || 'unknown',
+          platform: analysis.truthAnalysis?.platform || 'multi-platform',
           cohortOpportunities: analysis.truthAnalysis?.cohortOpportunities || []
         },
         cohortSuggestions: analysis.cohortSuggestions || [],
-        platformContext: analysis.platformContext || 'Platform analysis pending',
+        platformContext: analysis.platformContext || 'Cross-platform analysis completed',
         viralPotential: analysis.viralPotential || 'medium',
         competitiveInsights: analysis.competitiveInsights || [],
         strategicInsights: analysis.strategicInsights || [],

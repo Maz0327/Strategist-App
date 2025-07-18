@@ -280,6 +280,34 @@ export const analyzeContentSchema = z.object({
   content: z.string().min(1, "Content is required"),
   url: z.union([z.string().url(), z.literal("")]).optional(),
   title: z.string().optional(),
+  userNotes: z.string().optional(),
+  lengthPreference: z.enum(['short', 'medium', 'long', 'bulletpoints']).optional(),
+});
+
+// API call tracking tables
+export const apiCalls = pgTable("api_calls", {
+  id: serial("id").primaryKey(),
+  endpoint: text("endpoint").notNull(),
+  method: text("method").notNull(),
+  userId: integer("user_id").references(() => users.id),
+  statusCode: integer("status_code").notNull(),
+  responseTime: integer("response_time").notNull(), // in milliseconds
+  error: text("error"),
+  metadata: jsonb("metadata"),
+  timestamp: timestamp("timestamp").defaultNow(),
+});
+
+export const externalApiCalls = pgTable("external_api_calls", {
+  id: serial("id").primaryKey(),
+  service: text("service").notNull(), // 'openai', 'google', 'reddit', etc.
+  endpoint: text("endpoint").notNull(),
+  userId: integer("user_id").references(() => users.id),
+  responseTime: integer("response_time").notNull(), // in milliseconds
+  tokenUsage: integer("token_usage"), // for OpenAI calls
+  cost: integer("cost"), // in cents
+  success: boolean("success").notNull(),
+  error: text("error"),
+  timestamp: timestamp("timestamp").defaultNow(),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -304,6 +332,28 @@ export type AnalyzeContentData = z.infer<typeof analyzeContentSchema>;
 export type UserAnalytics = typeof userAnalytics.$inferSelect;
 export type InsertUserAnalytics = z.infer<typeof insertUserAnalyticsSchema>;
 export type UserFeedback = typeof userFeedback.$inferSelect;
+export type InsertUserFeedback = z.infer<typeof insertUserFeedbackSchema>;
+export type FeatureUsage = typeof featureUsage.$inferSelect;
+export type InsertFeatureUsage = z.infer<typeof insertFeatureUsageSchema>;
+export type SystemPerformance = typeof systemPerformance.$inferSelect;
+export type InsertSystemPerformance = z.infer<typeof insertSystemPerformanceSchema>;
+export type AbTestResults = typeof abTestResults.$inferSelect;
+export type InsertAbTestResults = z.infer<typeof insertAbTestResultsSchema>;
+export type ApiCall = typeof apiCalls.$inferSelect;
+export type InsertApiCall = z.infer<typeof insertApiCallSchema>;
+export type ExternalApiCall = typeof externalApiCalls.$inferSelect;
+export type InsertExternalApiCall = z.infer<typeof insertExternalApiCallSchema>;
+
+// Insert schemas for API tracking
+export const insertApiCallSchema = createInsertSchema(apiCalls).omit({
+  id: true,
+  timestamp: true,
+});
+
+export const insertExternalApiCallSchema = createInsertSchema(externalApiCalls).omit({
+  id: true,
+  timestamp: true,
+});
 export type InsertUserFeedback = z.infer<typeof insertUserFeedbackSchema>;
 export type FeatureUsage = typeof featureUsage.$inferSelect;
 export type InsertFeatureUsage = z.infer<typeof insertFeatureUsageSchema>;
