@@ -3,12 +3,9 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { debugLogger, errorHandler } from "./services/debug-logger";
 
-// Set Reddit API credentials
-process.env.REDDIT_CLIENT_ID = "xarhGzkT7yuAVMqaoc_Bdg";
-process.env.REDDIT_CLIENT_SECRET = "7cdXuM0mpCy3n3wYBS6TpQvPTmoZEw";
-
-// Set Twitter API credentials
-process.env.TWITTER_BEARER_TOKEN = "AAAAAAAAAAAAAAAAAAAAAJgE3AEAAAAAZdOJQZdr1BLIFpmXMamKArS4nw8%3Dr4JmJwLhm3clkDhn4u4pV3vO27cxRjo5ufkV4feWv7N0O0zccb";
+// API credentials should be set via environment variables
+// REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET
+// TWITTER_BEARER_TOKEN
 
 const app = express();
 app.use(express.json());

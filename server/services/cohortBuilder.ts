@@ -1,4 +1,4 @@
-import { OpenAIService } from './openai';
+import { openai } from './openai';
 import { debugLogger } from './debug-logger';
 import { cohortCache, createCacheKey } from './cache';
 
@@ -28,8 +28,7 @@ export class CohortBuilderService {
     try {
       const prompt = this.buildCohortPrompt(content, title, truthAnalysis);
       
-      const openaiService = new OpenAIService();
-      const response = await openaiService.client.chat.completions.create({
+      const response = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
           { role: "system", content: "You are an expert audience segmentation strategist. Analyze content and return structured JSON with cohort suggestions." },

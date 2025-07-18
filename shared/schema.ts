@@ -295,7 +295,7 @@ export const analyzeContentSchema = z.object({
 export { 
   apiCalls, 
   externalApiCalls
-} from "../shared/admin-schema";
+} from "./admin-schema";
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
