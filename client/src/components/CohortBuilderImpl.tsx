@@ -55,6 +55,9 @@ export default function CohortBuilderImpl({ content, title, onClose, truthAnalys
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Please log in to access cohort analysis');
+        }
         throw new Error('Failed to analyze cohorts');
       }
 
