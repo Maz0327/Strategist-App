@@ -133,16 +133,16 @@ export function EnhancedAnalysisResults({
         'POST',
         '/api/cohorts',
         {
-          content: originalContent?.content || '',
-          title: originalContent?.title || '',
+          content: originalContent?.content || data.content || '',
+          title: originalContent?.title || data.title || '',
           truthAnalysis: currentAnalysis.truthAnalysis
         }
       );
       
-      const data = await response.json();
-      console.log('Cohort API response:', data);
-      console.log('Cohort results:', data.cohorts);
-      setCohortResults(data.cohorts || []);
+      const responseData = await response.json();
+      console.log('Cohort API response:', responseData);
+      console.log('Cohort results:', responseData.cohorts);
+      setCohortResults(responseData.cohorts || []);
       toast({
         title: "Success",
         description: "Cohort analysis completed",
@@ -176,14 +176,15 @@ export function EnhancedAnalysisResults({
         'POST',
         '/api/strategic-insights',
         {
-          content: originalContent?.content || '',
-          title: originalContent?.title || '',
+          content: originalContent?.content || data.content || '',
+          title: originalContent?.title || data.title || '',
           truthAnalysis: currentAnalysis.truthAnalysis
         }
       );
       
-      const data = await response.json();
-      setInsightsResults(data.insights || []);
+      const responseData = await response.json();
+      console.log('Insights API response:', responseData);
+      setInsightsResults(responseData.insights || []);
       toast({
         title: "Success",
         description: "Strategic insights completed",
@@ -219,8 +220,8 @@ export function EnhancedAnalysisResults({
           'POST',
           '/api/strategic-insights',
           {
-            content: originalContent?.content || '',
-            title: originalContent?.title || '',
+            content: originalContent?.content || data.content || '',
+            title: originalContent?.title || data.title || '',
             truthAnalysis: currentAnalysis.truthAnalysis
           }
         ),
@@ -228,8 +229,8 @@ export function EnhancedAnalysisResults({
           'POST',
           '/api/competitive-intelligence',
           {
-            content: originalContent?.content || '',
-            title: originalContent?.title || '',
+            content: originalContent?.content || data.content || '',
+            title: originalContent?.title || data.title || '',
             truthAnalysis: currentAnalysis.truthAnalysis
           }
         ),
@@ -237,8 +238,8 @@ export function EnhancedAnalysisResults({
           'POST',
           '/api/strategic-actions',
           {
-            content: originalContent?.content || '',
-            title: originalContent?.title || '',
+            content: originalContent?.content || data.content || '',
+            title: originalContent?.title || data.title || '',
             truthAnalysis: currentAnalysis.truthAnalysis
           }
         )
@@ -252,9 +253,18 @@ export function EnhancedAnalysisResults({
       console.log('Competitive Data:', competitiveData);
       console.log('Actions Data:', actionsData);
       
-      setInsightsResults(strategicData.insights || []);
-      setCompetitiveResults(competitiveData.insights || []);
-      setActionsResults(actionsData.actions || []);
+      // Force state updates with validation
+      const newInsights = strategicData.insights || [];
+      const newCompetitive = competitiveData.insights || [];
+      const newActions = actionsData.actions || [];
+      
+      console.log('Setting insights:', newInsights.length);
+      console.log('Setting competitive:', newCompetitive.length);
+      console.log('Setting actions:', newActions.length);
+      
+      setInsightsResults(newInsights);
+      setCompetitiveResults(newCompetitive);
+      setActionsResults(newActions);
       
       toast({
         title: "Success",
@@ -289,14 +299,15 @@ export function EnhancedAnalysisResults({
         'POST',
         '/api/strategic-actions',
         {
-          content: originalContent?.content || '',
-          title: originalContent?.title || '',
+          content: originalContent?.content || data.content || '',
+          title: originalContent?.title || data.title || '',
           truthAnalysis: currentAnalysis.truthAnalysis
         }
       );
       
-      const data = await response.json();
-      setActionsResults(data.actions || []);
+      const responseData = await response.json();
+      console.log('Actions API response:', responseData);
+      setActionsResults(responseData.actions || []);
       toast({
         title: "Success",
         description: "Strategic actions completed",
