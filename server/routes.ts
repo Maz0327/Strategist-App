@@ -96,6 +96,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add performance monitoring middleware
   app.use(performanceMiddleware);
 
+  // Health endpoint - no authentication required
+  app.get('/healthz', (req, res) => {
+    res.status(200).json({ 
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      nodeVersion: process.version,
+      environment: process.env.NODE_ENV || 'development'
+    });
+  });
+
   // General rate limiting removed for performance optimization
 
   // API call tracking middleware
@@ -230,7 +241,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Content analysis routes
+  // Content analysis routes (streaming version)
+  app.post("/api/analyze/stream", requireAuth, async (req, res) => {
+    try {
+      debugLogger.info("Streaming content analysis request received", { title: req.body.title, hasUrl: !!req.body.url, contentLength: req.body.content?.length }, req);
+      
+      // Set headers for Server-Sent Events
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
+      
+      const data = analyzeContentSchema.parse(req.body);
+      const lengthPreference = req.body.lengthPreference || 'medium';
+      const userNotes = req.body.userNotes || '';
+      
+      // Send initial status
+      res.write(`data: ${JSON.stringify({ type: 'status', message: 'Starting analysis...', progress: 10 })}\n\n`);
+      
+      // Check cache first
+      const cacheKey = `${data.content?.slice(0, 100)}-${lengthPreference}`;
+      const cached = await openaiService.getCachedAnalysis?.(cacheKey);
+      
+      if (cached) {
+        res.write(`data: ${JSON.stringify({ type: 'status', message: 'Using cached analysis...', progress: 50 })}\n\n`);
+        res.write(`data: ${JSON.stringify({ type: 'analysis', data: cached })}\n\n`);
+        res.write(`data: ${JSON.stringify({ type: 'complete', progress: 100 })}\n\n`);
+        res.end();
+        return;
+      }
+      
+      // Start analysis
+      res.write(`data: ${JSON.stringify({ type: 'status', message: 'Analyzing content...', progress: 30 })}\n\n`);
+      
+      const analysis = await openaiService.analyzeContent(data, lengthPreference);
+      
+      res.write(`data: ${JSON.stringify({ type: 'status', message: 'Generating insights...', progress: 70 })}\n\n`);
+      
+      // Save as signal
+      const signalData = {
+        userId: req.session.userId!,
+        title: data.title || "Untitled Analysis",
+        content: data.content,
+        url: data.url,
+        summary: analysis.summary,
+        sentiment: analysis.sentiment,
+        tone: analysis.tone,
+        keywords: analysis.keywords,
+        tags: [],
+        confidence: analysis.confidence,
+        status: "capture",
+        truthFact: analysis.truthAnalysis.fact,
+        truthObservation: analysis.truthAnalysis.observation,
+        truthInsight: analysis.truthAnalysis.insight,
+        humanTruth: analysis.truthAnalysis.humanTruth,
+        culturalMoment: analysis.truthAnalysis.culturalMoment,
+        attentionValue: analysis.truthAnalysis.attentionValue,
+        platformContext: analysis.platformContext,
+        viralPotential: analysis.viralPotential,
+        cohortSuggestions: analysis.cohortSuggestions,
+        competitiveInsights: analysis.competitiveInsights,
+        userNotes: userNotes
+      };
+      
+      const signal = await storage.createSignal(signalData);
+      
+      res.write(`data: ${JSON.stringify({ type: 'status', message: 'Finalizing...', progress: 90 })}\n\n`);
+      
+      // Track source if URL provided
+      if (data.url) {
+        try {
+          const source = await sourceManagerService.findOrCreateSource(
+            data.url,
+            analysis.summary || data.title || 'Untitled',
+            req.session.userId!,
+            analysis.summary
+          );
+          await sourceManagerService.linkSignalToSource(signal.id, source.id);
+        } catch (error) {
+          debugLogger.error('Error tracking source', error, req);
+        }
+      }
+      
+      // Send final result
+      res.write(`data: ${JSON.stringify({ 
+        type: 'complete', 
+        data: { analysis, signalId: signal.id }, 
+        progress: 100 
+      })}\n\n`);
+      
+      res.end();
+    } catch (error: any) {
+      debugLogger.error('Streaming analysis failed', error, req);
+      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+      res.end();
+    }
+  });
+
+  // Content analysis routes (standard version)
   app.post("/api/analyze", requireAuth, async (req, res) => {
     try {
       debugLogger.info("Content analysis request received", { title: req.body.title, hasUrl: !!req.body.url, contentLength: req.body.content?.length }, req);
