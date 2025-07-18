@@ -13,6 +13,8 @@ import { apiRequest } from "@/lib/queryClient";
 import ErrorBoundary from "./ErrorBoundary";
 import LazyCompetitiveInsights from "./LazyCompetitiveInsights";
 import LazyCohortBuilder from "./LazyCohortBuilder";
+import LazyStrategicInsights from "./LazyStrategicInsights";
+import LazyStrategicActions from "./LazyStrategicActions";
 
 // Lazy load Strategic Recommendations component
 const LazyStrategicRecommendations = lazy(() => import('./LazyStrategicRecommendations'));
@@ -53,8 +55,6 @@ interface EnhancedAnalysisResultsProps {
     platformContext: string;
     viralPotential: 'high' | 'medium' | 'low';
     competitiveInsights: string[];
-    strategicInsights: string[];
-    strategicActions: string[];
     signalId?: number;
   };
   originalContent?: {
@@ -486,29 +486,13 @@ export function EnhancedAnalysisResults({
         </TabsContent>
 
         <TabsContent value="insights" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Lightbulb className="h-5 w-5" />
-                Strategic Insights
-              </CardTitle>
-              <p className="text-sm text-gray-600">
-                Why there are business opportunities here
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {data.strategicInsights?.map((insight, index) => (
-                  <div key={index} className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-xs font-bold text-blue-600">{index + 1}</span>
-                    </div>
-                    <p className="text-sm text-gray-700">{insight}</p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <ErrorBoundary>
+            <LazyStrategicInsights
+              content={originalContent?.content || ''} 
+              title={originalContent?.title || ''} 
+              truthAnalysis={currentAnalysis.truthAnalysis}
+            />
+          </ErrorBoundary>
 
           <ErrorBoundary>
             <LazyCompetitiveInsights 
@@ -518,27 +502,13 @@ export function EnhancedAnalysisResults({
             />
           </ErrorBoundary>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                Strategic Actions
-              </CardTitle>
-              <p className="text-sm text-gray-600">
-                What specific actions brands should take based on these insights
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {data.strategicActions?.map((action, index) => (
-                  <div key={index} className="flex items-start gap-3">
-                    <CheckCircle className="h-4 w-4 text-green-600 mt-0.5" />
-                    <p className="text-sm text-gray-700">{action}</p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <ErrorBoundary>
+            <LazyStrategicActions
+              content={originalContent?.content || ''} 
+              title={originalContent?.title || ''} 
+              truthAnalysis={currentAnalysis.truthAnalysis}
+            />
+          </ErrorBoundary>
 
           <Card>
             <CardHeader>
@@ -588,29 +558,13 @@ export function EnhancedAnalysisResults({
         </TabsContent>
 
         <TabsContent value="actions" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                Next Actions
-              </CardTitle>
-              <p className="text-sm text-gray-600">
-                Strategic recommendations based on this analysis
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {data.strategicActions?.map((action, index) => (
-                  <div key={index} className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-medium">
-                      {index + 1}
-                    </div>
-                    <p className="text-sm text-gray-700">{action}</p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <ErrorBoundary>
+            <LazyStrategicActions
+              content={originalContent?.content || ''} 
+              title={originalContent?.title || ''} 
+              truthAnalysis={currentAnalysis.truthAnalysis}
+            />
+          </ErrorBoundary>
         </TabsContent>
         
         <TabsContent value="strategic-recommendations" className="space-y-4">

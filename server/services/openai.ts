@@ -37,8 +37,6 @@ export interface EnhancedAnalysisResult extends AnalysisResult {
   platformContext: string;
   viralPotential: 'high' | 'medium' | 'low';
   competitiveInsights: string[];
-  strategicInsights: string[];
-  strategicActions: string[];
 }
 
 export class OpenAIService {
@@ -83,9 +81,7 @@ Return valid JSON:
   "cohortSuggestions": ["cohort1", "cohort2", "cohort3", "cohort4"],
   "platformContext": "Multi-sentence platform analysis with specific tactical recommendations following length requirements",
   "viralPotential": "high|medium|low",
-  "competitiveInsights": ["detailed insight1", "detailed insight2", "detailed insight3"],
-  "strategicInsights": ["comprehensive recommendation1", "comprehensive recommendation2", "comprehensive recommendation3"],
-  "strategicActions": ["detailed action1", "detailed action2", "detailed action3", "detailed action4"]
+  "competitiveInsights": ["detailed insight1", "detailed insight2", "detailed insight3"]
 }`;
     } else {
       return `Expert content strategist. Analyze content for strategic insights. ${lengthInstruction}. 
@@ -112,9 +108,7 @@ Return valid JSON:
   "cohortSuggestions": ["cohort1", "cohort2"],
   "platformContext": "Multi-sentence platform context following length requirements",
   "viralPotential": "high|medium|low",
-  "competitiveInsights": ["insight1", "insight2", "insight3", "insight4", "insight5"],
-  "strategicInsights": ["recommendation1", "recommendation2", "recommendation3", "recommendation4", "recommendation5"],
-  "strategicActions": ["action1", "action2", "action3", "action4", "action5"]
+  "competitiveInsights": ["insight1", "insight2", "insight3", "insight4", "insight5"]
 }`;
     }
   }

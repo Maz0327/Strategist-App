@@ -23,6 +23,8 @@ import { performanceMonitor, trackPerformance } from "./services/monitoring";
 import { analyticsService } from "./services/analytics";
 import { cohortBuilderService } from "./services/cohortBuilder";
 import { competitiveIntelligenceService } from "./services/competitiveIntelligence";
+import { strategicInsightsService } from "./services/strategicInsights";
+import { strategicActionsService } from "./services/strategicActions";
 import { getCacheStats } from "./services/cache";
 import { 
   insertUserFeedbackSchema,
@@ -1548,6 +1550,42 @@ The analyzed signals provide a comprehensive view of current market trends and s
     } catch (error: any) {
       debugLogger.error('Competitive intelligence failed', error, req);
       res.status(500).json({ error: 'Failed to analyze competitive intelligence' });
+    }
+  });
+  
+  // Strategic Insights Service - Load on demand
+  app.post("/api/strategic-insights", requireAuth, async (req, res) => {
+    try {
+      const { content, title, truthAnalysis } = req.body;
+      
+      if (!content) {
+        return res.status(400).json({ error: 'Content is required' });
+      }
+      
+      const insights = await strategicInsightsService.getStrategicInsights(content, title, truthAnalysis);
+      res.json({ insights });
+      
+    } catch (error: any) {
+      debugLogger.error('Strategic insights failed', error, req);
+      res.status(500).json({ error: 'Failed to analyze strategic insights' });
+    }
+  });
+  
+  // Strategic Actions Service - Load on demand
+  app.post("/api/strategic-actions", requireAuth, async (req, res) => {
+    try {
+      const { content, title, truthAnalysis } = req.body;
+      
+      if (!content) {
+        return res.status(400).json({ error: 'Content is required' });
+      }
+      
+      const actions = await strategicActionsService.getStrategicActions(content, title, truthAnalysis);
+      res.json({ actions });
+      
+    } catch (error: any) {
+      debugLogger.error('Strategic actions failed', error, req);
+      res.status(500).json({ error: 'Failed to analyze strategic actions' });
     }
   });
   
