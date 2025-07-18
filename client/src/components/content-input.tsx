@@ -110,13 +110,19 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
             try {
               const eventData = JSON.parse(line.slice(6));
               
-              if (eventData.type === 'progress') {
-                const progressData = { stage: eventData.stage, progress: eventData.progress };
+              if (eventData.type === 'status') {
+                const progressData = { stage: eventData.message, progress: eventData.progress };
                 setAnalysisProgress(progressData);
                 onAnalysisProgress?.(progressData);
+              } else if (eventData.type === 'analysis') {
+                // Handle analysis result
+                console.log('Analysis data received:', eventData);
+                onAnalysisComplete?.(eventData.data, data);
               } else if (eventData.type === 'complete') {
                 console.log('Analysis complete event received:', eventData);
-                console.log('Complete event data:', eventData.data);
+                setAnalysisProgress({ stage: 'Complete!', progress: 100 });
+                onAnalysisProgress?.({ stage: 'Complete!', progress: 100 });
+                
                 // eventData.data contains { analysis, signalId }
                 onAnalysisComplete?.(eventData.data.analysis, data);
                 toast({

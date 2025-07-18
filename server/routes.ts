@@ -275,11 +275,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.write(`data: ${JSON.stringify({ type: 'status', message: 'Analyzing content...', progress: 30 })}\n\n`);
       
       const analysisMode = req.body.analysisMode || 'quick';
+      
+      // Send progress updates during analysis
+      res.write(`data: ${JSON.stringify({ type: 'status', message: 'Processing with AI...', progress: 40 })}\n\n`);
+      
       const analysis = await openaiService.analyzeContent(data, lengthPreference, analysisMode);
       
-      res.write(`data: ${JSON.stringify({ type: 'status', message: 'Generating insights...', progress: 70 })}\n\n`);
+      res.write(`data: ${JSON.stringify({ type: 'status', message: 'Generating insights...', progress: 60 })}\n\n`);
+      
+      // Send more detailed progress
+      res.write(`data: ${JSON.stringify({ type: 'status', message: 'Creating strategic analysis...', progress: 80 })}\n\n`);
       
       // Save as signal
+      res.write(`data: ${JSON.stringify({ type: 'status', message: 'Saving analysis...', progress: 85 })}\n\n`);
+      
       const signalData = {
         userId: req.session.userId!,
         title: data.title || "Untitled Analysis",
