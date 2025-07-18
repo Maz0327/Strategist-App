@@ -1557,11 +1557,24 @@ The analyzed signals provide a comprehensive view of current market trends and s
     try {
       const { content, title, truthAnalysis } = req.body;
       
+      debugLogger.info('Cohort analysis request', { 
+        userId: req.session.userId,
+        contentLength: content?.length || 0,
+        title,
+        hasTruthAnalysis: !!truthAnalysis 
+      });
+      
       if (!content) {
         return res.status(400).json({ error: 'Content is required' });
       }
       
       const cohorts = await cohortBuilderService.generateCohorts(content, title, truthAnalysis);
+      
+      debugLogger.info('Cohort analysis response', { 
+        userId: req.session.userId,
+        cohortCount: cohorts?.length || 0 
+      });
+      
       res.json({ cohorts });
       
     } catch (error: any) {
