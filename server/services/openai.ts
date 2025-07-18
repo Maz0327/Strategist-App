@@ -175,15 +175,15 @@ export class OpenAIService {
     const systemPrompt = this.getSystemPrompt('medium', isDeepAnalysis);
     
     const userPrompt = isDeepAnalysis ? 
-      `I need a strategic analysis of this content. Think like you're briefing a client on what this means for their business and cultural landscape:
+      `I need a strategic analysis of this content. Think like you're briefing your strategy team on what this means for business and cultural landscape:
 
 Title: ${title}
 Content: ${content.substring(0, 4000)}${content.length > 4000 ? '...' : ''}
 
-Give me medium-length analysis (3-5 sentences per field). I'm looking for strategic intelligence I can act on - cultural moments, attention arbitrage opportunities, human motivations, and competitive implications.
+Give me medium-length analysis (3-5 sentences per field). I'm looking for strategic intelligence we can act on - cultural moments, attention arbitrage opportunities, human motivations, and competitive implications.
 
 Return JSON only.` :
-      `Analyze this content from a strategic perspective. What would a Post Creative Strategist want to know about this?
+      `Analyze this content from a strategic perspective. What would your strategy team want to know about this?
 
 Title: ${title}
 Content: ${content.substring(0, 1500)}${content.length > 1500 ? '...' : ''}
@@ -300,7 +300,7 @@ Return just the truthAnalysis JSON object with the adjusted fields.`;
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "You're a strategic content analyst helping adjust analysis length while keeping the strategic intelligence intact. Think like you're refining a brief for a client." },
+        { role: "system", content: "You're a strategic content analyst helping adjust analysis length while keeping the strategic intelligence intact. Think like you're refining a brief for your strategy team." },
         { role: "user", content: adjustmentPrompt }
       ],
       response_format: { type: "json_object" },
