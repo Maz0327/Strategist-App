@@ -864,10 +864,35 @@ export function EnhancedAnalysisResults({
           {/* ii. Competitive Intelligence */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                Competitive Intelligence
-              </CardTitle>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="h-5 w-5" />
+                  Competitive Intelligence
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  {competitiveResults.length > 0 && (
+                    <Button 
+                      onClick={handleAdvancedInsights}
+                      disabled={loadingStates.advancedInsights}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      {loadingStates.advancedInsights ? (
+                        <>
+                          <LoadingSpinner size="sm" />
+                          Advanced Analysis...
+                        </>
+                      ) : (
+                        <>
+                          <Brain className="h-4 w-4" />
+                          Advanced Analysis
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
               <p className="text-sm text-gray-600">
                 How competitors are positioning in this space
               </p>
@@ -929,10 +954,35 @@ export function EnhancedAnalysisResults({
           {/* iii. Strategic Actions */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5" />
-                Strategic Actions
-              </CardTitle>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <CardTitle className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5" />
+                  Strategic Actions
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  {actionsResults.length > 0 && (
+                    <Button 
+                      onClick={handleAdvancedInsights}
+                      disabled={loadingStates.advancedInsights}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      {loadingStates.advancedInsights ? (
+                        <>
+                          <LoadingSpinner size="sm" />
+                          Advanced Analysis...
+                        </>
+                      ) : (
+                        <>
+                          <Brain className="h-4 w-4" />
+                          Advanced Analysis
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
               <p className="text-sm text-gray-600">
                 Actionable recommendations based on insights
               </p>
