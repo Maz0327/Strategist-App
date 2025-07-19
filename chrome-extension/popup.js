@@ -47,8 +47,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     const screenshotButton = document.getElementById('screenshotButton');
     const visualAnalysisButton = document.getElementById('visualAnalysisButton');
     
+    // Voice note features
+    const voiceNoteButton = document.getElementById('voiceNoteButton');
+    const stopRecordingButton = document.getElementById('stopRecordingButton');
+    const voiceNoteStatus = document.getElementById('voiceNoteStatus');
+    
     screenshotButton?.addEventListener('click', handleScreenshot);
     visualAnalysisButton?.addEventListener('click', handleVisualAnalysis);
+    voiceNoteButton?.addEventListener('click', handleStartVoiceNote);
+    stopRecordingButton?.addEventListener('click', handleStopVoiceNote);
+    
+    // Voice recording state
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
 
     async function initializePopup() {
         try {
@@ -422,6 +434,121 @@ document.addEventListener('DOMContentLoaded', async () => {
         const charCount = notes.length;
         if (charCount > 0) {
             showStatus(`${charCount} characters`, 'info');
+        }
+    }
+
+    // Voice note functionality
+    async function handleStartVoiceNote() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+            
+            mediaRecorder.ondataavailable = (event) => {
+                audioChunks.push(event.data);
+            };
+            
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                await handleVoiceNoteComplete(audioBlob);
+                
+                // Stop all tracks to release microphone
+                stream.getTracks().forEach(track => track.stop());
+            };
+            
+            mediaRecorder.start();
+            isRecording = true;
+            
+            // Update UI
+            voiceNoteButton.disabled = true;
+            voiceNoteButton.style.display = 'none';
+            stopRecordingButton.disabled = false;
+            stopRecordingButton.style.display = 'inline-block';
+            voiceNoteStatus.style.display = 'block';
+            
+            // Start timer
+            let seconds = 0;
+            const timer = setInterval(() => {
+                if (!isRecording) {
+                    clearInterval(timer);
+                    return;
+                }
+                seconds++;
+                const minutes = Math.floor(seconds / 60);
+                const remainingSeconds = seconds % 60;
+                const timeDisplay = `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+                document.querySelector('.recording-time').textContent = timeDisplay;
+            }, 1000);
+            
+            showStatus('Recording voice note...', 'info');
+            
+        } catch (error) {
+            console.error('Error accessing microphone:', error);
+            showStatus('Could not access microphone. Please check permissions.', 'error');
+        }
+    }
+
+    function handleStopVoiceNote() {
+        if (mediaRecorder && isRecording) {
+            mediaRecorder.stop();
+            isRecording = false;
+            
+            // Update UI
+            voiceNoteButton.disabled = false;
+            voiceNoteButton.style.display = 'inline-block';
+            stopRecordingButton.disabled = true;
+            stopRecordingButton.style.display = 'none';
+            voiceNoteStatus.style.display = 'none';
+            
+            showStatus('Processing voice note...', 'info');
+        }
+    }
+
+    async function handleVoiceNoteComplete(audioBlob) {
+        try {
+            // Convert blob to base64
+            const arrayBuffer = await audioBlob.arrayBuffer();
+            const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+            
+            // Send to backend for transcription
+            const response = await fetch(`${currentConfig.backendUrl}/api/whisper/transcribe`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    audioFile: base64Audio,
+                    filename: `voice_note_${Date.now()}.wav`
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to transcribe voice note');
+            }
+            
+            const result = await response.json();
+            
+            // Add transcribed text to notes
+            const currentNotes = userNotes.value.trim();
+            const transcribedText = `[Voice Note]: ${result.text}`;
+            userNotes.value = currentNotes ? `${currentNotes}\n\n${transcribedText}` : transcribedText;
+            
+            // Show success indicator
+            const voiceNoteResult = document.getElementById('voiceNoteResult');
+            voiceNoteResult.style.display = 'block';
+            
+            showStatus(`Voice note transcribed (${result.duration?.toFixed(1) || 'unknown'}s)`, 'success');
+            
+            // Hide success indicator after 3 seconds
+            setTimeout(() => {
+                voiceNoteResult.style.display = 'none';
+            }, 3000);
+            
+        } catch (error) {
+            console.error('Error processing voice note:', error);
+            showStatus('Failed to process voice note. Please try again.', 'error');
         }
     }
 

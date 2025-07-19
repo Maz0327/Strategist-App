@@ -27,6 +27,8 @@ import { strategicInsightsService } from "./services/strategicInsights";
 import { strategicActionsService } from "./services/strategicActions";
 import { strategicRecommendationsService } from "./services/strategicRecommendations";
 import { getCacheStats } from "./services/cache";
+import { whisperService } from "./services/whisper";
+import { videoTranscriptionService } from "./services/video-transcription";
 import { 
   insertUserFeedbackSchema,
   insertUserAnalyticsSchema
@@ -729,6 +731,213 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Audio transcription endpoints
+  app.post("/api/audio/transcribe", requireAuth, async (req, res) => {
+    try {
+      debugLogger.info("Audio transcription request received", { hasFile: !!req.body.audioFile }, req);
+      
+      const { audioFile, filename, language, prompt } = req.body;
+      
+      if (!audioFile || !filename) {
+        return res.status(400).json({ message: "Audio file and filename are required" });
+      }
+
+      // Check if file format is supported
+      if (!whisperService.isSupportedFormat(filename)) {
+        return res.status(400).json({ 
+          message: "Unsupported audio format. Supported formats: mp3, mp4, mpeg, mpga, m4a, wav, webm" 
+        });
+      }
+
+      // Convert base64 to buffer if needed
+      const audioBuffer = Buffer.isBuffer(audioFile) 
+        ? audioFile 
+        : Buffer.from(audioFile, 'base64');
+
+      const options = {
+        language: language || undefined,
+        prompt: prompt || undefined,
+        response_format: 'verbose_json' as const
+      };
+
+      const result = await whisperService.transcribeAudio(audioBuffer, filename, options);
+      
+      debugLogger.info("Audio transcription completed", { 
+        filename, 
+        transcriptionLength: result.text.length,
+        language: result.language,
+        duration: result.duration
+      }, req);
+
+      res.json({
+        success: true,
+        transcription: result.text,
+        language: result.language,
+        duration: result.duration,
+        confidence: result.confidence,
+        estimatedCost: result.duration ? whisperService.calculateEstimatedCost(result.duration) : 0
+      });
+
+    } catch (error: any) {
+      debugLogger.error('Audio transcription failed', error, req);
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/signals/audio", requireAuth, async (req, res) => {
+    try {
+      debugLogger.info("Audio signal creation request received", { 
+        title: req.body.title,
+        hasAudioFile: !!req.body.audioFile,
+        filename: req.body.filename
+      }, req);
+      
+      const { title, audioFile, filename, userNotes, language, prompt } = req.body;
+      
+      if (!audioFile || !filename) {
+        return res.status(400).json({ message: "Audio file and filename are required" });
+      }
+
+      // Check if file format is supported
+      if (!whisperService.isSupportedFormat(filename)) {
+        return res.status(400).json({ 
+          message: "Unsupported audio format. Supported formats: mp3, mp4, mpeg, mpga, m4a, wav, webm" 
+        });
+      }
+
+      // Convert base64 to buffer if needed
+      const audioBuffer = Buffer.isBuffer(audioFile) 
+        ? audioFile 
+        : Buffer.from(audioFile, 'base64');
+
+      // Transcribe audio
+      const transcriptionOptions = {
+        language: language || undefined,
+        prompt: prompt || undefined,
+        response_format: 'verbose_json' as const
+      };
+
+      const transcriptionResult = await whisperService.transcribeAudio(audioBuffer, filename, transcriptionOptions);
+      
+      // Analyze transcribed content using existing analysis pipeline
+      const analysisData = {
+        content: transcriptionResult.text,
+        title: title || `Audio Transcription - ${filename}`,
+        url: null
+      };
+
+      const analysis = await openaiService.analyzeContent(analysisData, 'medium', 'quick');
+      
+      // Create signal with both audio and analysis data
+      const signalData = {
+        userId: req.session.userId!,
+        title: title || `Audio Analysis - ${filename}`,
+        content: transcriptionResult.text,
+        url: null,
+        summary: analysis.summary,
+        sentiment: analysis.sentiment,
+        tone: analysis.tone,
+        keywords: analysis.keywords,
+        tags: [],
+        confidence: analysis.confidence,
+        status: "capture",
+        // Truth analysis
+        truthFact: analysis.truthAnalysis.fact,
+        truthObservation: analysis.truthAnalysis.observation,
+        truthInsight: analysis.truthAnalysis.insight,
+        humanTruth: analysis.truthAnalysis.humanTruth,
+        culturalMoment: analysis.truthAnalysis.culturalMoment,
+        attentionValue: analysis.truthAnalysis.attentionValue,
+        // Audio specific fields
+        transcription: transcriptionResult.text,
+        audioDuration: transcriptionResult.duration || null,
+        audioFormat: filename.split('.').pop()?.toLowerCase(),
+        audioLanguage: transcriptionResult.language,
+        transcriptionConfidence: transcriptionResult.confidence?.toString(),
+        userNotes: userNotes || ""
+      };
+      
+      const signal = await storage.createSignal(signalData);
+      
+      debugLogger.info("Audio signal created successfully", { 
+        signalId: signal.id,
+        transcriptionLength: transcriptionResult.text.length,
+        analysisConfidence: analysis.confidence
+      }, req);
+      
+      res.json({
+        success: true,
+        signal: {
+          id: signal.id,
+          title: signal.title,
+          status: signal.status,
+          createdAt: signal.createdAt
+        },
+        transcription: transcriptionResult.text,
+        analysis,
+        estimatedCost: transcriptionResult.duration ? whisperService.calculateEstimatedCost(transcriptionResult.duration) : 0
+      });
+
+    } catch (error: any) {
+      debugLogger.error('Audio signal creation failed', error, req);
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Whisper transcription endpoint for Chrome extension
+  app.post("/api/whisper/transcribe", requireAuth, async (req, res) => {
+    try {
+      const { audioFile, filename } = req.body;
+      
+      if (!audioFile || !filename) {
+        return res.status(400).json({
+          error: "Audio file and filename are required"
+        });
+      }
+
+      // Convert base64 to buffer
+      const audioBuffer = Buffer.from(audioFile, 'base64');
+      
+      // Create temporary file for Whisper API
+      const fs = require('fs');
+      const path = require('path');
+      const os = require('os');
+      
+      const tempDir = os.tmpdir();
+      const tempFilePath = path.join(tempDir, `whisper_${Date.now()}_${filename}`);
+      
+      fs.writeFileSync(tempFilePath, audioBuffer);
+      
+      try {
+        // Transcribe audio using Whisper API
+        const transcriptionResult = await whisperService.transcribeAudio(tempFilePath);
+
+        res.json({
+          success: true,
+          text: transcriptionResult.text,
+          duration: transcriptionResult.duration,
+          language: transcriptionResult.language,
+          confidence: transcriptionResult.confidence
+        });
+
+      } finally {
+        // Clean up temporary file
+        try {
+          fs.unlinkSync(tempFilePath);
+        } catch (cleanupError) {
+          console.warn('Could not delete temp file:', cleanupError);
+        }
+      }
+
+    } catch (error: any) {
+      console.error("Voice note transcription error:", error);
+      res.status(500).json({
+        error: "Failed to transcribe voice note",
+        message: error.message
+      });
+    }
+  });
+
   // Debug and monitoring routes
   app.get("/api/debug/logs", (req, res) => {
     try {
@@ -783,6 +992,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { url } = req.body;
       if (!url) {
         return res.status(400).json({ message: "URL is required" });
+      }
+
+      // Check if it's a video URL and attempt transcription
+      if (videoTranscriptionService.isVideoUrl(url)) {
+        try {
+          const result = await videoTranscriptionService.extractContentWithVideoDetection(url);
+          return res.json({
+            success: true,
+            title: result.title,
+            content: result.content,
+            author: result.author,
+            isVideo: result.isVideo,
+            videoTranscription: result.videoTranscription
+          });
+        } catch (videoError) {
+          debugLogger.warn('Video transcription failed, falling back to text extraction', { url, error: videoError });
+          // Fall through to regular content extraction
+        }
       }
       
       const extracted = await scraperService.extractContent(url);

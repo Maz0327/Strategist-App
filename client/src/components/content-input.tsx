@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { apiRequest } from "@/lib/queryClient";
 import { analyzeContentSchema, type AnalyzeContentData } from "@shared/schema";
-import { Edit, Link, Highlighter, Brain, Download, Info, Sparkles, Zap, Search } from "lucide-react";
+import { Edit, Link, Highlighter, Brain, Download, Info, Sparkles, Zap, Search, Mic } from "lucide-react";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 
@@ -31,6 +31,14 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
   const [analysisProgress, setAnalysisProgress] = useState({ stage: '', progress: 0 });
   const [useStreaming, setUseStreaming] = useState(true);
   const [analysisMode, setAnalysisMode] = useState<'quick' | 'deep'>('quick');
+  
+  // Audio upload states
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [audioTitle, setAudioTitle] = useState("");
+  const [audioLanguage, setAudioLanguage] = useState("");
+  const [audioPrompt, setAudioPrompt] = useState("");
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  
   const { toast } = useToast();
 
   // Example content for quick demo
@@ -291,6 +299,95 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
     }
   };
 
+  const handleAudioUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Check file type
+    const supportedTypes = ['audio/mp3', 'audio/mpeg', 'audio/wav', 'audio/m4a', 'audio/mp4', 'audio/webm'];
+    if (!supportedTypes.some(type => file.type.includes(type.split('/')[1]))) {
+      toast({
+        title: "Unsupported File Type",
+        description: "Please upload an audio file (mp3, wav, m4a, mp4, webm)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check file size (limit to 25MB for Whisper API)
+    if (file.size > 25 * 1024 * 1024) {
+      toast({
+        title: "File Too Large",
+        description: "Audio files must be under 25MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setAudioFile(file);
+    if (!audioTitle) {
+      setAudioTitle(file.name.replace(/\.[^/.]+$/, ""));
+    }
+  };
+
+  const handleAudioAnalyze = async () => {
+    if (!audioFile) {
+      toast({
+        title: "Error",
+        description: "Please select an audio file to analyze",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsTranscribing(true);
+    setIsLoading(true);
+    onAnalysisStart?.();
+    
+    try {
+      // Convert file to base64
+      const audioBuffer = await audioFile.arrayBuffer();
+      const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)));
+
+      // Prepare request data
+      const requestData = {
+        title: audioTitle || audioFile.name,
+        audioFile: base64Audio,
+        filename: audioFile.name,
+        userNotes: userNotes,
+        language: audioLanguage || undefined,
+        prompt: audioPrompt || undefined
+      };
+
+      const response = await apiRequest("POST", "/api/signals/audio", requestData);
+      const result = await response.json();
+
+      onAnalysisComplete?.(result.analysis, { 
+        content: result.transcription,
+        title: audioTitle || audioFile.name,
+        url: null,
+        isAudio: true,
+        audioFile: audioFile.name,
+        estimatedCost: result.estimatedCost
+      });
+
+      toast({
+        title: "Audio Analysis Complete",
+        description: `Transcription and analysis completed. Estimated cost: $${result.estimatedCost?.toFixed(4) || '0.00'}`,
+      });
+
+    } catch (error: any) {
+      toast({
+        title: "Audio Analysis Failed",
+        description: error.message || "Failed to analyze audio content",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTranscribing(false);
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Card className="card-shadow">
       <CardHeader className="pb-4">
@@ -353,7 +450,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 gap-1">
+          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-4 gap-1">
             <TabsTrigger value="text" className="flex items-center gap-2 px-2 sm:px-4">
               <Edit size={16} />
               <span className="hidden sm:inline">Manual Text</span>
@@ -363,6 +460,11 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
               <Link size={16} />
               <span className="hidden sm:inline">URL Analysis</span>
               <span className="sm:hidden">URL</span>
+            </TabsTrigger>
+            <TabsTrigger value="audio" className="flex items-center gap-2 px-2 sm:px-4">
+              <Mic size={16} />
+              <span className="hidden sm:inline">Audio Upload</span>
+              <span className="sm:hidden">Audio</span>
             </TabsTrigger>
             <TabsTrigger value="selection" className="flex items-center gap-2 px-2 sm:px-4">
               <Highlighter size={16} />
@@ -622,6 +724,145 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
                 </Button>
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="audio" className="space-y-4">
+            <div className="bg-green-50 border border-green-200 rounded-md p-4">
+              <div className="flex items-center gap-2">
+                <Mic className="text-green-600" size={16} />
+                <p className="text-sm text-green-800">
+                  Upload audio files for automatic transcription and strategic analysis using OpenAI Whisper API.
+                </p>
+              </div>
+            </div>
+            
+            <div className="grid gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="audio-upload">Audio File</Label>
+                <input
+                  id="audio-upload"
+                  type="file"
+                  accept="audio/*"
+                  onChange={handleAudioUpload}
+                  disabled={isLoading}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <p className="text-xs text-gray-500">
+                  Supported formats: MP3, WAV, M4A, MP4, WebM (max 25MB)
+                </p>
+              </div>
+
+              {audioFile && (
+                <div className="bg-green-50 border border-green-200 rounded-md p-4">
+                  <h4 className="text-sm font-medium text-green-900 mb-2">Selected Audio File:</h4>
+                  <div className="text-sm text-green-800">
+                    <p><strong>File:</strong> {audioFile.name}</p>
+                    <p><strong>Size:</strong> {(audioFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                    <p><strong>Type:</strong> {audioFile.type}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="audio-title">Title (Optional)</Label>
+                <Input
+                  id="audio-title"
+                  placeholder="Enter a title for this audio analysis"
+                  value={audioTitle}
+                  onChange={(e) => setAudioTitle(e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="audio-language">Language (Optional)</Label>
+                  <Select value={audioLanguage} onValueChange={setAudioLanguage} disabled={isLoading}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Auto-detect" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Auto-detect</SelectItem>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="es">Spanish</SelectItem>
+                      <SelectItem value="fr">French</SelectItem>
+                      <SelectItem value="de">German</SelectItem>
+                      <SelectItem value="it">Italian</SelectItem>
+                      <SelectItem value="pt">Portuguese</SelectItem>
+                      <SelectItem value="ru">Russian</SelectItem>
+                      <SelectItem value="ja">Japanese</SelectItem>
+                      <SelectItem value="ko">Korean</SelectItem>
+                      <SelectItem value="zh">Chinese</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="audio-prompt">Context Prompt (Optional)</Label>
+                  <Input
+                    id="audio-prompt"
+                    placeholder="e.g., podcast, meeting, interview"
+                    value={audioPrompt}
+                    onChange={(e) => setAudioPrompt(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
+
+              {/* User Notes Section */}
+              <div className="space-y-2">
+                <Label htmlFor="audio-user-notes">Your Notes (Optional)</Label>
+                <Textarea
+                  id="audio-user-notes"
+                  rows={3}
+                  placeholder="Add context about this audio - what should the analysis focus on?"
+                  value={userNotes}
+                  onChange={(e) => setUserNotes(e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
+
+              {/* Progress indicator for audio transcription */}
+              {isTranscribing && (
+                <div className="space-y-3 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200/50 animate-in fade-in-50">
+                  <div className="flex items-center gap-2">
+                    <div className="animate-pulse text-green-600">
+                      <Mic className="h-4 w-4" />
+                    </div>
+                    <span className="text-sm font-medium text-green-700">
+                      Transcribing audio and analyzing content...
+                    </span>
+                  </div>
+                  <div className="w-full bg-green-200/50 rounded-full h-2">
+                    <div className="progress-shimmer h-2 rounded-full transition-all duration-500 ease-out shadow-sm bg-green-600" style={{ width: '100%' }} />
+                  </div>
+                  <div className="text-xs text-green-600/80 flex items-center gap-1">
+                    <div className="animate-pulse">●</div>
+                    <span>Using OpenAI Whisper API for transcription...</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end">
+                <Button 
+                  onClick={handleAudioAnalyze} 
+                  disabled={isLoading || !audioFile}
+                  className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
+                >
+                  {isLoading ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      {isTranscribing ? 'Transcribing...' : 'Processing...'}
+                    </div>
+                  ) : (
+                    <>
+                      <Mic size={16} className="mr-2" />
+                      Transcribe & Analyze
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="selection" className="space-y-4">

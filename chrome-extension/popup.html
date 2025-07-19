@@ -53,6 +53,26 @@
                 ></textarea>
             </div>
 
+            <!-- Voice Notes Feature -->
+            <div class="voice-notes">
+                <h3>Voice Notes</h3>
+                <div class="voice-actions">
+                    <button type="button" class="btn btn-secondary" id="voiceNoteButton">
+                        🎤 Start Recording
+                    </button>
+                    <button type="button" class="btn btn-danger" id="stopRecordingButton" disabled style="display: none;">
+                        ⏹️ Stop Recording
+                    </button>
+                </div>
+                <div class="voice-status" id="voiceNoteStatus" style="display: none;">
+                    <div class="recording-indicator">🔴 Recording...</div>
+                    <div class="recording-time">0:00</div>
+                </div>
+                <div class="voice-note-result" id="voiceNoteResult" style="display: none;">
+                    ✅ Voice note recorded
+                </div>
+            </div>
+
             <!-- Visual Intelligence Features -->
             <div class="visual-intelligence">
                 <h3>Visual Intelligence</h3>

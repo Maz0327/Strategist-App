@@ -51,6 +51,13 @@ export const signals = pgTable("signals", {
   brandElements: jsonb("brand_elements"), // Logo, colors, typography, layout patterns
   culturalVisualMoments: jsonb("cultural_visual_moments"), // Meme tracking, viral patterns
   competitiveVisualInsights: jsonb("competitive_visual_insights"), // Visual strategy analysis
+  // Audio intelligence fields
+  audioUrl: text("audio_url"), // URL or path to audio file
+  transcription: text("transcription"), // Whisper API transcription result
+  audioDuration: integer("audio_duration"), // Duration in seconds
+  audioFormat: text("audio_format"), // File format (mp3, wav, m4a, etc.)
+  audioLanguage: text("audio_language"), // Detected language from Whisper
+  transcriptionConfidence: text("transcription_confidence"), // Confidence score
   createdAt: timestamp("created_at").defaultNow(),
 });
 
