@@ -31,7 +31,8 @@ import {
   Brain,
   Save,
   Info,
-  Flag
+  Flag,
+  Hash
 } from "lucide-react";
 
 // Enhanced Loading Component with animated progress bar
@@ -831,8 +832,153 @@ export function EnhancedAnalysisResults({
             </CardContent>
           </Card>
 
+          {/* ii. Competitive Intelligence */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Competitive Intelligence
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                How competitors are positioning in this space
+              </p>
+            </CardHeader>
+            <CardContent>
+              {competitiveResults.length > 0 ? (
+                <div className="space-y-3">
+                  {competitiveResults.map((competitive, index) => (
+                    <div key={index} className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                        <span className="text-xs font-bold text-green-600">{index + 1}</span>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-700 font-medium mb-1">
+                          {typeof competitive === 'string' ? competitive : competitive.intelligence || competitive.title || `Competitive Intelligence ${index + 1}`}
+                        </p>
+                        {typeof competitive === 'object' && competitive.category && (
+                          <div className="text-xs text-gray-600">
+                            <strong>Category:</strong> {competitive.category}
+                            {competitive.priority && ` | Priority: ${competitive.priority}`}
+                            {competitive.impact && ` | Impact: ${competitive.impact}`}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : loadingStates.competitive ? (
+                <AnimatedLoadingState 
+                  title="Building Competitive Intelligence"
+                  subtitle="Analyzing competitive positioning and market opportunities..."
+                />
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Target className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p>Click "Build Strategic Insights" below to generate competitive intelligence</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
+          {/* iii. Strategic Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5" />
+                Strategic Actions
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                Actionable recommendations based on insights
+              </p>
+            </CardHeader>
+            <CardContent>
+              {actionsResults.length > 0 ? (
+                <div className="space-y-3">
+                  {actionsResults.map((action, index) => (
+                    <div key={index} className="flex items-start gap-3">
+                      <CheckCircle className="h-4 w-4 text-blue-600 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-700 font-medium mb-1">
+                          {typeof action === 'string' ? action : action.action || action.title || `Strategic Action ${index + 1}`}
+                        </p>
+                        {typeof action === 'object' && action.category && (
+                          <div className="text-xs text-gray-600">
+                            <strong>Category:</strong> {action.category}
+                            {action.priority && ` | Priority: ${action.priority}`}
+                            {action.effort && ` | Effort: ${action.effort}`}
+                            {action.impact && ` | Impact: ${action.impact}`}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : loadingStates.actions ? (
+                <AnimatedLoadingState 
+                  title="Building Strategic Actions"
+                  subtitle="Generating actionable recommendations..."
+                />
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <CheckCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p>Click "Build Strategic Insights" below to generate strategic actions</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
+          {/* iv. Keywords */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Hash className="h-5 w-5" />
+                Keywords
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                Key terms and enhanced keywords from analysis
+              </p>
+            </CardHeader>
+            <CardContent>
+              {(currentAnalysis.keywords && currentAnalysis.keywords.length > 0) || (enhancedKeywords && enhancedKeywords.length > 0) ? (
+                <div className="space-y-4">
+                  {/* Original Keywords */}
+                  {currentAnalysis.keywords && currentAnalysis.keywords.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">Original Keywords</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {currentAnalysis.keywords.map((keyword, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {keyword}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Enhanced Keywords from Advanced Analysis */}
+                  {enhancedKeywords && enhancedKeywords.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">Enhanced Keywords (Advanced Analysis)</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {enhancedKeywords.map((keyword, index) => (
+                          <Badge key={index} variant="secondary" className="text-xs">
+                            {keyword}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Hash className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p>Keywords will appear after content analysis</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Build Strategic Insights Button */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -855,7 +1001,7 @@ export function EnhancedAnalysisResults({
                 </Button>
               </CardTitle>
               <p className="text-sm text-gray-600 text-center mt-4">
-                This button generates insights for the upper sections only. Advanced Strategic Analysis is in the separate Strategic Recommendations tab.
+                This button generates all 4 subsections above. Advanced Strategic Analysis is in the separate Strategic Recommendations tab.
               </p>
             </CardHeader>
           </Card>
