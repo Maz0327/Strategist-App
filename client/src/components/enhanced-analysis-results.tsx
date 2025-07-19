@@ -765,11 +765,33 @@ export function EnhancedAnalysisResults({
                               <p className="text-sm text-gray-700 font-medium mb-1">
                                 {typeof insight === 'string' ? insight : insight.insight || insight.title || `Strategic Insight ${index + 1}`}
                               </p>
-                              {typeof insight === 'object' && insight.category && (
-                                <div className="text-xs text-gray-600">
-                                  <strong>Category:</strong> {insight.category} 
-                                  {insight.priority && ` | Priority: ${insight.priority}`}
-                                  {insight.impact && ` | Impact: ${insight.impact}`}
+                              {typeof insight === 'object' && (insight.category || insight.priority || insight.impact || insight.confidence || insight.timeframe) && (
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                  {insight.category && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      {insight.category}
+                                    </Badge>
+                                  )}
+                                  {insight.priority && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {insight.priority} priority
+                                    </Badge>
+                                  )}
+                                  {insight.impact && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {insight.impact} impact
+                                    </Badge>
+                                  )}
+                                  {insight.confidence && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {insight.confidence} confidence
+                                    </Badge>
+                                  )}
+                                  {insight.timeframe && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {insight.timeframe}
+                                    </Badge>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -925,12 +947,38 @@ export function EnhancedAnalysisResults({
                         <p className="text-sm text-gray-700 font-medium mb-1">
                           {typeof action === 'string' ? action : action.action || action.title || `Strategic Action ${index + 1}`}
                         </p>
-                        {typeof action === 'object' && action.category && (
-                          <div className="text-xs text-gray-600">
-                            <strong>Category:</strong> {action.category}
-                            {action.priority && ` | Priority: ${action.priority}`}
-                            {action.effort && ` | Effort: ${action.effort}`}
-                            {action.impact && ` | Impact: ${action.impact}`}
+                        {typeof action === 'object' && (action.category || action.priority || action.effort || action.impact || action.timeframe || action.confidence) && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {action.category && (
+                              <Badge variant="secondary" className="text-xs">
+                                {action.category}
+                              </Badge>
+                            )}
+                            {action.priority && (
+                              <Badge variant="outline" className="text-xs">
+                                {action.priority} priority
+                              </Badge>
+                            )}
+                            {action.effort && (
+                              <Badge variant="outline" className="text-xs">
+                                {action.effort} effort
+                              </Badge>
+                            )}
+                            {action.impact && (
+                              <Badge variant="outline" className="text-xs">
+                                {action.impact} impact
+                              </Badge>
+                            )}
+                            {action.timeframe && (
+                              <Badge variant="outline" className="text-xs">
+                                {action.timeframe}
+                              </Badge>
+                            )}
+                            {action.confidence && (
+                              <Badge variant="outline" className="text-xs">
+                                {action.confidence} confidence
+                              </Badge>
+                            )}
                           </div>
                         )}
                       </div>
