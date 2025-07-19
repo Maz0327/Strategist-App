@@ -1671,6 +1671,68 @@ The analyzed signals provide a comprehensive view of current market trends and s
       res.status(500).json({ error: 'Failed to generate advanced strategic insights' });
     }
   });
+
+  // Advanced Competitive Intelligence Service - Enhanced analysis of competitive insights
+  app.post("/api/advanced-competitive-intelligence", requireAuth, async (req, res) => {
+    try {
+      const { content, title, truthAnalysis, initialCompetitive } = req.body;
+      
+      if (!content || !initialCompetitive || !initialCompetitive.length) {
+        return res.status(400).json({ error: 'Content and initial competitive intelligence are required' });
+      }
+      
+      debugLogger.info("Advanced competitive intelligence request", { 
+        userId: req.session.userId, 
+        contentLength: content?.length,
+        initialCompetitiveCount: initialCompetitive?.length || 0
+      }, req);
+      
+      // Use the competitive intelligence service to generate advanced analysis
+      const advancedCompetitive = await competitiveIntelligenceService.generateAdvancedCompetitive(
+        content, 
+        title, 
+        truthAnalysis,
+        initialCompetitive
+      );
+      
+      res.json({ advancedCompetitive });
+      
+    } catch (error: any) {
+      debugLogger.error('Advanced competitive intelligence failed', error, req);
+      res.status(500).json({ error: 'Failed to generate advanced competitive intelligence' });
+    }
+  });
+
+  // Advanced Strategic Actions Service - Enhanced analysis of strategic actions
+  app.post("/api/advanced-strategic-actions", requireAuth, async (req, res) => {
+    try {
+      const { content, title, truthAnalysis, initialActions } = req.body;
+      
+      if (!content || !initialActions || !initialActions.length) {
+        return res.status(400).json({ error: 'Content and initial strategic actions are required' });
+      }
+      
+      debugLogger.info("Advanced strategic actions request", { 
+        userId: req.session.userId, 
+        contentLength: content?.length,
+        initialActionsCount: initialActions?.length || 0
+      }, req);
+      
+      // Use the strategic actions service to generate advanced analysis
+      const advancedActions = await strategicActionsService.generateAdvancedActions(
+        content, 
+        title, 
+        truthAnalysis,
+        initialActions
+      );
+      
+      res.json({ advancedActions });
+      
+    } catch (error: any) {
+      debugLogger.error('Advanced strategic actions failed', error, req);
+      res.status(500).json({ error: 'Failed to generate advanced strategic actions' });
+    }
+  });
   
   // Performance monitoring endpoint
   app.get("/api/performance", requireAuth, async (req, res) => {

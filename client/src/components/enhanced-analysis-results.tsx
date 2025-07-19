@@ -135,11 +135,15 @@ export function EnhancedAnalysisResults({
     insights: false,
     actions: false,
     competitive: false,
-    advancedInsights: false
+    advancedInsights: false,
+    advancedCompetitive: false,
+    advancedActions: false
   });
 
-  // Advanced Strategic Insights state
+  // Advanced Analysis Results state
   const [advancedInsightsResults, setAdvancedInsightsResults] = useState<any[]>([]);
+  const [advancedCompetitiveResults, setAdvancedCompetitiveResults] = useState<any[]>([]);
+  const [advancedActionsResults, setAdvancedActionsResults] = useState<any[]>([]);
   const [insightViewMode, setInsightViewMode] = useState<'insights' | 'aia'>('insights');
   const [showAdvancedInsightsButton, setShowAdvancedInsightsButton] = useState(false);
   const [enhancedKeywords, setEnhancedKeywords] = useState<string[]>([]);
@@ -383,6 +387,84 @@ export function EnhancedAnalysisResults({
       });
     } finally {
       setLoadingStates(prev => ({ ...prev, advancedInsights: false }));
+    }
+  };
+
+  const handleAdvancedCompetitive = async () => {
+    if (!competitiveResults.length) {
+      toast({
+        title: "Error",
+        description: "Initial competitive intelligence required for advanced analysis",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoadingStates(prev => ({ ...prev, advancedCompetitive: true }));
+    
+    try {
+      const response = await apiRequest('POST', '/api/advanced-competitive-intelligence', {
+        content: originalContent?.content || data.content || '',
+        title: originalContent?.title || data.title || '',
+        truthAnalysis: currentAnalysis.truthAnalysis,
+        initialCompetitive: competitiveResults
+      });
+
+      const advancedData = await response.json();
+      setAdvancedCompetitiveResults(advancedData.advancedCompetitive || []);
+
+      toast({
+        title: "Success",
+        description: "Advanced competitive intelligence completed",
+      });
+    } catch (error: any) {
+      console.error('Advanced competitive failed:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate advanced competitive analysis. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingStates(prev => ({ ...prev, advancedCompetitive: false }));
+    }
+  };
+
+  const handleAdvancedActions = async () => {
+    if (!actionsResults.length) {
+      toast({
+        title: "Error",
+        description: "Initial strategic actions required for advanced analysis",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoadingStates(prev => ({ ...prev, advancedActions: true }));
+    
+    try {
+      const response = await apiRequest('POST', '/api/advanced-strategic-actions', {
+        content: originalContent?.content || data.content || '',
+        title: originalContent?.title || data.title || '',
+        truthAnalysis: currentAnalysis.truthAnalysis,
+        initialActions: actionsResults
+      });
+
+      const advancedData = await response.json();
+      setAdvancedActionsResults(advancedData.advancedActions || []);
+
+      toast({
+        title: "Success",
+        description: "Advanced strategic actions completed",
+      });
+    } catch (error: any) {
+      console.error('Advanced actions failed:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate advanced actions analysis. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingStates(prev => ({ ...prev, advancedActions: false }));
     }
   };
 
@@ -872,13 +954,13 @@ export function EnhancedAnalysisResults({
                 <div className="flex items-center gap-2">
                   {competitiveResults.length > 0 && (
                     <Button 
-                      onClick={handleAdvancedInsights}
-                      disabled={loadingStates.advancedInsights}
+                      onClick={handleAdvancedCompetitive}
+                      disabled={loadingStates.advancedCompetitive}
                       variant="outline"
                       size="sm"
                       className="flex items-center gap-2"
                     >
-                      {loadingStates.advancedInsights ? (
+                      {loadingStates.advancedCompetitive ? (
                         <>
                           <LoadingSpinner size="sm" />
                           Advanced Analysis...
@@ -899,44 +981,80 @@ export function EnhancedAnalysisResults({
             </CardHeader>
             <CardContent>
               {competitiveResults.length > 0 ? (
-                <div className="space-y-3">
-                  {competitiveResults.map((competitive, index) => (
-                    <div key={index} className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                        <span className="text-xs font-bold text-green-600">{index + 1}</span>
+                <>
+                  <div className="space-y-3">
+                    {competitiveResults.map((competitive, index) => (
+                      <div key={index} className="flex items-start gap-3">
+                        <div className="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                          <span className="text-xs font-bold text-green-600">{index + 1}</span>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-700 font-medium mb-1">
+                            {typeof competitive === 'string' ? competitive : competitive.insight || competitive.intelligence || competitive.title || `Competitive Intelligence ${index + 1}`}
+                          </p>
+                          {typeof competitive === 'object' && (competitive.category || competitive.confidence || competitive.timeframe) && (
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {competitive.category && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {competitive.category}
+                                </Badge>
+                              )}
+                              {competitive.confidence && (
+                                <Badge variant="outline" className="text-xs">
+                                  {competitive.confidence} confidence
+                                </Badge>
+                              )}
+                              {competitive.timeframe && (
+                                <Badge variant="outline" className="text-xs">
+                                  {competitive.timeframe}
+                                </Badge>
+                              )}
+                              {competitive.actionable !== undefined && (
+                                <Badge variant={competitive.actionable ? "default" : "secondary"} className="text-xs">
+                                  {competitive.actionable ? "Actionable" : "Info Only"}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-700 font-medium mb-1">
-                          {typeof competitive === 'string' ? competitive : competitive.insight || competitive.intelligence || competitive.title || `Competitive Intelligence ${index + 1}`}
-                        </p>
-                        {typeof competitive === 'object' && (competitive.category || competitive.confidence || competitive.timeframe) && (
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {competitive.category && (
-                              <Badge variant="secondary" className="text-xs">
-                                {competitive.category}
-                              </Badge>
-                            )}
-                            {competitive.confidence && (
-                              <Badge variant="outline" className="text-xs">
-                                {competitive.confidence} confidence
-                              </Badge>
-                            )}
-                            {competitive.timeframe && (
-                              <Badge variant="outline" className="text-xs">
-                                {competitive.timeframe}
-                              </Badge>
-                            )}
-                            {competitive.actionable !== undefined && (
-                              <Badge variant={competitive.actionable ? "default" : "secondary"} className="text-xs">
-                                {competitive.actionable ? "Actionable" : "Info Only"}
-                              </Badge>
-                            )}
+                    ))}
+                  </div>
+                  
+                  {/* Advanced Competitive Intelligence Results */}
+                  {advancedCompetitiveResults.length > 0 && (
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Brain className="h-4 w-4 text-purple-600" />
+                        <h4 className="text-sm font-medium text-gray-900">Advanced Competitive Intelligence</h4>
+                      </div>
+                      <div className="space-y-4">
+                        {advancedCompetitiveResults.map((item, index) => (
+                          <div key={index} className="flex items-start gap-3">
+                            <div className="flex-shrink-0 w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center">
+                              <span className="text-xs font-bold text-purple-600">{index + 1}</span>
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-900 mb-2">{item.intelligence}</p>
+                              <div className="flex flex-wrap gap-2">
+                                <Badge variant="secondary" className="text-xs">{item.category}</Badge>
+                                <Badge variant="outline" className="text-xs text-blue-700">{item.confidence} confidence</Badge>
+                                <Badge variant="outline" className="text-xs text-green-700">{item.timeframe}</Badge>
+                                <Badge variant="outline" className="text-xs text-orange-700">{item.competitiveImpact} impact</Badge>
+                              </div>
+                              {item.resources && item.resources.length > 0 && (
+                                <div className="mt-2">
+                                  <span className="text-xs font-medium text-gray-600">Resources: </span>
+                                  <span className="text-xs text-gray-500">{item.resources.join(', ')}</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        )}
+                        ))}
                       </div>
                     </div>
-                  ))}
-                </div>
+                  )}
+                </>
               ) : loadingStates.competitive ? (
                 <AnimatedLoadingState 
                   title="Building Competitive Intelligence"
@@ -962,13 +1080,13 @@ export function EnhancedAnalysisResults({
                 <div className="flex items-center gap-2">
                   {actionsResults.length > 0 && (
                     <Button 
-                      onClick={handleAdvancedInsights}
-                      disabled={loadingStates.advancedInsights}
+                      onClick={handleAdvancedActions}
+                      disabled={loadingStates.advancedActions}
                       variant="outline"
                       size="sm"
                       className="flex items-center gap-2"
                     >
-                      {loadingStates.advancedInsights ? (
+                      {loadingStates.advancedActions ? (
                         <>
                           <LoadingSpinner size="sm" />
                           Advanced Analysis...
@@ -989,7 +1107,8 @@ export function EnhancedAnalysisResults({
             </CardHeader>
             <CardContent>
               {actionsResults.length > 0 ? (
-                <div className="space-y-3">
+                <>
+                  <div className="space-y-3">
                   {actionsResults.map((action, index) => (
                     <div key={index} className="flex items-start gap-3">
                       <CheckCircle className="h-4 w-4 text-blue-600 mt-0.5" />
@@ -1031,10 +1150,63 @@ export function EnhancedAnalysisResults({
                             )}
                           </div>
                         )}
+                        {action.resources && action.resources.length > 0 && (
+                          <div className="mt-2">
+                            <span className="text-xs font-medium text-gray-600">Resources: </span>
+                            <span className="text-xs text-gray-500">{action.resources.join(', ')}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
-                </div>
+                  </div>
+                  
+                  {/* Advanced Strategic Actions Results */}
+                  {advancedActionsResults.length > 0 && (
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Brain className="h-4 w-4 text-indigo-600" />
+                        <h4 className="text-sm font-medium text-gray-900">Advanced Strategic Actions</h4>
+                      </div>
+                      <div className="space-y-4">
+                        {advancedActionsResults.map((item, index) => (
+                          <div key={index} className="flex items-start gap-3">
+                            <div className="flex-shrink-0 w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center">
+                              <span className="text-xs font-bold text-indigo-600">{index + 1}</span>
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-900 mb-2">{item.action}</p>
+                              <div className="flex flex-wrap gap-2 mb-3">
+                                <Badge variant="secondary" className="text-xs">{item.category}</Badge>
+                                <Badge variant="outline" className="text-xs text-red-700">{item.priority} priority</Badge>
+                                <Badge variant="outline" className="text-xs text-yellow-700">{item.effort} effort</Badge>
+                                <Badge variant="outline" className="text-xs text-green-700">{item.impact} impact</Badge>
+                              </div>
+                              {item.resources && item.resources.length > 0 && (
+                                <div className="mb-2">
+                                  <span className="text-xs font-medium text-gray-600">Resources: </span>
+                                  <span className="text-xs text-gray-500">{item.resources.join(', ')}</span>
+                                </div>
+                              )}
+                              {item.successMetrics && item.successMetrics.length > 0 && (
+                                <div className="mb-2">
+                                  <span className="text-xs font-medium text-gray-600">Success Metrics: </span>
+                                  <span className="text-xs text-gray-500">{item.successMetrics.join(', ')}</span>
+                                </div>
+                              )}
+                              {item.implementationSteps && item.implementationSteps.length > 0 && (
+                                <div>
+                                  <span className="text-xs font-medium text-gray-600">Implementation Steps: </span>
+                                  <span className="text-xs text-gray-500">{item.implementationSteps.join(' → ')}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
               ) : loadingStates.actions ? (
                 <AnimatedLoadingState 
                   title="Building Strategic Actions"
