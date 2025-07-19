@@ -23,8 +23,10 @@ class VideoTranscriptionService {
   isVideoUrl(url: string): boolean {
     const videoPatterns = [
       /youtube\.com\/watch/,
+      /youtube\.com\/shorts/,  // Added YouTube Shorts support
       /youtu\.be\//,
       /linkedin\.com\/.*\/video/,
+      /linkedin\.com\/posts\/.*activity/, // Added LinkedIn post support (may contain video)
       /instagram\.com\/(p|reel)\//,
       /tiktok\.com\/.*\/video/,
       /twitter\.com\/.*\/status/,
@@ -32,7 +34,10 @@ class VideoTranscriptionService {
       /vimeo\.com\//
     ];
     
-    return videoPatterns.some(pattern => pattern.test(url));
+    const isVideo = videoPatterns.some(pattern => pattern.test(url));
+    debugLogger.info('Video URL detection', { url, isVideo, patterns: videoPatterns.map(p => p.toString()) });
+    
+    return isVideo;
   }
 
   // Extract audio from video URL and transcribe
@@ -58,7 +63,44 @@ class VideoTranscriptionService {
       debugLogger.info('Attempting video-to-audio extraction with yt-dlp');
       
       try {
-        const audioBuffer = await this.extractAudioFromVideo(url);
+        // Create temp directory
+        const tempDir = path.join(process.cwd(), 'temp');
+        if (!fs.existsSync(tempDir)) {
+          fs.mkdirSync(tempDir, { recursive: true });
+        }
+        
+        const tempAudioPath = path.join(tempDir, `video_audio_${Date.now()}.mp3`);
+        
+        // Use yt-dlp to extract audio in mp3 format with better error handling and user agent
+        const outputTemplate = tempAudioPath.replace('.mp3', '.%(ext)s');
+        const command = `yt-dlp --extract-audio --audio-format mp3 --no-playlist --ignore-errors --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --output "${outputTemplate}" "${url}"`;
+        
+        debugLogger.info('Executing yt-dlp command', { command, outputTemplate });
+        
+        const { exec } = await import('child_process');
+        const { promisify } = await import('util');
+        const execAsync = promisify(exec);
+        
+        const { stdout, stderr } = await execAsync(command, {
+          timeout: 180000 // 3 minute timeout for longer videos
+        });
+        
+        debugLogger.info('yt-dlp extraction completed', { stdout: stdout.slice(0, 500) });
+        
+        // Read the extracted audio file
+        let audioBuffer: Buffer;
+        if (fs.existsSync(tempAudioPath)) {
+          audioBuffer = fs.readFileSync(tempAudioPath);
+          
+          // Clean up temp file
+          try {
+            fs.unlinkSync(tempAudioPath);
+          } catch (cleanupError) {
+            debugLogger.warn('Failed to cleanup temp audio file', { path: tempAudioPath });
+          }
+        } else {
+          throw new Error('Audio extraction failed - no output file created');
+        }
         const transcription = await whisperService.transcribeAudio(
           audioBuffer,
           `video_${Date.now()}.mp3`,
@@ -81,9 +123,29 @@ class VideoTranscriptionService {
       } catch (extractionError) {
         debugLogger.warn('Video extraction failed, using fallback', { url, error: extractionError.message });
         
-        // Fallback response when video extraction fails
+        // Enhanced fallback response with better guidance
+        const errorMessage = extractionError.message;
+        let specificGuidance = "";
+        
+        if (errorMessage.includes("Sign in to confirm")) {
+          specificGuidance = "\n\nThis video requires authentication due to YouTube's bot protection. ";
+        } else if (errorMessage.includes("Private video") || errorMessage.includes("not available")) {
+          specificGuidance = "\n\nThis video may be private or restricted. ";
+        }
+        
         return {
-          transcription: `[Video Content Detected]\n\nVideo detected at ${url} but audio extraction failed: ${extractionError.message}\n\nThe video metadata has been extracted for analysis. For full transcription, you can:\n1. Download the video's audio manually\n2. Upload the audio file using the Audio Upload tab\n3. The system will transcribe and analyze the content`,
+          transcription: `[Video Content Detected but Audio Extraction Limited]
+
+Video URL: ${url}
+Platform: ${this.detectPlatform(url)}
+Status: Audio extraction blocked (${errorMessage})${specificGuidance}
+
+ALTERNATIVE METHODS:
+1. Manual Download: Use a browser extension or online tool to download the audio
+2. Audio Upload: Upload the audio file using the "Audio Upload" tab above
+3. Public Video: Try with a different, publicly accessible video URL
+
+The system detected this as a video and attempted automatic transcription, but encountered platform restrictions.`,
           duration: 0,
           language: 'en',
           confidence: 0,
@@ -112,13 +174,14 @@ class VideoTranscriptionService {
     const tempAudioPath = path.join(tempDir, `video_audio_${Date.now()}.mp3`);
     
     try {
-      // Use yt-dlp to extract audio in mp3 format
-      const command = `yt-dlp --extract-audio --audio-format mp3 --output "${tempAudioPath.replace('.mp3', '.%(ext)s')}" "${url}"`;
+      // Use yt-dlp to extract audio in mp3 format with better error handling and user agent
+      const outputTemplate = tempAudioPath.replace('.mp3', '.%(ext)s');
+      const command = `yt-dlp --extract-audio --audio-format mp3 --no-playlist --ignore-errors --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --output "${outputTemplate}" "${url}"`;
       
-      debugLogger.info('Executing yt-dlp command', { command });
+      debugLogger.info('Executing yt-dlp command', { command, outputTemplate });
       
       const { stdout, stderr } = await execAsync(command, {
-        timeout: 120000 // 2 minute timeout
+        timeout: 180000 // 3 minute timeout for longer videos
       });
       
       debugLogger.info('yt-dlp extraction completed', { stdout: stdout.slice(0, 500) });
@@ -172,11 +235,14 @@ class VideoTranscriptionService {
         const transcription = await this.transcribeVideoFromUrl(url);
         result.videoTranscription = transcription;
         
-        // Combine extracted text content with transcription
-        result.content = `${extractedContent.content}\n\n--- Video Transcription ---\n${transcription.transcription}`;
+        // If transcription was successful, combine it with the text content
+        if (transcription.transcription && !transcription.transcription.includes("[Video Content Detected but Audio Extraction Limited]")) {
+          result.content = `${transcription.transcription}\n\n--- Original Page Content ---\n${result.content}`;
+          result.title = `[VIDEO] ${result.title}`;
+        }
       } catch (error) {
-        debugLogger.error('Video transcription failed, using text content only', error);
-        // Continue with text-only content
+        debugLogger.warn('Video transcription failed for detected video URL', { url, error });
+        // Don't throw error, just proceed without video transcription
       }
     }
 
@@ -193,13 +259,7 @@ class VideoTranscriptionService {
     return 'Unknown';
   }
 
-  // Future implementation method for when yt-dlp/ffmpeg are available
-  private async extractAudioFromVideo(url: string): Promise<Buffer> {
-    // This would use yt-dlp or similar to extract audio
-    // const audioPath = await ytDlp.extractAudio(url);
-    // return fs.readFileSync(audioPath);
-    throw new Error('Audio extraction not implemented - requires yt-dlp/ffmpeg setup');
-  }
+
 }
 
 export const videoTranscriptionService = new VideoTranscriptionService();
