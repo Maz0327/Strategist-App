@@ -35,7 +35,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
   // Audio upload states
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [audioTitle, setAudioTitle] = useState("");
-  const [audioLanguage, setAudioLanguage] = useState("");
+  const [audioLanguage, setAudioLanguage] = useState("auto");
   const [audioPrompt, setAudioPrompt] = useState("");
   const [isTranscribing, setIsTranscribing] = useState(false);
   
@@ -355,7 +355,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
         audioFile: base64Audio,
         filename: audioFile.name,
         userNotes: userNotes,
-        language: audioLanguage || undefined,
+        language: audioLanguage === "auto" ? undefined : audioLanguage,
         prompt: audioPrompt || undefined
       };
 
@@ -782,7 +782,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
                       <SelectValue placeholder="Auto-detect" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Auto-detect</SelectItem>
+                      <SelectItem value="auto">Auto-detect</SelectItem>
                       <SelectItem value="en">English</SelectItem>
                       <SelectItem value="es">Spanish</SelectItem>
                       <SelectItem value="fr">French</SelectItem>
