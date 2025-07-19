@@ -142,6 +142,7 @@ export function EnhancedAnalysisResults({
   const [advancedInsightsResults, setAdvancedInsightsResults] = useState<any[]>([]);
   const [insightViewMode, setInsightViewMode] = useState<'insights' | 'aia'>('insights');
   const [showAdvancedInsightsButton, setShowAdvancedInsightsButton] = useState(false);
+  const [enhancedKeywords, setEnhancedKeywords] = useState<string[]>([]);
 
   // Update analysis when new data arrives
   useEffect(() => {
@@ -361,6 +362,12 @@ export function EnhancedAnalysisResults({
 
       const advancedData = await response.json();
       setAdvancedInsightsResults(advancedData.advancedInsights || []);
+      
+      // Extract enhanced keywords from advanced analysis if available
+      if (advancedData.enhancedKeywords && Array.isArray(advancedData.enhancedKeywords)) {
+        setEnhancedKeywords(advancedData.enhancedKeywords);
+      }
+      
       setInsightViewMode('aia'); // Switch to advanced view
 
       toast({
