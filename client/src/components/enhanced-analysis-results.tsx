@@ -860,13 +860,30 @@ export function EnhancedAnalysisResults({
                       </div>
                       <div className="flex-1">
                         <p className="text-sm text-gray-700 font-medium mb-1">
-                          {typeof competitive === 'string' ? competitive : competitive.intelligence || competitive.title || `Competitive Intelligence ${index + 1}`}
+                          {typeof competitive === 'string' ? competitive : competitive.insight || competitive.intelligence || competitive.title || `Competitive Intelligence ${index + 1}`}
                         </p>
-                        {typeof competitive === 'object' && competitive.category && (
-                          <div className="text-xs text-gray-600">
-                            <strong>Category:</strong> {competitive.category}
-                            {competitive.priority && ` | Priority: ${competitive.priority}`}
-                            {competitive.impact && ` | Impact: ${competitive.impact}`}
+                        {typeof competitive === 'object' && (competitive.category || competitive.confidence || competitive.timeframe) && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {competitive.category && (
+                              <Badge variant="secondary" className="text-xs">
+                                {competitive.category}
+                              </Badge>
+                            )}
+                            {competitive.confidence && (
+                              <Badge variant="outline" className="text-xs">
+                                {competitive.confidence} confidence
+                              </Badge>
+                            )}
+                            {competitive.timeframe && (
+                              <Badge variant="outline" className="text-xs">
+                                {competitive.timeframe}
+                              </Badge>
+                            )}
+                            {competitive.actionable !== undefined && (
+                              <Badge variant={competitive.actionable ? "default" : "secondary"} className="text-xs">
+                                {competitive.actionable ? "Actionable" : "Info Only"}
+                              </Badge>
+                            )}
                           </div>
                         )}
                       </div>

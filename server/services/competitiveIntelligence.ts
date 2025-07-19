@@ -138,6 +138,11 @@ Timeframes: immediate, short-term, long-term
 Return only valid JSON without markdown formatting.`;
   }
 
+  // Alias method for compatibility with strategic recommendations
+  async generateInsights(content: string, title: string = '', truthAnalysis?: any): Promise<CompetitiveInsight[]> {
+    return this.getCompetitiveInsights(content, title, truthAnalysis);
+  }
+
   private getFallbackInsights(): CompetitiveInsight[] {
     return [
       {
