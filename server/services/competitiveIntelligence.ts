@@ -11,7 +11,7 @@ export interface CompetitiveInsight {
 }
 
 export class CompetitiveIntelligenceService {
-  async getCompetitiveInsights(content: string, title: string = ''): Promise<CompetitiveInsight[]> {
+  async getCompetitiveInsights(content: string, title: string = '', truthAnalysis?: any): Promise<CompetitiveInsight[]> {
     debugLogger.info('Starting competitive intelligence analysis', { contentLength: content.length, title });
     
     const startTime = Date.now();
@@ -25,7 +25,7 @@ export class CompetitiveIntelligenceService {
     }
     
     try {
-      const prompt = this.buildCompetitivePrompt(content, title);
+      const prompt = this.buildCompetitivePrompt(content, title, truthAnalysis);
       
       const response = await openai.chat.completions.create({
         model: "gpt-4o-mini",
@@ -82,29 +82,47 @@ Attention Value: ${truthAnalysis.attentionValue}
 
 Base your competitive intelligence on these truth insights to ensure consistency.
 
-Provide competitive insights in JSON format:
+Analyze the competitive landscape and market opportunities by considering:
+1. How competitors are positioning in this space
+2. Market gaps and opportunities
+3. Emerging trends competitors might be missing
+4. Potential threats from new market entrants
+5. Strategic advantages available based on the cultural moment
+
+Provide exactly 5 competitive insights in JSON format:
 {
   "insights": [
     {
-      "insight": "Competitors are missing authentic creator partnerships",
+      "insight": "Detailed competitive insight based on the analysis",
       "category": "opportunity",
-      "confidence": "high",
+      "confidence": "high", 
       "actionable": true,
       "timeframe": "immediate"
     }
   ]
 }
+
+Categories: opportunity, threat, trend, gap
+Confidence levels: high, medium, low
+Timeframes: immediate, short-term, long-term
 
 Return only valid JSON without markdown formatting.`;
     }
     
     return `${basePrompt}
 
-Provide competitive insights in JSON format:
+Analyze the competitive landscape and market opportunities by considering:
+1. How competitors are positioning in this space
+2. Market gaps and opportunities
+3. Emerging trends competitors might be missing
+4. Potential threats from new market entrants
+5. Strategic advantages available based on the content context
+
+Provide exactly 5 competitive insights in JSON format:
 {
   "insights": [
     {
-      "insight": "Competitors are missing authentic creator partnerships",
+      "insight": "Detailed competitive insight based on the content analysis",
       "category": "opportunity",
       "confidence": "high",
       "actionable": true,
@@ -112,6 +130,10 @@ Provide competitive insights in JSON format:
     }
   ]
 }
+
+Categories: opportunity, threat, trend, gap
+Confidence levels: high, medium, low  
+Timeframes: immediate, short-term, long-term
 
 Return only valid JSON without markdown formatting.`;
   }
@@ -119,18 +141,39 @@ Return only valid JSON without markdown formatting.`;
   private getFallbackInsights(): CompetitiveInsight[] {
     return [
       {
-        insight: "Market showing increased demand for authentic content partnerships",
+        insight: "Market showing increased demand for authentic content partnerships and creator collaborations",
         category: "trend",
         confidence: "medium",
         actionable: true,
         timeframe: "short-term"
       },
       {
-        insight: "Opportunity to differentiate through collaborative creator approaches",
-        category: "opportunity",
+        insight: "Opportunity to differentiate through data-driven content strategies while competitors rely on intuition",
+        category: "opportunity", 
         confidence: "high",
         actionable: true,
         timeframe: "immediate"
+      },
+      {
+        insight: "Competitors are slow to adapt to emerging cultural moments, creating windows for rapid response",
+        category: "gap",
+        confidence: "high",
+        actionable: true,
+        timeframe: "immediate"
+      },
+      {
+        insight: "Growing threat from AI-native companies that integrate automation into content strategy from the ground up",
+        category: "threat",
+        confidence: "medium",
+        actionable: true,
+        timeframe: "long-term"
+      },
+      {
+        insight: "Market opportunity in cross-platform content optimization as competitors focus on single-channel strategies",
+        category: "opportunity",
+        confidence: "high",
+        actionable: true,
+        timeframe: "short-term"
       }
     ];
   }

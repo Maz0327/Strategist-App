@@ -1586,13 +1586,13 @@ The analyzed signals provide a comprehensive view of current market trends and s
   // Competitive Intelligence Service - Load on demand
   app.post("/api/competitive-intelligence", requireAuth, async (req, res) => {
     try {
-      const { content, title } = req.body;
+      const { content, title, truthAnalysis } = req.body;
       
       if (!content) {
         return res.status(400).json({ error: 'Content is required' });
       }
       
-      const insights = await competitiveIntelligenceService.getCompetitiveInsights(content, title);
+      const insights = await competitiveIntelligenceService.getCompetitiveInsights(content, title, truthAnalysis);
       res.json({ insights });
       
     } catch (error: any) {
