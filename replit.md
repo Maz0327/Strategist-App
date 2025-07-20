@@ -427,11 +427,20 @@ Successfully resolved the YouTube video URL recognition issue in the main conten
 - Integrated existing video transcription capabilities into main analysis workflow
 - Added proper error handling and fallback mechanisms
 
+**Enhanced Video Platform Support:**
+- **YouTube**: Standard videos, Shorts, and youtu.be links
+- **LinkedIn**: Video posts, activity updates, and embedded content  
+- **Instagram**: Posts, Reels, TV, and Stories
+- **TikTok**: All video formats including mobile links (vm.tiktok.com, m.tiktok.com)
+- **Twitter/X**: Video tweets and embedded content
+- **Other Platforms**: Vimeo, Dailymotion, Twitch
+
 **User Experience Benefits:**
-- Users can now paste YouTube URLs directly into Signal Capture for full transcript analysis
+- Users can now paste video URLs from any supported platform into Signal Capture
+- Automatic platform detection and optimized transcription strategies
 - Video content appears with "[VIDEO]" prefix for easy identification
-- Complete strategic analysis now includes both video transcription and page content
-- No manual steps required - system automatically detects and processes video content
+- Complete strategic analysis includes both video transcription and page content
+- Chrome extension now recognizes video URLs for enhanced capture workflow
 
 ### Current System Status - July 18, 2025
 - **Performance**: System optimized and restored to 2-3 seconds for analysis (GPT-4o-mini with token limits)

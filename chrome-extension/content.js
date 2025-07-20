@@ -119,6 +119,9 @@ function detectContentType() {
   const url = window.location.href;
   const title = document.title.toLowerCase();
   
+  // Enhanced video detection for social media platforms
+  if (isVideoUrl(url)) return 'video';
+  
   if (url.includes('blog') || url.includes('article')) return 'article';
   if (url.includes('news')) return 'news';
   if (url.includes('research') || url.includes('study')) return 'research';
@@ -126,6 +129,45 @@ function detectContentType() {
   if (title.includes('podcast') || document.querySelector('audio')) return 'podcast';
   
   return 'webpage';
+}
+
+function isVideoUrl(url) {
+  const videoPatterns = [
+    // YouTube patterns
+    /youtube\.com\/watch/,
+    /youtube\.com\/shorts/,
+    /youtu\.be\//,
+    
+    // LinkedIn video patterns
+    /linkedin\.com\/.*\/video/,
+    /linkedin\.com\/posts\/.*activity/,
+    /linkedin\.com\/feed\/update\/urn:li:activity/,
+    /linkedin\.com\/embed\/feed\/update\/urn:li:ugcPost/,
+    
+    // Instagram video patterns
+    /instagram\.com\/(p|reel|tv)\//,
+    /instagram\.com\/stories\//,
+    /instagr\.am\/(p|reel|tv)\//,
+    
+    // TikTok video patterns
+    /tiktok\.com\/.*\/video/,
+    /tiktok\.com\/@.*\/video/,
+    /vm\.tiktok\.com\//,
+    /tiktok\.com\/t\//,
+    /m\.tiktok\.com\//,
+    
+    // Twitter/X video patterns
+    /twitter\.com\/.*\/status/,
+    /x\.com\/.*\/status/,
+    /t\.co\//,
+    
+    // Other video platforms
+    /vimeo\.com\//,
+    /dailymotion\.com\//,
+    /twitch\.tv\//
+  ];
+  
+  return videoPatterns.some(pattern => pattern.test(url));
 }
 
 function extractMainContent() {

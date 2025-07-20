@@ -22,20 +22,47 @@ class VideoTranscriptionService {
   // Detect video URLs that can be transcribed
   isVideoUrl(url: string): boolean {
     const videoPatterns = [
+      // YouTube patterns
       /youtube\.com\/watch/,
-      /youtube\.com\/shorts/,  // Added YouTube Shorts support
+      /youtube\.com\/shorts/,
       /youtu\.be\//,
+      
+      // LinkedIn video patterns - Enhanced detection
       /linkedin\.com\/.*\/video/,
-      /linkedin\.com\/posts\/.*activity/, // Added LinkedIn post support (may contain video)
-      /instagram\.com\/(p|reel)\//,
+      /linkedin\.com\/posts\/.*activity/,
+      /linkedin\.com\/feed\/update\/urn:li:activity/,
+      /linkedin\.com\/embed\/feed\/update\/urn:li:ugcPost/,
+      
+      // Instagram video patterns - Enhanced detection  
+      /instagram\.com\/(p|reel|tv)\//,
+      /instagram\.com\/stories\//,
+      /instagr\.am\/(p|reel|tv)\//,
+      
+      // TikTok video patterns - Enhanced detection
       /tiktok\.com\/.*\/video/,
+      /tiktok\.com\/@.*\/video/,
+      /vm\.tiktok\.com\//,
+      /tiktok\.com\/t\//,
+      /m\.tiktok\.com\//,
+      
+      // Twitter/X video patterns
       /twitter\.com\/.*\/status/,
       /x\.com\/.*\/status/,
-      /vimeo\.com\//
+      /t\.co\//,
+      
+      // Other video platforms
+      /vimeo\.com\//,
+      /dailymotion\.com\//,
+      /twitch\.tv\//
     ];
     
     const isVideo = videoPatterns.some(pattern => pattern.test(url));
-    debugLogger.info('Video URL detection', { url, isVideo, patterns: videoPatterns.map(p => p.toString()) });
+    debugLogger.info('Enhanced video URL detection', { 
+      url, 
+      isVideo, 
+      platform: this.detectPlatform(url),
+      matchedPattern: videoPatterns.find(pattern => pattern.test(url))?.toString()
+    });
     
     return isVideo;
   }
@@ -424,10 +451,12 @@ The system detected this as a video and attempted automatic transcription, but e
   private detectPlatform(url: string): string {
     if (url.includes('youtube.com') || url.includes('youtu.be')) return 'YouTube';
     if (url.includes('linkedin.com')) return 'LinkedIn';
-    if (url.includes('instagram.com')) return 'Instagram';
-    if (url.includes('tiktok.com')) return 'TikTok';
-    if (url.includes('twitter.com') || url.includes('x.com')) return 'Twitter/X';
+    if (url.includes('instagram.com') || url.includes('instagr.am')) return 'Instagram';
+    if (url.includes('tiktok.com') || url.includes('vm.tiktok.com')) return 'TikTok';
+    if (url.includes('twitter.com') || url.includes('x.com') || url.includes('t.co')) return 'Twitter/X';
     if (url.includes('vimeo.com')) return 'Vimeo';
+    if (url.includes('dailymotion.com')) return 'Dailymotion';
+    if (url.includes('twitch.tv')) return 'Twitch';
     return 'Unknown';
   }
 
