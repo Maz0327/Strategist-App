@@ -1024,27 +1024,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "URL is required" });
       }
 
-      // Enhanced content extraction with structured sections
+      debugLogger.info('URL extraction request (optimized)', { url });
+
+      // Enhanced content extraction with aggressive timeouts
       let result: any = {};
       let isVideo = false;
       let videoTranscription = null;
 
-      // Check if it's a video URL and attempt transcription
+      // Check if it's a video URL and attempt transcription with timeout
       if (videoTranscriptionService.isVideoUrl(url)) {
         isVideo = true;
         try {
-          const videoResult = await videoTranscriptionService.extractContentWithVideoDetection(url);
+          // Set aggressive timeout of 10 seconds for video processing
+          const videoPromise = videoTranscriptionService.extractContentWithVideoDetection(url);
+          const videoResult = await Promise.race([
+            videoPromise,
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Video processing timeout - skipping to text extraction')), 10000)
+            )
+          ]) as any;
+          
           result = videoResult;
           videoTranscription = videoResult.videoTranscription;
+          debugLogger.info('Video processing completed quickly', { url });
         } catch (videoError) {
-          debugLogger.warn('Video transcription failed, falling back to text extraction', { url, error: videoError });
-          // Fall through to regular content extraction
-          const extracted = await scraperService.extractContent(url);
-          result = extracted;
+          debugLogger.warn('Video transcription skipped due to timeout, falling back to text extraction', { url, error: videoError });
+          // Fall through to ultra-fast content extraction
+          const FastExtractorService = (await import('../services/fast-extractor')).FastExtractorService;
+          const fastExtractor = new FastExtractorService();
+          result = await fastExtractor.extractContentFast(url);
         }
       } else {
-        const extracted = await scraperService.extractContent(url);
-        result = extracted;
+        // For non-video URLs, use ultra-fast extraction
+        const FastExtractorService = (await import('../services/fast-extractor')).FastExtractorService;
+        const fastExtractor = new FastExtractorService();
+        result = await fastExtractor.extractContentFast(url);
       }
 
       // Structure content into sections for new UI

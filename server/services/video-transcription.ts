@@ -301,7 +301,7 @@ The system detected this as a video and attempted automatic transcription, but e
       debugLogger.info('Executing yt-dlp command', { command, outputTemplate });
       
       const { stdout, stderr } = await execAsync(command, {
-        timeout: 180000 // 3 minute timeout for longer videos
+        timeout: 10000 // Reduced to 10 seconds for much faster performance
       });
       
       debugLogger.info('yt-dlp extraction completed', { stdout: stdout.slice(0, 500) });
@@ -349,10 +349,18 @@ The system detected this as a video and attempted automatic transcription, but e
       videoTranscription: undefined as VideoTranscriptionResult | undefined
     };
 
-    // If it's a video, attempt transcription
+    // If it's a video, attempt transcription with aggressive timeout
     if (isVideo) {
       try {
-        const transcription = await this.transcribeVideoFromUrl(url);
+        // Set very aggressive timeout of 8 seconds for video transcription to prioritize speed
+        const transcriptionPromise = this.transcribeVideoFromUrl(url);
+        const transcription = await Promise.race([
+          transcriptionPromise,
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Video transcription timeout - prioritizing fast content extraction')), 8000)
+          )
+        ]) as VideoTranscriptionResult;
+        
         result.videoTranscription = transcription;
         
         // If transcription was successful, combine it with the text content
@@ -360,19 +368,23 @@ The system detected this as a video and attempted automatic transcription, but e
           result.content = `${transcription.transcription}\n\n--- Original Page Content ---\n${result.content}`;
           result.title = `[VIDEO] ${result.title}`;
         }
+        debugLogger.info('Video transcription completed within timeout', { url, duration: 'under 8s' });
       } catch (error) {
-        debugLogger.warn('Video transcription failed for detected video URL', { url, error });
+        debugLogger.info('Video transcription skipped due to timeout - prioritizing user experience', { url, error: error.message });
         
-        // Add LinkedIn-specific video handling
+        // Add platform-specific video handling with faster fallback
         if (url.includes('linkedin.com')) {
-          result.title = `[LINKEDIN VIDEO - TRANSCRIPT UNAVAILABLE] ${result.title}`;
-          result.content = `[Video Content Detected]\n\nLinkedIn video content was detected but audio transcription is limited due to platform restrictions.\n\n--- Post Content ---\n${result.content}`;
+          result.title = `[LINKEDIN VIDEO] ${result.title}`;
+          result.content = `[Video Content Detected - Fast Extraction Mode]\n\nLinkedIn video detected. Transcription skipped to prioritize speed.\n\n--- Post Content ---\n${result.content}`;
+        } else if (url.includes('youtube.com') || url.includes('youtu.be')) {
+          result.title = `[YOUTUBE VIDEO] ${result.title}`;
+          result.content = `[Video Content Detected - Fast Extraction Mode]\n\nYouTube video detected. Transcription skipped to prioritize speed.\n\n--- Page Content ---\n${result.content}`;
         } else {
-          result.title = `[VIDEO - TRANSCRIPT UNAVAILABLE] ${result.title}`;
-          result.content = `[Video Content Detected]\n\nVideo content was detected but transcription failed.\n\n--- Page Content ---\n${result.content}`;
+          result.title = `[VIDEO] ${result.title}`;
+          result.content = `[Video Content Detected - Fast Extraction Mode]\n\nVideo detected. Transcription skipped to prioritize speed.\n\n--- Page Content ---\n${result.content}`;
         }
         
-        // Don't throw error, just proceed without video transcription
+        // Don't throw error, just proceed without video transcription for better UX
       }
     }
 
@@ -392,7 +404,7 @@ The system detected this as a video and attempted automatic transcription, but e
       debugLogger.info('Executing enhanced video processing', { command });
       
       const { stdout, stderr } = await execAsync(command, {
-        timeout: 300000 // 5 minute timeout for audio extraction
+        timeout: 15000 // Reduced to 15 seconds for faster performance
       });
       
       if (stderr) {

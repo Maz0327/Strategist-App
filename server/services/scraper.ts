@@ -24,10 +24,11 @@ export class ScraperService {
   async extractContent(url: string): Promise<ExtractedContent> {
     try {
       const response = await axios.get(url, {
-        timeout: 10000,
+        timeout: 5000, // Reduced from 10 seconds to 5 seconds
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
+        },
+        maxRedirects: 3 // Limit redirects to speed up requests
       });
 
       const $ = cheerio.load(response.data);
