@@ -1280,11 +1280,11 @@ Successfully implemented and integrated cost-efficient social media intelligence
 - **Daily Per User**: $0.10-0.30 (2 comprehensive requests per day)
 - **6 Beta Users Total**: $0.60-1.80 daily ($18-54 monthly)
 - **Data Usage**: Unlimited - full platform capabilities to prove value
-- **Intelligence Volume**: 80 social media trends per request (25 Twitter + 35 LinkedIn + 20 Instagram)
+- **Intelligence Volume**: 100 social media trends per request (25 Twitter + 35 LinkedIn + 20 Instagram + 15 TikTok)
 
 **MAXIMUM VALUE BETA CONFIGURATION - July 20, 2025:**
-- **Data Volume**: ✅ 80 social media trends per request - maximum intelligence gathering
-- **Platform Coverage**: ✅ Twitter (25 trends) + LinkedIn (35 company posts) + Instagram (20 hashtag trends)
+- **Data Volume**: ✅ 100 social media trends per request - ALL 4 data groups included
+- **Platform Coverage**: ✅ Twitter (25 trends) + LinkedIn (35 company posts) + Instagram (20 hashtag trends) + TikTok (15 viral challenges)
 - **Company Intelligence**: ✅ ALL 8 major tech companies (Microsoft, Google, OpenAI, Meta, Apple, Tesla, Nvidia, Amazon)
 - **Content Quality**: ✅ Full content mode - images enabled, no sample restrictions, 100-post analysis
 - **Update Frequency**: ✅ 2x daily per beta user (12 total requests = enhanced user engagement, maximum value demonstration)

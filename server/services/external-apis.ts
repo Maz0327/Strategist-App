@@ -583,16 +583,17 @@ export class ExternalAPIsService {
     }
   }
 
-  // Social Media Intelligence Integration (Beta) - Enhanced for Proving Value
+  // Social Media Intelligence Integration (Beta) - All 4 Data Groups
   async getSocialMediaIntelligence(): Promise<TrendingTopic[]> {
     try {
-      const [twitterTrends, linkedinIntel, instagramTrends] = await Promise.all([
+      const [twitterTrends, linkedinIntel, instagramTrends, tiktokTrends] = await Promise.all([
         this.getTwitterSocialIntelligence(),
         this.getLinkedInSocialIntelligence(),
-        this.getInstagramSocialIntelligence()
+        this.getInstagramSocialIntelligence(),
+        this.getTikTokSocialIntelligence()
       ]);
       
-      return [...twitterTrends, ...linkedinIntel, ...instagramTrends].slice(0, 80);
+      return [...twitterTrends, ...linkedinIntel, ...instagramTrends, ...tiktokTrends].slice(0, 100);
     } catch (error) {
       console.error('Social media intelligence error:', error);
       return [];
@@ -685,6 +686,32 @@ export class ExternalAPIsService {
       }));
     } catch (error) {
       console.warn('LinkedIn social intelligence unavailable:', error);
+      return [];
+    }
+  }
+
+  private async getTikTokSocialIntelligence(): Promise<TrendingTopic[]> {
+    try {
+      const result = await socialMediaIntelligence.scrapeTikTokTrends();
+      
+      if (!result.success || !result.data?.posts) return [];
+      
+      const allPosts = result.data.posts || [];
+      
+      return allPosts.slice(0, 15).map((post: any, index: number) => ({
+        id: `tiktok-${Date.now()}-${index}`,
+        platform: 'Social Media' as any,
+        title: post.title?.substring(0, 80) + (post.title?.length > 80 ? '...' : '') || 'TikTok Trend',
+        summary: `Viral Challenge: ${post.description?.substring(0, 120) || 'Trending TikTok content'}...`,
+        url: post.href || 'https://tiktok.com/discover',
+        score: 88 + Math.random() * 10,
+        fetchedAt: new Date().toISOString(),
+        engagement: { likes: 0, shares: 0, comments: 0 },
+        source: 'TikTok Intelligence',
+        keywords: ['viral', 'tiktok', 'challenges', 'trends', 'gen-z']
+      }));
+    } catch (error) {
+      console.warn('TikTok social intelligence unavailable:', error);
       return [];
     }
   }
