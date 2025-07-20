@@ -411,6 +411,28 @@ Successfully restructured the main navigation according to user specifications:
 - Added chevron arrows with smooth rotation animations
 - Implemented admin permission checks for navigation visibility
 
+### YouTube Video URL Analysis Fix - July 20, 2025
+
+#### ✅ **Critical YouTube Recognition Issue Fixed - Production Ready**:
+Successfully resolved the YouTube video URL recognition issue in the main content analysis pipeline:
+
+**Root Cause Identified:**
+- The `/api/analyze` endpoint was bypassing video detection logic
+- YouTube URLs were being processed as regular web pages instead of video content
+- Video transcription system existed but wasn't integrated into main analysis flow
+
+**Technical Fix Implemented:**
+- Enhanced `/api/analyze` endpoint with video URL detection using `videoTranscriptionService.isVideoUrl()`
+- Added video transcription attempt before fallback to regular content extraction
+- Integrated existing video transcription capabilities into main analysis workflow
+- Added proper error handling and fallback mechanisms
+
+**User Experience Benefits:**
+- Users can now paste YouTube URLs directly into Signal Capture for full transcript analysis
+- Video content appears with "[VIDEO]" prefix for easy identification
+- Complete strategic analysis now includes both video transcription and page content
+- No manual steps required - system automatically detects and processes video content
+
 ### Current System Status - July 18, 2025
 - **Performance**: System optimized and restored to 2-3 seconds for analysis (GPT-4o-mini with token limits)
 - **Database**: 14 tables operational with complete schema (users, signals, sources, feed_items, user_feed_sources, user_topic_profiles, signal_sources, user_analytics, user_feedback, feature_usage, system_performance, ab_test_results, api_calls, external_api_calls)

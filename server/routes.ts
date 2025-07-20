@@ -513,9 +513,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (data.url) {
         try {
-          extractedContent = await scraperService.extractContent(data.url);
+          // Check if it's a video URL and attempt transcription first
+          if (videoTranscriptionService.isVideoUrl(data.url)) {
+            debugLogger.info('Video URL detected, attempting transcription', { url: data.url }, req);
+            try {
+              const videoResult = await videoTranscriptionService.extractContentWithVideoDetection(data.url);
+              extractedContent = {
+                title: videoResult.title,
+                content: videoResult.content,
+                visualAssets: [], // Videos don't have visual assets in the same way
+                metadata: { 
+                  isVideo: true,
+                  hasVideoTranscription: !!videoResult.videoTranscription?.transcription
+                }
+              };
+              debugLogger.info('Video transcription successful', { 
+                hasTranscript: !!videoResult.videoTranscription?.transcription,
+                contentLength: videoResult.content.length
+              }, req);
+            } catch (videoError) {
+              debugLogger.warn('Video transcription failed, falling back to regular extraction', { 
+                url: data.url, 
+                error: videoError.message 
+              }, req);
+              // Fall through to regular content extraction
+              extractedContent = await scraperService.extractContent(data.url);
+            }
+          } else {
+            // Regular content extraction for non-video URLs
+            extractedContent = await scraperService.extractContent(data.url);
+          }
           
-          // Perform visual analysis if visual assets found
+          // Perform visual analysis if visual assets found (skip for videos)
           if (extractedContent.visualAssets && extractedContent.visualAssets.length > 0) {
             visualAnalysis = await visualAnalysisService.analyzeVisualAssets(
               extractedContent.visualAssets,
@@ -524,7 +553,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             );
           }
         } catch (error) {
-          debugLogger.error('Visual analysis failed, continuing with text analysis', error, req);
+          debugLogger.error('Content extraction failed, continuing with provided content only', error, req);
         }
       }
       
