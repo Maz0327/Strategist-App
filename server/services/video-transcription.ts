@@ -108,8 +108,8 @@ class VideoTranscriptionService {
         debugLogger.warn('Enhanced video processing failed, trying fallback methods', { url, error: error.message });
       }
 
-      // STRATEGY 2: Try yt-dlp with comprehensive proxy rotation
-      debugLogger.info('Attempting video-to-audio extraction with proxy rotation service');
+      // STRATEGY 2: Try Bright Data Browser API for advanced bypass
+      debugLogger.info('Attempting video extraction with Bright Data Browser API');
       
       try {
         // Create temp directory
@@ -120,16 +120,16 @@ class VideoTranscriptionService {
         
         const tempAudioPath = path.join(tempDir, `video_audio_${Date.now()}.mp3`);
         
-        // Use comprehensive proxy rotation service for automated IP changing
+        // Use Bright Data Browser API for advanced bot detection bypass
         const outputTemplate = tempAudioPath.replace('.mp3', '.%(ext)s');
         
-        const { executeYtDlpWithRotation } = await import('./proxy-rotation-service');
-        const result = await executeYtDlpWithRotation(url, outputTemplate, 3);
+        const { browserAPIService } = await import('./browser-api-service');
+        const result = await browserAPIService.extractVideoWithBrowserAPI(url, outputTemplate);
         
         if (result.success) {
-          debugLogger.info('Video extraction successful with proxy rotation', { 
-            retriesUsed: result.retriesUsed,
-            outputFile: outputTemplate
+          debugLogger.info('Video extraction successful with Browser API', { 
+            outputFile: outputTemplate,
+            browserAPI: 'Bright Data'
           });
           
           // Find the extracted audio file
@@ -158,10 +158,10 @@ class VideoTranscriptionService {
               debugLogger.warn('Failed to cleanup temp audio file', { path: audioFilePath });
             }
             
-            debugLogger.info('Video transcription successful with automated IP rotation', { 
+            debugLogger.info('Video transcription successful with Browser API', { 
               url, 
               duration: transcription.duration,
-              retriesUsed: result.retriesUsed
+              method: 'Bright Data Browser API'
             });
             
             return {
@@ -175,7 +175,42 @@ class VideoTranscriptionService {
             throw new Error('No audio file extracted despite successful yt-dlp execution');
           }
         } else {
-          throw new Error(`Automated IP rotation failed: ${result.error} (${result.retriesUsed} proxy rotations attempted)`);
+          // Fallback to proxy rotation if Browser API fails
+          debugLogger.warn('Browser API failed, falling back to proxy rotation', { error: result.error });
+          
+          const { executeYtDlpWithRotation } = await import('./proxy-rotation-service');
+          const fallbackResult = await executeYtDlpWithRotation(url, outputTemplate, 2);
+          
+          if (fallbackResult.success) {
+            debugLogger.info('Fallback proxy rotation successful');
+            // Process fallback result same as Browser API success
+            const extractedFiles = fs.readdirSync(tempDir).filter(file => 
+              file.endsWith('.mp3') || file.endsWith('.m4a') || file.endsWith('.wav')
+            );
+            
+            if (extractedFiles.length > 0) {
+              const audioFilePath = path.join(tempDir, extractedFiles[0]);
+              const audioBuffer = fs.readFileSync(audioFilePath);
+              
+              const transcription = await whisperService.transcribeAudio(
+                audioBuffer,
+                `video_${Date.now()}.mp3`,
+                { language: undefined, prompt: 'Video content transcription' }
+              );
+              
+              try { fs.unlinkSync(audioFilePath); } catch {}
+              
+              return {
+                transcription: transcription.text,
+                duration: transcription.duration,
+                language: transcription.language,
+                confidence: transcription.confidence,
+                videoMetadata: videoMetadata as any
+              };
+            }
+          }
+          
+          throw new Error(`Both Browser API and proxy rotation failed: ${result.error}`);
         }
         
       } catch (extractionError) {
