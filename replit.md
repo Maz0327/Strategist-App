@@ -1275,20 +1275,20 @@ Successfully implemented and integrated cost-efficient social media intelligence
 - `POST /api/social/instagram/hashtags` - Instagram hashtag intelligence
 - `GET /api/social/capabilities` - System capabilities and cost controls
 
-**Enhanced Beta Cost Structure (3 checks/day per user):**
-- **Per Request**: $0.02-0.08 (increased data limits for proving value)
-- **Daily Per User**: $0.06-0.24 (3 requests × enhanced data)
-- **10 Beta Users**: $0.60-2.40 daily ($18-72 monthly)
-- **50 Beta Users**: $3-12 daily ($90-360 monthly)
-- **Data Usage**: 2MB per request for comprehensive intelligence vs. 500KB previous limit
+**BETA STRATEGY: 6 Users, 1 Pull Per Day, No Data Limits**
+- **Per Request**: $0.05-0.15 (no data restrictions, maximum intelligence value)
+- **Daily Per User**: $0.05-0.15 (1 comprehensive request per day)
+- **6 Beta Users Total**: $0.30-0.90 daily ($9-27 monthly)
+- **Data Usage**: Unlimited - full platform capabilities to prove value
+- **Intelligence Volume**: 80 social media trends per request (25 Twitter + 35 LinkedIn + 20 Instagram)
 
-**Enhanced Beta Integration Status - July 20, 2025:**
-- **Data Volume**: ✅ Increased to 40 social media trends per request (vs. 12 previous)
-- **Platform Coverage**: ✅ Twitter (15 trends) + LinkedIn (25 company posts) + Instagram (10 hashtag trends)
-- **Company Intelligence**: ✅ 4-6 major tech companies (Microsoft, Google, OpenAI, Meta, Apple, Tesla, Nvidia, Amazon)
-- **Hashtag Coverage**: ✅ 8 business hashtags (#startup, #entrepreneur, #ai, #saas, #innovation, #business, #marketing, #growth)
-- **Update Frequency**: ✅ Real-time on-demand (3x daily for beta users = comprehensive market intelligence)
-- **Data Quality**: ✅ Enhanced selectors for richer content extraction and better strategic insights
+**MAXIMUM VALUE BETA CONFIGURATION - July 20, 2025:**
+- **Data Volume**: ✅ 80 social media trends per request - maximum intelligence gathering
+- **Platform Coverage**: ✅ Twitter (25 trends) + LinkedIn (35 company posts) + Instagram (20 hashtag trends)
+- **Company Intelligence**: ✅ ALL 8 major tech companies (Microsoft, Google, OpenAI, Meta, Apple, Tesla, Nvidia, Amazon)
+- **Content Quality**: ✅ Full content mode - images enabled, no sample restrictions, 100-post analysis
+- **Update Frequency**: ✅ 1x daily per beta user (6 total users = controlled cost, maximum value demonstration)
+- **Data Restrictions**: ✅ REMOVED - no KB limits, no content restrictions, no sample size limits
 
 **Strategic Value:**
 - **Competitive Intelligence**: Monitor competitor social media strategies in real-time via trending tabs

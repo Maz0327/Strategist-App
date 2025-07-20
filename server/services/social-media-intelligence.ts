@@ -19,10 +19,10 @@ interface SocialMediaConfig {
 
 class SocialMediaIntelligence {
   private config: SocialMediaConfig = {
-    maxDataPerRequest: 2000, // Increased to 2MB for richer data
-    enableImageSkipping: true,
-    textOnlyMode: true,
-    sampleSize: 50 // Increased to top 50 posts for better intelligence
+    maxDataPerRequest: 0, // No data limit for 6 beta testers
+    enableImageSkipping: false, // Allow images for richer intelligence
+    textOnlyMode: false, // Full content mode for comprehensive data
+    sampleSize: 100 // Maximum data collection for proving value
   };
 
   constructor() {

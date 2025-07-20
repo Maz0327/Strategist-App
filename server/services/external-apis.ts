@@ -592,7 +592,7 @@ export class ExternalAPIsService {
         this.getInstagramSocialIntelligence()
       ]);
       
-      return [...twitterTrends, ...linkedinIntel, ...instagramTrends].slice(0, 40);
+      return [...twitterTrends, ...linkedinIntel, ...instagramTrends].slice(0, 80);
     } catch (error) {
       console.error('Social media intelligence error:', error);
       return [];
@@ -610,7 +610,7 @@ export class ExternalAPIsService {
         hashtagResult.success ? hashtagResult.data?.posts || [] : []
       );
       
-      return allPosts.slice(0, 10).map((post: any, index: number) => ({
+      return allPosts.slice(0, 20).map((post: any, index: number) => ({
         id: `instagram-${Date.now()}-${index}`,
         platform: 'Social Media' as any,
         title: post.text?.substring(0, 80) + (post.text?.length > 80 ? '...' : '') || 'Instagram Trend',
@@ -633,7 +633,7 @@ export class ExternalAPIsService {
       const result = await socialMediaIntelligence.scrapeTwitterTrends('worldwide');
       if (!result.success || !result.data?.posts) return [];
       
-      return result.data.posts.slice(0, 15).map((post: any, index: number) => ({
+      return result.data.posts.slice(0, 25).map((post: any, index: number) => ({
         id: `twitter-${Date.now()}-${index}`,
         platform: 'Social Media' as any,
         title: post.text.substring(0, 80) + (post.text.length > 80 ? '...' : ''),
@@ -657,11 +657,11 @@ export class ExternalAPIsService {
       const companies = ['microsoft', 'google', 'openai', 'meta', 'apple', 'tesla', 'nvidia', 'amazon'];
       const companyResults = [];
       
-      for (const company of companies.slice(0, 4)) { // Increased to 4 companies for richer intelligence
+      for (const company of companies.slice(0, 8)) { // Full company coverage for 6 beta testers
         try {
           const result = await socialMediaIntelligence.scrapeLinkedInCompany(company);
           if (result.success && result.data?.posts) {
-            companyResults.push(...result.data.posts.slice(0, 8));
+            companyResults.push(...result.data.posts.slice(0, 15));
           }
         } catch (error) {
           continue; // Skip failed companies
