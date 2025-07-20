@@ -660,7 +660,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
 
           <TabsContent value="url" className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="url-field">Website URL</Label>
+              <Label htmlFor="url-field" className="text-sm font-medium">Website URL</Label>
               <div className="flex flex-col sm:flex-row gap-2">
                 <Input
                   id="url-field"
@@ -668,14 +668,20 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
                   placeholder="https://example.com/article"
                   {...form.register("url")}
                   disabled={isLoading}
-                  className="flex-1"
+                  className="flex-1 text-sm"
                 />
                 <Button 
                   onClick={handleExtractUrl} 
                   disabled={isLoading || !form.watch("url")}
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto text-sm"
+                  size="default"
                 >
-                  {isLoading ? <LoadingSpinner size="sm" /> : (
+                  {isLoading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Extracting...</span>
+                    </div>
+                  ) : (
                     <>
                       <Download size={16} className="mr-2" />
                       Extract
@@ -685,17 +691,17 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
               </div>
             </div>
             
-            <div className="bg-gray-50 rounded-md p-4">
-              <p className="text-sm text-gray-600 flex items-center gap-2">
-                <Info size={16} />
-                We'll extract and analyze the main content from the webpage automatically.
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-md p-3 sm:p-4">
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 flex items-start sm:items-center gap-2">
+                <Info size={14} className="sm:w-4 sm:h-4 mt-0.5 sm:mt-0 flex-shrink-0" />
+                <span>We'll extract and analyze the main content from the webpage automatically.</span>
               </p>
             </div>
             
             {(form.watch("content") || extractedSections) && (
               <div className="space-y-4">
                 {/* Toggle between old and new display */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <Label>Extracted Content</Label>
                   {extractedSections && (
                     <Button
@@ -703,7 +709,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
                       variant="ghost"
                       size="sm"
                       onClick={() => setUseSectionedDisplay(!useSectionedDisplay)}
-                      className="text-xs"
+                      className="text-xs w-fit"
                     >
                       <Settings className="h-3 w-3 mr-1" />
                       {useSectionedDisplay ? 'Legacy View' : 'Sectioned View'}
@@ -719,7 +725,16 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
                       form.setValue("content", content);
                       setCharCount(content.length);
                     }}
+                    isLoading={isLoading}
                   />
+                ) : isLoading ? (
+                  <div className="space-y-4">
+                    <div className="animate-pulse bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 bg-[length:200%_100%] rounded-md h-[120px]" />
+                    <div className="flex items-center justify-center gap-2 text-blue-600">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                      <span className="text-sm">Extracting content...</span>
+                    </div>
+                  </div>
                 ) : (
                   <div className="space-y-2">
                     <Textarea
