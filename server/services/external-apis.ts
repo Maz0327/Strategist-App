@@ -583,17 +583,47 @@ export class ExternalAPIsService {
     }
   }
 
-  // Social Media Intelligence Integration (Beta)
+  // Social Media Intelligence Integration (Beta) - Enhanced for Proving Value
   async getSocialMediaIntelligence(): Promise<TrendingTopic[]> {
     try {
-      const [twitterTrends, linkedinIntel] = await Promise.all([
+      const [twitterTrends, linkedinIntel, instagramTrends] = await Promise.all([
         this.getTwitterSocialIntelligence(),
-        this.getLinkedInSocialIntelligence()
+        this.getLinkedInSocialIntelligence(),
+        this.getInstagramSocialIntelligence()
       ]);
       
-      return [...twitterTrends, ...linkedinIntel].slice(0, 12);
+      return [...twitterTrends, ...linkedinIntel, ...instagramTrends].slice(0, 40);
     } catch (error) {
       console.error('Social media intelligence error:', error);
+      return [];
+    }
+  }
+
+  private async getInstagramSocialIntelligence(): Promise<TrendingTopic[]> {
+    try {
+      const businessHashtags = ['startup', 'entrepreneur', 'ai', 'saas', 'innovation'];
+      const result = await socialMediaIntelligence.scrapeInstagramHashtags(businessHashtags);
+      
+      if (!result || !Array.isArray(result)) return [];
+      
+      const allPosts = result.flatMap(hashtagResult => 
+        hashtagResult.success ? hashtagResult.data?.posts || [] : []
+      );
+      
+      return allPosts.slice(0, 10).map((post: any, index: number) => ({
+        id: `instagram-${Date.now()}-${index}`,
+        platform: 'Social Media' as any,
+        title: post.text?.substring(0, 80) + (post.text?.length > 80 ? '...' : '') || 'Instagram Trend',
+        summary: `Visual Trend: ${post.text?.substring(0, 120) || 'Trending hashtag content'}...`,
+        url: post.href || 'https://instagram.com',
+        score: 80 + Math.random() * 15,
+        fetchedAt: new Date().toISOString(),
+        engagement: { likes: 0, shares: 0, comments: 0 },
+        source: 'Instagram Intelligence',
+        keywords: ['visual', 'trends', 'instagram', 'social']
+      }));
+    } catch (error) {
+      console.warn('Instagram social intelligence unavailable:', error);
       return [];
     }
   }
@@ -603,7 +633,7 @@ export class ExternalAPIsService {
       const result = await socialMediaIntelligence.scrapeTwitterTrends('worldwide');
       if (!result.success || !result.data?.posts) return [];
       
-      return result.data.posts.slice(0, 6).map((post: any, index: number) => ({
+      return result.data.posts.slice(0, 15).map((post: any, index: number) => ({
         id: `twitter-${Date.now()}-${index}`,
         platform: 'Social Media' as any,
         title: post.text.substring(0, 80) + (post.text.length > 80 ? '...' : ''),
@@ -623,15 +653,15 @@ export class ExternalAPIsService {
 
   private async getLinkedInSocialIntelligence(): Promise<TrendingTopic[]> {
     try {
-      // Sample companies for intelligence gathering
-      const companies = ['microsoft', 'google', 'openai', 'meta'];
+      // Expanded companies for comprehensive intelligence gathering
+      const companies = ['microsoft', 'google', 'openai', 'meta', 'apple', 'tesla', 'nvidia', 'amazon'];
       const companyResults = [];
       
-      for (const company of companies.slice(0, 2)) { // Limit to 2 companies for cost control
+      for (const company of companies.slice(0, 4)) { // Increased to 4 companies for richer intelligence
         try {
           const result = await socialMediaIntelligence.scrapeLinkedInCompany(company);
           if (result.success && result.data?.posts) {
-            companyResults.push(...result.data.posts.slice(0, 3));
+            companyResults.push(...result.data.posts.slice(0, 8));
           }
         } catch (error) {
           continue; // Skip failed companies

@@ -19,14 +19,76 @@ interface SocialMediaConfig {
 
 class SocialMediaIntelligence {
   private config: SocialMediaConfig = {
-    maxDataPerRequest: 500, // 500KB limit per request
+    maxDataPerRequest: 2000, // Increased to 2MB for richer data
     enableImageSkipping: true,
     textOnlyMode: true,
-    sampleSize: 20 // Analyze top 20 posts only
+    sampleSize: 50 // Increased to top 50 posts for better intelligence
   };
 
   constructor() {
-    debugLogger.info('Social Media Intelligence initialized with cost controls');
+    debugLogger.info('Social Media Intelligence initialized for beta testing with enhanced data collection');
+  }
+
+  // Enhanced Twitter Intelligence with Multiple Data Points
+  async scrapeTwitterEnhanced(): Promise<any> {
+    debugLogger.info('Enhanced Twitter intelligence gathering');
+    
+    const twitterSources = [
+      'https://twitter.com/explore/tabs/trending',
+      'https://twitter.com/search?q=%23startup&src=trend_click',
+      'https://twitter.com/search?q=%23ai&src=trend_click',
+      'https://twitter.com/search?q=%23business&src=trend_click'
+    ];
+
+    const results = [];
+    for (const url of twitterSources) {
+      try {
+        const result = await this.executeSocialScraping('twitter_enhanced', url, {
+          selectors: [
+            '[data-testid="trend"]',
+            '[data-testid="tweet"]',
+            '[data-testid="tweetText"]',
+            '[aria-label*="like"]',
+            '[aria-label*="retweet"]'
+          ],
+          dataType: 'enhanced_twitter_intel',
+          platform: 'Twitter'
+        });
+        results.push(result);
+      } catch (error) {
+        continue;
+      }
+    }
+    
+    return results;
+  }
+
+  // LinkedIn Enhanced Company Intelligence
+  async scrapeLinkedInEnhanced(): Promise<any> {
+    debugLogger.info('Enhanced LinkedIn intelligence gathering');
+    
+    // High-value tech companies for comprehensive intelligence
+    const techCompanies = [
+      'microsoft', 'google', 'openai', 'meta', 'apple', 'tesla', 
+      'nvidia', 'amazon', 'salesforce', 'adobe', 'netflix', 'uber'
+    ];
+
+    const results = [];
+    for (const company of techCompanies.slice(0, 6)) { // 6 companies for rich data
+      try {
+        const result = await this.scrapeLinkedInCompany(company);
+        if (result.success) {
+          results.push(result);
+        }
+      } catch (error) {
+        continue;
+      }
+      
+      // Minimal delay for efficiency
+      await new Promise(resolve => setTimeout(resolve, 1500));
+    }
+    
+    return results;
   }
 
   // LinkedIn Company Intelligence (Text-Only, High Value)
@@ -73,15 +135,19 @@ class SocialMediaIntelligence {
     });
   }
 
-  // Instagram Hashtag Intelligence (Text-Only Mode)
+  // Instagram Hashtag Intelligence (Enhanced Coverage)
   async scrapeInstagramHashtags(hashtags: string[]): Promise<any> {
     debugLogger.info('Scraping Instagram hashtag intelligence', { 
       hashtags,
-      mode: 'text-metadata-only'
+      mode: 'enhanced-coverage'
     });
 
+    // Expanded hashtag coverage for comprehensive trend detection
+    const businessHashtags = ['startup', 'entrepreneur', 'innovation', 'ai', 'saas', 'business', 'marketing', 'growth'];
+    const allHashtags = [...hashtags, ...businessHashtags].slice(0, 8); // Increased to 8 hashtags
+
     const results = [];
-    for (const hashtag of hashtags.slice(0, 3)) { // Limit to 3 hashtags
+    for (const hashtag of allHashtags) {
       const instagramUrl = `https://www.instagram.com/explore/tags/${hashtag}/`;
       
       const result = await this.executeSocialScraping('instagram_hashtag', instagramUrl, {
@@ -89,6 +155,8 @@ class SocialMediaIntelligence {
           '._ac7v._aang', // Post captions
           '._aacl._aaco._aacw._aacx._aada._aade', // Engagement metrics
           '._ab8w._ab94._ab99._ab9f._ab9m._ab9p._abcm', // Hashtag info
+          'article', // Full post content
+          'span[title]' // Engagement counts
         ],
         dataType: 'hashtag_analysis',
         platform: 'Instagram',
@@ -97,8 +165,8 @@ class SocialMediaIntelligence {
       
       results.push(result);
       
-      // Rate limiting between hashtags
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Reduced rate limiting for faster data collection
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
     
     return results;

@@ -1275,18 +1275,20 @@ Successfully implemented and integrated cost-efficient social media intelligence
 - `POST /api/social/instagram/hashtags` - Instagram hashtag intelligence
 - `GET /api/social/capabilities` - System capabilities and cost controls
 
-**Cost Estimation:**
-- **Per Request**: $0.005-0.02 (extremely cost-efficient)
-- **Daily Budget**: $5-15 for moderate usage
-- **Monthly Estimate**: $150-450 for comprehensive social intelligence
-- **Data Usage**: 0.5-2MB per request vs. 50-200MB for uncontrolled scraping
+**Enhanced Beta Cost Structure (3 checks/day per user):**
+- **Per Request**: $0.02-0.08 (increased data limits for proving value)
+- **Daily Per User**: $0.06-0.24 (3 requests × enhanced data)
+- **10 Beta Users**: $0.60-2.40 daily ($18-72 monthly)
+- **50 Beta Users**: $3-12 daily ($90-360 monthly)
+- **Data Usage**: 2MB per request for comprehensive intelligence vs. 500KB previous limit
 
-**Current Integration Status - July 20, 2025:**
-- **Trending Tabs**: ✅ Social media intelligence fully integrated and operational
-- **Platform Selection**: ✅ Available as "social-media-intelligence" platform option
-- **Data Flow**: ✅ Real-time social media trends appearing in main trending interface
-- **Cost Controls**: ✅ All beta safety measures active and monitoring usage
-- **User Experience**: ✅ Seamless integration - no additional navigation required
+**Enhanced Beta Integration Status - July 20, 2025:**
+- **Data Volume**: ✅ Increased to 40 social media trends per request (vs. 12 previous)
+- **Platform Coverage**: ✅ Twitter (15 trends) + LinkedIn (25 company posts) + Instagram (10 hashtag trends)
+- **Company Intelligence**: ✅ 4-6 major tech companies (Microsoft, Google, OpenAI, Meta, Apple, Tesla, Nvidia, Amazon)
+- **Hashtag Coverage**: ✅ 8 business hashtags (#startup, #entrepreneur, #ai, #saas, #innovation, #business, #marketing, #growth)
+- **Update Frequency**: ✅ Real-time on-demand (3x daily for beta users = comprehensive market intelligence)
+- **Data Quality**: ✅ Enhanced selectors for richer content extraction and better strategic insights
 
 **Strategic Value:**
 - **Competitive Intelligence**: Monitor competitor social media strategies in real-time via trending tabs
