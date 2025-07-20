@@ -12,9 +12,10 @@ import { useToast } from "@/hooks/use-toast";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { apiRequest } from "@/lib/queryClient";
 import { analyzeContentSchema, type AnalyzeContentData } from "@shared/schema";
-import { Edit, Link, Highlighter, Brain, Download, Info, Sparkles, Zap, Search, Mic } from "lucide-react";
+import { Edit, Link, Highlighter, Brain, Download, Info, Sparkles, Zap, Search, Mic, Settings } from "lucide-react";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
+import { SectionedContentDisplay } from "@/components/sectioned-content-display";
 
 interface ContentInputProps {
   onAnalysisComplete?: (analysis: any, content?: any) => void;
@@ -200,6 +201,9 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
     }
   };
 
+  const [extractedSections, setExtractedSections] = useState<any>(null);
+  const [useSectionedDisplay, setUseSectionedDisplay] = useState(true); // Feature toggle
+
   const handleExtractUrl = async () => {
     const url = form.getValues("url");
     if (!url) return;
@@ -209,13 +213,19 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
       const response = await apiRequest("POST", "/api/extract-url", { url });
       const result = await response.json();
       
+      // Store sections for new UI
+      if (result.sections) {
+        setExtractedSections(result.sections);
+      }
+      
+      // Set form values (backward compatibility)
       form.setValue("content", result.content);
       form.setValue("title", result.title);
       setCharCount(result.content.length);
       
       toast({
         title: "Success",
-        description: "Content extracted successfully",
+        description: result.sections ? "Content extracted with structured sections" : "Content extracted successfully",
       });
     } catch (error: any) {
       toast({
@@ -682,17 +692,47 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
               </p>
             </div>
             
-            {form.watch("content") && (
+            {(form.watch("content") || extractedSections) && (
               <div className="space-y-4">
-                <div className="space-y-2">
+                {/* Toggle between old and new display */}
+                <div className="flex items-center justify-between">
                   <Label>Extracted Content</Label>
-                  <Textarea
-                    value={form.watch("content")}
-                    onChange={(e) => form.setValue("content", e.target.value)}
-                    rows={4}
-                    className="bg-white"
-                  />
+                  {extractedSections && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setUseSectionedDisplay(!useSectionedDisplay)}
+                      className="text-xs"
+                    >
+                      <Settings className="h-3 w-3 mr-1" />
+                      {useSectionedDisplay ? 'Legacy View' : 'Sectioned View'}
+                    </Button>
+                  )}
                 </div>
+                
+                {/* Conditional rendering based on toggle */}
+                {extractedSections && useSectionedDisplay ? (
+                  <SectionedContentDisplay 
+                    sections={extractedSections}
+                    onTextChange={(content) => {
+                      form.setValue("content", content);
+                      setCharCount(content.length);
+                    }}
+                  />
+                ) : (
+                  <div className="space-y-2">
+                    <Textarea
+                      value={form.watch("content")}
+                      onChange={(e) => {
+                        form.setValue("content", e.target.value);
+                        setCharCount(e.target.value.length);
+                      }}
+                      rows={4}
+                      className="bg-white"
+                    />
+                  </div>
+                )}
                 
                 {/* User Notes Section */}
                 <div className="space-y-2">

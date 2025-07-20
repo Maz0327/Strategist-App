@@ -1024,28 +1024,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "URL is required" });
       }
 
+      // Enhanced content extraction with structured sections
+      let result: any = {};
+      let isVideo = false;
+      let videoTranscription = null;
+
       // Check if it's a video URL and attempt transcription
       if (videoTranscriptionService.isVideoUrl(url)) {
+        isVideo = true;
         try {
-          const result = await videoTranscriptionService.extractContentWithVideoDetection(url);
-          return res.json({
-            success: true,
-            title: result.title,
-            content: result.content,
-            author: result.author,
-            isVideo: result.isVideo,
-            videoTranscription: result.videoTranscription
-          });
+          const videoResult = await videoTranscriptionService.extractContentWithVideoDetection(url);
+          result = videoResult;
+          videoTranscription = videoResult.videoTranscription;
         } catch (videoError) {
           debugLogger.warn('Video transcription failed, falling back to text extraction', { url, error: videoError });
           // Fall through to regular content extraction
+          const extracted = await scraperService.extractContent(url);
+          result = extracted;
         }
+      } else {
+        const extracted = await scraperService.extractContent(url);
+        result = extracted;
       }
-      
-      const extracted = await scraperService.extractContent(url);
+
+      // Structure content into sections for new UI
+      const sections = {
+        text: {
+          content: result.content || '',
+          hasContent: !!(result.content && result.content.trim())
+        },
+        transcript: {
+          content: videoTranscription?.transcription || '',
+          hasContent: !!(videoTranscription?.transcription && !videoTranscription.transcription.includes("[Video Content Detected but Audio Extraction Limited]")),
+          platform: videoTranscription?.platform || null,
+          metadata: videoTranscription?.videoMetadata || null
+        },
+        comments: {
+          content: result.comments || '',
+          hasContent: !!(result.comments && result.comments.trim()),
+          count: result.commentCount || 0
+        },
+        images: {
+          urls: result.images || [],
+          hasContent: !!(result.images && result.images.length > 0),
+          count: result.images?.length || 0
+        }
+      };
+
+      // Return backward-compatible response with new sections
       res.json({
         success: true,
-        ...extracted
+        title: result.title,
+        content: result.content,
+        author: result.author,
+        isVideo,
+        videoTranscription,
+        // New structured sections for enhanced UI
+        sections
       });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
