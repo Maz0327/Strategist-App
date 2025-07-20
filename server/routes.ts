@@ -1017,7 +1017,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/extract-url", requireAuth, async (req, res) => {
+  app.post("/api/extract-url", async (req, res) => {
     try {
       const { url } = req.body;
       if (!url) {

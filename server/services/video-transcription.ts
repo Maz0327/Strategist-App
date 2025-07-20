@@ -362,6 +362,16 @@ The system detected this as a video and attempted automatic transcription, but e
         }
       } catch (error) {
         debugLogger.warn('Video transcription failed for detected video URL', { url, error });
+        
+        // Add LinkedIn-specific video handling
+        if (url.includes('linkedin.com')) {
+          result.title = `[LINKEDIN VIDEO - TRANSCRIPT UNAVAILABLE] ${result.title}`;
+          result.content = `[Video Content Detected]\n\nLinkedIn video content was detected but audio transcription is limited due to platform restrictions.\n\n--- Post Content ---\n${result.content}`;
+        } else {
+          result.title = `[VIDEO - TRANSCRIPT UNAVAILABLE] ${result.title}`;
+          result.content = `[Video Content Detected]\n\nVideo content was detected but transcription failed.\n\n--- Page Content ---\n${result.content}`;
+        }
+        
         // Don't throw error, just proceed without video transcription
       }
     }
@@ -438,11 +448,25 @@ The system detected this as a video and attempted automatic transcription, but e
     const randomUserAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
     baseOptions.push(`--user-agent "${randomUserAgent}"`);
 
-    // YouTube-specific optimizations with client rotation
+    // Platform-specific optimizations
     if (url.includes('youtube.com') || url.includes('youtu.be')) {
       const clients = ['android', 'ios', 'web'];
       const randomClient = clients[Math.floor(Math.random() * clients.length)];
       baseOptions.push(`--extractor-args "youtube:player_client=${randomClient}"`);
+    } else if (url.includes('linkedin.com')) {
+      // LinkedIn-specific options for better video extraction
+      baseOptions.push('--add-header "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"');
+      baseOptions.push('--add-header "Accept-Language: en-US,en;q=0.5"');
+      baseOptions.push('--add-header "DNT: 1"');
+      baseOptions.push('--extractor-args "linkedin:bypass_consent=true"');
+    } else if (url.includes('tiktok.com')) {
+      // TikTok-specific optimizations
+      baseOptions.push('--add-header "Accept: */*"');
+      baseOptions.push('--add-header "Referer: https://www.tiktok.com/"');
+    } else if (url.includes('instagram.com')) {
+      // Instagram-specific optimizations
+      baseOptions.push('--add-header "Accept: */*"');
+      baseOptions.push('--add-header "Referer: https://www.instagram.com/"');
     }
 
     return `yt-dlp ${baseOptions.join(' ')} --output "${outputTemplate}" "${url}"`;
