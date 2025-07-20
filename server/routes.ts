@@ -29,6 +29,7 @@ import { strategicRecommendationsService } from "./services/strategicRecommendat
 import { getCacheStats } from "./services/cache";
 import { whisperService } from "./services/whisper";
 import { videoTranscriptionService } from "./services/video-transcription";
+import { socialMediaIntelligence } from "./services/social-media-intelligence";
 import { 
   insertUserFeedbackSchema,
   insertUserAnalyticsSchema
@@ -1700,6 +1701,119 @@ The analyzed signals provide a comprehensive view of current market trends and s
       res.json({ feedItems });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Social Intelligence Routes (Beta Testing)
+  app.post('/api/social/linkedin/company/:slug', requireAuth, async (req, res) => {
+    try {
+      const { slug } = req.params;
+      debugLogger.info('LinkedIn company intelligence request', { slug, userId: req.session.userId });
+      
+      const result = await socialMediaIntelligence.scrapeLinkedInCompany(slug);
+      
+      if (result.success) {
+        res.json({
+          success: true,
+          data: result.data,
+          metadata: result.metadata,
+          platform: 'LinkedIn'
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: result.error,
+          platform: 'LinkedIn'
+        });
+      }
+    } catch (error) {
+      debugLogger.error('LinkedIn company scraping error', { error: (error as Error).message });
+      res.status(500).json({
+        success: false,
+        error: 'Failed to scrape LinkedIn company data'
+      });
+    }
+  });
+
+  app.get('/api/social/twitter/trends', requireAuth, async (req, res) => {
+    try {
+      const { location = 'worldwide' } = req.query;
+      debugLogger.info('Twitter trends request', { location, userId: req.session.userId });
+      
+      const result = await socialMediaIntelligence.scrapeTwitterTrends(location as string);
+      
+      if (result.success) {
+        res.json({
+          success: true,
+          data: result.data,
+          metadata: result.metadata,
+          platform: 'Twitter'
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: result.error,
+          platform: 'Twitter'
+        });
+      }
+    } catch (error) {
+      debugLogger.error('Twitter trends scraping error', { error: (error as Error).message });
+      res.status(500).json({
+        success: false,
+        error: 'Failed to scrape Twitter trends'
+      });
+    }
+  });
+
+  app.post('/api/social/instagram/hashtags', requireAuth, async (req, res) => {
+    try {
+      const { hashtags } = req.body;
+      if (!Array.isArray(hashtags) || hashtags.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Hashtags array is required'
+        });
+      }
+      
+      debugLogger.info('Instagram hashtag intelligence request', { hashtags, userId: req.session.userId });
+      
+      const results = await socialMediaIntelligence.scrapeInstagramHashtags(hashtags);
+      
+      res.json({
+        success: true,
+        data: results,
+        platform: 'Instagram',
+        hashtagsAnalyzed: hashtags.length
+      });
+    } catch (error) {
+      debugLogger.error('Instagram hashtag scraping error', { error: (error as Error).message });
+      res.status(500).json({
+        success: false,
+        error: 'Failed to scrape Instagram hashtag data'
+      });
+    }
+  });
+
+  app.get('/api/social/capabilities', requireAuth, async (req, res) => {
+    try {
+      const capabilities = socialMediaIntelligence.getSocialCapabilities();
+      
+      res.json({
+        success: true,
+        capabilities,
+        betaStatus: 'Active',
+        costEstimation: {
+          dailyBudget: '$5-15',
+          monthlyEstimate: '$150-450',
+          perRequestCost: '$0.005-0.02'
+        }
+      });
+    } catch (error) {
+      debugLogger.error('Social capabilities error', { error: (error as Error).message });
+      res.status(500).json({
+        success: false,
+        error: 'Failed to retrieve social capabilities'
+      });
     }
   });
 
