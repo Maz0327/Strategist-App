@@ -1,5 +1,6 @@
 import { trendsService } from './trends';
 import { googleTrendsPythonService } from './google-trends-python';
+import { socialMediaIntelligence } from './social-media-intelligence';
 import { createRedditService } from './reddit';
 // Removed Twitter API - moved to future integrations due to rate limiting
 import { createNewsService } from './news';
@@ -85,7 +86,7 @@ export class ExternalAPIsService {
           spotifyTrends, lastfmTrends, geniusTrends, tmdbTrends, tvmazeTrends,
           gnewsTrends, nytimesTrends, currentsTrends, mediastackTrends, glaspTrends,
           knowYourMemeTrends, urbanDictionaryTrends, youtubeTrendingTrends, redditCulturalTrends,
-          tikTokTrends, instagramTrends
+          tikTokTrends, instagramTrends, socialMediaIntelligence
         ] = await Promise.allSettled([
           this.getGoogleTrends(),
           this.getRedditTrends(),
@@ -108,7 +109,8 @@ export class ExternalAPIsService {
           this.getYouTubeTrendingTrends(),
           this.getRedditCulturalTrends(),
           this.getTikTokTrends(),
-          this.getInstagramTrends()
+          this.getInstagramTrends(),
+          this.getSocialMediaIntelligence()
         ]);
 
         // Process all fulfilled results
@@ -117,7 +119,7 @@ export class ExternalAPIsService {
           spotifyTrends, lastfmTrends, geniusTrends, tmdbTrends, tvmazeTrends,
           gnewsTrends, nytimesTrends, currentsTrends, mediastackTrends, glaspTrends,
           knowYourMemeTrends, urbanDictionaryTrends, youtubeTrendingTrends, redditCulturalTrends,
-          tikTokTrends, instagramTrends
+          tikTokTrends, instagramTrends, socialMediaIntelligence
         ];
 
         allPromises.forEach((promise, index) => {
@@ -126,7 +128,7 @@ export class ExternalAPIsService {
             'spotify', 'lastfm', 'genius', 'tmdb', 'tvmaze',
             'gnews', 'nytimes', 'currents', 'mediastack', 'glasp',
             'knowyourmeme', 'urbandictionary', 'youtube-trending', 'reddit-cultural',
-            'tiktok-trends', 'instagram-trends'
+            'tiktok-trends', 'instagram-trends', 'social-media-intelligence'
           ];
           
           if (promise.status === 'fulfilled') {
@@ -202,6 +204,9 @@ export class ExternalAPIsService {
             break;
           case 'instagram-trends':
             results.push(...await this.getInstagramTrends());
+            break;
+          case 'social-media-intelligence':
+            results.push(...await this.getSocialMediaIntelligence());
             break;
         }
         
@@ -574,6 +579,82 @@ export class ExternalAPIsService {
       const allTrends = [...trending, ...popular, ...lifestyle, ...business];
       return allTrends.slice(0, 12);
     } catch (error) {
+      return [];
+    }
+  }
+
+  // Social Media Intelligence Integration (Beta)
+  async getSocialMediaIntelligence(): Promise<TrendingTopic[]> {
+    try {
+      const [twitterTrends, linkedinIntel] = await Promise.all([
+        this.getTwitterSocialIntelligence(),
+        this.getLinkedInSocialIntelligence()
+      ]);
+      
+      return [...twitterTrends, ...linkedinIntel].slice(0, 12);
+    } catch (error) {
+      console.error('Social media intelligence error:', error);
+      return [];
+    }
+  }
+
+  private async getTwitterSocialIntelligence(): Promise<TrendingTopic[]> {
+    try {
+      const result = await socialMediaIntelligence.scrapeTwitterTrends('worldwide');
+      if (!result.success || !result.data?.posts) return [];
+      
+      return result.data.posts.slice(0, 6).map((post: any, index: number) => ({
+        id: `twitter-${Date.now()}-${index}`,
+        platform: 'Social Media' as any,
+        title: post.text.substring(0, 80) + (post.text.length > 80 ? '...' : ''),
+        summary: `Trending: ${post.text.substring(0, 120)}...`,
+        url: post.href || 'https://twitter.com/explore',
+        score: 85 + Math.random() * 10,
+        fetchedAt: new Date().toISOString(),
+        engagement: { likes: 0, shares: 0, comments: 0 },
+        source: 'Twitter Intelligence',
+        keywords: result.data.summary?.topKeywords?.slice(0, 3) || ['trending', 'social', 'twitter']
+      }));
+    } catch (error) {
+      console.warn('Twitter social intelligence unavailable:', error);
+      return [];
+    }
+  }
+
+  private async getLinkedInSocialIntelligence(): Promise<TrendingTopic[]> {
+    try {
+      // Sample companies for intelligence gathering
+      const companies = ['microsoft', 'google', 'openai', 'meta'];
+      const companyResults = [];
+      
+      for (const company of companies.slice(0, 2)) { // Limit to 2 companies for cost control
+        try {
+          const result = await socialMediaIntelligence.scrapeLinkedInCompany(company);
+          if (result.success && result.data?.posts) {
+            companyResults.push(...result.data.posts.slice(0, 3));
+          }
+        } catch (error) {
+          continue; // Skip failed companies
+        }
+        
+        // Rate limiting between companies
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+      
+      return companyResults.map((post: any, index: number) => ({
+        id: `linkedin-${Date.now()}-${index}`,
+        platform: 'Social Media' as any,
+        title: post.text.substring(0, 80) + (post.text.length > 80 ? '...' : ''),
+        summary: `Corporate Update: ${post.text.substring(0, 120)}...`,
+        url: post.href || 'https://linkedin.com',
+        score: 90 + Math.random() * 8,
+        fetchedAt: new Date().toISOString(),
+        engagement: { likes: 0, shares: 0, comments: 0 },
+        source: 'LinkedIn Intelligence',
+        keywords: ['corporate', 'business', 'professional', 'industry']
+      }));
+    } catch (error) {
+      console.warn('LinkedIn social intelligence unavailable:', error);
       return [];
     }
   }
