@@ -619,7 +619,7 @@ export class ExternalAPIsService {
         url: post.href || 'https://instagram.com',
         score: 80 + Math.random() * 15,
         fetchedAt: new Date().toISOString(),
-        engagement: { likes: 0, shares: 0, comments: 0 },
+        engagement: 0,
         source: 'Instagram Intelligence',
         keywords: ['visual', 'trends', 'instagram', 'social']
       }));
@@ -642,7 +642,7 @@ export class ExternalAPIsService {
         url: post.href || 'https://twitter.com/explore',
         score: 85 + Math.random() * 10,
         fetchedAt: new Date().toISOString(),
-        engagement: { likes: 0, shares: 0, comments: 0 },
+        engagement: 0,
         source: 'Twitter Intelligence',
         keywords: result.data.summary?.topKeywords?.slice(0, 3) || ['trending', 'social', 'twitter']
       }));
@@ -680,7 +680,7 @@ export class ExternalAPIsService {
         url: post.href || 'https://linkedin.com',
         score: 90 + Math.random() * 8,
         fetchedAt: new Date().toISOString(),
-        engagement: { likes: 0, shares: 0, comments: 0 },
+        engagement: 0,
         source: 'LinkedIn Intelligence',
         keywords: ['corporate', 'business', 'professional', 'industry']
       }));
@@ -706,7 +706,7 @@ export class ExternalAPIsService {
         url: post.href || 'https://tiktok.com/discover',
         score: 88 + Math.random() * 10,
         fetchedAt: new Date().toISOString(),
-        engagement: { likes: 0, shares: 0, comments: 0 },
+        engagement: 0,
         source: 'TikTok Intelligence',
         keywords: ['viral', 'tiktok', 'challenges', 'trends', 'gen-z']
       }));

@@ -334,7 +334,7 @@ class SocialMediaIntelligence {
   private parseSocialData(output: string, platform: string): any {
     try {
       const rawData = JSON.parse(output);
-      const posts = [];
+      const posts: any[] = [];
       
       // Combine all selector results into posts array
       Object.values(rawData).forEach((selectorData: any) => {
