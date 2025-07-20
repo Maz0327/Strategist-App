@@ -26,7 +26,7 @@ class SocialMediaIntelligence {
   };
 
   constructor() {
-    debugLogger.info('Social Media Intelligence initialized for beta testing with enhanced data collection');
+    debugLogger.info('Social Media Intelligence initialized for 6 beta users, 2 pulls daily, unlimited data');
   }
 
   // Enhanced Twitter Intelligence with Multiple Data Points

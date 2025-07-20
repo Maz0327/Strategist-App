@@ -1275,10 +1275,10 @@ Successfully implemented and integrated cost-efficient social media intelligence
 - `POST /api/social/instagram/hashtags` - Instagram hashtag intelligence
 - `GET /api/social/capabilities` - System capabilities and cost controls
 
-**BETA STRATEGY: 6 Users, 1 Pull Per Day, No Data Limits**
+**BETA STRATEGY: 6 Users, 2 Pulls Per Day, Unlimited Data**
 - **Per Request**: $0.05-0.15 (no data restrictions, maximum intelligence value)
-- **Daily Per User**: $0.05-0.15 (1 comprehensive request per day)
-- **6 Beta Users Total**: $0.30-0.90 daily ($9-27 monthly)
+- **Daily Per User**: $0.10-0.30 (2 comprehensive requests per day)
+- **6 Beta Users Total**: $0.60-1.80 daily ($18-54 monthly)
 - **Data Usage**: Unlimited - full platform capabilities to prove value
 - **Intelligence Volume**: 80 social media trends per request (25 Twitter + 35 LinkedIn + 20 Instagram)
 
@@ -1287,7 +1287,7 @@ Successfully implemented and integrated cost-efficient social media intelligence
 - **Platform Coverage**: ✅ Twitter (25 trends) + LinkedIn (35 company posts) + Instagram (20 hashtag trends)
 - **Company Intelligence**: ✅ ALL 8 major tech companies (Microsoft, Google, OpenAI, Meta, Apple, Tesla, Nvidia, Amazon)
 - **Content Quality**: ✅ Full content mode - images enabled, no sample restrictions, 100-post analysis
-- **Update Frequency**: ✅ 1x daily per beta user (6 total users = controlled cost, maximum value demonstration)
+- **Update Frequency**: ✅ 2x daily per beta user (12 total requests = enhanced user engagement, maximum value demonstration)
 - **Data Restrictions**: ✅ REMOVED - no KB limits, no content restrictions, no sample size limits
 
 **Strategic Value:**
