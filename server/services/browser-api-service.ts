@@ -12,7 +12,7 @@ const execAsync = promisify(exec);
 class BrowserAPIService {
   private puppeteerEndpoint = 'wss://brd-customer-hl_d2c6dd0f-zone-scraping_browser1:wl58vcxlx0ph@brd.superproxy.io:9222';
   private seleniumEndpoint = 'https://brd-customer-hl_d2c6dd0f-zone-scraping_browser1:wl58vcxlx0ph@brd.superproxy.io:9515';
-  private apiKey = 'cbef860294f3e8ae5dd9000444672f4ce35c5eaf6a921e7b71fa304ae0f5a538';
+  private apiKey = '9bc3a6bc-ffdb-4625-a84b-3359ff4e25b9';
 
   constructor() {
     debugLogger.info('Browser API Service initialized with Bright Data endpoints');
