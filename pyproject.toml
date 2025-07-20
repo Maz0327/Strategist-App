@@ -7,4 +7,5 @@ dependencies = [
     "pandas>=2.3.1",
     "pytrends>=4.9.2",
     "requests>=2.32.4",
+    "youtube-transcript-api>=1.1.1",
 ]

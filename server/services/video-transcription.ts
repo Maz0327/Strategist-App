@@ -59,8 +59,57 @@ class VideoTranscriptionService {
         debugLogger.warn('Could not extract video metadata', { url, error: error.message });
       }
 
-      // Now with yt-dlp and ffmpeg installed, we can extract audio from videos
-      debugLogger.info('Attempting video-to-audio extraction with yt-dlp');
+      // STRATEGY 1: Try Enhanced Video Processor (combines transcript + audio extraction)
+      try {
+        const enhancedResult = await this.processVideoWithEnhancedMethod(url);
+        if (enhancedResult.transcript) {
+          debugLogger.info('Enhanced video processing successful', { url, method: enhancedResult.method });
+          return {
+            transcription: enhancedResult.transcript,
+            duration: enhancedResult.duration || 0,
+            language: enhancedResult.language || 'en',
+            confidence: enhancedResult.method?.includes('transcript') ? 0.95 : 0.85,
+            videoMetadata: videoMetadata as any
+          };
+        } else if (enhancedResult.audio_extracted) {
+          // If audio was extracted successfully, transcribe it with Whisper
+          debugLogger.info('Audio extracted, transcribing with Whisper', { url, audioPath: enhancedResult.audio_path });
+          
+          try {
+            const audioBuffer = fs.readFileSync(enhancedResult.audio_path);
+            const transcription = await whisperService.transcribeAudio(
+              audioBuffer,
+              `video_${Date.now()}.mp3`,
+              {
+                language: undefined, // Auto-detect
+                prompt: 'Video content transcription'
+              }
+            );
+            
+            // Clean up temp file
+            try {
+              fs.unlinkSync(enhancedResult.audio_path);
+            } catch (cleanupError) {
+              debugLogger.warn('Failed to cleanup temp audio file', { path: enhancedResult.audio_path });
+            }
+            
+            return {
+              transcription: transcription.text,
+              duration: transcription.duration,
+              language: transcription.language,
+              confidence: transcription.confidence,
+              videoMetadata: videoMetadata as any
+            };
+          } catch (whisperError) {
+            debugLogger.error('Whisper transcription failed', { error: whisperError.message });
+          }
+        }
+      } catch (error) {
+        debugLogger.warn('Enhanced video processing failed, trying fallback methods', { url, error: error.message });
+      }
+
+      // STRATEGY 2: Try yt-dlp with comprehensive proxy rotation
+      debugLogger.info('Attempting video-to-audio extraction with proxy rotation service');
       
       try {
         // Create temp directory
@@ -71,54 +120,63 @@ class VideoTranscriptionService {
         
         const tempAudioPath = path.join(tempDir, `video_audio_${Date.now()}.mp3`);
         
-        // Use yt-dlp to extract audio in mp3 format with better error handling and user agent
+        // Use comprehensive proxy rotation service for automated IP changing
         const outputTemplate = tempAudioPath.replace('.mp3', '.%(ext)s');
-        const command = `yt-dlp --extract-audio --audio-format mp3 --no-playlist --ignore-errors --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --output "${outputTemplate}" "${url}"`;
         
-        debugLogger.info('Executing yt-dlp command', { command, outputTemplate });
+        const { executeYtDlpWithRotation } = await import('./proxy-rotation-service');
+        const result = await executeYtDlpWithRotation(url, outputTemplate, 3);
         
-        const { exec } = await import('child_process');
-        const { promisify } = await import('util');
-        const execAsync = promisify(exec);
-        
-        const { stdout, stderr } = await execAsync(command, {
-          timeout: 180000 // 3 minute timeout for longer videos
-        });
-        
-        debugLogger.info('yt-dlp extraction completed', { stdout: stdout.slice(0, 500) });
-        
-        // Read the extracted audio file
-        let audioBuffer: Buffer;
-        if (fs.existsSync(tempAudioPath)) {
-          audioBuffer = fs.readFileSync(tempAudioPath);
+        if (result.success) {
+          debugLogger.info('Video extraction successful with proxy rotation', { 
+            retriesUsed: result.retriesUsed,
+            outputFile: outputTemplate
+          });
           
-          // Clean up temp file
-          try {
-            fs.unlinkSync(tempAudioPath);
-          } catch (cleanupError) {
-            debugLogger.warn('Failed to cleanup temp audio file', { path: tempAudioPath });
+          // Find the extracted audio file
+          const extractedFiles = fs.readdirSync(tempDir).filter(file => 
+            file.endsWith('.mp3') || file.endsWith('.m4a') || file.endsWith('.wav')
+          );
+          
+          if (extractedFiles.length > 0) {
+            const audioFilePath = path.join(tempDir, extractedFiles[0]);
+            const audioBuffer = fs.readFileSync(audioFilePath);
+            
+            // Transcribe with Whisper
+            const transcription = await whisperService.transcribeAudio(
+              audioBuffer,
+              `video_${Date.now()}.mp3`,
+              {
+                language: undefined, // Auto-detect
+                prompt: 'Video content transcription'
+              }
+            );
+            
+            // Clean up temp file
+            try {
+              fs.unlinkSync(audioFilePath);
+            } catch (cleanupError) {
+              debugLogger.warn('Failed to cleanup temp audio file', { path: audioFilePath });
+            }
+            
+            debugLogger.info('Video transcription successful with automated IP rotation', { 
+              url, 
+              duration: transcription.duration,
+              retriesUsed: result.retriesUsed
+            });
+            
+            return {
+              transcription: transcription.text,
+              duration: transcription.duration,
+              language: transcription.language,
+              confidence: transcription.confidence,
+              videoMetadata: videoMetadata as any
+            };
+          } else {
+            throw new Error('No audio file extracted despite successful yt-dlp execution');
           }
         } else {
-          throw new Error('Audio extraction failed - no output file created');
+          throw new Error(`Automated IP rotation failed: ${result.error} (${result.retriesUsed} proxy rotations attempted)`);
         }
-        const transcription = await whisperService.transcribeAudio(
-          audioBuffer,
-          `video_${Date.now()}.mp3`,
-          {
-            language: undefined, // Auto-detect
-            prompt: 'Video content transcription'
-          }
-        );
-        
-        debugLogger.info('Video transcription successful', { url, duration: transcription.duration });
-        
-        return {
-          transcription: transcription.text,
-          duration: transcription.duration,
-          language: transcription.language,
-          confidence: transcription.confidence,
-          videoMetadata: videoMetadata as any
-        };
         
       } catch (extractionError) {
         debugLogger.warn('Video extraction failed, using fallback', { url, error: extractionError.message });
@@ -247,6 +305,85 @@ The system detected this as a video and attempted automatic transcription, but e
     }
 
     return result;
+  }
+
+  // Enhanced video processing with multiple automated methods
+  private async processVideoWithEnhancedMethod(url: string): Promise<any> {
+    const { exec } = await import('child_process');
+    const { promisify } = await import('util');
+    const execAsync = promisify(exec);
+    
+    try {
+      const pythonScript = path.join(process.cwd(), 'server/python/enhanced_video_processor.py');
+      const command = `python3 "${pythonScript}" "${url}"`;
+      
+      debugLogger.info('Executing enhanced video processing', { command });
+      
+      const { stdout, stderr } = await execAsync(command, {
+        timeout: 300000 // 5 minute timeout for audio extraction
+      });
+      
+      if (stderr) {
+        debugLogger.info('Enhanced video processing info', { stderr });
+      }
+      
+      const result = JSON.parse(stdout);
+      
+      if (result.error && !result.audio_extracted) {
+        throw new Error(result.error);
+      }
+      
+      return result;
+    } catch (error) {
+      debugLogger.error('Enhanced video processing failed', { url, error });
+      throw error;
+    }
+  }
+
+  // Build enhanced yt-dlp command with IP rotation and bypass methods
+  private async buildEnhancedYtDlpCommand(url: string, outputTemplate: string): Promise<string> {
+    const { proxyManager } = await import('./proxy-manager');
+    
+    const baseOptions = [
+      '--extract-audio',
+      '--audio-format mp3',
+      '--no-playlist',
+      '--ignore-errors',
+      '--no-check-certificate',
+      '--sleep-interval 2',
+      '--max-sleep-interval 4',
+      '--retries 2'
+    ];
+
+    // Add proxy for IP rotation
+    const proxy = await proxyManager.getActiveProxy();
+    if (proxy) {
+      const proxyString = proxyManager.getProxyString();
+      if (proxyString) {
+        baseOptions.push(`--proxy "${proxyString}"`);
+        debugLogger.info('Using proxy for video extraction', { proxy: `${proxy.host}:${proxy.port}` });
+      }
+    }
+
+    // Enhanced user agent rotation
+    const userAgents = [
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1'
+    ];
+    
+    const randomUserAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
+    baseOptions.push(`--user-agent "${randomUserAgent}"`);
+
+    // YouTube-specific optimizations with client rotation
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      const clients = ['android', 'ios', 'web'];
+      const randomClient = clients[Math.floor(Math.random() * clients.length)];
+      baseOptions.push(`--extractor-args "youtube:player_client=${randomClient}"`);
+    }
+
+    return `yt-dlp ${baseOptions.join(' ')} --output "${outputTemplate}" "${url}"`;
   }
 
   private detectPlatform(url: string): string {
