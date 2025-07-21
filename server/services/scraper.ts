@@ -132,8 +132,10 @@ export class ScraperService {
         throw new Error('No content found on the page');
       }
 
-      // Extract visual assets
+      // Extract visual assets with debug logging
+      console.log('Extracting visual assets for URL:', url);
       const visualAssets = await this.extractVisualAssets($, url);
+      console.log('Visual assets found:', visualAssets.length, visualAssets.map(a => ({ url: a.url, alt: a.alt })));
       
       return {
         title: title.substring(0, 200), // Limit title length
@@ -183,8 +185,8 @@ export class ScraperService {
           }
           
           // Process found image source
-          
           if (src) {
+            console.log('Found image source:', src);
             const alt = $el.attr('alt') || $el.attr('title') || '';
             const width = $el.attr('width');
             const height = $el.attr('height');
@@ -192,7 +194,9 @@ export class ScraperService {
             const absoluteUrl = this.makeAbsoluteUrl(src, baseUrl);
             
             // More permissive filtering for social media images
-            if (this.isContentImage(absoluteUrl, alt, baseUrl)) {
+            const isValid = this.isContentImage(absoluteUrl, alt, baseUrl);
+            console.log('Image validation:', absoluteUrl, 'valid:', isValid);
+            if (isValid) {
               visualAssets.push({
                 type: 'image',
                 url: absoluteUrl,
