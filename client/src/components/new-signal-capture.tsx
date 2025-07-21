@@ -137,19 +137,21 @@ export function NewSignalCapture({ activeSubTab, onNavigateToExplore, onNavigate
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">New Signal Capture</h2>
-          <p className="text-gray-600 mt-1">Analyze content and discover strategic insights</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div className="min-w-0 flex-1">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">New Signal Capture</h2>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">Analyze content and discover strategic insights</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={onNavigateToExplore}>
-            <Target className="h-4 w-4 mr-2" />
-            Explore Trending
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Button variant="outline" size="sm" onClick={onNavigateToExplore} className="text-xs sm:text-sm">
+            <Target className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Explore Trending</span>
+            <span className="sm:hidden">Explore</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={onNavigateToBrief}>
-            <FileText className="h-4 w-4 mr-2" />
-            Brief Lab
+          <Button variant="outline" size="sm" onClick={onNavigateToBrief} className="text-xs sm:text-sm">
+            <FileText className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Brief Lab</span>
+            <span className="sm:hidden">Brief</span>
           </Button>
         </div>
       </div>
