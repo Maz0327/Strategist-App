@@ -357,7 +357,8 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
     try {
       // Convert file to base64
       const audioBuffer = await audioFile.arrayBuffer();
-      const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)));
+      const uint8Array = new Uint8Array(audioBuffer);
+      const base64Audio = btoa(String.fromCharCode.apply(null, Array.from(uint8Array)));
 
       // Prepare request data
       const requestData = {
@@ -460,24 +461,24 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-4 gap-1">
-            <TabsTrigger value="text" className="flex items-center gap-2 px-2 sm:px-4">
-              <Edit size={16} />
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1">
+            <TabsTrigger value="text" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 text-xs sm:text-sm">
+              <Edit size={14} className="sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">Manual Text</span>
               <span className="sm:hidden">Text</span>
             </TabsTrigger>
-            <TabsTrigger value="url" className="flex items-center gap-2 px-2 sm:px-4">
-              <Link size={16} />
+            <TabsTrigger value="url" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 text-xs sm:text-sm">
+              <Link size={14} className="sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">URL Analysis</span>
               <span className="sm:hidden">URL</span>
             </TabsTrigger>
-            <TabsTrigger value="audio" className="flex items-center gap-2 px-2 sm:px-4">
-              <Mic size={16} />
+            <TabsTrigger value="audio" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 text-xs sm:text-sm">
+              <Mic size={14} className="sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">Audio Upload</span>
               <span className="sm:hidden">Audio</span>
             </TabsTrigger>
-            <TabsTrigger value="selection" className="flex items-center gap-2 px-2 sm:px-4">
-              <Highlighter size={16} />
+            <TabsTrigger value="selection" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 text-xs sm:text-sm">
+              <Highlighter size={14} className="sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">Text Selection</span>
               <span className="sm:hidden">Selection</span>
             </TabsTrigger>
@@ -493,27 +494,24 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
               })(e);
             }} className="space-y-4">
               {/* Analysis Mode Toggle */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-gray-50 rounded-lg gap-3">
-                <div className="flex items-center gap-2">
-                  {analysisMode === 'quick' ? (
-                    <Zap className="h-4 w-4 text-blue-600" />
-                  ) : (
-                    <Search className="h-4 w-4 text-purple-600" />
-                  )}
-                  <span className="text-sm font-medium">
-                    {analysisMode === 'quick' ? 'Quick Analysis' : 'Deep Analysis'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between sm:justify-end gap-2">
-                  <div className="text-xs text-gray-500">
-                    Est. {analysisMode === 'quick' ? '2-3 seconds' : '8-15 seconds'}
+              <div className="p-3 bg-gray-50 rounded-lg space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {analysisMode === 'quick' ? (
+                      <Zap className="h-4 w-4 text-blue-600" />
+                    ) : (
+                      <Search className="h-4 w-4 text-purple-600" />
+                    )}
+                    <span className="text-sm font-medium">
+                      {analysisMode === 'quick' ? 'Quick Analysis' : 'Deep Analysis'}
+                    </span>
                   </div>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => setAnalysisMode(analysisMode === 'quick' ? 'deep' : 'quick')}
-                    className="h-8 px-3"
+                    className="h-8 px-3 text-xs"
                   >
                     <span className="hidden sm:inline">
                       {analysisMode === 'quick' ? 'Switch to Deep' : 'Switch to Quick'}
@@ -522,6 +520,9 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
                       {analysisMode === 'quick' ? 'Deep' : 'Quick'}
                     </span>
                   </Button>
+                </div>
+                <div className="text-xs text-gray-500">
+                  Est. {analysisMode === 'quick' ? '2-3 seconds' : '8-15 seconds'}
                 </div>
               </div>
               <div className="space-y-2">
@@ -535,9 +536,9 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
                     variant="outline"
                     size="sm"
                     onClick={handleTryExample}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
                   >
-                    <Sparkles className="h-4 w-4" />
+                    <Sparkles className="h-3 w-3 sm:h-4 sm:w-4" />
                     <span className="hidden sm:inline">Try Example</span>
                     <span className="sm:hidden">Example</span>
                   </Button>
@@ -629,62 +630,62 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
                 </div>
               )}
 
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                <span className={`text-sm ${charCount > 4500 ? 'text-warning' : 'text-gray-500'}`}>
-                  {charCount}/5000 characters
-                </span>
-                <div className="flex items-center gap-2">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className={`text-xs sm:text-sm ${charCount > 4500 ? 'text-warning' : 'text-gray-500'}`}>
+                    {charCount}/5000 characters
+                  </span>
                   <InfoTooltip content="Keyboard shortcut: Ctrl+Enter to analyze" />
-                  <Button 
-                    type="submit" 
-                    disabled={isLoading || !form.watch("content")?.trim()}
-                    data-tutorial="analyze-button"
-                    className="w-full sm:w-auto"
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        {useStreaming && analysisProgress.stage ? 'Processing...' : 'Analyzing...'}
-                      </div>
-                    ) : (
-                      <>
-                        <Brain size={16} className="mr-2" />
-                        Analyze Content
-                      </>
-                    )}
-                  </Button>
                 </div>
+                <Button 
+                  type="submit" 
+                  disabled={isLoading || !form.watch("content")?.trim()}
+                  data-tutorial="analyze-button"
+                  className="w-full"
+                >
+                  {isLoading ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      {useStreaming && analysisProgress.stage ? 'Processing...' : 'Analyzing...'}
+                    </div>
+                  ) : (
+                    <>
+                      <Brain size={16} className="mr-2" />
+                      Analyze Content
+                    </>
+                  )}
+                </Button>
               </div>
             </form>
           </TabsContent>
 
           <TabsContent value="url" className="space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label htmlFor="url-field" className="text-sm font-medium">Website URL</Label>
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="space-y-2">
                 <Input
                   id="url-field"
                   type="url"
                   placeholder="https://example.com/article"
                   {...form.register("url")}
                   disabled={isLoading}
-                  className="flex-1 text-sm"
+                  className="w-full text-sm"
                 />
                 <Button 
                   onClick={handleExtractUrl} 
                   disabled={isLoading || !form.watch("url")}
-                  className="w-full sm:w-auto text-sm"
+                  className="w-full text-sm"
                   size="default"
                 >
                   {isLoading ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center gap-2">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                       <span>Extracting...</span>
                     </div>
                   ) : (
                     <>
                       <Download size={16} className="mr-2" />
-                      Extract
+                      Extract Content
                     </>
                   )}
                 </Button>
@@ -701,20 +702,22 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
             {(form.watch("content") || extractedSections) && (
               <div className="space-y-4">
                 {/* Toggle between old and new display */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <Label>Extracted Content</Label>
-                  {extractedSections && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setUseSectionedDisplay(!useSectionedDisplay)}
-                      className="text-xs w-fit"
-                    >
-                      <Settings className="h-3 w-3 mr-1" />
-                      {useSectionedDisplay ? 'Legacy View' : 'Sectioned View'}
-                    </Button>
-                  )}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Extracted Content</Label>
+                    {extractedSections && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setUseSectionedDisplay(!useSectionedDisplay)}
+                        className="text-xs"
+                      >
+                        <Settings className="h-3 w-3 mr-1" />
+                        {useSectionedDisplay ? 'Legacy' : 'Sectioned'}
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 
                 {/* Conditional rendering based on toggle */}
@@ -768,7 +771,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
                 <Button 
                   onClick={form.handleSubmit(handleAnalyze)} 
                   disabled={isLoading}
-                  className="w-full sm:w-auto"
+                  className="w-full"
                 >
                   {isLoading ? <LoadingSpinner size="sm" /> : (
                     <>
@@ -829,11 +832,11 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="audio-language">Language (Optional)</Label>
                   <Select value={audioLanguage} onValueChange={setAudioLanguage} disabled={isLoading}>
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Auto-detect" />
                     </SelectTrigger>
                     <SelectContent>
@@ -860,6 +863,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
                     value={audioPrompt}
                     onChange={(e) => setAudioPrompt(e.target.value)}
                     disabled={isLoading}
+                    className="w-full"
                   />
                 </div>
               </div>
@@ -898,25 +902,23 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
                 </div>
               )}
 
-              <div className="flex justify-end">
-                <Button 
-                  onClick={handleAudioAnalyze} 
-                  disabled={isLoading || !audioFile}
-                  className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
-                >
-                  {isLoading ? (
-                    <div className="flex items-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      {isTranscribing ? 'Transcribing...' : 'Processing...'}
-                    </div>
-                  ) : (
-                    <>
-                      <Mic size={16} className="mr-2" />
-                      Transcribe & Analyze
-                    </>
-                  )}
-                </Button>
-              </div>
+              <Button 
+                onClick={handleAudioAnalyze} 
+                disabled={isLoading || !audioFile}
+                className="bg-green-600 hover:bg-green-700 w-full"
+              >
+                {isLoading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    {isTranscribing ? 'Transcribing...' : 'Processing...'}
+                  </div>
+                ) : (
+                  <>
+                    <Mic size={16} className="mr-2" />
+                    Transcribe & Analyze
+                  </>
+                )}
+              </Button>
             </div>
           </TabsContent>
 
@@ -966,20 +968,18 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
               </div>
             )}
             
-            <div className="flex justify-end">
-              <Button 
-                onClick={handleAnalyzeSelection} 
-                disabled={isLoading || !selectedText}
-                className="bg-orange-600 hover:bg-orange-700 w-full sm:w-auto"
-              >
-                {isLoading ? <LoadingSpinner size="sm" /> : (
-                  <>
-                    <Brain size={16} className="mr-2" />
-                    Analyze Selection
-                  </>
-                )}
-              </Button>
-            </div>
+            <Button 
+              onClick={handleAnalyzeSelection} 
+              disabled={isLoading || !selectedText}
+              className="bg-orange-600 hover:bg-orange-700 w-full"
+            >
+              {isLoading ? <LoadingSpinner size="sm" /> : (
+                <>
+                  <Brain size={16} className="mr-2" />
+                  Analyze Selection
+                </>
+              )}
+            </Button>
           </TabsContent>
         </Tabs>
       </CardContent>
