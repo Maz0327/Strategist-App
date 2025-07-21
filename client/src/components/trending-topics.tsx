@@ -56,7 +56,7 @@ export function TrendingTopics() {
         
         return data;
       } catch (error) {
-        console.error('Trending data fetch failed:', error.message);
+        console.error('Trending data fetch failed:', (error as Error).message);
         // Return minimal fallback structure
         return { 
           success: false,
@@ -110,7 +110,7 @@ export function TrendingTopics() {
           <h2 className="text-2xl font-bold">Trending Topics</h2>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
-            Loading trending data from 8+ platforms...
+            Loading trending data from 13+ platforms...
           </div>
         </div>
         
@@ -137,7 +137,7 @@ export function TrendingTopics() {
   }
   
   // Topic data summary
-  const platforms = [...new Set(topics.map(t => t.platform))];
+  const platforms = Array.from(new Set(topics.map(t => t.platform)));
 
   const handleRefresh = async () => {
     setIsRefreshing(true);

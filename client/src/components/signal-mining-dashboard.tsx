@@ -128,7 +128,7 @@ export function SignalMiningDashboard() {
 
   // Generate cultural moment based on topic content
   const generateCulturalMoment = (topic: TrendingTopic): string => {
-    const culturalMoments = {
+    const culturalMoments: Record<string, string> = {
       'Technology': 'Digital transformation acceleration',
       'AI': 'AI integration anxiety and opportunity',
       'Entertainment': 'Content consumption evolution',
@@ -166,7 +166,7 @@ export function SignalMiningDashboard() {
 
   // Generate cohort opportunity
   const generateCohortOpportunity = (topic: TrendingTopic): string => {
-    const cohortTemplates = {
+    const cohortTemplates: Record<string, string> = {
       'Technology': 'Tech-savvy early adopters seeking innovation',
       'AI': 'Professionals navigating AI workplace integration',
       'Entertainment': 'Content creators exploring new formats',
@@ -196,7 +196,7 @@ export function SignalMiningDashboard() {
       .filter(([category, topics]) => topics.length >= 2) // Need multiple topics to form a cultural moment
       .map(([category, topics], index) => {
         const avgScore = topics.reduce((sum, t) => sum + (t.score || 0), 0) / topics.length;
-        const platforms = [...new Set(topics.map(t => t.platform))];
+        const platforms = Array.from(new Set(topics.map(t => t.platform)));
         
         return {
           id: `cultural-${index}`,
@@ -318,10 +318,24 @@ export function SignalMiningDashboard() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Platforms</SelectItem>
+                {/* Core Social Media Platforms */}
                 <SelectItem value="TikTok">TikTok</SelectItem>
                 <SelectItem value="Twitter">Twitter</SelectItem>
                 <SelectItem value="Instagram">Instagram</SelectItem>
                 <SelectItem value="LinkedIn">LinkedIn</SelectItem>
+                {/* Content Intelligence Platforms */}
+                <SelectItem value="Medium">Medium</SelectItem>
+                <SelectItem value="Substack">Substack</SelectItem>
+                <SelectItem value="Product Hunt">Product Hunt</SelectItem>
+                {/* Business Intelligence Platforms */}
+                <SelectItem value="Glassdoor">Glassdoor</SelectItem>
+                <SelectItem value="Trustpilot">Trustpilot</SelectItem>
+                <SelectItem value="G2">G2</SelectItem>
+                <SelectItem value="Capterra">Capterra</SelectItem>
+                {/* Alternative Social Platforms */}
+                <SelectItem value="SoundCloud">SoundCloud</SelectItem>
+                <SelectItem value="Mastodon">Mastodon</SelectItem>
+                <SelectItem value="Nextdoor">Nextdoor</SelectItem>
               </SelectContent>
             </Select>
 

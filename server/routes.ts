@@ -2138,6 +2138,193 @@ The analyzed signals provide a comprehensive view of current market trends and s
     }
   });
 
+  // NEW PLATFORM ENDPOINTS FOR 9 ADDITIONAL PLATFORMS
+
+  // Content Intelligence Platforms
+  app.get('/api/trending/medium', requireAuth, async (req, res) => {
+    try {
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
+      const data = await automatedService.getTrendingData();
+      const mediumData = data.find(p => p.platform === 'medium');
+      
+      res.json({
+        success: true,
+        platform: 'medium',
+        data: mediumData?.data || [],
+        timestamp: mediumData?.timestamp,
+        snapshotId: mediumData?.snapshotId
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.get('/api/trending/substack', requireAuth, async (req, res) => {
+    try {
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
+      const data = await automatedService.getTrendingData();
+      const substackData = data.find(p => p.platform === 'substack');
+      
+      res.json({
+        success: true,
+        platform: 'substack',
+        data: substackData?.data || [],
+        timestamp: substackData?.timestamp,
+        snapshotId: substackData?.snapshotId
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.get('/api/trending/producthunt', requireAuth, async (req, res) => {
+    try {
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
+      const data = await automatedService.getTrendingData();
+      const producthuntData = data.find(p => p.platform === 'producthunt');
+      
+      res.json({
+        success: true,
+        platform: 'producthunt',
+        data: producthuntData?.data || [],
+        timestamp: producthuntData?.timestamp,
+        snapshotId: producthuntData?.snapshotId
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Business Intelligence Platforms
+  app.get('/api/trending/glassdoor', requireAuth, async (req, res) => {
+    try {
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
+      const data = await automatedService.getTrendingData();
+      const glassdoorData = data.find(p => p.platform === 'glassdoor');
+      
+      res.json({
+        success: true,
+        platform: 'glassdoor',
+        data: glassdoorData?.data || [],
+        timestamp: glassdoorData?.timestamp,
+        snapshotId: glassdoorData?.snapshotId
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.get('/api/trending/trustpilot', requireAuth, async (req, res) => {
+    try {
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
+      const data = await automatedService.getTrendingData();
+      const trustpilotData = data.find(p => p.platform === 'trustpilot');
+      
+      res.json({
+        success: true,
+        platform: 'trustpilot',
+        data: trustpilotData?.data || [],
+        timestamp: trustpilotData?.timestamp,
+        snapshotId: trustpilotData?.snapshotId
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.get('/api/trending/g2', requireAuth, async (req, res) => {
+    try {
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
+      const data = await automatedService.getTrendingData();
+      const g2Data = data.find(p => p.platform === 'g2');
+      
+      res.json({
+        success: true,
+        platform: 'g2',
+        data: g2Data?.data || [],
+        timestamp: g2Data?.timestamp,
+        snapshotId: g2Data?.snapshotId
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.get('/api/trending/capterra', requireAuth, async (req, res) => {
+    try {
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
+      const data = await automatedService.getTrendingData();
+      const capterraData = data.find(p => p.platform === 'capterra');
+      
+      res.json({
+        success: true,
+        platform: 'capterra',
+        data: capterraData?.data || [],
+        timestamp: capterraData?.timestamp,
+        snapshotId: capterraData?.snapshotId
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Alternative Social Platforms
+  app.get('/api/trending/soundcloud', requireAuth, async (req, res) => {
+    try {
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
+      const data = await automatedService.getTrendingData();
+      const soundcloudData = data.find(p => p.platform === 'soundcloud');
+      
+      res.json({
+        success: true,
+        platform: 'soundcloud',
+        data: soundcloudData?.data || [],
+        timestamp: soundcloudData?.timestamp,
+        snapshotId: soundcloudData?.snapshotId
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.get('/api/trending/mastodon', requireAuth, async (req, res) => {
+    try {
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
+      const data = await automatedService.getTrendingData();
+      const mastodonData = data.find(p => p.platform === 'mastodon');
+      
+      res.json({
+        success: true,
+        platform: 'mastodon',
+        data: mastodonData?.data || [],
+        timestamp: mastodonData?.timestamp,
+        snapshotId: mastodonData?.snapshotId
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.get('/api/trending/nextdoor', requireAuth, async (req, res) => {
+    try {
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
+      const data = await automatedService.getTrendingData();
+      const nextdoorData = data.find(p => p.platform === 'nextdoor');
+      
+      res.json({
+        success: true,
+        platform: 'nextdoor',
+        data: nextdoorData?.data || [],
+        timestamp: nextdoorData?.timestamp,
+        snapshotId: nextdoorData?.snapshotId
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+
+
   // Snapshot status checker endpoint
   app.get('/api/bright-data/snapshot/:snapshotId', requireAuth, async (req, res) => {
     try {

@@ -39,7 +39,7 @@ export function ExploreSignals({ activeSubTab }: ExploreSignalsProps) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Explore Signals</h2>
-          <p className="text-gray-600 mt-1">Discover what's happening across platforms and identify opportunities</p>
+          <p className="text-gray-600 mt-1">Discover what's happening across 13+ platforms and identify strategic opportunities</p>
         </div>
         
         {/* Niche Filter */}
@@ -91,7 +91,7 @@ export function ExploreSignals({ activeSubTab }: ExploreSignalsProps) {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
-                Trending Across Platforms
+                Trending Across 13 Platforms
               </CardTitle>
             </CardHeader>
             <CardContent>
