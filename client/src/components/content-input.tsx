@@ -459,32 +459,32 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1">
-            <TabsTrigger value="text" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 text-xs sm:text-sm">
-              <Edit size={14} className="sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Manual Text</span>
+      <CardContent className="p-4 sm:p-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1 h-auto">
+            <TabsTrigger value="text" className="flex items-center justify-center gap-1 sm:gap-2 px-1 sm:px-4 py-2 text-xs sm:text-sm min-h-[2.5rem]">
+              <Edit size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
+              <span className="hidden sm:inline truncate">Manual Text</span>
               <span className="sm:hidden">Text</span>
             </TabsTrigger>
-            <TabsTrigger value="url" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 text-xs sm:text-sm">
-              <Link size={14} className="sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">URL Analysis</span>
+            <TabsTrigger value="url" className="flex items-center justify-center gap-1 sm:gap-2 px-1 sm:px-4 py-2 text-xs sm:text-sm min-h-[2.5rem]">
+              <Link size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
+              <span className="hidden sm:inline truncate">URL Analysis</span>
               <span className="sm:hidden">URL</span>
             </TabsTrigger>
-            <TabsTrigger value="audio" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 text-xs sm:text-sm">
-              <Mic size={14} className="sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Audio Upload</span>
+            <TabsTrigger value="audio" className="flex items-center justify-center gap-1 sm:gap-2 px-1 sm:px-4 py-2 text-xs sm:text-sm min-h-[2.5rem]">
+              <Mic size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
+              <span className="hidden sm:inline truncate">Audio Upload</span>
               <span className="sm:hidden">Audio</span>
             </TabsTrigger>
-            <TabsTrigger value="selection" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 text-xs sm:text-sm">
-              <Highlighter size={14} className="sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Text Selection</span>
+            <TabsTrigger value="selection" className="flex items-center justify-center gap-1 sm:gap-2 px-1 sm:px-4 py-2 text-xs sm:text-sm min-h-[2.5rem]">
+              <Highlighter size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
+              <span className="hidden sm:inline truncate">Text Selection</span>
               <span className="sm:hidden">Selection</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="text" className="space-y-4">
+          <TabsContent value="text" className="space-y-4 mt-4 w-full">
             <form onSubmit={(e) => {
               console.log("Form submit event triggered");
               console.log("Form validation errors:", form.formState.errors);
@@ -659,7 +659,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
             </form>
           </TabsContent>
 
-          <TabsContent value="url" className="space-y-4">
+          <TabsContent value="url" className="space-y-4 mt-4 w-full">
             <div className="space-y-3">
               <Label htmlFor="url-field" className="text-sm font-medium">Website URL</Label>
               <div className="space-y-2">
@@ -784,7 +784,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
             )}
           </TabsContent>
 
-          <TabsContent value="audio" className="space-y-4">
+          <TabsContent value="audio" className="space-y-4 mt-4 w-full">
             <div className="bg-green-50 border border-green-200 rounded-md p-4">
               <div className="flex items-center gap-2">
                 <Mic className="text-green-600" size={16} />
@@ -878,6 +878,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
                   value={userNotes}
                   onChange={(e) => setUserNotes(e.target.value)}
                   disabled={isLoading}
+                  className="w-full"
                 />
               </div>
 
@@ -922,7 +923,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
             </div>
           </TabsContent>
 
-          <TabsContent value="selection" className="space-y-4">
+          <TabsContent value="selection" className="space-y-4 mt-4 w-full">
             <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
               <div className="flex items-center gap-2">
                 <Highlighter className="text-blue-600" size={16} />
@@ -949,8 +950,8 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
                 disabled={isLoading}
                 className="font-mono text-sm"
               />
-              <div className="flex justify-between items-center">
-                <span className={`text-sm ${charCount > 4500 ? 'text-warning' : 'text-gray-500'}`}>
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0">
+                <span className={`text-xs sm:text-sm ${charCount > 4500 ? 'text-warning' : 'text-gray-500'}`}>
                   {charCount}/5000 characters
                 </span>
                 <span className="text-xs text-gray-500">
