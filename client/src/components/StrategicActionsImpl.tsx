@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Clock, TrendingUp, AlertTriangle, Users, Target } from 'lucide-react';
+import { StandardizedLoading } from '@/components/ui/standardized-loading';
 
 interface StrategicAction {
   action: string;
@@ -95,10 +96,10 @@ export default function StrategicActionsImpl({ content, title, onClose, truthAna
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-2 text-sm text-gray-600">Analyzing strategic actions...</span>
-          </div>
+          <StandardizedLoading 
+            title="Strategic Analysis"
+            subtitle="Generating actionable strategic recommendations"
+          />
         </CardContent>
       </Card>
     );

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Brain, TrendingUp, Clock, ArrowRight, RefreshCw, ExternalLink } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Signal } from "@shared/schema";
+import { StandardizedLoading } from "@/components/ui/standardized-loading";
 
 interface TodaysBriefingProps {
   activeSubTab?: string;
@@ -68,15 +69,10 @@ export function TodaysBriefing({
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="h-8 w-48 bg-gray-200 rounded animate-pulse"></div>
-          <div className="h-10 w-24 bg-gray-200 rounded animate-pulse"></div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-24 bg-gray-200 rounded animate-pulse"></div>
-          ))}
-        </div>
+        <StandardizedLoading 
+          title="Loading Briefing"
+          subtitle="Gathering today's strategic intelligence"
+        />
       </div>
     );
   }

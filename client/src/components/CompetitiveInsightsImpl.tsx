@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Lightbulb, TrendingUp, AlertTriangle, Clock, Target } from 'lucide-react';
+import { StandardizedLoading } from '@/components/ui/standardized-loading';
 
 interface CompetitiveInsight {
   insight: string;
@@ -90,10 +91,10 @@ export default function CompetitiveInsightsImpl({ content, title, onClose, truth
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Analyzing competitive landscape...</p>
-          </div>
+          <StandardizedLoading 
+            title="Analyzing Competition"
+            subtitle="Identifying competitive landscape and strategic opportunities"
+          />
         </CardContent>
       </Card>
     );

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Users, Target, BarChart3, Globe } from 'lucide-react';
+import { StandardizedLoading } from '@/components/ui/standardized-loading';
 
 interface CohortSuggestion {
   name: string;
@@ -80,10 +81,10 @@ export default function CohortBuilderImpl({ content, title, onClose, truthAnalys
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Building audience cohorts...</p>
-          </div>
+          <StandardizedLoading 
+            title="Building Cohorts"
+            subtitle="Analyzing audience segments and targeting opportunities"
+          />
         </CardContent>
       </Card>
     );

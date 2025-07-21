@@ -9,6 +9,7 @@ import { StrategicBriefLab } from "@/components/strategic-brief-lab";
 import { ManageHub } from "@/components/manage-hub";
 import { AdminDashboard } from "@/components/admin-dashboard";
 import { FeedbackWidget } from "@/components/feedback-widget";
+import { FeedsHub } from "@/components/feeds-hub";
 import { authService } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -315,15 +316,10 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
             )}
             
             {activeTab === "feeds" && (
-              <TodaysBriefing 
+              <FeedsHub 
                 activeSubTab={activeSubTab}
-                onNavigateToExplore={handleNavigateToExplore}
                 onNavigateToCapture={handleNavigateToCapture}
                 onNavigateToBrief={handleNavigateToBrief}
-                onNavigate={(tab, subTab) => {
-                  setActiveTab(tab);
-                  if (subTab) setActiveSubTab(subTab);
-                }}
               />
             )}
             

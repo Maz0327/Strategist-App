@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar, TrendingUp, Users, Target, AlertCircle, CheckCircle, Clock, Zap } from 'lucide-react';
+import { StandardizedLoading } from '@/components/ui/standardized-loading';
 
 interface DailyReport {
   id: string;
@@ -89,22 +90,11 @@ export function DailyReport() {
       <div className="space-y-6">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-2">Daily Signal Report</h2>
-          <p className="text-gray-600">Loading report...</p>
         </div>
-        <div className="grid gap-4">
-          {[1, 2, 3].map(i => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader>
-                <div className="h-6 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <StandardizedLoading 
+          title="Generating Report"
+          subtitle="Compiling daily intelligence from your signals"
+        />
       </div>
     );
   }
