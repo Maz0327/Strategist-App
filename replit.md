@@ -481,7 +481,7 @@ Successfully addressed user's critical feedback about "LONG time" extraction spe
 Successfully implemented unified Visual Intelligence workflow based on user's strategic vision:
 
 **New Architecture Benefits:**
-- **Unified Processing**: Visual analysis now integrated into main truth analysis for deep mode (maintains 3-8 second quick analysis)
+- **Visual Analysis Temporarily Disabled**: Visual analysis integration removed from truth analysis for performance optimization (can be re-enabled later when system is faster)
 - **Visual Intelligence Tab**: Dedicated tab shows extracted images with standalone analysis capability
 - **Image Caching**: Automatically caches extracted images for later visual analysis without re-processing
 - **Strategic Workflow**: Visual analysis provides brand elements, cultural intelligence, and competitive insights

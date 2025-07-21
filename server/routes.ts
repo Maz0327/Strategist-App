@@ -299,17 +299,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           extractedContent = await scraperService.extractContent(data.url);
           
-          // Only perform visual analysis for deep analysis mode to maintain speed for quick analysis
-          if (extractedContent.visualAssets && extractedContent.visualAssets.length > 0 && analysisMode === 'deep') {
-            res.write(`data: ${JSON.stringify({ type: 'status', message: 'Analyzing visual content...', progress: 40 })}\n\n`);
-            res.flush?.();
-            
-            visualAnalysis = await visualAnalysisService.analyzeVisualAssets(
-              extractedContent.visualAssets,
-              data.content || extractedContent.content,
-              data.url
-            );
-          }
+          // Visual analysis integration temporarily disabled for performance optimization
         } catch (error) {
           debugLogger.error('Visual analysis failed, continuing with text analysis', error, req);
         }
@@ -553,14 +543,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             extractedContent = await scraperService.extractContent(data.url);
           }
           
-          // Perform visual analysis if visual assets found (skip for videos)
-          if (extractedContent.visualAssets && extractedContent.visualAssets.length > 0) {
-            visualAnalysis = await visualAnalysisService.analyzeVisualAssets(
-              extractedContent.visualAssets,
-              data.content || extractedContent.content,
-              data.url
-            );
-          }
+          // Visual analysis integration temporarily disabled for performance optimization
         } catch (error) {
           debugLogger.error('Content extraction failed, continuing with provided content only', error, req);
         }

@@ -416,24 +416,14 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
             <div className="space-y-2">
               <Label htmlFor="analysis-mode" className="text-sm font-medium">Analysis Mode:</Label>
               <div className="flex items-center gap-2">
-                <InfoTooltip content="Quick Analysis: 2-3 seconds, focused insights. Deep Analysis: 8-15 seconds, comprehensive strategic analysis with richer context." />
+                <InfoTooltip content="Quick: Fast analysis with focused insights. Deep: Comprehensive strategic analysis with richer context." />
                 <Select value={analysisMode} onValueChange={(value: any) => setAnalysisMode(value)}>
                   <SelectTrigger className="w-full sm:w-40">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="quick">
-                      <div className="flex items-center gap-2">
-                        <Zap size={14} />
-                        Quick (2-3s)
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="deep">
-                      <div className="flex items-center gap-2">
-                        <Search size={14} />
-                        Deep (8-15s)
-                      </div>
-                    </SelectItem>
+                    <SelectItem value="quick">Quick</SelectItem>
+                    <SelectItem value="deep">Deep</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
