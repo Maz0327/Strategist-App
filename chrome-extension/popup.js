@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const readingTimeIndicator = document.getElementById('readingTimeIndicator');
     const autoSuggestionsContainer = document.getElementById('autoSuggestionsContainer');
 
-    // Configuration with environment detection
+    // Configuration - Use development by default for local testing
     const config = {
         production: {
             backendUrl: 'https://strategist-app-maz0327.replit.app',
@@ -27,8 +27,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    // Auto-detect environment
-    const currentConfig = window.location.hostname === 'localhost' ? config.development : config.production;
+    // Use development config for now (change to production when deployed)
+    const currentConfig = config.development;
 
     // State management
     let currentPageInfo = null;
@@ -93,6 +93,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function initializePopup() {
         try {
+            showStatus('Connecting to platform...', 'info');
+            
+            // First check authentication
+            const isAuthenticated = await checkAuthentication();
+            if (!isAuthenticated) {
+                showAuthenticationError();
+                return;
+            }
+            
             // Load user preferences
             const settings = await chrome.storage.local.get(['captureSettings', 'quickCapture', 'captureMode']);
             captureSettings = settings.captureSettings || {};
@@ -134,10 +143,77 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Show content insights
             showContentInsights();
 
+            showStatus('Ready to capture content', 'success');
+
         } catch (error) {
             console.error('Error initializing popup:', error);
-            showStatus('Error loading page information', 'error');
+            showStatus('Error connecting to platform - make sure app is running', 'error');
         }
+    }
+
+    async function checkAuthentication() {
+        try {
+            const response = await fetch(`${currentConfig.backendUrl}${currentConfig.apiPrefix}/auth/me`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            if (response.ok) {
+                const userData = await response.json();
+                displayUserInfo(userData.user);
+                return true;
+            } else {
+                return false;
+            }
+        } catch (error) {
+            console.error('Authentication check failed:', error);
+            return false;
+        }
+    }
+
+    function displayUserInfo(user) {
+        // Create a user info section if it doesn't exist
+        let userInfoDiv = document.getElementById('userInfo');
+        if (!userInfoDiv) {
+            userInfoDiv = document.createElement('div');
+            userInfoDiv.id = 'userInfo';
+            userInfoDiv.className = 'user-info';
+            document.querySelector('.header').appendChild(userInfoDiv);
+        }
+        
+        userInfoDiv.innerHTML = `
+            <div class="user-details">
+                <small>✅ Connected as: ${user.email}</small>
+            </div>
+        `;
+    }
+
+    function showAuthenticationError() {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'auth-error';
+        errorDiv.innerHTML = `
+            <div class="error-message">
+                <h3>⚠️ Not Connected</h3>
+                <p>Please log in to your Strategic Content Platform:</p>
+                <ol>
+                    <li>Open <a href="${currentConfig.backendUrl}" target="_blank">Strategic Platform</a></li>
+                    <li>Log in with your account</li>
+                    <li>Return to this extension</li>
+                </ol>
+                <button id="retryConnection" class="retry-btn">Try Again</button>
+            </div>
+        `;
+        
+        document.querySelector('.container').innerHTML = '';
+        document.querySelector('.container').appendChild(errorDiv);
+        
+        // Add retry functionality
+        document.getElementById('retryConnection').addEventListener('click', () => {
+            location.reload();
+        });
     }
 
     async function getPageInfo(tabId) {

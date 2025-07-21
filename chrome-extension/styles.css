@@ -73,6 +73,73 @@ body {
 .content-type, .reading-time {
     background: #e2e8f0;
     padding: 2px 8px;
+
+/* User Info Styles */
+.user-info {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 8px;
+    margin-top: 8px;
+}
+
+.user-details small {
+    color: #e2e8f0;
+    font-size: 11px;
+}
+
+/* Authentication Error Styles */
+.auth-error {
+    text-align: center;
+    padding: 20px;
+}
+
+.error-message h3 {
+    color: #ef4444;
+    margin: 0 0 16px 0;
+    font-size: 16px;
+}
+
+.error-message p {
+    color: #64748b;
+    margin: 0 0 16px 0;
+    font-size: 14px;
+}
+
+.error-message ol {
+    text-align: left;
+    color: #475569;
+    font-size: 13px;
+    margin: 16px 0;
+}
+
+.error-message ol li {
+    margin-bottom: 8px;
+}
+
+.error-message a {
+    color: #4f46e5;
+    text-decoration: none;
+}
+
+.error-message a:hover {
+    text-decoration: underline;
+}
+
+.retry-btn {
+    background: #4f46e5;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 16px;
+}
+
+.retry-btn:hover {
+    background: #4338ca;
+}
     border-radius: 12px;
     font-size: 11px;
     color: #475569;
