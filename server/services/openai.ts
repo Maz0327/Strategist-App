@@ -8,8 +8,8 @@ import { performanceMonitor } from "./monitoring";
 // Using gpt-4o-mini for cost-efficient testing phase, can upgrade to gpt-4o later
 export const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || process.env.API_KEY,
-  timeout: 30 * 1000, // 30 second timeout
-  maxRetries: 2, // Built-in retries
+  timeout: 15 * 1000, // 15 second timeout for faster response
+  maxRetries: 1, // Reduce retries for speed
 });
 
 export interface AnalysisResult {
@@ -193,10 +193,10 @@ Focus on deep strategic insights, complex human motivations, cultural context, c
       `Analyze this content with MEDIUM length responses (3-5 sentences per field):
 
 Title: ${title}
-Content: ${content.substring(0, 1500)}${content.length > 1500 ? '...' : ''}
+Content: ${content.substring(0, 1200)}${content.length > 1200 ? '...' : ''}
 
-MANDATORY: Every field in truthAnalysis must contain exactly 3-5 sentences. This is CRITICAL for proper analysis.
-MANDATORY: strategicInsights, strategicActions, and competitiveInsights arrays must contain exactly 5 items each.
+MANDATORY: Keep responses concise but strategic. Each field must be 2-4 sentences maximum.
+MANDATORY: Focus on the most important strategic insights only.
 
 Return JSON only.`;
 
@@ -207,8 +207,8 @@ Return JSON only.`;
         { role: "user", content: userPrompt }
       ],
       response_format: { type: "json_object" },
-      temperature: 0.05,
-      max_tokens: isDeepAnalysis ? 2500 : 1500
+      temperature: 0.1,
+      max_tokens: isDeepAnalysis ? 1800 : 1000 // Reduced token limits for speed
     });
 
     const responseContent = response.choices[0]?.message?.content;
