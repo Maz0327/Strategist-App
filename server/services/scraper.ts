@@ -132,10 +132,8 @@ export class ScraperService {
         throw new Error('No content found on the page');
       }
 
-      // Extract visual assets with debug logging
-      console.log('Extracting visual assets for URL:', url);
+      // Extract visual assets
       const visualAssets = await this.extractVisualAssets($, url);
-      console.log('Visual assets found:', visualAssets.length, visualAssets.map(a => ({ url: a.url, alt: a.alt })));
       
       return {
         title: title.substring(0, 200), // Limit title length
@@ -201,7 +199,6 @@ export class ScraperService {
           
           // Process found image source
           if (src) {
-            console.log('Found image source:', src);
             const alt = $el.attr('alt') || $el.attr('title') || '';
             const width = $el.attr('width');
             const height = $el.attr('height');
@@ -209,9 +206,7 @@ export class ScraperService {
             const absoluteUrl = this.makeAbsoluteUrl(src, baseUrl);
             
             // More permissive filtering for social media images
-            const isValid = this.isContentImage(absoluteUrl, alt, baseUrl);
-            console.log('Image validation:', absoluteUrl, 'valid:', isValid);
-            if (isValid) {
+            if (this.isContentImage(absoluteUrl, alt, baseUrl)) {
               visualAssets.push({
                 type: 'image',
                 url: absoluteUrl,
@@ -257,35 +252,41 @@ export class ScraperService {
     if (baseUrl.includes('linkedin.com') || baseUrl.includes('twitter.com') || 
         baseUrl.includes('instagram.com') || baseUrl.includes('facebook.com')) {
       
-      // TEMPORARY: Very permissive filtering to debug - BLOCK only obvious UI elements
+      // Block LinkedIn UI elements, icons, and profile photos
       if (url.includes('static.licdn.com/aero-v1/sc/h/')) {
-        console.log('BLOCKED UI icon:', url);
         return false; // Block UI icons
       }
       
       if (url.includes('reaction-type') || alt.includes('reaction-type')) {
-        console.log('BLOCKED reaction icon:', url);
         return false; // Block reaction icons
       }
       
       if (url.includes('profile-displayphoto')) {
-        console.log('BLOCKED profile photo:', url);
         return false; // Block profile pictures
       }
       
       if (url.includes('company-logo')) {
-        console.log('BLOCKED company logo:', url);
         return false; // Block company logos
       }
       
       if (url.includes('profile-displaybackgroundimage')) {
-        console.log('BLOCKED background image:', url);
         return false; // Block background images
       }
       
-      // TEMPORARY: Allow ALL other LinkedIn images to see what we're missing
-      console.log('ALLOWING LinkedIn image:', url);
-      return true;
+      // Block article cover images (these are unrelated content thumbnails)
+      if (url.includes('article-cover_image')) {
+        return false; // Block article thumbnails
+      }
+      
+      // Allow main post content images
+      const isMainPostImage = (
+        url.includes('feedshare-shrink_') || // Main post images - this is what we want!
+        url.includes('media-proxy') ||       // Media proxy images  
+        url.includes('dms/image') ||         // Direct media service
+        (url.includes('media/') && !url.includes('article-cover'))  // Media folder but not article covers
+      );
+      
+      return isMainPostImage;
     }
     
     // For non-social media sites, use more strict filtering
