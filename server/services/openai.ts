@@ -246,13 +246,19 @@ Return JSON with this structure:
 
     debugLogger.info('Adjusting to ' + lengthPreference);
     
-    const adjustmentPrompt = `Adjust this analysis to ${lengthPreference} length format while keeping the same insights:
+    const adjustmentPrompt = `Adjust the following analysis to ${lengthPreference} format. Keep the same strategic insights and JSON structure.
 
+CURRENT ANALYSIS (Medium length):
 ${JSON.stringify(mediumAnalysis.truthAnalysis, null, 2)}
 
-For ${lengthPreference} format: ${lengthPreference === 'short' ? 'Make each field more concise' : 'Expand each field with more detail and context'}
+REQUIREMENTS:
+- ${lengthPreference === 'short' ? 'Exactly 2-3 sentences per field' : 'Exactly 5-7 sentences per field'}
+- Keep the same strategic insights and conclusions
+- Maintain professional strategic analysis quality
+- Focus on actionable intelligence and cultural context
+- Only adjust truthAnalysis fields: fact, observation, insight, humanTruth, culturalMoment
 
-Return only the truthAnalysis object with adjusted fields.`;
+Return ONLY the truthAnalysis JSON object with adjusted fields.`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo", // Always use GPT-3.5-turbo for adjustments
