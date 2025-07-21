@@ -620,16 +620,21 @@ export function EnhancedAnalysisResults({
     setLoadingStates(prev => ({ ...prev, visualAnalysis: true }));
     
     try {
-      const response = await apiRequest(
-        'POST',
-        '/api/analyze/visual',
-        {
-          imageUrls: extractedImages.map(img => img.url),
-          content: originalContent.content || '',
-          context: `Visual analysis for: ${originalContent.url}`,
-          sourceUrl: originalContent.url
-        }
-      );
+      const response = await Promise.race([
+        apiRequest(
+          'POST',
+          '/api/analyze/visual',
+          {
+            imageUrls: extractedImages.map(img => img.url),
+            content: originalContent.content || '',
+            context: `Visual analysis for: ${originalContent.url}`,
+            sourceUrl: originalContent.url
+          }
+        ),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Visual analysis timeout - please try again')), 12000)
+        )
+      ]);
       
       const responseData = await response.json();
       console.log('Visual Analysis API response:', responseData);

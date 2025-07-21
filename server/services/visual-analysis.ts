@@ -144,41 +144,46 @@ export class VisualAnalysisService {
       const analysisPrompt = this.buildAnalysisPrompt(contentContext, url);
       
       // Process images through OpenAI Vision API
-      const visionResponse = await openai.chat.completions.create({
-        model: "gpt-4o", // GPT-4o has vision capabilities
-        messages: [
-          {
-            role: "system",
-            content: analysisPrompt
-          },
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: `Analyze these visual assets in the context of: ${contentContext}. Provide comprehensive visual intelligence analysis following the JSON schema provided.`
-              },
-              ...imagesToAnalyze.map(asset => ({
-                type: "image_url" as const,
-                image_url: {
-                  url: asset.url,
-                  detail: "high" as const
-                }
-              }))
-            ]
-          }
-        ],
-        max_tokens: 4000,
-        temperature: 0.1, // Lower temperature for more consistent analysis
-        response_format: { type: "json_object" }
-      });
+      const visionResponse: any = await Promise.race([
+        openai.chat.completions.create({
+          model: "gpt-4o", // GPT-4o has vision capabilities
+          messages: [
+            {
+              role: "system",
+              content: analysisPrompt
+            },
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: `Analyze these visual assets in the context of: ${contentContext}. Provide comprehensive visual intelligence analysis following the JSON schema provided.`
+                },
+                ...imagesToAnalyze.map(asset => ({
+                  type: "image_url" as const,
+                  image_url: {
+                    url: asset.url,
+                    detail: "low" as const // Changed from high to low for faster processing
+                  }
+                }))
+              ]
+            }
+          ],
+          max_tokens: 1000, // Reduced from 4000 for faster processing
+          temperature: 0.1,
+          response_format: { type: "json_object" }
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Visual analysis timeout')), 8000)
+        )
+      ]);
 
       const analysis = JSON.parse(visionResponse.choices[0].message.content || '{}');
       
       // Track analytics
       await analyticsService.trackFeatureUsage(
+        null, // userId will be set by analytics service
         'visual-analysis',
-        'analysis-complete',
         {
           imagesAnalyzed: imagesToAnalyze.length,
           totalAssets: visualAssets.length,
@@ -193,8 +198,8 @@ export class VisualAnalysisService {
       debugLogger.error('Visual analysis failed:', error);
       
       await analyticsService.trackFeatureUsage(
-        'visual-analysis',
-        'analysis-failed',
+        null, // userId will be set by analytics service
+        'visual-analysis-failed',
         {
           error: error?.message || 'Unknown error',
           assetsCount: visualAssets.length
