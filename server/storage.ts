@@ -323,6 +323,44 @@ export class DbStorage implements IStorage {
   async deleteFeedItem(id: number): Promise<void> {
     await db.delete(feedItems).where(eq(feedItems.id, id));
   }
+
+  // RSS Feeds Implementation - Phase 5
+  async getRssFeeds(userId: number, category?: string): Promise<RssFeed[]> {
+    const query = db.select().from(rssFeeds).where(eq(rssFeeds.userId, userId));
+    if (category) {
+      return await query.where(and(eq(rssFeeds.userId, userId), eq(rssFeeds.category, category as any)));
+    }
+    return await query;
+  }
+
+  async createRssFeed(feed: InsertRssFeed): Promise<RssFeed> {
+    const result = await db.insert(rssFeeds).values(feed).returning();
+    return result[0];
+  }
+
+  async updateRssFeed(id: number, updates: Partial<InsertRssFeed>): Promise<RssFeed | undefined> {
+    const result = await db.update(rssFeeds)
+      .set(updates)
+      .where(eq(rssFeeds.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteRssFeed(id: number): Promise<void> {
+    await db.delete(rssFeeds).where(eq(rssFeeds.id, id));
+  }
+
+  async getRssArticles(feedId: number, limit = 10): Promise<RssArticle[]> {
+    return await db.select().from(rssArticles)
+      .where(eq(rssArticles.feedId, feedId))
+      .orderBy(desc(rssArticles.extractedAt))
+      .limit(limit);
+  }
+
+  async createRssArticle(article: InsertRssArticle): Promise<RssArticle> {
+    const result = await db.insert(rssArticles).values(article).returning();
+    return result[0];
+  }
 }
 
 export const storage = new DbStorage();

@@ -3,10 +3,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Brain, TrendingUp, Clock, ArrowRight, RefreshCw, ExternalLink, Target } from "lucide-react";
+import { Brain, TrendingUp, Clock, ArrowRight, RefreshCw, ExternalLink, Target, Rss, Users, Globe } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Signal } from "@shared/schema";
 import { StandardizedLoading } from "@/components/ui/standardized-loading";
+import { useRssArticles, useRssFeedStats } from "@/hooks/use-rss-feeds";
 
 interface TodaysBriefingProps {
   activeSubTab?: string;
@@ -46,6 +47,12 @@ export function TodaysBriefing({
     },
   });
 
+  // Fetch RSS articles for each category
+  const { data: clientArticles, isLoading: clientLoading } = useRssArticles('client', 3);
+  const { data: customArticles, isLoading: customLoading } = useRssArticles('custom', 3);
+  const { data: projectArticles, isLoading: projectLoading } = useRssArticles('project', 3);
+  const { data: feedStats } = useRssFeedStats();
+
   const topSignals = signalsData?.signals?.slice(0, 5) || [];
 
   const statusCounts = {
@@ -58,7 +65,12 @@ export function TodaysBriefing({
   const refreshFeeds = async () => {
     setRefreshing(true);
     try {
-      await queryClient.invalidateQueries({ queryKey: ['/api/signals'] });
+      // Refresh all data sources
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['/api/signals'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/rss-feeds'] }),
+        fetch('/api/rss-feeds/refresh', { method: 'POST', credentials: 'include' })
+      ]);
     } catch (error) {
       console.error('Failed to refresh feeds:', error);
     } finally {
@@ -66,7 +78,7 @@ export function TodaysBriefing({
     }
   };
 
-  if (isLoading) {
+  if (isLoading || clientLoading || customLoading || projectLoading) {
     return (
       <div className="space-y-6">
         <StandardizedLoading 
@@ -119,23 +131,33 @@ export function TodaysBriefing({
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-gray-600">Industry intelligence and competitive monitoring</p>
-            <div className="space-y-2">
-              {[
-                { title: "Tech Industry Shifts", source: "TechCrunch", time: "2h ago", priority: "High" },
-                { title: "Market Volatility Signals", source: "Reuters", time: "4h ago", priority: "Medium" },
-                { title: "Consumer Behavior Changes", source: "Harvard Business", time: "6h ago", priority: "High" }
-              ].map((item, index) => (
-                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{item.title}</p>
-                    <p className="text-xs text-gray-600">{item.source} • {item.time}</p>
+            {clientArticles?.articles?.length === 0 ? (
+              <div className="text-center py-4">
+                <Users className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-600 mb-3">No client feeds configured</p>
+                <Button onClick={() => onNavigate?.("feeds", "client-feeds")} size="sm">
+                  <Rss className="h-3 w-3 mr-1" />
+                  Add Client Feed
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {clientArticles?.articles?.slice(0, 3).map((article, index) => (
+                  <div key={article.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{article.title}</p>
+                      <p className="text-xs text-gray-600">
+                        {article.author && `${article.author} • `}
+                        {article.publishedAt ? formatDistanceToNow(new Date(article.publishedAt), { addSuffix: true }) : 'Recently'}
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => window.open(article.url, '_blank')}>
+                      <ExternalLink className="h-3 w-3" />
+                    </Button>
                   </div>
-                  <Badge variant={item.priority === "High" ? "destructive" : "secondary"} className="text-xs">
-                    {item.priority}
-                  </Badge>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -160,23 +182,33 @@ export function TodaysBriefing({
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-gray-600">Curated RSS feeds and data sources</p>
-            <div className="space-y-2">
-              {[
-                { title: "AI Marketing Trends", source: "Marketing Land", time: "1h ago", type: "RSS" },
-                { title: "Startup Funding Rounds", source: "Crunchbase", time: "3h ago", type: "RSS" },
-                { title: "Design System Updates", source: "Design Systems", time: "5h ago", type: "RSS" }
-              ].map((item, index) => (
-                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{item.title}</p>
-                    <p className="text-xs text-gray-600">{item.source} • {item.time}</p>
+            {customArticles?.articles?.length === 0 ? (
+              <div className="text-center py-4">
+                <Rss className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-600 mb-3">No custom feeds configured</p>
+                <Button onClick={() => onNavigate?.("feeds", "custom-feeds")} size="sm">
+                  <Rss className="h-3 w-3 mr-1" />
+                  Add RSS Feed
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {customArticles?.articles?.slice(0, 3).map((article) => (
+                  <div key={article.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{article.title}</p>
+                      <p className="text-xs text-gray-600">
+                        {article.author && `${article.author} • `}
+                        {article.publishedAt ? formatDistanceToNow(new Date(article.publishedAt), { addSuffix: true }) : 'Recently'}
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => window.open(article.url, '_blank')}>
+                      <ExternalLink className="h-3 w-3" />
+                    </Button>
                   </div>
-                  <Badge variant="outline" className="text-xs">
-                    {item.type}
-                  </Badge>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -201,23 +233,33 @@ export function TodaysBriefing({
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-gray-600">Market trends for active projects</p>
-            <div className="space-y-2">
-              {[
-                { title: "Gen Z Shopping Patterns", project: "E-commerce Strategy", time: "1h ago", insights: 12 },
-                { title: "Voice Search Adoption", project: "SEO Roadmap", time: "2h ago", insights: 8 },
-                { title: "Sustainability Messaging", project: "Brand Positioning", time: "4h ago", insights: 15 }
-              ].map((item, index) => (
-                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{item.title}</p>
-                    <p className="text-xs text-gray-600">{item.project} • {item.time}</p>
+            {projectArticles?.articles?.length === 0 ? (
+              <div className="text-center py-4">
+                <Globe className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-600 mb-3">No project feeds configured</p>
+                <Button onClick={() => onNavigate?.("feeds", "project-feeds")} size="sm">
+                  <Target className="h-3 w-3 mr-1" />
+                  Add Project Feed
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {projectArticles?.articles?.slice(0, 3).map((article) => (
+                  <div key={article.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{article.title}</p>
+                      <p className="text-xs text-gray-600">
+                        {article.author && `${article.author} • `}
+                        {article.publishedAt ? formatDistanceToNow(new Date(article.publishedAt), { addSuffix: true }) : 'Recently'}
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => window.open(article.url, '_blank')}>
+                      <ExternalLink className="h-3 w-3" />
+                    </Button>
                   </div>
-                  <Badge variant="secondary" className="text-xs">
-                    {item.insights} insights
-                  </Badge>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -258,7 +300,7 @@ export function TodaysBriefing({
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{signal.title}</p>
                       <p className="text-xs text-gray-600">
-                        {formatDistanceToNow(new Date(signal.createdAt), { addSuffix: true })}
+                        {signal.createdAt ? formatDistanceToNow(new Date(signal.createdAt), { addSuffix: true }) : 'Recently added'}
                       </p>
                     </div>
                     <Badge variant={
