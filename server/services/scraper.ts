@@ -238,34 +238,27 @@ export class ScraperService {
     if (baseUrl.includes('linkedin.com') || baseUrl.includes('twitter.com') || 
         baseUrl.includes('instagram.com') || baseUrl.includes('facebook.com')) {
       
-      // Exclude only very obvious non-content images for social media
-      const socialExcludes = [
-        /favicon/i,
-        /logo.*header/i,
-        /icon.*16|32|64/i, // Small icons
-        /spinner/i,
-        /loading/i,
-        /1x1/i, // Tracking pixels
-        /tracking/i,
-        /analytics/i
-      ];
-      
-      const isExcluded = socialExcludes.some(pattern => pattern.test(urlLower) || pattern.test(altLower));
-      
-      // Include if not excluded and has reasonable size or content indicators
-      const hasReasonableSize = !url.includes('16x16') && !url.includes('32x32') && !url.includes('1x1') && 
-                                !url.includes('height="16') && !url.includes('width="16');
-      const hasContentIndicators = alt.length > 3 || url.includes('media') || url.includes('image') || 
-                                   url.includes('photo') || url.includes('content') || url.includes('feed') ||
-                                   url.includes('dms-') || url.includes('feedshare-'); // LinkedIn specific
-      
-      // For LinkedIn, be more permissive with static images
-      if (baseUrl.includes('linkedin.com')) {
-        const linkedinImage = url.includes('licdn.com') || url.includes('media.licdn.com');
-        return !isExcluded && (hasReasonableSize || hasContentIndicators || linkedinImage);
+      // COMPLETELY BLOCK LinkedIn UI elements and reaction icons
+      if (url.includes('static.licdn.com/aero-v1/sc/h/')) {
+        return false; // Block all LinkedIn UI icons
       }
       
-      return !isExcluded && (hasReasonableSize || hasContentIndicators);
+      if (url.includes('reaction-type') || alt.includes('reaction-type')) {
+        return false; // Block reaction type images
+      }
+      
+      // Only allow specific content image patterns
+      const contentPatterns = [
+        'feedshare-',
+        '/dms/image/',
+        'feedshare-shrink_800',
+        'article-cover_image-shrink'
+      ];
+      
+      const hasContentPattern = contentPatterns.some(pattern => url.includes(pattern));
+      
+      // For LinkedIn, ONLY return images that match content patterns
+      return hasContentPattern;
     }
     
     // For non-social media sites, use more strict filtering
