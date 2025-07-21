@@ -46,6 +46,15 @@ export class OpenAIService {
     }
   }
 
+  async getCachedAnalysis(cacheKey: string): Promise<EnhancedAnalysisResult | null> {
+    try {
+      return await analysisCache.get(cacheKey);
+    } catch (error) {
+      debugLogger.error('Cache retrieval error', { error: (error as Error).message, cacheKey });
+      return null;
+    }
+  }
+
   private getSystemPrompt(lengthPreference: string, isDeepAnalysis: boolean): string {
     return `You are an expert content and creative strategist and analyst. You specialize in finding culturally relevant creative and strategic insights. Analyze the provided content and return strategic insights in JSON format.
 

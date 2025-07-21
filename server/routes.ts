@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import axios from "axios";
 import bcrypt from "bcryptjs";
 import session from "express-session";
 import MemoryStore from "memorystore";
@@ -27,6 +28,7 @@ import { strategicInsightsService } from "./services/strategicInsights";
 import { strategicActionsService } from "./services/strategicActions";
 import { strategicRecommendationsService } from "./services/strategicRecommendations";
 import { getCacheStats } from "./services/cache";
+import { analyzeWithOpenAI } from "./services/openaiAnalysisService";
 import { whisperService } from "./services/whisper";
 import { videoTranscriptionService } from "./services/video-transcription";
 import { socialMediaIntelligence } from "./services/social-media-intelligence";
@@ -139,7 +141,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       debugLogger.error('Bright Data test failed:', error);
       res.status(500).json({
         error: 'Failed to test Bright Data',
-        message: error.message,
+        message: (error as Error).message,
         timestamp: new Date().toISOString()
       });
     }
@@ -217,7 +219,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user: { id: user.id, email: user.email } 
       });
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      res.status(400).json({ message: (error as Error).message });
     }
   });
 
@@ -248,8 +250,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       });
     } catch (error: any) {
-      debugLogger.warn("Login failed", { error: error.message }, req);
-      res.status(400).json({ message: error.message });
+      debugLogger.warn("Login failed", { error: (error as Error).message }, req);
+      res.status(400).json({ message: (error as Error).message });
     }
   });
 
@@ -277,7 +279,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user: { id: user.id, email: user.email } 
       });
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: (error as Error).message });
     }
   });
 
@@ -299,7 +301,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Send initial status
       res.write(`data: ${JSON.stringify({ type: 'status', message: 'Starting analysis...', progress: 10 })}\n\n`);
-      res.flush?.();
+
       
       // Check cache first
       const cacheKey = `${data.content?.slice(0, 100)}-${lengthPreference}`;
@@ -307,18 +309,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (cached) {
         res.write(`data: ${JSON.stringify({ type: 'status', message: 'Using cached analysis...', progress: 50 })}\n\n`);
-        res.flush?.();
+  
         res.write(`data: ${JSON.stringify({ type: 'analysis', data: cached })}\n\n`);
-        res.flush?.();
+  
         res.write(`data: ${JSON.stringify({ type: 'complete', progress: 100 })}\n\n`);
-        res.flush?.();
+  
         res.end();
         return;
       }
       
       // Start analysis
       res.write(`data: ${JSON.stringify({ type: 'status', message: 'Analyzing content...', progress: 30 })}\n\n`);
-      res.flush?.();
+
       
       const analysisMode = req.body.analysisMode || 'quick';
       
@@ -328,7 +330,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (data.url) {
         res.write(`data: ${JSON.stringify({ type: 'status', message: 'Extracting content and visuals...', progress: 35 })}\n\n`);
-        res.flush?.();
+  
         
         try {
           extractedContent = await scraperService.extractContent(data.url);
@@ -341,20 +343,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Send progress updates during analysis
       res.write(`data: ${JSON.stringify({ type: 'status', message: 'Processing with AI...', progress: 50 })}\n\n`);
-      res.flush?.();
+
       
       const analysis = await openaiService.analyzeContent(data, lengthPreference, analysisMode);
       
       res.write(`data: ${JSON.stringify({ type: 'status', message: 'Generating insights...', progress: 70 })}\n\n`);
-      res.flush?.();
+
       
       // Send more detailed progress
       res.write(`data: ${JSON.stringify({ type: 'status', message: 'Creating strategic analysis...', progress: 80 })}\n\n`);
-      res.flush?.();
+
       
       // Save as signal
       res.write(`data: ${JSON.stringify({ type: 'status', message: 'Saving analysis...', progress: 85 })}\n\n`);
-      res.flush?.();
+
       
       const signalData = {
         userId: req.session.userId!,
@@ -390,7 +392,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const signal = await storage.createSignal(signalData);
       
       res.write(`data: ${JSON.stringify({ type: 'status', message: 'Finalizing...', progress: 90 })}\n\n`);
-      res.flush?.();
+
       
       // Track source if URL provided
       if (data.url) {
@@ -424,12 +426,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data: responseData, 
         progress: 100 
       })}\n\n`);
-      res.flush?.();
+
       
       res.end();
     } catch (error: any) {
       debugLogger.error('Streaming analysis failed', error, req);
-      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+      res.write(`data: ${JSON.stringify({ type: 'error', message: (error as Error).message })}\n\n`);
       res.end();
     }
   });
@@ -484,7 +486,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ recommendations });
     } catch (error: any) {
       debugLogger.error("Strategic recommendations failed", error);
-      res.status(500).json({ error: error.message || "Failed to generate strategic recommendations" });
+      res.status(500).json({ error: (error as Error).message || "Failed to generate strategic recommendations" });
     }
   });
 
@@ -538,7 +540,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       debugLogger.error('Gemini visual analysis API failed', error, req);
       res.status(500).json({ 
         error: "Visual analysis failed",
-        message: error.message
+        message: (error as Error).message
       });
     }
   });
@@ -667,7 +669,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       debugLogger.info("Analysis request completed successfully", { signalId: signal.id }, req);
     } catch (error: any) {
       debugLogger.error('Content analysis failed', error, req);
-      res.status(400).json({ message: error.message });
+      res.status(400).json({ message: (error as Error).message });
     }
   });
 
@@ -709,7 +711,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       debugLogger.error('Draft creation failed', error, req);
-      res.status(400).json({ message: error.message });
+      res.status(400).json({ message: (error as Error).message });
     }
   });
 
@@ -738,7 +740,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       debugLogger.error('Re-analysis failed', error, req);
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: (error as Error).message });
     }
   });
 
@@ -774,7 +776,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date().toISOString()
       });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as Error).message });
     }
   });
 
@@ -860,7 +862,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
     } catch (error: any) {
       debugLogger.error('Deep analysis failed', error, req);
-      res.status(400).json({ message: error.message });
+      res.status(400).json({ message: (error as Error).message });
     }
   });
 
@@ -913,7 +915,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (error: any) {
       debugLogger.error('Audio transcription failed', error, req);
-      res.status(400).json({ message: error.message });
+      res.status(400).json({ message: (error as Error).message });
     }
   });
 
@@ -956,7 +958,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const analysisData = {
         content: transcriptionResult.text,
         title: title || `Audio Transcription - ${filename}`,
-        url: null
+        url: undefined
       };
 
       const analysis = await openaiService.analyzeContent(analysisData, 'medium', 'quick');
@@ -966,7 +968,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: req.session.userId!,
         title: title || `Audio Analysis - ${filename}`,
         content: transcriptionResult.text,
-        url: null,
+        url: undefined,
         summary: analysis.summary,
         sentiment: analysis.sentiment,
         tone: analysis.tone,
@@ -1013,7 +1015,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (error: any) {
       debugLogger.error('Audio signal creation failed', error, req);
-      res.status(400).json({ message: error.message });
+      res.status(400).json({ message: (error as Error).message });
     }
   });
 
@@ -1043,7 +1045,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       try {
         // Transcribe audio using Whisper API
-        const transcriptionResult = await whisperService.transcribeAudio(tempFilePath);
+        const transcriptionResult = await whisperService.transcribeAudio(audioBuffer, filename);
 
         res.json({
           success: true,
@@ -1066,7 +1068,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Voice note transcription error:", error);
       res.status(500).json({
         error: "Failed to transcribe voice note",
-        message: error.message
+        message: (error as Error).message
       });
     }
   });
@@ -1080,7 +1082,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ logs, count: logs.length });
     } catch (error: any) {
       debugLogger.error('Failed to retrieve debug logs', error, req);
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: (error as Error).message });
     }
   });
 
@@ -1090,7 +1092,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(errorSummary);
     } catch (error: any) {
       debugLogger.error('Failed to retrieve error summary', error, req);
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: (error as Error).message });
     }
   });
 
@@ -1116,7 +1118,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: 'Debug logs cleared successfully' });
     } catch (error: any) {
       debugLogger.error('Failed to clear debug logs', error, req);
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: (error as Error).message });
     }
   });
 
@@ -1208,7 +1210,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sections
       });
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      res.status(400).json({ message: (error as Error).message });
     }
   });
 
@@ -1258,7 +1260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const signals = await storage.getSignalsByUserId(req.session.userId!);
       res.json({ signals });
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: (error as Error).message });
     }
   });
 
@@ -1273,7 +1275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ signal });
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: (error as Error).message });
     }
   });
 
@@ -1299,7 +1301,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedSignal = await storage.updateSignal(id, updates);
       res.json({ signal: updatedSignal });
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      res.status(400).json({ message: (error as Error).message });
     }
   });
 
@@ -1315,7 +1317,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.deleteSignal(id);
       res.json({ success: true });
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: (error as Error).message });
     }
   });
 
@@ -1365,7 +1367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ suggestions });
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: (error as Error).message });
     }
   });
 
@@ -1452,7 +1454,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ topics });
     } catch (error: any) {
       debugLogger.error('Error searching trending topics', error, req);
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: (error as Error).message });
     }
   });
 
@@ -1465,7 +1467,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ health });
     } catch (error: any) {
       debugLogger.error('Error checking API health', error, req);
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: (error as Error).message });
     }
   });
 
@@ -1482,7 +1484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ topics });
     } catch (error: any) {
       debugLogger.error(`Error fetching ${req.params.platform} trends`, error, req);
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: (error as Error).message });
     }
   });
 
@@ -1505,7 +1507,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(report);
     } catch (error: any) {
       debugLogger.error("Error generating daily report", error, req);
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: (error as Error).message });
     }
   });
 
@@ -1580,7 +1582,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
 
       res.json({ content });
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: (error as Error).message });
     }
   });
 
@@ -1590,7 +1592,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
       const sources = await storage.getSourcesByUserId(req.session.userId!);
       res.json({ sources });
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: (error as Error).message });
     }
   });
 
@@ -1599,7 +1601,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
       const analytics = await sourceManagerService.getSourceAnalytics(req.session.userId!);
       res.json(analytics);
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: (error as Error).message });
     }
   });
 
@@ -1617,7 +1619,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
       const relatedSignals = await storage.getSignalsForSource(id);
       res.json({ source, relatedSignals });
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: (error as Error).message });
     }
   });
 
@@ -1634,7 +1636,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
       const updatedSource = await storage.updateSource(id, updates);
       res.json({ source: updatedSource });
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: (error as Error).message });
     }
   });
 
@@ -1682,7 +1684,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
       res.status(500).json({ 
         error: { 
           title: "Reset Failed", 
-          message: error.message || "Failed to reset password" 
+          message: (error as Error).message || "Failed to reset password" 
         } 
       });
     }
@@ -1739,7 +1741,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
       }
       
       // Handle generic errors
-      const errorMessage = matchErrorPattern(error.message);
+      const errorMessage = matchErrorPattern((error as Error).message);
       res.status(400).json({ 
         error: errorMessage 
       });
@@ -1885,7 +1887,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
       const feedSources = await feedManagerService.getUserFeedSources(req.session.userId!);
       res.json({ feedSources });
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: (error as Error).message });
     }
   });
 
@@ -1899,12 +1901,13 @@ The analyzed signals provide a comprehensive view of current market trends and s
         sourceType,
         sourceUrl,
         sourceConfig,
-        updateFrequency: updateFrequency || "4h"
+        updateFrequency: updateFrequency || "4h",
+        isActive: true
       });
       
       res.json({ feedSource });
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      res.status(400).json({ message: (error as Error).message });
     }
   });
 
@@ -1916,7 +1919,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
       const feedSource = await feedManagerService.updateUserFeedSource(id, updates);
       res.json({ feedSource });
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      res.status(400).json({ message: (error as Error).message });
     }
   });
 
@@ -1926,7 +1929,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
       await feedManagerService.deleteUserFeedSource(id);
       res.json({ success: true });
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      res.status(400).json({ message: (error as Error).message });
     }
   });
 
@@ -1938,7 +1941,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
       const feedItems = await feedManagerService.fetchFeedItems(req.session.userId!, feedType, limit);
       res.json({ feedItems });
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: (error as Error).message });
     }
   });
 
@@ -2023,6 +2026,15 @@ The analyzed signals provide a comprehensive view of current market trends and s
         platform: 'Instagram',
         hashtagsAnalyzed: hashtags.length
       });
+    } catch (error: any) {
+      debugLogger.error('Instagram hashtag intelligence failed', error, req);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to analyze Instagram hashtags',
+        details: (error as Error).message
+      });
+    }
+  });
 
   // AUTOMATED BRIGHT DATA ENDPOINTS FOR TRENDING TABS
   
@@ -2035,7 +2047,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
       const trendingData = await automatedService.getTrendingData();
       
       // Transform for frontend consumption
-      const transformedData = trendingData.reduce((acc, platform) => {
+      const transformedData = trendingData.reduce((acc: any, platform: any) => {
         acc[platform.platform] = {
           data: platform.data,
           success: platform.success,
@@ -2051,16 +2063,16 @@ The analyzed signals provide a comprehensive view of current market trends and s
       res.json({
         success: true,
         platforms: transformedData,
-        totalItems: trendingData.reduce((sum, p) => sum + p.data.length, 0),
+        totalItems: trendingData.reduce((sum: number, p: any) => sum + p.data.length, 0),
         collectedAt: new Date().toISOString()
       });
       
     } catch (error) {
-      debugLogger.error('Trending data collection failed:', error.message);
+      debugLogger.error('Trending data collection failed:', (error as Error).message);
       res.status(500).json({
         success: false,
         error: 'Failed to collect trending data',
-        details: error.message
+        details: (error as Error).message
       });
     }
   });
@@ -2070,7 +2082,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
     try {
       const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const instagramData = data.find(p => p.platform === 'instagram');
+      const instagramData = data.find((p: any) => p.platform === 'instagram');
       
       res.json({
         success: true,
@@ -2080,7 +2092,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
         snapshotId: instagramData?.snapshotId
       });
     } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
@@ -2088,7 +2100,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
     try {
       const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const twitterData = data.find(p => p.platform === 'twitter');
+      const twitterData = data.find((p: any) => p.platform === 'twitter');
       
       res.json({
         success: true,
@@ -2098,7 +2110,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
         snapshotId: twitterData?.snapshotId
       });
     } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
@@ -2106,7 +2118,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
     try {
       const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const tiktokData = data.find(p => p.platform === 'tiktok');
+      const tiktokData = data.find((p: any) => p.platform === 'tiktok');
       
       res.json({
         success: true,
@@ -2116,7 +2128,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
         snapshotId: tiktokData?.snapshotId
       });
     } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
@@ -2124,7 +2136,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
     try {
       const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const linkedinData = data.find(p => p.platform === 'linkedin');
+      const linkedinData = data.find((p: any) => p.platform === 'linkedin');
       
       res.json({
         success: true,
@@ -2134,7 +2146,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
         snapshotId: linkedinData?.snapshotId
       });
     } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
@@ -2145,7 +2157,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
     try {
       const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const mediumData = data.find(p => p.platform === 'medium');
+      const mediumData = data.find((p: any) => p.platform === 'medium');
       
       res.json({
         success: true,
@@ -2155,7 +2167,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
         snapshotId: mediumData?.snapshotId
       });
     } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
@@ -2163,7 +2175,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
     try {
       const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const substackData = data.find(p => p.platform === 'substack');
+      const substackData = data.find((p: any) => p.platform === 'substack');
       
       res.json({
         success: true,
@@ -2173,7 +2185,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
         snapshotId: substackData?.snapshotId
       });
     } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
@@ -2181,7 +2193,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
     try {
       const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const producthuntData = data.find(p => p.platform === 'producthunt');
+      const producthuntData = data.find((p: any) => p.platform === 'producthunt');
       
       res.json({
         success: true,
@@ -2191,7 +2203,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
         snapshotId: producthuntData?.snapshotId
       });
     } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
@@ -2200,7 +2212,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
     try {
       const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const glassdoorData = data.find(p => p.platform === 'glassdoor');
+      const glassdoorData = data.find((p: any) => p.platform === 'glassdoor');
       
       res.json({
         success: true,
@@ -2210,7 +2222,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
         snapshotId: glassdoorData?.snapshotId
       });
     } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
@@ -2218,7 +2230,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
     try {
       const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const trustpilotData = data.find(p => p.platform === 'trustpilot');
+      const trustpilotData = data.find((p: any) => p.platform === 'trustpilot');
       
       res.json({
         success: true,
@@ -2228,7 +2240,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
         snapshotId: trustpilotData?.snapshotId
       });
     } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
@@ -2236,7 +2248,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
     try {
       const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const g2Data = data.find(p => p.platform === 'g2');
+      const g2Data = data.find((p: any) => p.platform === 'g2');
       
       res.json({
         success: true,
@@ -2246,7 +2258,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
         snapshotId: g2Data?.snapshotId
       });
     } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
@@ -2254,7 +2266,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
     try {
       const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const capterraData = data.find(p => p.platform === 'capterra');
+      const capterraData = data.find((p: any) => p.platform === 'capterra');
       
       res.json({
         success: true,
@@ -2264,7 +2276,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
         snapshotId: capterraData?.snapshotId
       });
     } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
@@ -2273,7 +2285,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
     try {
       const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const soundcloudData = data.find(p => p.platform === 'soundcloud');
+      const soundcloudData = data.find((p: any) => p.platform === 'soundcloud');
       
       res.json({
         success: true,
@@ -2283,7 +2295,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
         snapshotId: soundcloudData?.snapshotId
       });
     } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
@@ -2291,7 +2303,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
     try {
       const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const mastodonData = data.find(p => p.platform === 'mastodon');
+      const mastodonData = data.find((p: any) => p.platform === 'mastodon');
       
       res.json({
         success: true,
@@ -2301,7 +2313,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
         snapshotId: mastodonData?.snapshotId
       });
     } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
@@ -2309,7 +2321,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
     try {
       const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const nextdoorData = data.find(p => p.platform === 'nextdoor');
+      const nextdoorData = data.find((p: any) => p.platform === 'nextdoor');
       
       res.json({
         success: true,
@@ -2319,7 +2331,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
         snapshotId: nextdoorData?.snapshotId
       });
     } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
@@ -2356,19 +2368,11 @@ The analyzed signals provide a comprehensive view of current market trends and s
       });
       
     } catch (error) {
-      debugLogger.error(`Snapshot check failed for ${req.params.snapshotId}:`, error.message);
+      debugLogger.error(`Snapshot check failed for ${req.params.snapshotId}:`, (error as Error).message);
       res.status(500).json({
         error: 'Failed to check snapshot',
         snapshot_id: req.params.snapshotId,
-        details: error.message
-      });
-    }
-  });
-    } catch (error) {
-      debugLogger.error('Instagram hashtag scraping error', { error: (error as Error).message });
-      res.status(500).json({
-        success: false,
-        error: 'Failed to scrape Instagram hashtag data'
+        details: (error as Error).message
       });
     }
   });
@@ -2401,7 +2405,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
       const result = await feedManagerService.refreshUserFeeds(req.session.userId!);
       res.json(result);
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: (error as Error).message });
     }
   });
 
@@ -2410,7 +2414,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
       const profile = await feedManagerService.getUserTopicProfile(req.session.userId!);
       res.json({ profile });
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: (error as Error).message });
     }
   });
 
@@ -2419,7 +2423,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
       const profile = await feedManagerService.getUserTopicProfile(req.session.userId!);
       res.json(profile);
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: (error as Error).message });
     }
   });
 
@@ -2428,7 +2432,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
       const profile = await feedManagerService.updateUserTopicProfile(req.session.userId!, req.body);
       res.json(profile);
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      res.status(400).json({ message: (error as Error).message });
     }
   });
 
@@ -2437,7 +2441,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
       const profile = await feedManagerService.updateUserTopicProfile(req.session.userId!, req.body);
       res.json(profile);
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      res.status(400).json({ message: (error as Error).message });
     }
   });
 
@@ -2446,7 +2450,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
       const profile = await feedManagerService.updateUserTopicProfile(req.session.userId!, req.body);
       res.json({ profile });
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      res.status(400).json({ message: (error as Error).message });
     }
   });
 
@@ -2456,7 +2460,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
       await feedManagerService.markFeedItemAsRead(req.session.userId!, id);
       res.json({ success: true });
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      res.status(400).json({ message: (error as Error).message });
     }
   });
 
@@ -2466,7 +2470,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
       await feedManagerService.bookmarkFeedItem(req.session.userId!, id);
       res.json({ success: true });
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      res.status(400).json({ message: (error as Error).message });
     }
   });
 
@@ -2691,7 +2695,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
       res.json(feed);
     } catch (error) {
       console.error('Failed to add RSS feed:', error);
-      res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to add RSS feed' });
+      res.status(500).json({ error: error instanceof Error ? (error as Error).message : 'Failed to add RSS feed' });
     }
   });
 
@@ -2821,7 +2825,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
       res.status(201).json(brief);
     } catch (error) {
       console.error("Error generating brief:", error);
-      res.status(400).json({ error: error.message || "Failed to generate brief" });
+      res.status(400).json({ error: (error as Error).message || "Failed to generate brief" });
     }
   });
 

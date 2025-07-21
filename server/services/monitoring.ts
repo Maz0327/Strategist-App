@@ -69,6 +69,30 @@ class PerformanceMonitor {
     return (errors / filteredMetrics.length) * 100;
   }
 
+  getMetrics() {
+    return {
+      totalRequests: this.metrics.length,
+      averageResponseTime: this.getAverageResponseTime(),
+      errorRate: this.getErrorRate(),
+      cacheHitRate: this.getCacheHitRate()
+    };
+  }
+
+  getEndpointStats() {
+    const endpoints = [...new Set(this.metrics.map(m => m.endpoint))];
+    return endpoints.map(endpoint => ({
+      endpoint,
+      averageResponseTime: this.getAverageResponseTime(endpoint),
+      errorRate: this.getErrorRate(endpoint),
+      cacheHitRate: this.getCacheHitRate(endpoint),
+      requestCount: this.metrics.filter(m => m.endpoint === endpoint).length
+    }));
+  }
+
+  clearMetrics() {
+    this.metrics = [];
+  }
+
   getCacheHitRate(endpoint?: string): number {
     const filteredMetrics = endpoint 
       ? this.metrics.filter(m => m.endpoint === endpoint)
