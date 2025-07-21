@@ -454,7 +454,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Visual Analysis API - dedicated endpoint for image analysis
+  // Visual Analysis API - dedicated endpoint for image analysis using Gemini
   app.post("/api/analyze/visual", requireAuth, async (req, res) => {
     try {
       const { imageUrls, content, context } = req.body;
@@ -466,14 +466,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Import Gemini service
+      const { geminiVisualAnalysisService } = await import('./services/visual-analysis-gemini');
+
       // Convert URLs to VisualAsset format
       const visualAssets = imageUrls.map(url => ({
         type: 'image' as const,
         url
       }));
 
-      // Perform visual analysis
-      const visualAnalysis = await visualAnalysisService.analyzeVisualAssets(
+      // Perform visual analysis using Gemini
+      const visualAnalysis = await geminiVisualAnalysisService.analyzeVisualAssets(
         visualAssets,
         content || context || "Visual content analysis",
         req.body.sourceUrl
@@ -484,12 +487,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         visualAnalysis,
         metadata: {
           imagesAnalyzed: visualAssets.length,
-          confidenceScore: visualAnalysis.confidenceScore
+          confidenceScore: visualAnalysis.confidenceScore,
+          engine: "gemini-2.0-flash-preview"
         }
       });
 
     } catch (error: any) {
-      debugLogger.error('Visual analysis API failed', error, req);
+      debugLogger.error('Gemini visual analysis API failed', error, req);
       res.status(500).json({ 
         error: "Visual analysis failed",
         message: error.message

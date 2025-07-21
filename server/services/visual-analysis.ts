@@ -146,7 +146,7 @@ export class VisualAnalysisService {
       // Process images through OpenAI Vision API
       const visionResponse: any = await Promise.race([
         openai.chat.completions.create({
-          model: "gpt-4o-mini", // Use faster, cheaper model for visual analysis
+          model: "gpt-4o", // gpt-4o is required for vision capabilities (gpt-4o-mini doesn't support images)
           messages: [
             {
               role: "system",
@@ -163,18 +163,18 @@ export class VisualAnalysisService {
                   type: "image_url" as const,
                   image_url: {
                     url: asset.url,
-                    detail: "low" as const // Changed from high to low for faster processing
+                    detail: "high" as const // Use high detail for better visual analysis
                   }
                 }))
               ]
             }
           ],
-          max_tokens: 800, // Further reduced for speed
+          max_tokens: 1500, // Increased for comprehensive vision analysis
           temperature: 0.1,
           response_format: { type: "json_object" }
         }),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Visual analysis timeout')), 10000)
+          setTimeout(() => reject(new Error('Visual analysis timeout')), 30000) // Increased for vision model
         )
       ]);
 
