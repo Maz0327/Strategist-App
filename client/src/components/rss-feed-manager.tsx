@@ -119,6 +119,7 @@ export function RssFeedManager({ category = 'custom', onFeedAdded }: RssFeedMana
                     <p><strong>YouTube Channel:</strong> https://www.youtube.com/feeds/videos.xml?channel_id=CHANNEL_ID</p>
                     <p><strong>Reddit Subreddit:</strong> https://www.reddit.com/r/SUBREDDIT.rss</p>
                     <p><strong>Medium User:</strong> https://medium.com/feed/@USERNAME</p>
+                    <p><strong>LinkedIn Company:</strong> https://www.linkedin.com/company/COMPANY/posts.rss</p>
                     <p><strong>Instagram (via RSS Bridge):</strong> Use RSS Bridge service</p>
                     <p><strong>Twitter (via RSS Bridge):</strong> Use RSS Bridge service</p>
                     <p className="text-amber-600">Note: Some platforms require special tools or have limited RSS support</p>

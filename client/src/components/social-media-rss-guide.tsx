@@ -48,6 +48,19 @@ export function SocialMediaRssGuide() {
       notes: "Works for users and publications"
     },
     {
+      name: "LinkedIn",
+      difficulty: "Medium",
+      badgeColor: "secondary" as const,
+      description: "Company pages and some user feeds",
+      steps: [
+        "Company pages: https://www.linkedin.com/company/COMPANY/posts/",
+        "Add .rss to company posts URL",
+        "Personal profiles have limited RSS support"
+      ],
+      example: "https://www.linkedin.com/company/microsoft/posts.rss",
+      notes: "Only works for company pages, not personal profiles"
+    },
+    {
       name: "Instagram",
       difficulty: "Hard",
       badgeColor: "destructive" as const,
