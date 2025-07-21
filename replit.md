@@ -498,35 +498,38 @@ Successfully implemented unified Visual Intelligence workflow based on user's st
 - **Strategic Value**: Brand elements, cultural moments, and competitive positioning analysis
 - **Cost Efficiency**: Visual analysis only runs when specifically requested or in deep mode
 
-### Original Prompts Restoration - July 21, 2025
+### Sentence Count Prompt Implementation - July 21, 2025
 
-#### ✅ **COMPLETE PROMPT RESTORATION - PRODUCTION READY**:
-Successfully restored all OpenAI prompts to their original, simple working versions that were used before optimization attempts began:
+#### ✅ **SPECIFIC SENTENCE COUNT REQUIREMENTS - PRODUCTION READY**:
+Successfully implemented new prompts with explicit sentence count guidance to achieve consistent length results:
 
-**What Was Restored:**
-- **System Prompts**: Reverted from complex sentence-counting instructions back to simple, natural strategic analysis guidance
-- **User Prompts**: Simplified from detailed JSON schema requirements to flexible content analysis requests  
-- **Adjustment Prompts**: Removed complex length requirements and returned to natural expansion/condensation approach
-- **Length Handling**: Restored organic length variation based on content analysis rather than forced sentence counts
+**New System Prompt Features:**
+- **Enhanced Role Definition**: "expert content and creative strategist" with specialization in "culturally relevant creative and strategic insights"
+- **Cultural Focus**: Emphasizes finding cultural relevance in strategic analysis
+- **Clean Structure**: Removed redundant "Return valid JSON only" statements for cleaner prompts
 
-**Benefits of Original Prompts:**
-- **More Natural Results**: Analysis flows naturally instead of forcing artificial sentence counts
-- **Better Quality**: Strategic insights are more coherent and actionable
-- **Consistent Performance**: All length preferences (short, medium, long, bulletpoints) work reliably
-- **Faster Processing**: Simpler prompts require less token processing and generate faster responses
-- **Higher Success Rate**: Original prompts had proven reliability before optimization attempts
+**Medium Analysis Baseline (3-5 sentences per field):**
+- **User Prompt**: Clear instruction "Provide strategic analysis with 3-5 sentences in each truthAnalysis field"
+- **JSON Structure**: Each field description specifies "3-5 sentences" instead of "comprehensive"
+- **Function Schema**: Updated function calling descriptions to match sentence count requirements
+- **Consistent Expectation**: All truthAnalysis fields (fact, observation, insight, humanTruth, culturalMoment) now have clear length targets
 
-**Technical Changes Made:**
-- `getSystemPrompt()`: Restored to simple strategic analysis guidance without complex instructions
-- `createMediumAnalysis()`: User prompt restored to flexible content analysis request
-- `adjustAnalysis()`: Simplified adjustment prompts for natural length variation
-- **Model Strategy Maintained**: Still using GPT-3.5-turbo for quick analysis, GPT-4o-mini for deep analysis
+**Length Adjustment Prompts:**
+- **Short Analysis**: "Summarize this analysis down to 2 sentences while communicating the same context... Return only the JSON object with each field condensed to exactly 2 sentences"
+- **Long Analysis**: "Elaborate on this analysis with more detail and context and give me between 6 and 7 sentences for each field you expand on... Return only the JSON object with each field expanded to 6-7 sentences with rich detail"
+- **Specific Targets**: Clear sentence count boundaries (2 for short, 3-5 for medium, 6-7 for long)
 
-**User Experience Impact:**
-- **"Long" Analysis Fixed**: Now provides comprehensive detailed analysis as originally intended
-- **Natural Variation**: Each length preference provides appropriate depth without artificial constraints
-- **Better Readability**: Analysis results are more conversational and strategic rather than formulaic
-- **Consistent Quality**: All analysis modes now work reliably with original proven approach
+**Technical Implementation:**
+- **Cache Version**: Updated to v16-sentence-count-prompts to ensure fresh results
+- **Function Calling**: Updated schema descriptions to match sentence count requirements
+- **Model Strategy**: Maintained GPT-3.5-turbo for quick, GPT-4o-mini for deep analysis
+- **Progressive Analysis**: Medium baseline with targeted adjustments for other lengths
+
+**Expected User Experience Benefits:**
+- **Predictable Length**: Users will get consistent sentence counts across all analysis modes
+- **Cultural Intelligence**: Enhanced focus on culturally relevant insights and creative strategy
+- **Clear Expectations**: No more variable-length responses - each mode delivers expected depth
+- **Quality Consistency**: Specific guidance ensures AI delivers appropriate detail level every time
 
 ### Current System Status - July 21, 2025
 - **Performance**: **CRISIS RESOLVED** - URL extraction now 3-8 seconds maximum (down from 30+ seconds)

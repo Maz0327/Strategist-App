@@ -47,7 +47,7 @@ export class OpenAIService {
   }
 
   private getSystemPrompt(lengthPreference: string, isDeepAnalysis: boolean): string {
-    return `You are an expert content strategist and analyst. Analyze the provided content and return strategic insights in JSON format.
+    return `You are an expert content and creative strategist and analyst. You specialize in finding culturally relevant creative and strategic insights. Analyze the provided content and return strategic insights in JSON format.
 
 Focus on:
 - Strategic business implications
@@ -56,11 +56,7 @@ Focus on:
 - Competitive landscape insights
 - Attention and engagement potential
 
-Analyze this content for strategic insights. Focus on actionable intelligence and cultural context.
-
-Return valid JSON with comprehensive analysis in each field.
-
-Return valid JSON only.`;
+Analyze this content for strategic insights. Focus on actionable intelligence and cultural context.`;
   }
 
   async analyzeContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', analysisMode: 'quick' | 'deep' = 'quick'): Promise<EnhancedAnalysisResult> {
@@ -84,7 +80,7 @@ Return valid JSON only.`;
 
   private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     // Create stable cache key base with version for prompt changes
-    const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v15-original-simple-prompts';
+    const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v16-sentence-count-prompts';
     
     // Step 1: Check if we have the requested length preference cached
     const targetCacheKey = createCacheKey(cacheKeyBase + lengthPreference, 'analysis');
@@ -139,7 +135,7 @@ Return valid JSON only.`;
     
     const userPrompt = `Analyze this content for strategic insights. 
 
-Provide strategic analysis with comprehensive details in each truthAnalysis field.
+Provide strategic analysis with 3-5 sentences in each truthAnalysis field.
 
 Title: ${title}
 Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}
@@ -152,11 +148,11 @@ Return JSON with this structure:
   "keywords": ["relevant", "strategic", "keywords"],
   "confidence": "85%",
   "truthAnalysis": {
-    "fact": "Comprehensive factual details stating what actually happened, who was involved, specific numbers/data mentioned, concrete examples given, and verifiable information",
-    "observation": "Comprehensive analysis of patterns, connections, strategic observations, underlying dynamics, and what this reveals about the situation", 
-    "insight": "Comprehensive strategic implications, business intelligence, deeper strategic meaning, and actionable intelligence",
-    "humanTruth": "Comprehensive analysis of human motivations, psychological drivers, emotional triggers, behavioral patterns, and what drives people",
-    "culturalMoment": "Comprehensive cultural context, societal trends, generational dynamics, broader cultural relevance, and cultural significance",
+    "fact": "3-5 sentences stating what actually happened, who was involved, specific numbers/data mentioned, concrete examples given, and verifiable information",
+    "observation": "3-5 sentences analyzing patterns, connections, strategic observations, underlying dynamics, and what this reveals about the situation", 
+    "insight": "3-5 sentences on strategic implications, business intelligence, deeper strategic meaning, and actionable intelligence",
+    "humanTruth": "3-5 sentences analyzing human motivations, psychological drivers, emotional triggers, behavioral patterns, and what drives people",
+    "culturalMoment": "3-5 sentences on cultural context, societal trends, generational dynamics, broader cultural relevance, and cultural significance",
     "attentionValue": "high/medium/low",
     "platform": "relevant platform",
     "cohortOpportunities": ["target audience segments"]
@@ -190,11 +186,11 @@ Return JSON with this structure:
               truthAnalysis: {
                 type: "object",
                 properties: {
-                  fact: { type: "string", description: "Comprehensive factual details - state what actually happened, who was involved, specific data/examples, verifiable information" },
-                  observation: { type: "string", description: "Comprehensive analysis of patterns, connections, strategic observations, and underlying dynamics" },
-                  insight: { type: "string", description: "Comprehensive strategic implications, business intelligence, and actionable intelligence" },
-                  humanTruth: { type: "string", description: "Comprehensive analysis of human motivations, psychological drivers, and behavioral patterns" },
-                  culturalMoment: { type: "string", description: "Comprehensive cultural context, societal trends, and broader cultural significance" },
+                  fact: { type: "string", description: "3-5 sentences stating what actually happened, who was involved, specific data/examples, verifiable information" },
+                  observation: { type: "string", description: "3-5 sentences analyzing patterns, connections, strategic observations, and underlying dynamics" },
+                  insight: { type: "string", description: "3-5 sentences on strategic implications, business intelligence, and actionable intelligence" },
+                  humanTruth: { type: "string", description: "3-5 sentences analyzing human motivations, psychological drivers, and behavioral patterns" },
+                  culturalMoment: { type: "string", description: "3-5 sentences on cultural context, societal trends, and broader cultural significance" },
                   attentionValue: { type: "string", enum: ["high", "medium", "low"] },
                   platform: { type: "string" },
                   cohortOpportunities: { type: "array", items: { type: "string" } }
@@ -300,11 +296,17 @@ Return JSON with this structure:
       insight: mediumAnalysis.truthAnalysis.insight?.length || 0
     });
     
-    const adjustmentPrompt = `Adjust this analysis to ${lengthPreference} length while keeping the same insights.
+    const adjustmentPrompt = lengthPreference === 'short' 
+      ? `Summarize this analysis down to 2 sentences while communicating the same context:
 
 ${JSON.stringify(mediumAnalysis.truthAnalysis, null, 2)}
 
-Make it ${lengthPreference === 'short' ? 'more concise' : 'more detailed and comprehensive'}. Return only the JSON object.`;
+Return only the JSON object with each field condensed to exactly 2 sentences.`
+      : `Elaborate on this analysis with more detail and context and give me between 6 and 7 sentences for each field you expand on:
+
+${JSON.stringify(mediumAnalysis.truthAnalysis, null, 2)}
+
+Return only the JSON object with each field expanded to 6-7 sentences with rich detail.`;
     
     debugLogger.info('Sending adjustment prompt:', adjustmentPrompt.substring(0, 500) + '...');
 
