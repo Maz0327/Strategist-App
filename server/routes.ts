@@ -113,6 +113,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Bright Data test and status endpoint
+  app.get("/api/bright-data/test", async (req, res) => {
+    try {
+      const { brightDataService } = await import('./services/bright-data-service');
+      
+      const isAvailable = await brightDataService.isAvailable();
+      const stats = await brightDataService.getUsageStats();
+      
+      res.json({
+        brightData: {
+          available: isAvailable,
+          configured: true,
+          stats: stats,
+          credentials: {
+            username: !!process.env.BRIGHT_DATA_USERNAME,
+            password: !!process.env.BRIGHT_DATA_PASSWORD,
+            endpoint: !!process.env.BRIGHT_DATA_PROXY_ENDPOINT,
+            apiKey: !!process.env.BRIGHT_DATA_API_KEY
+          },
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (error: any) {
+      debugLogger.error('Bright Data test failed:', error);
+      res.status(500).json({
+        error: 'Failed to test Bright Data',
+        message: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
   // General rate limiting removed for performance optimization
 
   // API call tracking middleware

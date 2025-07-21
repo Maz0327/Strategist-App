@@ -289,7 +289,7 @@ class SocialMediaIntelligence {
       const puppeteer = require('puppeteer-core');
       (async () => {
         const browser = await puppeteer.connect({
-          browserWSEndpoint: 'wss://brd-customer-hl_d2c6dd0f-zone-scraping_browser1:wl58vcxlx0ph@brd.superproxy.io:9222'
+          browserWSEndpoint: 'wss://' + process.env.BRIGHT_DATA_USERNAME + ':' + process.env.BRIGHT_DATA_PASSWORD + '@brd.superproxy.io:9222'
         });
         const page = await browser.newPage();
         
