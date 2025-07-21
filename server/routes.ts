@@ -377,8 +377,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const responseData = { 
         analysis: {
           ...analysis,
-          // Include images from extracted content
-          images: extractedContent?.visualAssets?.map(asset => asset.url) || [],
+          // Include images from extracted content - use both sources for compatibility
+          images: extractedContent?.images || extractedContent?.visualAssets?.map(asset => asset.url) || [],
           visualAssets: extractedContent?.visualAssets || null,
           visualAnalysis: visualAnalysis || null
         }, 
@@ -543,6 +543,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } else {
             // Regular content extraction for non-video URLs
             extractedContent = await scraperService.extractContent(data.url);
+            console.log(`[API DEBUG] Extracted content from ${data.url}:`, {
+              imagesCount: extractedContent?.images?.length || 0,
+              visualAssetsCount: extractedContent?.visualAssets?.length || 0,
+              imageUrls: extractedContent?.images?.slice(0, 3) || []
+            });
           }
           
           // Visual analysis integration temporarily disabled for performance optimization
@@ -607,8 +612,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         analysis: {
           ...analysis,
-          // Include images from extracted content
-          images: extractedContent?.visualAssets?.map(asset => asset.url) || [],
+          // Include images from extracted content - use both sources for compatibility
+          images: extractedContent?.images || extractedContent?.visualAssets?.map(asset => asset.url) || [],
           visualAssets: extractedContent?.visualAssets || null
         },
         signalId: signal.id

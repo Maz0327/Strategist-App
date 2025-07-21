@@ -160,7 +160,15 @@ export function EnhancedAnalysisResults({
     setCurrentAnalysis(data);
     // Check if visual assets are available in the analysis data - using images field
     if (data.images && data.images.length > 0) {
-      setExtractedImages(data.images);
+      // Convert image URLs to proper image objects for display
+      const imageObjects = data.images.map((url: string, index: number) => ({
+        url,
+        alt: `Image ${index + 1}`
+      }));
+      setExtractedImages(imageObjects);
+    } else if (data.visualAssets && data.visualAssets.length > 0) {
+      // Fallback to visualAssets if images array is not available
+      setExtractedImages(data.visualAssets);
     }
     // Visual analysis will be done on-demand in the Visual tab
   }, [data]);
@@ -173,6 +181,9 @@ export function EnhancedAnalysisResults({
   // Debug logging for analysis data
   console.log("EnhancedAnalysisResults received analysis:", analysis);
   console.log("Analysis data:", data);
+  console.log("Extracted images state:", extractedImages);
+  console.log("Data images field:", data.images);
+  console.log("Data visualAssets field:", data.visualAssets);
 
   // Tab-level button handlers
   const handleBuildCohorts = async () => {

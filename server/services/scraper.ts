@@ -135,6 +135,9 @@ export class ScraperService {
       // Extract visual assets
       const visualAssets = await this.extractVisualAssets($, url);
       
+      console.log(`[SCRAPER DEBUG] Extracted ${visualAssets.length} visual assets from ${url}`);
+      console.log(`[SCRAPER DEBUG] Image URLs:`, visualAssets.map(asset => asset.url));
+      
       return {
         title: title.substring(0, 200), // Limit title length
         content: content.substring(0, 10000), // Limit content length
