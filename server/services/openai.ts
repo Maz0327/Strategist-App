@@ -310,8 +310,11 @@ Return JSON with this structure:
 CURRENT ANALYSIS (Medium length):
 ${JSON.stringify(mediumAnalysis.truthAnalysis, null, 2)}
 
-REQUIREMENTS:
+CRITICAL REQUIREMENTS:
 - ${lengthPreference === 'short' ? 'Exactly 3-4 sentences per field' : 'Exactly 7-9 sentences per field'}
+- For 'fact' field: State actual facts directly - don't say "the content discusses" or "this post talks about". Instead state what actually happened, who was involved, specific data/numbers, concrete examples
+- For observation, insight, humanTruth, culturalMoment: Provide comprehensive analysis with rich detail
+- Each field must be ${lengthPreference === 'short' ? 'concise but complete' : 'comprehensive and detailed'}
 - Keep the same strategic insights and conclusions
 - Maintain professional strategic analysis quality
 - Focus on actionable intelligence and cultural context
@@ -324,7 +327,11 @@ Return ONLY the truthAnalysis JSON object with adjusted fields.`;
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo", // Always use GPT-3.5-turbo for adjustments
       messages: [
-        { role: "system", content: "You are a strategic content analyst. Adjust the analysis length while maintaining the same insights and quality." },
+        { role: "system", content: `You are a strategic content analyst. Adjust the analysis length while maintaining the same insights and quality. 
+
+IMPORTANT: For the 'fact' field, state the actual facts directly - don't say "the content discusses" or "the post mentions". Instead, state what actually happened, who was involved, specific numbers, examples, and verifiable information.
+
+${lengthPreference === 'long' ? 'For long analysis, provide exactly 7-9 sentences per field with comprehensive detail and rich analysis.' : 'For short analysis, provide exactly 3-4 sentences per field while maintaining key insights.'}` },
         { role: "user", content: adjustmentPrompt }
       ],
       response_format: { type: "json_object" },
