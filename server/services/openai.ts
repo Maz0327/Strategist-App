@@ -56,7 +56,7 @@ Focus on:
 - Competitive landscape insights
 - Attention and engagement potential
 
-For medium analysis, provide 4-5 sentences per field in truthAnalysis (fact, observation, insight, humanTruth, culturalMoment).
+For medium analysis, provide 5-6 sentences per field in truthAnalysis (fact, observation, insight, humanTruth, culturalMoment).
 Each field should be comprehensive and detailed while maintaining readability.
 
 Return valid JSON only.`;
@@ -83,7 +83,7 @@ Return valid JSON only.`;
 
   private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     // Create stable cache key base with version for prompt changes
-    const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v10-four-to-five-sentences';
+    const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v11-adjusted-sentence-counts';
     
     // Step 1: Check if we have the requested length preference cached
     const targetCacheKey = createCacheKey(cacheKeyBase + lengthPreference, 'analysis');
@@ -138,7 +138,7 @@ Return valid JSON only.`;
     
     const userPrompt = `Analyze this content for strategic insights. 
 
-CRITICAL REQUIREMENT: For truthAnalysis fields (fact, observation, insight, humanTruth, culturalMoment), provide exactly 4-5 sentences per field. Each field must be comprehensive and detailed.
+CRITICAL REQUIREMENT: For truthAnalysis fields (fact, observation, insight, humanTruth, culturalMoment), provide exactly 5-6 sentences per field. Each field must be comprehensive and detailed.
 
 Title: ${title}
 Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}
@@ -151,11 +151,11 @@ Return JSON with this structure:
   "keywords": ["relevant", "strategic", "keywords"],
   "confidence": "85%",
   "truthAnalysis": {
-    "fact": "4-5 detailed sentences about key factual elements and verifiable information from the content",
-    "observation": "4-5 detailed sentences about patterns, connections, and strategic observations identified", 
-    "insight": "4-5 detailed sentences about strategic implications and deeper business intelligence",
-    "humanTruth": "4-5 detailed sentences about human motivations, behaviors, and psychological drivers",
-    "culturalMoment": "4-5 detailed sentences about cultural context, trends, and societal relevance",
+    "fact": "5-6 detailed sentences about key factual elements and verifiable information from the content",
+    "observation": "5-6 detailed sentences about patterns, connections, and strategic observations identified", 
+    "insight": "5-6 detailed sentences about strategic implications and deeper business intelligence",
+    "humanTruth": "5-6 detailed sentences about human motivations, behaviors, and psychological drivers",
+    "culturalMoment": "5-6 detailed sentences about cultural context, trends, and societal relevance",
     "attentionValue": "high/medium/low",
     "platform": "relevant platform",
     "cohortOpportunities": ["target audience segments"]
@@ -189,11 +189,11 @@ Return JSON with this structure:
               truthAnalysis: {
                 type: "object",
                 properties: {
-                  fact: { type: "string", description: "MUST be exactly 4-5 complete sentences about key factual elements" },
-                  observation: { type: "string", description: "MUST be exactly 4-5 complete sentences about patterns and connections" },
-                  insight: { type: "string", description: "MUST be exactly 4-5 complete sentences about strategic implications" },
-                  humanTruth: { type: "string", description: "MUST be exactly 4-5 complete sentences about human motivations" },
-                  culturalMoment: { type: "string", description: "MUST be exactly 4-5 complete sentences about cultural context" },
+                  fact: { type: "string", description: "MUST be exactly 5-6 complete sentences about key factual elements" },
+                  observation: { type: "string", description: "MUST be exactly 5-6 complete sentences about patterns and connections" },
+                  insight: { type: "string", description: "MUST be exactly 5-6 complete sentences about strategic implications" },
+                  humanTruth: { type: "string", description: "MUST be exactly 5-6 complete sentences about human motivations" },
+                  culturalMoment: { type: "string", description: "MUST be exactly 5-6 complete sentences about cultural context" },
                   attentionValue: { type: "string", enum: ["high", "medium", "low"] },
                   platform: { type: "string" },
                   cohortOpportunities: { type: "array", items: { type: "string" } }
@@ -305,7 +305,7 @@ CURRENT ANALYSIS (Medium length):
 ${JSON.stringify(mediumAnalysis.truthAnalysis, null, 2)}
 
 REQUIREMENTS:
-- ${lengthPreference === 'short' ? 'Exactly 2-3 sentences per field' : 'Exactly 5-7 sentences per field'}
+- ${lengthPreference === 'short' ? 'Exactly 3-4 sentences per field' : 'Exactly 7-9 sentences per field'}
 - Keep the same strategic insights and conclusions
 - Maintain professional strategic analysis quality
 - Focus on actionable intelligence and cultural context
