@@ -482,9 +482,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.body.sourceUrl
       );
 
+      // Map Gemini response to frontend expected format
+      const formattedResponse = {
+        brandElements: visualAnalysis.brandElements,
+        culturalMoments: visualAnalysis.culturalVisualMoments,
+        competitiveInsights: visualAnalysis.competitiveVisualInsights,
+        summary: visualAnalysis.strategicRecommendations?.join('. ') || "Visual analysis completed successfully."
+      };
+
       res.json({ 
         success: true, 
-        visualAnalysis,
+        visualAnalysis: formattedResponse,
         metadata: {
           imagesAnalyzed: visualAssets.length,
           confidenceScore: visualAnalysis.confidenceScore,

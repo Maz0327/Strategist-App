@@ -216,6 +216,7 @@ export function EnhancedAnalysisResults({
       toast({
         title: "Success",
         description: "Cohort analysis completed",
+        duration: 2000
       });
     } catch (error: any) {
       console.error('Cohort building failed:', error);
@@ -258,6 +259,7 @@ export function EnhancedAnalysisResults({
       toast({
         title: "Success",
         description: "Strategic insights completed",
+        duration: 2000
       });
     } catch (error: any) {
       console.error('Strategic insights failed:', error);
@@ -400,6 +402,7 @@ export function EnhancedAnalysisResults({
       toast({
         title: "Success",
         description: "Advanced strategic analysis completed",
+        duration: 2000
       });
     } catch (error: any) {
       console.error('Advanced insights failed:', error);
@@ -520,6 +523,7 @@ export function EnhancedAnalysisResults({
       toast({
         title: "Success",
         description: "Strategic actions completed",
+        duration: 2000
       });
     } catch (error: any) {
       console.error('Strategic actions failed:', error);
@@ -642,6 +646,7 @@ export function EnhancedAnalysisResults({
       toast({
         title: "Success",
         description: "Visual analysis completed successfully",
+        duration: 2000
       });
     } catch (error: any) {
       console.error('Visual analysis failed:', error);
@@ -658,9 +663,28 @@ export function EnhancedAnalysisResults({
   const handleFlagAsPotentialSignal = async () => {
     setIsFlagging(true);
     try {
-      // Check if we have a valid signal ID
+      // Check if we have a valid signal ID or create temporary flag
       if (!analysis.signalId || isNaN(Number(analysis.signalId))) {
-        throw new Error('Invalid signal ID');
+        // Use API to create potential signal flag if no existing signal ID
+        const response = await apiRequest('POST', '/api/signals', {
+          title: originalContent?.title || 'Flagged Analysis',
+          content: originalContent?.content || data.summary,
+          url: originalContent?.url || null,
+          status: 'potential_signal',
+          userNotes: 'Flagged from analysis results - contains strategic value'
+        });
+        
+        const responseData = await response.json();
+        if (!response.ok) {
+          throw new Error(responseData.message || 'Failed to create signal flag');
+        }
+        
+        toast({
+          title: "Flagged for Research",
+          description: "This content has been flagged for further research and saved as a potential signal.",
+          duration: 2000
+        });
+        return;
       }
 
       const response = await fetch(`/api/signals/${analysis.signalId}`, {
@@ -678,6 +702,7 @@ export function EnhancedAnalysisResults({
         toast({
           title: "Flagged for Research",
           description: "This content has been flagged for further research and moved to your potential signals.",
+          duration: 2000
         });
       } else {
         const errorData = await response.json();
@@ -829,7 +854,7 @@ export function EnhancedAnalysisResults({
       {/* Detailed Analysis Tabs */}
       <Tabs defaultValue="truth" className="w-full">
         <div className="overflow-x-auto">
-          <TabsList className={`${isMobile ? 'flex w-max' : 'grid w-full grid-cols-5'}`}>
+          <TabsList className={`${isMobile ? 'flex w-max' : 'grid w-full grid-cols-4'}`}>
             <TabsTrigger value="truth" className="text-xs sm:text-sm whitespace-nowrap">
               <span className="hidden sm:inline">Truth Analysis</span>
               <span className="sm:hidden">Truth</span>
@@ -846,7 +871,8 @@ export function EnhancedAnalysisResults({
               <span className="hidden sm:inline">Visual Intelligence</span>
               <span className="sm:hidden">Visual</span>
             </TabsTrigger>
-            <TabsTrigger value="strategic-recommendations" className="text-xs sm:text-sm whitespace-nowrap">
+            {/* Hide Strategic Recommendations tab temporarily */}
+            <TabsTrigger value="strategic-recommendations" className="text-xs sm:text-sm whitespace-nowrap hidden">
               <span className="hidden sm:inline">Strategic Recommendations</span>
               <span className="sm:hidden">Strategic</span>
             </TabsTrigger>
