@@ -159,15 +159,30 @@ export class ScraperService {
     try {
       // Enhanced image extraction optimized for social media platforms
 
-      // Enhanced image extraction with social media specific selectors
+      // Enhanced image extraction with comprehensive social media selectors
       const imageSelectors = [
         'img', // Standard img tags
         '[style*="background-image"]', // CSS background images
         '[data-background-image]', // Data attributes
-        '.feed-shared-image img', // LinkedIn specific
-        '.feed-shared-update-v2 img', // LinkedIn specific
-        '[data-test-id*="image"] img', // LinkedIn specific
-        '.update-components-image img', // LinkedIn specific
+        
+        // LinkedIn specific selectors - more comprehensive
+        '.feed-shared-image img',
+        '.feed-shared-update-v2 img', 
+        '[data-test-id*="image"] img',
+        '.update-components-image img',
+        '.feed-shared-image-thumbnail img',
+        '.feed-shared-content img',
+        '.feed-shared-mini-update-v2 img',
+        '.share-image img',
+        '.share-content img',
+        'article img',
+        '.post img',
+        '.update img',
+        '[class*="feed"] img',
+        '[class*="share"] img',
+        '[class*="update"] img',
+        '[class*="post"] img',
+        '.shared-image img'
       ];
       
       for (const selector of imageSelectors) {
@@ -242,38 +257,35 @@ export class ScraperService {
     if (baseUrl.includes('linkedin.com') || baseUrl.includes('twitter.com') || 
         baseUrl.includes('instagram.com') || baseUrl.includes('facebook.com')) {
       
-      // BLOCK all LinkedIn UI elements, icons, and profile photos
+      // TEMPORARY: Very permissive filtering to debug - BLOCK only obvious UI elements
       if (url.includes('static.licdn.com/aero-v1/sc/h/')) {
+        console.log('BLOCKED UI icon:', url);
         return false; // Block UI icons
       }
       
       if (url.includes('reaction-type') || alt.includes('reaction-type')) {
+        console.log('BLOCKED reaction icon:', url);
         return false; // Block reaction icons
       }
       
       if (url.includes('profile-displayphoto')) {
+        console.log('BLOCKED profile photo:', url);
         return false; // Block profile pictures
       }
       
       if (url.includes('company-logo')) {
+        console.log('BLOCKED company logo:', url);
         return false; // Block company logos
       }
       
       if (url.includes('profile-displaybackgroundimage')) {
+        console.log('BLOCKED background image:', url);
         return false; // Block background images
       }
       
-      // Allow main post content images - improved filtering
-      const isMainPostImage = (
-        url.includes('feedshare-shrink_') || // Main post images
-        url.includes('media-proxy') ||       // Media proxy images  
-        url.includes('dms/image') ||         // Direct media service
-        url.includes('media/') ||            // General media folder
-        (url.includes('media') && (url.includes('.jpg') || url.includes('.png') || url.includes('.webp')))
-      );
-      
-      // For LinkedIn, return post images while blocking UI elements
-      return isMainPostImage;
+      // TEMPORARY: Allow ALL other LinkedIn images to see what we're missing
+      console.log('ALLOWING LinkedIn image:', url);
+      return true;
     }
     
     // For non-social media sites, use more strict filtering
