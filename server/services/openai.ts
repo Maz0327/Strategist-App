@@ -121,7 +121,9 @@ Return valid JSON only.`;
       lengthPreference,
       factLength: adjustedAnalysis.truthAnalysis.fact?.length || 0,
       observationLength: adjustedAnalysis.truthAnalysis.observation?.length || 0,
-      insightLength: adjustedAnalysis.truthAnalysis.insight?.length || 0
+      insightLength: adjustedAnalysis.truthAnalysis.insight?.length || 0,
+      factContent: adjustedAnalysis.truthAnalysis.fact?.substring(0, 100) + '...',
+      observationContent: adjustedAnalysis.truthAnalysis.observation?.substring(0, 100) + '...'
     });
     return adjustedAnalysis;
   }
@@ -251,6 +253,11 @@ Return JSON with this structure:
     }
 
     debugLogger.info('Adjusting to ' + lengthPreference);
+    debugLogger.info('Current medium analysis field lengths:', {
+      fact: mediumAnalysis.truthAnalysis.fact?.length || 0,
+      observation: mediumAnalysis.truthAnalysis.observation?.length || 0,
+      insight: mediumAnalysis.truthAnalysis.insight?.length || 0
+    });
     
     const adjustmentPrompt = `Adjust the following analysis to ${lengthPreference} format. Keep the same strategic insights and JSON structure.
 
@@ -265,6 +272,8 @@ REQUIREMENTS:
 - Only adjust truthAnalysis fields: fact, observation, insight, humanTruth, culturalMoment
 
 Return ONLY the truthAnalysis JSON object with adjusted fields.`;
+    
+    debugLogger.info('Sending adjustment prompt:', adjustmentPrompt.substring(0, 500) + '...');
 
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo", // Always use GPT-3.5-turbo for adjustments
@@ -283,11 +292,18 @@ Return ONLY the truthAnalysis JSON object with adjusted fields.`;
       return mediumAnalysis;
     }
 
+    debugLogger.info('OpenAI adjustment response:', responseContent.substring(0, 800) + '...');
+
     let adjustedTruthAnalysis;
     try {
       adjustedTruthAnalysis = JSON.parse(responseContent);
+      debugLogger.info('Parsed adjustment result field lengths:', {
+        fact: adjustedTruthAnalysis.fact?.length || 0,
+        observation: adjustedTruthAnalysis.observation?.length || 0,
+        insight: adjustedTruthAnalysis.insight?.length || 0
+      });
     } catch (parseError) {
-      debugLogger.error('Failed to parse OpenAI adjustment response', { error: parseError });
+      debugLogger.error('Failed to parse OpenAI adjustment response', { error: parseError, responseContent });
       return mediumAnalysis;
     }
 
