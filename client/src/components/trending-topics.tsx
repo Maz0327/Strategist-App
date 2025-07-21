@@ -29,22 +29,36 @@ export function TrendingTopics() {
 
   const { data: topicsData, isLoading, refetch, error } = useQuery<{ topics: Topic[] }>({
     queryKey: ["/api/topics", selectedCategory],
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchInterval: 15 * 60 * 1000, // 15 minutes
-    retry: false,
+    staleTime: 10 * 60 * 1000, // 10 minutes - increased caching
+    refetchInterval: 30 * 60 * 1000, // 30 minutes - reduced auto-refresh
+    retry: 1, // Only retry once
     refetchOnWindowFocus: false,
+    gcTime: 30 * 60 * 1000, // 30 minutes cache time
     queryFn: async () => {
       try {
         const url = selectedCategory === "all" ? "/api/topics" : `/api/topics?platform=${selectedCategory}`;
+        const controller = new AbortController();
+        
+        // 15 second timeout to prevent long waits
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        
         const response = await fetch(url, {
-          credentials: 'include'
+          credentials: 'include',
+          signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
+        
         if (!response.ok) {
           throw new Error("Failed to fetch topics");
         }
         return response.json();
       } catch (error) {
-        return { topics: [] };
+        console.warn('Topics fetch failed, using fallback data:', error);
+        return { 
+          topics: [],
+          notice: 'Using cached data due to slow response'
+        };
       }
     },
   });

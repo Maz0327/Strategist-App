@@ -80,59 +80,37 @@ export class ExternalAPIsService {
 
     try {
       if (!platform || platform === 'all') {
-        // Fetch from all platforms in parallel for maximum efficiency
+        // OPTIMIZED: Prioritize fast, reliable sources only - reduced from 23 to 8 APIs
         const [
-          googleTrends, redditTrends, twitterTrends, newsTrends, youtubeTrends, hackerNewsTrends,
-          spotifyTrends, lastfmTrends, geniusTrends, tmdbTrends, tvmazeTrends,
-          gnewsTrends, nytimesTrends, currentsTrends, mediastackTrends, glaspTrends,
-          knowYourMemeTrends, urbanDictionaryTrends, youtubeTrendingTrends, redditCulturalTrends,
-          tikTokTrends, instagramTrends, socialMediaIntelligence
+          googleTrends, redditTrends, newsTrends, youtubeTrends, hackerNewsTrends,
+          gnewsTrends, youtubeTrendingTrends, redditCulturalTrends
         ] = await Promise.allSettled([
           this.getGoogleTrends(),
-          this.getRedditTrends(),
-          this.getTwitterTrends(),
+          this.getRedditTrends(), 
           this.getNewsTrends(),
           this.getYouTubeTrends(),
           this.getHackerNewsTrends(),
-          this.getSpotifyTrends(),
-          this.getLastFmTrends(),
-          this.getGeniusTrends(),
-          this.getTMDbTrends(),
-          this.getTVMazeTrends(),
           this.getGNewsTrends(),
-          this.getNYTimesTrends(),
-          this.getCurrentsTrends(),
-          this.getMediaStackTrends(),
-          this.getGlaspTrends(),
-          this.getKnowYourMemeTrends(),
-          this.getUrbanDictionaryTrends(),
           this.getYouTubeTrendingTrends(),
-          this.getRedditCulturalTrends(),
-          this.getTikTokTrends(),
-          this.getInstagramTrends(),
-          this.getSocialMediaIntelligence()
+          this.getRedditCulturalTrends()
         ]);
 
-        // Process all fulfilled results
+        // Process fast, reliable sources only - OPTIMIZED for speed
         const allPromises = [
-          googleTrends, redditTrends, twitterTrends, newsTrends, youtubeTrends, hackerNewsTrends,
-          spotifyTrends, lastfmTrends, geniusTrends, tmdbTrends, tvmazeTrends,
-          gnewsTrends, nytimesTrends, currentsTrends, mediastackTrends, glaspTrends,
-          knowYourMemeTrends, urbanDictionaryTrends, youtubeTrendingTrends, redditCulturalTrends,
-          tikTokTrends, instagramTrends, socialMediaIntelligence
+          googleTrends, redditTrends, newsTrends, youtubeTrends, hackerNewsTrends,
+          gnewsTrends, youtubeTrendingTrends, redditCulturalTrends
         ];
 
         allPromises.forEach((promise, index) => {
           const platformNames = [
-            'google', 'reddit', 'twitter', 'news', 'youtube', 'hackernews',
-            'spotify', 'lastfm', 'genius', 'tmdb', 'tvmaze',
-            'gnews', 'nytimes', 'currents', 'mediastack', 'glasp',
-            'knowyourmeme', 'urbandictionary', 'youtube-trending', 'reddit-cultural',
-            'tiktok-trends', 'instagram-trends', 'social-media-intelligence'
+            'google', 'reddit', 'news', 'youtube', 'hackernews',
+            'gnews', 'youtube-trending', 'reddit-cultural'
           ];
           
           if (promise.status === 'fulfilled') {
             results.push(...promise.value);
+          } else {
+            console.warn(`Failed to fetch from ${platformNames[index]}:`, promise.reason);
           }
         });
 
