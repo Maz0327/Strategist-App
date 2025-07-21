@@ -5,6 +5,7 @@ export interface FastExtractedContent {
   title: string;
   content: string;
   author?: string;
+  comments?: string;
   images?: string[];
 }
 
@@ -65,6 +66,7 @@ export class FastExtractorService {
         title: title.substring(0, 200),
         content: content.substring(0, 8000),
         images,
+        comments: '', // No comment extraction in fast mode
         author: $('meta[name="author"]').attr('content') || undefined
       };
     } catch (error) {

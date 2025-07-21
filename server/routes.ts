@@ -1049,16 +1049,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           debugLogger.info('Video processing completed quickly', { url });
         } catch (videoError) {
           debugLogger.warn('Video transcription skipped due to timeout, falling back to text extraction', { url, error: videoError });
-          // Fall through to ultra-fast content extraction
-          const FastExtractorService = (await import('../services/fast-extractor')).FastExtractorService;
-          const fastExtractor = new FastExtractorService();
-          result = await fastExtractor.extractContentFast(url);
+          // Fall through to regular content extraction with timeout
+          const contentPromise = scraperService.extractContent(url);
+          result = await Promise.race([
+            contentPromise,
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Content extraction timeout')), 5000)
+            )
+          ]) as any;
         }
       } else {
-        // For non-video URLs, use ultra-fast extraction
-        const FastExtractorService = (await import('../services/fast-extractor')).FastExtractorService;
-        const fastExtractor = new FastExtractorService();
-        result = await fastExtractor.extractContentFast(url);
+        // For non-video URLs, use regular content extraction with timeout  
+        const contentPromise = scraperService.extractContent(url);
+        result = await Promise.race([
+          contentPromise,
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Content extraction timeout')), 5000)
+          )
+        ]) as any;
       }
 
       // Structure content into sections for new UI

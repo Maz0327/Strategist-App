@@ -27,11 +27,9 @@ class VideoTranscriptionService {
       /youtube\.com\/shorts/,
       /youtu\.be\//,
       
-      // LinkedIn video patterns - Enhanced detection
-      /linkedin\.com\/.*\/video/,
-      /linkedin\.com\/posts\/.*activity/,
-      /linkedin\.com\/feed\/update\/urn:li:activity/,
-      /linkedin\.com\/embed\/feed\/update\/urn:li:ugcPost/,
+      // LinkedIn video patterns - Only detect actual video URLs, not general activity posts
+      /linkedin\.com\/.*\/video\//,
+      /linkedin\.com\/feed\/update\/.*:videoAction/,
       
       // Instagram video patterns - Enhanced detection  
       /instagram\.com\/(p|reel|tv)\//,

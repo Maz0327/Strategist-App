@@ -13,10 +13,14 @@ export interface VisualAsset {
 export interface ExtractedContent {
   title: string;
   content: string;
+  author?: string;
+  comments?: string; // Add comments field
+  images?: string[]; // Add images array for compatibility
   visualAssets: VisualAsset[];
   metadata: {
     images: number;
     totalVisualAssets: number;
+    hasComments?: boolean;
   };
 }
 
@@ -43,30 +47,71 @@ export class ScraperService {
       
       // Try to extract main content
       let content = '';
+      let comments = '';
       
-      // Common content selectors
-      const contentSelectors = [
-        'article',
-        '.post-content',
-        '.entry-content',
-        '.content',
-        'main',
-        '.main-content',
-        '.post-body',
-        '.article-body'
-      ];
-      
-      for (const selector of contentSelectors) {
-        const element = $(selector);
-        if (element.length > 0) {
-          content = element.text().trim();
-          break;
+      // LinkedIn-specific extraction
+      if (url.includes('linkedin.com')) {
+        // LinkedIn post content selectors
+        const linkedinSelectors = [
+          '.feed-shared-text',
+          '.attributed-text-segment-list__content',
+          '.feed-shared-update-v2__commentary',
+          '.feed-shared-text__text-view',
+          '[data-test-id="main-feed-activity-card"] .break-words',
+          '.feed-shared-text span[dir="ltr"]'
+        ];
+        
+        for (const selector of linkedinSelectors) {
+          const element = $(selector);
+          if (element.length > 0) {
+            content = element.text().trim();
+            break;
+          }
+        }
+        
+        // Extract LinkedIn comments
+        const commentSelectors = [
+          '.comments-comments-list',
+          '.social-actions-bar',
+          '.feed-shared-social-action-bar',
+          '.comments-comment-texteditor'
+        ];
+        
+        for (const selector of commentSelectors) {
+          const element = $(selector);
+          if (element.length > 0) {
+            comments = element.text().trim();
+            break;
+          }
         }
       }
       
-      // Fallback to body content
+      // If LinkedIn-specific extraction didn't work, use general selectors
       if (!content) {
-        content = $('body').text().trim();
+        // Common content selectors
+        const contentSelectors = [
+          'article',
+          '.post-content',
+          '.entry-content',
+          '.content',
+          'main',
+          '.main-content',
+          '.post-body',
+          '.article-body'
+        ];
+      
+        for (const selector of contentSelectors) {
+          const element = $(selector);
+          if (element.length > 0) {
+            content = element.text().trim();
+            break;
+          }
+        }
+        
+        // Fallback to body content
+        if (!content) {
+          content = $('body').text().trim();
+        }
       }
       
       // Clean up content
@@ -82,10 +127,13 @@ export class ScraperService {
       return {
         title: title.substring(0, 200), // Limit title length
         content: content.substring(0, 10000), // Limit content length
+        comments: comments.substring(0, 2000), // Add comments field
+        images: visualAssets.map(asset => asset.url), // Extract image URLs for compatibility
         visualAssets,
         metadata: {
           images: visualAssets.length, // All assets are images now
-          totalVisualAssets: visualAssets.length
+          totalVisualAssets: visualAssets.length,
+          hasComments: !!comments
         }
       };
     } catch (error) {
