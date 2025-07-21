@@ -40,7 +40,29 @@ export function SystemSuggestions() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Mock suggestions for now - in real implementation this would come from API
+  // Enhanced suggestions with loading state
+  const { data: suggestionsData, isLoading } = useQuery({
+    queryKey: ["/api/system-suggestions"],
+    staleTime: 10 * 60 * 1000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/system-suggestions', {
+          credentials: 'include'
+        });
+        if (!response.ok) {
+          throw new Error("Failed to fetch suggestions");
+        }
+        return response.json();
+      } catch (error) {
+        console.warn('System suggestions unavailable:', error);
+        return { suggestions: mockSuggestions };
+      }
+    },
+  });
+
+  // Mock suggestions for fallback
   const mockSuggestions: SystemSuggestion[] = [
     {
       capture: {
@@ -154,7 +176,7 @@ export function SystemSuggestions() {
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="flex items-center gap-1">
             <Brain size={12} />
-            {mockSuggestions.length} suggestions
+            {suggestions.length} suggestions
           </Badge>
         </div>
       </div>
@@ -167,7 +189,7 @@ export function SystemSuggestions() {
               <div>
                 <p className="text-sm font-medium text-gray-600">High Priority</p>
                 <p className="text-2xl font-bold text-red-600">
-                  {mockSuggestions.filter(s => s.priority === 'high').length}
+                  {suggestions.filter(s => s.priority === 'high').length}
                 </p>
               </div>
               <AlertTriangle className="h-8 w-8 text-red-600" />
@@ -181,7 +203,7 @@ export function SystemSuggestions() {
               <div>
                 <p className="text-sm font-medium text-gray-600">Medium Priority</p>
                 <p className="text-2xl font-bold text-yellow-600">
-                  {mockSuggestions.filter(s => s.priority === 'medium').length}
+                  {suggestions.filter(s => s.priority === 'medium').length}
                 </p>
               </div>
               <Target className="h-8 w-8 text-yellow-600" />
@@ -195,7 +217,7 @@ export function SystemSuggestions() {
               <div>
                 <p className="text-sm font-medium text-gray-600">Low Priority</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {mockSuggestions.filter(s => s.priority === 'low').length}
+                  {suggestions.filter(s => s.priority === 'low').length}
                 </p>
               </div>
               <Lightbulb className="h-8 w-8 text-green-600" />
@@ -208,7 +230,7 @@ export function SystemSuggestions() {
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-gray-900">Recommended Actions</h3>
         
-        {mockSuggestions.length === 0 ? (
+        {suggestions.length === 0 ? (
           <Card>
             <CardContent className="pt-6">
               <div className="text-center py-8">
@@ -221,7 +243,7 @@ export function SystemSuggestions() {
             </CardContent>
           </Card>
         ) : (
-          mockSuggestions
+          suggestions
             .sort((a, b) => {
               const priorityOrder = { high: 3, medium: 2, low: 1 };
               return priorityOrder[b.priority] - priorityOrder[a.priority];

@@ -64,6 +64,40 @@ export function TrendingTopics() {
   });
 
   const topics = topicsData?.topics || [];
+
+  // Enhanced loading state with progress indication
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Trending Topics</h2>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
+            Loading trending data from 8+ platforms...
+          </div>
+        </div>
+        
+        {/* Enhanced loading skeleton */}
+        <div className="space-y-4">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Card key={i} className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 bg-muted rounded-full animate-pulse"></div>
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-muted rounded animate-pulse w-3/4"></div>
+                  <div className="h-3 bg-muted rounded animate-pulse w-1/2"></div>
+                  <div className="flex gap-2">
+                    <div className="h-6 bg-muted rounded animate-pulse w-16"></div>
+                    <div className="h-6 bg-muted rounded animate-pulse w-20"></div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
   
   // Topic data summary
   const platforms = [...new Set(topics.map(t => t.platform))];
