@@ -83,7 +83,7 @@ Return valid JSON only.`;
 
   private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     // Create stable cache key base with version for prompt changes
-    const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v6-medium-fixed';
+    const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v7-explicit-length';
     
     // Step 1: Check if we have the requested length preference cached
     const targetCacheKey = createCacheKey(cacheKeyBase + lengthPreference, 'analysis');
@@ -136,7 +136,9 @@ Return valid JSON only.`;
     
     const systemPrompt = this.getSystemPrompt('medium', isDeepAnalysis);
     
-    const userPrompt = `Analyze this content for strategic insights. Length preference: medium
+    const userPrompt = `Analyze this content for strategic insights. 
+
+CRITICAL REQUIREMENT: For truthAnalysis fields (fact, observation, insight, humanTruth, culturalMoment), provide exactly 3-5 sentences per field. Each field must be comprehensive and detailed.
 
 Title: ${title}
 Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}
@@ -149,11 +151,11 @@ Return JSON with this structure:
   "keywords": ["relevant", "strategic", "keywords"],
   "confidence": "85%",
   "truthAnalysis": {
-    "fact": "Key factual elements",
-    "observation": "Patterns and connections observed", 
-    "insight": "Strategic implications identified",
-    "humanTruth": "Human motivations and behaviors",
-    "culturalMoment": "Cultural context and relevance",
+    "fact": "3-5 detailed sentences about key factual elements and verifiable information from the content",
+    "observation": "3-5 detailed sentences about patterns, connections, and strategic observations identified", 
+    "insight": "3-5 detailed sentences about strategic implications and deeper business intelligence",
+    "humanTruth": "3-5 detailed sentences about human motivations, behaviors, and psychological drivers",
+    "culturalMoment": "3-5 detailed sentences about cultural context, trends, and societal relevance",
     "attentionValue": "high/medium/low",
     "platform": "relevant platform",
     "cohortOpportunities": ["target audience segments"]
