@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,43 +27,80 @@ export function TrendingTopics() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
 
-  const { data: topicsData, isLoading, refetch, error } = useQuery<{ topics: Topic[] }>({
-    queryKey: ["/api/topics", selectedCategory],
-    staleTime: 10 * 60 * 1000, // 10 minutes - increased caching
-    refetchInterval: 30 * 60 * 1000, // 30 minutes - reduced auto-refresh
-    retry: 1, // Only retry once
+  const { data: trendingData, isLoading, refetch, error } = useQuery<{ 
+    success: boolean;
+    platforms: Record<string, any>;
+    totalItems: number;
+    collectedAt: string;
+  }>({
+    queryKey: ["/api/trending/all", selectedCategory],
+    staleTime: 5 * 60 * 1000, // 5 minutes - real-time social data
+    refetchInterval: 15 * 60 * 1000, // 15 minutes - more frequent updates
+    retry: 2,
     refetchOnWindowFocus: false,
-    gcTime: 30 * 60 * 1000, // 30 minutes cache time
+    gcTime: 15 * 60 * 1000, // 15 minutes cache time
     queryFn: async () => {
       try {
-        const url = selectedCategory === "all" ? "/api/topics" : `/api/topics?platform=${selectedCategory}`;
-        const controller = new AbortController();
+        console.log('🔄 Fetching trending data from Bright Data automation');
         
-        // 15 second timeout to prevent long waits
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
-        
-        const response = await fetch(url, {
-          credentials: 'include',
-          signal: controller.signal
+        const response = await fetch('/api/trending/all', {
+          credentials: 'include'
         });
         
-        clearTimeout(timeoutId);
-        
         if (!response.ok) {
-          throw new Error("Failed to fetch topics");
+          throw new Error(`API response ${response.status}`);
         }
-        return response.json();
+        
+        const data = await response.json();
+        console.log(`✅ Received trending data: ${data.totalItems} items from ${Object.keys(data.platforms).length} platforms`);
+        
+        return data;
       } catch (error) {
-        console.warn('Topics fetch failed, using fallback data:', error);
+        console.error('Trending data fetch failed:', error.message);
+        // Return minimal fallback structure
         return { 
-          topics: [],
-          notice: 'Using cached data due to slow response'
+          success: false,
+          platforms: {},
+          totalItems: 0,
+          collectedAt: new Date().toISOString(),
+          notice: 'Connecting to Bright Data...'
         };
       }
     },
   });
 
-  const topics = topicsData?.topics || [];
+  // Transform Bright Data response to topics format
+  const topics = React.useMemo(() => {
+    if (!trendingData?.platforms) return [];
+    
+    const allTopics: Topic[] = [];
+    
+    Object.entries(trendingData.platforms).forEach(([platform, platformData]: [string, any]) => {
+      if (platformData.data && Array.isArray(platformData.data)) {
+        platformData.data.forEach((item: any, index: number) => {
+          allTopics.push({
+            id: `${platform}-${index}`,
+            platform,
+            title: item.title || `${platform.charAt(0).toUpperCase() + platform.slice(1)} Content`,
+            summary: item.content?.substring(0, 150) + '...' || '',
+            url: item.url || '#',
+            score: item.engagement || 0,
+            fetchedAt: item.timestamp || trendingData.collectedAt,
+            engagement: item.engagement || 0,
+            source: platform
+          });
+        });
+      }
+    });
+    
+    // Filter by selected category
+    const filtered = selectedCategory === "all" 
+      ? allTopics 
+      : allTopics.filter(topic => topic.platform === selectedCategory);
+    
+    // Sort by engagement
+    return filtered.sort((a, b) => (b.engagement || 0) - (a.engagement || 0));
+  }, [trendingData, selectedCategory]);
 
   // Enhanced loading state with progress indication
   if (isLoading) {

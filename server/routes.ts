@@ -2023,6 +2023,160 @@ The analyzed signals provide a comprehensive view of current market trends and s
         platform: 'Instagram',
         hashtagsAnalyzed: hashtags.length
       });
+
+  // AUTOMATED BRIGHT DATA ENDPOINTS FOR TRENDING TABS
+  
+  // Main trending data endpoint - gets ALL platform data
+  app.get('/api/trending/all', requireAuth, async (req, res) => {
+    try {
+      debugLogger.info('🚀 All-platform trending data request', { userId: req.session.userId });
+      
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
+      const trendingData = await automatedService.getTrendingData();
+      
+      // Transform for frontend consumption
+      const transformedData = trendingData.reduce((acc, platform) => {
+        acc[platform.platform] = {
+          data: platform.data,
+          success: platform.success,
+          timestamp: platform.timestamp,
+          snapshotId: platform.snapshotId,
+          count: platform.data.length
+        };
+        return acc;
+      }, {} as Record<string, any>);
+      
+      debugLogger.info(`✅ Trending data collected from ${trendingData.length} platforms`);
+      
+      res.json({
+        success: true,
+        platforms: transformedData,
+        totalItems: trendingData.reduce((sum, p) => sum + p.data.length, 0),
+        collectedAt: new Date().toISOString()
+      });
+      
+    } catch (error) {
+      debugLogger.error('Trending data collection failed:', error.message);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to collect trending data',
+        details: error.message
+      });
+    }
+  });
+
+  // Individual platform trending endpoints
+  app.get('/api/trending/instagram', requireAuth, async (req, res) => {
+    try {
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
+      const data = await automatedService.getTrendingData();
+      const instagramData = data.find(p => p.platform === 'instagram');
+      
+      res.json({
+        success: true,
+        platform: 'instagram',
+        data: instagramData?.data || [],
+        timestamp: instagramData?.timestamp,
+        snapshotId: instagramData?.snapshotId
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.get('/api/trending/twitter', requireAuth, async (req, res) => {
+    try {
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
+      const data = await automatedService.getTrendingData();
+      const twitterData = data.find(p => p.platform === 'twitter');
+      
+      res.json({
+        success: true,
+        platform: 'twitter',
+        data: twitterData?.data || [],
+        timestamp: twitterData?.timestamp,
+        snapshotId: twitterData?.snapshotId
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.get('/api/trending/tiktok', requireAuth, async (req, res) => {
+    try {
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
+      const data = await automatedService.getTrendingData();
+      const tiktokData = data.find(p => p.platform === 'tiktok');
+      
+      res.json({
+        success: true,
+        platform: 'tiktok',
+        data: tiktokData?.data || [],
+        timestamp: tiktokData?.timestamp,
+        snapshotId: tiktokData?.snapshotId
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.get('/api/trending/linkedin', requireAuth, async (req, res) => {
+    try {
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
+      const data = await automatedService.getTrendingData();
+      const linkedinData = data.find(p => p.platform === 'linkedin');
+      
+      res.json({
+        success: true,
+        platform: 'linkedin',
+        data: linkedinData?.data || [],
+        timestamp: linkedinData?.timestamp,
+        snapshotId: linkedinData?.snapshotId
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Snapshot status checker endpoint
+  app.get('/api/bright-data/snapshot/:snapshotId', requireAuth, async (req, res) => {
+    try {
+      const { snapshotId } = req.params;
+      const apiKey = process.env.BRIGHT_DATA_API_KEY;
+      
+      if (!apiKey) {
+        return res.status(500).json({ error: 'Bright Data API key not configured' });
+      }
+      
+      debugLogger.info(`🔍 Checking snapshot: ${snapshotId}`);
+      
+      const response = await axios.get(`https://api.brightdata.com/dca/snapshot/${snapshotId}`, {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 10000
+      });
+      
+      res.json({
+        snapshot_id: snapshotId,
+        status: response.data.status,
+        results_count: response.data.results?.length || 0,
+        results: response.data.results || [],
+        start_time: response.data.start_time,
+        end_time: response.data.end_time,
+        checked_at: new Date().toISOString()
+      });
+      
+    } catch (error) {
+      debugLogger.error(`Snapshot check failed for ${req.params.snapshotId}:`, error.message);
+      res.status(500).json({
+        error: 'Failed to check snapshot',
+        snapshot_id: req.params.snapshotId,
+        details: error.message
+      });
+    }
+  });
     } catch (error) {
       debugLogger.error('Instagram hashtag scraping error', { error: (error as Error).message });
       res.status(500).json({
