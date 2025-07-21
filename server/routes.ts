@@ -2211,6 +2211,78 @@ The analyzed signals provide a comprehensive view of current market trends and s
     }
   });
 
+  // RSS Feed Management API endpoints - Phase 5
+  app.post("/api/rss-feeds", requireAuth, async (req, res) => {
+    try {
+      const { name, rssUrl, category, fetchFrequency } = req.body;
+      
+      if (!name || !rssUrl || !category) {
+        return res.status(400).json({ error: "Name, RSS URL, and category are required" });
+      }
+
+      const { rssService } = await import('./services/rss-service');
+      const feed = await rssService.addFeed(req.session.userId!, {
+        name,
+        rssUrl,
+        category,
+        fetchFrequency: fetchFrequency || 3600,
+      });
+
+      res.json(feed);
+    } catch (error) {
+      console.error('Failed to add RSS feed:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to add RSS feed' });
+    }
+  });
+
+  app.get("/api/rss-feeds", requireAuth, async (req, res) => {
+    try {
+      const category = req.query.category as string;
+      const { rssService } = await import('./services/rss-service');
+      const feeds = await rssService.getUserFeeds(req.session.userId!, category);
+      res.json({ feeds });
+    } catch (error) {
+      console.error('Failed to get RSS feeds:', error);
+      res.status(500).json({ error: 'Failed to get RSS feeds' });
+    }
+  });
+
+  app.get("/api/rss-feeds/category/:category/articles", requireAuth, async (req, res) => {
+    try {
+      const category = req.params.category;
+      const limit = parseInt(req.query.limit as string) || 10;
+      
+      const { rssService } = await import('./services/rss-service');
+      const articles = await rssService.getRecentArticles(req.session.userId!, category, limit);
+      res.json({ articles });
+    } catch (error) {
+      console.error('Failed to get category articles:', error);
+      res.status(500).json({ error: 'Failed to get articles' });
+    }
+  });
+
+  app.post("/api/rss-feeds/refresh", requireAuth, async (req, res) => {
+    try {
+      const { rssService } = await import('./services/rss-service');
+      const results = await rssService.fetchAllUserFeeds(req.session.userId!);
+      res.json({ results });
+    } catch (error) {
+      console.error('Failed to refresh feeds:', error);
+      res.status(500).json({ error: 'Failed to refresh feeds' });
+    }
+  });
+
+  app.get("/api/rss-feeds/stats", requireAuth, async (req, res) => {
+    try {
+      const { rssService } = await import('./services/rss-service');
+      const stats = await rssService.getFeedStats(req.session.userId!);
+      res.json(stats);
+    } catch (error) {
+      console.error('Failed to get feed stats:', error);
+      res.status(500).json({ error: 'Failed to get feed stats' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

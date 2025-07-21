@@ -1,4 +1,4 @@
-import { users, signals, sources, signalSources, userFeedSources, userTopicProfiles, feedItems, type User, type InsertUser, type Signal, type InsertSignal, type Source, type InsertSource, type SignalSource, type InsertSignalSource, type UserFeedSource, type InsertUserFeedSource, type UserTopicProfile, type InsertUserTopicProfile, type FeedItem, type InsertFeedItem } from "@shared/schema";
+import { users, signals, sources, signalSources, userFeedSources, userTopicProfiles, feedItems, rssFeeds, rssArticles, type User, type InsertUser, type Signal, type InsertSignal, type Source, type InsertSource, type SignalSource, type InsertSignalSource, type UserFeedSource, type InsertUserFeedSource, type UserTopicProfile, type InsertUserTopicProfile, type FeedItem, type InsertFeedItem, type RssFeed, type InsertRssFeed, type RssArticle, type InsertRssArticle } from "@shared/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -11,7 +11,7 @@ const sql = postgres(process.env.DATABASE_URL!, {
 });
 const db = drizzle(sql);
 
-export { sql };
+export { sql, db };
 
 export interface IStorage {
   // Users
@@ -53,6 +53,14 @@ export interface IStorage {
   // Feed Items
   getFeedItems(userId: number, feedType?: string, limit?: number): Promise<FeedItem[]>;
   createFeedItem(feedItem: InsertFeedItem): Promise<FeedItem>;
+  
+  // RSS Feeds - Phase 5
+  getRssFeeds(userId: number, category?: string): Promise<RssFeed[]>;
+  createRssFeed(feed: InsertRssFeed): Promise<RssFeed>;
+  updateRssFeed(id: number, updates: Partial<InsertRssFeed>): Promise<RssFeed | undefined>;
+  deleteRssFeed(id: number): Promise<void>;
+  getRssArticles(feedId: number, limit?: number): Promise<RssArticle[]>;
+  createRssArticle(article: InsertRssArticle): Promise<RssArticle>;
   updateFeedItem(id: number, updates: Partial<InsertFeedItem>): Promise<FeedItem | undefined>;
   deleteFeedItem(id: number): Promise<void>;
 }

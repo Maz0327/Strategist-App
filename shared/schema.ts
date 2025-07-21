@@ -228,6 +228,40 @@ export const abTestResults = pgTable("ab_test_results", {
   timestamp: timestamp("timestamp").defaultNow(),
 });
 
+// RSS Feed Management Tables for Phase 5
+export const rssFeeds = pgTable("rss_feeds", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  rssUrl: text("rss_url").notNull(),
+  category: text("category").notNull(), // 'client', 'custom', 'project'
+  fetchFrequency: integer("fetch_frequency").default(3600), // seconds
+  lastFetched: timestamp("last_fetched"),
+  status: text("status").default("active"), // 'active', 'paused', 'error'
+  errorCount: integer("error_count").default(0),
+  lastError: text("last_error"),
+  metadata: jsonb("metadata"), // RSS feed metadata (title, description, etc.)
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const rssArticles = pgTable("rss_articles", {
+  id: serial("id").primaryKey(),
+  feedId: integer("feed_id").notNull().references(() => rssFeeds.id),
+  title: text("title").notNull(),
+  content: text("content"),
+  url: text("url").notNull(),
+  summary: text("summary"),
+  author: text("author"),
+  publishedAt: timestamp("published_at"),
+  extractedAt: timestamp("extracted_at").defaultNow(),
+  processed: boolean("processed").default(false),
+  signalId: integer("signal_id").references(() => signals.id), // Link to created signal
+  guid: text("guid"), // RSS item GUID for deduplication
+  categories: text("categories").array(),
+  metadata: jsonb("metadata"), // Additional RSS item data
+});
+
 // Admin schemas
 export const insertUserAnalyticsSchema = createInsertSchema(userAnalytics).omit({
   id: true,
@@ -254,6 +288,18 @@ export const insertSystemPerformanceSchema = createInsertSchema(systemPerformanc
 export const insertAbTestResultsSchema = createInsertSchema(abTestResults).omit({
   id: true,
   timestamp: true,
+});
+
+// RSS Feed schemas for Phase 5
+export const insertRssFeedSchema = createInsertSchema(rssFeeds).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertRssArticleSchema = createInsertSchema(rssArticles).omit({
+  id: true,
+  extractedAt: true,
 });
 
 export const loginSchema = z.object({
@@ -299,10 +345,7 @@ export const analyzeContentSchema = z.object({
 });
 
 // Import admin tables from separate schema
-export { 
-  apiCalls, 
-  externalApiCalls
-} from "./admin-schema";
+// Note: Admin schema imports handled separately to avoid circular dependencies
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -333,8 +376,12 @@ export type SystemPerformance = typeof systemPerformance.$inferSelect;
 export type InsertSystemPerformance = z.infer<typeof insertSystemPerformanceSchema>;
 export type AbTestResults = typeof abTestResults.$inferSelect;
 export type InsertAbTestResults = z.infer<typeof insertAbTestResultsSchema>;
-export type ApiCall = typeof apiCalls.$inferSelect;
-export type ExternalApiCall = typeof externalApiCalls.$inferSelect;
+
+// RSS Feed types for Phase 5
+export type RssFeed = typeof rssFeeds.$inferSelect;
+export type RssArticle = typeof rssArticles.$inferSelect;
+export type InsertRssFeed = z.infer<typeof insertRssFeedSchema>;
+export type InsertRssArticle = z.infer<typeof insertRssArticleSchema>;
 
 // Insert schemas for API tracking
 
