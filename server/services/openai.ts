@@ -54,7 +54,7 @@ export class OpenAIService {
       'bulletpoints': 'MANDATORY: Use bullet points for key information where applicable, with 2-3 bullet points per field.'
     };
 
-    const lengthInstruction = lengthInstructions[lengthPreference] || lengthInstructions['medium'];
+    const lengthInstruction = lengthInstructions[lengthPreference as keyof typeof lengthInstructions] || lengthInstructions['medium'];
 
     if (isDeepAnalysis) {
       return `Expert content strategist. Provide comprehensive strategic analysis with deep insights. ${lengthInstruction}. 
@@ -142,7 +142,7 @@ Return valid JSON:
     
     // Step 1: Check if we have the requested length preference cached
     const targetCacheKey = createCacheKey(cacheKeyBase + lengthPreference, 'analysis');
-    let cachedAnalysis = await analysisCache.get(targetCacheKey);
+    let cachedAnalysis = await analysisCache.get(targetCacheKey) as EnhancedAnalysisResult | null;
     
     if (cachedAnalysis) {
       debugLogger.info('Returning cached analysis for ' + lengthPreference, { cacheKey: targetCacheKey });
@@ -151,7 +151,7 @@ Return valid JSON:
     
     // Step 2: Get or create medium analysis as baseline
     const mediumCacheKey = createCacheKey(cacheKeyBase + 'medium', 'analysis');
-    let mediumAnalysis = await analysisCache.get(mediumCacheKey);
+    let mediumAnalysis = await analysisCache.get(mediumCacheKey) as EnhancedAnalysisResult | null;
     
     if (!mediumAnalysis) {
       debugLogger.info('Creating new medium analysis baseline');
@@ -178,37 +178,49 @@ Return valid JSON:
 
   private async createMediumAnalysis(content: string, title: string, analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     const isDeepAnalysis = analysisMode === 'deep';
+    
+    // Model selection: GPT-3.5-turbo for quick, GPT-4o-mini for deep
+    const model = isDeepAnalysis ? "gpt-4o-mini" : "gpt-3.5-turbo";
+    
     const systemPrompt = this.getSystemPrompt('medium', isDeepAnalysis);
     
-    const userPrompt = isDeepAnalysis ? 
-      `Provide comprehensive strategic analysis of this content with MEDIUM length responses (3-5 sentences per field):
+    // Original prompts restored
+    const userPrompt = `Analyze the following content and provide strategic insights:
 
 Title: ${title}
-Content: ${content.substring(0, 4000)}${content.length > 4000 ? '...' : ''}
+Content: ${content.substring(0, 2500)}${content.length > 2500 ? '...' : ''}
 
-MANDATORY: Every field in truthAnalysis must contain exactly 3-5 sentences. This is CRITICAL for proper analysis.
-MANDATORY: strategicInsights, strategicActions, and competitiveInsights arrays must contain exactly 5 items each.
+Return a JSON object with the following structure:
+{
+  "summary": "Brief strategic summary",
+  "sentiment": "positive/negative/neutral",
+  "tone": "professional/casual/urgent/etc",
+  "keywords": ["key", "terms", "identified"],
+  "confidence": "percentage",
+  "truthAnalysis": {
+    "fact": "Core factual content",
+    "observation": "Key patterns observed",
+    "insight": "Strategic insights identified",
+    "humanTruth": "Human motivations and behaviors",
+    "culturalMoment": "Cultural context and relevance",
+    "attentionValue": "potential for capturing attention"
+  },
+  "platformContext": "Social media context if applicable",
+  "viralPotential": "Assessment of viral potential",
+  "cohortSuggestions": ["relevant", "audience", "segments"]
+}`;
 
-Focus on deep strategic insights, complex human motivations, cultural context, competitive landscape, and actionable recommendations. Return JSON only.` :
-      `Analyze this content with MEDIUM length responses (3-5 sentences per field):
-
-Title: ${title}
-Content: ${content.substring(0, 1200)}${content.length > 1200 ? '...' : ''}
-
-MANDATORY: Keep responses concise but strategic. Each field must be 2-4 sentences maximum.
-MANDATORY: Focus on the most important strategic insights only.
-
-Return JSON only.`;
+    debugLogger.info('Creating medium analysis', { model, mode: analysisMode });
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: model,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
       ],
       response_format: { type: "json_object" },
       temperature: 0.1,
-      max_tokens: isDeepAnalysis ? 1800 : 1000 // Reduced token limits for speed
+      max_tokens: isDeepAnalysis ? 2000 : 1500
     });
 
     const responseContent = response.choices[0]?.message?.content;
@@ -251,9 +263,7 @@ Return JSON only.`;
       cohortSuggestions: analysis.cohortSuggestions || [],
       platformContext: analysis.platformContext || 'Cross-platform analysis completed',
       viralPotential: analysis.viralPotential || 'medium',
-      competitiveInsights: analysis.competitiveInsights || [],
-      strategicInsights: analysis.strategicInsights || [],
-      strategicActions: analysis.strategicActions || []
+      competitiveInsights: analysis.competitiveInsights || []
     };
 
     return result;
@@ -288,10 +298,10 @@ Return JSON only.`;
       return result;
     }
 
-    // Use OpenAI for short/long analysis (for quality depth)
-    debugLogger.info('OpenAI adjustment to ' + lengthPreference);
+    // Use GPT-3.5-turbo for all length adjustments (fast and cost-effective)
+    debugLogger.info('GPT-3.5-turbo adjustment to ' + lengthPreference);
     
-    /* ORIGINAL COMPLEX PROMPT (BACKUP):
+    // Original adjustment prompts restored
     const adjustmentPrompt = `Adjust the following analysis to ${lengthPreference} format. Keep the same strategic insights and JSON structure.
 
 CURRENT ANALYSIS (Medium length):
@@ -305,22 +315,16 @@ REQUIREMENTS:
 - Only adjust truthAnalysis fields: fact, observation, insight, humanTruth, culturalMoment
 
 Return ONLY the truthAnalysis JSON object with adjusted fields.`;
-    */
-    
-    // OPTIMIZED SIMPLE PROMPT for faster processing
-    const adjustmentPrompt = lengthPreference === 'short' ? 
-      `Make each field exactly 2 sentences. Keep same insights:\n\n${JSON.stringify(mediumAnalysis.truthAnalysis, null, 2)}` :
-      `Expand each field to 5-6 sentences with more strategic detail:\n\n${JSON.stringify(mediumAnalysis.truthAnalysis, null, 2)}`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-3.5-turbo", // Always use GPT-3.5-turbo for adjustments
       messages: [
-        { role: "system", content: "Adjust analysis length. Return JSON only." },
+        { role: "system", content: "You are a strategic content analyst. Adjust the length of the analysis while maintaining quality and insights." },
         { role: "user", content: adjustmentPrompt }
       ],
       response_format: { type: "json_object" },
       temperature: 0.1,
-      max_tokens: lengthPreference === 'short' ? 400 : 800  // Reduced token limits for speed
+      max_tokens: lengthPreference === 'short' ? 800 : 1200
     });
 
     const responseContent = response.choices[0]?.message?.content;
