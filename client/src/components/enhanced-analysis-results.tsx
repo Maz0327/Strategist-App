@@ -32,7 +32,9 @@ import {
   Save,
   Info,
   Flag,
-  Hash
+  Hash,
+  Palette,
+  Sparkles
 } from "lucide-react";
 
 // Enhanced Loading Component with animated progress bar
@@ -156,13 +158,11 @@ export function EnhancedAnalysisResults({
   // Update analysis when new data arrives
   useEffect(() => {
     setCurrentAnalysis(data);
-    // Check if visual assets are available in the analysis data
-    if (data.visualAssets && data.visualAssets.length > 0) {
-      setExtractedImages(data.visualAssets);
+    // Check if visual assets are available in the analysis data - using images field
+    if (data.images && data.images.length > 0) {
+      setExtractedImages(data.images);
     }
-    if (data.visualAnalysis) {
-      setVisualAnalysisResults(data.visualAnalysis);
-    }
+    // Visual analysis will be done on-demand in the Visual tab
   }, [data]);
 
   // Sync length preference with parent component
@@ -192,8 +192,8 @@ export function EnhancedAnalysisResults({
         'POST',
         '/api/cohorts',
         {
-          content: originalContent?.content || data.content || '',
-          title: originalContent?.title || data.title || '',
+          content: originalContent?.content || data.summary || '',
+          title: originalContent?.title || 'Content Analysis',
           truthAnalysis: currentAnalysis.truthAnalysis
         }
       );
@@ -235,8 +235,8 @@ export function EnhancedAnalysisResults({
         'POST',
         '/api/strategic-insights',
         {
-          content: originalContent?.content || data.content || '',
-          title: originalContent?.title || data.title || '',
+          content: originalContent?.content || data.summary || '',
+          title: originalContent?.title || 'Content Analysis',
           truthAnalysis: currentAnalysis.truthAnalysis
         }
       );
@@ -279,8 +279,8 @@ export function EnhancedAnalysisResults({
           'POST',
           '/api/strategic-insights',
           {
-            content: originalContent?.content || data.content || '',
-            title: originalContent?.title || data.title || '',
+            content: originalContent?.content || data.summary || '',
+            title: originalContent?.title || 'Content Analysis',
             truthAnalysis: currentAnalysis.truthAnalysis
           }
         ),
@@ -288,8 +288,8 @@ export function EnhancedAnalysisResults({
           'POST',
           '/api/competitive-intelligence',
           {
-            content: originalContent?.content || data.content || '',
-            title: originalContent?.title || data.title || '',
+            content: originalContent?.content || data.summary || '',
+            title: originalContent?.title || 'Content Analysis',
             truthAnalysis: currentAnalysis.truthAnalysis
           }
         ),
@@ -297,8 +297,8 @@ export function EnhancedAnalysisResults({
           'POST',
           '/api/strategic-actions',
           {
-            content: originalContent?.content || data.content || '',
-            title: originalContent?.title || data.title || '',
+            content: originalContent?.content || data.summary || '',
+            title: originalContent?.title || 'Content Analysis',
             truthAnalysis: currentAnalysis.truthAnalysis
           }
         )
@@ -497,8 +497,8 @@ export function EnhancedAnalysisResults({
         'POST',
         '/api/strategic-actions',
         {
-          content: originalContent?.content || data.content || '',
-          title: originalContent?.title || data.title || '',
+          content: originalContent?.content || data.summary || '',
+          title: originalContent?.title || 'Content Analysis',
           truthAnalysis: currentAnalysis.truthAnalysis
         }
       );
@@ -1601,55 +1601,67 @@ export function EnhancedAnalysisResults({
                   )}
 
                   {visualAnalysisResults && (
-                    <div className="space-y-4 mt-4">
+                    <div className="space-y-6 mt-4">
                       <div className="border-t pt-4">
-                        <h4 className="font-medium text-gray-900 mb-3">Visual Analysis Results</h4>
+                        <h4 className="font-medium text-gray-900 mb-4">Visual Intelligence Analysis</h4>
                         
-                        {/* Brand Elements */}
-                        {visualAnalysisResults.brandElements && (
-                          <div className="mb-4">
-                            <h5 className="font-medium text-blue-900 mb-2">Brand Elements</h5>
-                            <div className="bg-blue-50 p-3 rounded text-sm">
+                        {/* Brand Visual Elements */}
+                        <div className="mb-6">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Palette className="h-4 w-4 text-blue-600" />
+                            <h4 className="font-semibold text-blue-900">Brand Visual Elements</h4>
+                          </div>
+                          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                            <p className="text-sm text-gray-700 leading-relaxed">
                               {typeof visualAnalysisResults.brandElements === 'string' 
                                 ? visualAnalysisResults.brandElements
-                                : JSON.stringify(visualAnalysisResults.brandElements, null, 2)}
-                            </div>
+                                : (visualAnalysisResults.brandElements || 'No brand elements detected in the visual content.')}
+                            </p>
                           </div>
-                        )}
+                        </div>
 
-                        {/* Cultural Intelligence */}
-                        {visualAnalysisResults.culturalMoments && (
-                          <div className="mb-4">
-                            <h5 className="font-medium text-purple-900 mb-2">Cultural Intelligence</h5>
-                            <div className="bg-purple-50 p-3 rounded text-sm">
+                        {/* Cultural Visual Moments */}
+                        <div className="mb-6">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Sparkles className="h-4 w-4 text-purple-600" />
+                            <h4 className="font-semibold text-purple-900">Cultural Visual Moments</h4>
+                          </div>
+                          <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                            <p className="text-sm text-gray-700 leading-relaxed">
                               {typeof visualAnalysisResults.culturalMoments === 'string'
                                 ? visualAnalysisResults.culturalMoments
-                                : JSON.stringify(visualAnalysisResults.culturalMoments, null, 2)}
-                            </div>
+                                : (visualAnalysisResults.culturalMoments || 'No significant cultural visual moments identified.')}
+                            </p>
                           </div>
-                        )}
+                        </div>
 
-                        {/* Competitive Insights */}
-                        {visualAnalysisResults.competitiveInsights && (
-                          <div className="mb-4">
-                            <h5 className="font-medium text-green-900 mb-2">Competitive Visual Insights</h5>
-                            <div className="bg-green-50 p-3 rounded text-sm">
+                        {/* Competitive Visual Positioning */}
+                        <div className="mb-6">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Target className="h-4 w-4 text-green-600" />
+                            <h4 className="font-semibold text-green-900">Competitive Visual Positioning</h4>
+                          </div>
+                          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                            <p className="text-sm text-gray-700 leading-relaxed">
                               {typeof visualAnalysisResults.competitiveInsights === 'string'
                                 ? visualAnalysisResults.competitiveInsights
-                                : JSON.stringify(visualAnalysisResults.competitiveInsights, null, 2)}
-                            </div>
+                                : (visualAnalysisResults.competitiveInsights || 'No competitive visual insights available.')}
+                            </p>
                           </div>
-                        )}
+                        </div>
 
-                        {/* Visual Summary */}
-                        {visualAnalysisResults.summary && (
-                          <div className="mb-4">
-                            <h5 className="font-medium text-gray-900 mb-2">Visual Summary</h5>
-                            <div className="bg-gray-50 p-3 rounded text-sm">
-                              {visualAnalysisResults.summary}
-                            </div>
+                        {/* Visual Strategic Summary */}
+                        <div className="mb-6">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Brain className="h-4 w-4 text-indigo-600" />
+                            <h4 className="font-semibold text-indigo-900">Visual Strategic Summary</h4>
                           </div>
-                        )}
+                          <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
+                            <p className="text-sm text-gray-700 leading-relaxed">
+                              {visualAnalysisResults.summary || 'Visual analysis provides insights into brand positioning, cultural relevance, and competitive differentiation through visual elements.'}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1682,8 +1694,8 @@ export function EnhancedAnalysisResults({
               />
             }>
               <LazyStrategicRecommendations
-                content={data.content}
-                title={data.title}
+                content={originalContent?.content || data.summary || ''}
+                title={originalContent?.title || 'Content Analysis'}
                 truthAnalysis={currentAnalysis.truthAnalysis}
                 cohorts={cohortResults}
                 strategicInsights={insightsResults}
