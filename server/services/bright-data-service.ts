@@ -31,8 +31,8 @@ export class BrightDataService {
 
   constructor() {
     this.config = {
-      username: process.env.BRIGHT_DATA_USERNAME || '',
-      password: process.env.BRIGHT_DATA_PASSWORD || '',
+      username: process.env.BRIGHT_DATA_USERNAME || 'brd-customer-hl_d2c6dd0f-zone-scraping_browser1',
+      password: process.env.BRIGHT_DATA_PASSWORD || 'wl58vcxlx0ph',
       proxyEndpoint: process.env.BRIGHT_DATA_PROXY_ENDPOINT || 'brd.superproxy.io:33335',
       apiKey: process.env.BRIGHT_DATA_API_KEY || ''
     };
