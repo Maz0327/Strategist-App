@@ -83,7 +83,7 @@ Return valid JSON only.`;
 
   private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     // Create stable cache key base with version for prompt changes
-    const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v7-explicit-length';
+    const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v8-function-calling';
     
     // Step 1: Check if we have the requested length preference cached
     const targetCacheKey = createCacheKey(cacheKeyBase + lengthPreference, 'analysis');
@@ -174,30 +174,68 @@ Return JSON with this structure:
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
       ],
-      response_format: { type: "json_object" },
+      functions: [
+        {
+          name: "analyze_content",
+          description: "Analyze content with specific length requirements for each field",
+          parameters: {
+            type: "object",
+            properties: {
+              summary: { type: "string", description: "Strategic overview" },
+              sentiment: { type: "string", enum: ["positive", "negative", "neutral"] },
+              tone: { type: "string", enum: ["professional", "casual", "urgent", "analytical", "conversational", "authoritative"] },
+              keywords: { type: "array", items: { type: "string" }, description: "Relevant strategic keywords" },
+              confidence: { type: "string", description: "Confidence percentage" },
+              truthAnalysis: {
+                type: "object",
+                properties: {
+                  fact: { type: "string", description: "MUST be exactly 3-5 complete sentences about key factual elements" },
+                  observation: { type: "string", description: "MUST be exactly 3-5 complete sentences about patterns and connections" },
+                  insight: { type: "string", description: "MUST be exactly 3-5 complete sentences about strategic implications" },
+                  humanTruth: { type: "string", description: "MUST be exactly 3-5 complete sentences about human motivations" },
+                  culturalMoment: { type: "string", description: "MUST be exactly 3-5 complete sentences about cultural context" },
+                  attentionValue: { type: "string", enum: ["high", "medium", "low"] },
+                  platform: { type: "string" },
+                  cohortOpportunities: { type: "array", items: { type: "string" } }
+                },
+                required: ["fact", "observation", "insight", "humanTruth", "culturalMoment", "attentionValue", "platform", "cohortOpportunities"]
+              },
+              cohortSuggestions: { type: "array", items: { type: "string" } },
+              platformContext: { type: "string" },
+              viralPotential: { type: "string", enum: ["high", "medium", "low"] },
+              competitiveInsights: { type: "array", items: { type: "string" } }
+            },
+            required: ["summary", "sentiment", "tone", "keywords", "confidence", "truthAnalysis", "cohortSuggestions", "platformContext", "viralPotential", "competitiveInsights"]
+          }
+        }
+      ],
+      function_call: { name: "analyze_content" },
       temperature: 0.1,
       max_tokens: isDeepAnalysis ? 2000 : 1500
     });
 
-    const responseContent = response.choices[0]?.message?.content;
-    if (!responseContent) {
-      throw new Error('No response content from OpenAI');
+    const functionCall = response.choices[0]?.message?.function_call;
+    if (!functionCall || !functionCall.arguments) {
+      throw new Error('No function call response from OpenAI');
     }
 
     let analysis;
     try {
-      analysis = JSON.parse(responseContent);
-      debugLogger.info('Successfully parsed medium analysis', { 
+      analysis = JSON.parse(functionCall.arguments);
+      debugLogger.info('Successfully parsed function call analysis', { 
         hasSummary: !!analysis.summary,
         hasTruthAnalysis: !!analysis.truthAnalysis,
         hasKeywords: !!analysis.keywords,
         summaryLength: analysis.summary?.length || 0,
         factLength: analysis.truthAnalysis?.fact?.length || 0,
-        observationLength: analysis.truthAnalysis?.observation?.length || 0
+        observationLength: analysis.truthAnalysis?.observation?.length || 0,
+        insightLength: analysis.truthAnalysis?.insight?.length || 0,
+        humanTruthLength: analysis.truthAnalysis?.humanTruth?.length || 0,
+        culturalMomentLength: analysis.truthAnalysis?.culturalMoment?.length || 0
       });
     } catch (parseError) {
-      debugLogger.error('JSON parsing failed', { response: responseContent, error: parseError });
-      throw new Error('Invalid JSON response from OpenAI');
+      debugLogger.error('Function call JSON parsing failed', { arguments: functionCall.arguments, error: parseError });
+      throw new Error('Invalid JSON response from OpenAI function call');
     }
 
     const result: EnhancedAnalysisResult = {
