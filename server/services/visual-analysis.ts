@@ -118,13 +118,27 @@ export class VisualAnalysisService {
     }
 
     try {
-      // Analyze up to 5 most relevant images for cost efficiency
+      // Filter only valid HTTP image URLs (exclude base64 and invalid URLs)
       const imagesToAnalyze = visualAssets
-        .filter(asset => asset.type === 'image')
-        .slice(0, 5);
+        .filter(asset => 
+          asset && 
+          asset.type === 'image' && 
+          asset.url && 
+          typeof asset.url === 'string' && 
+          asset.url.trim().length > 0 &&
+          !asset.url.includes('data:') && // Exclude base64 images
+          (asset.url.startsWith('http://') || asset.url.startsWith('https://'))
+        )
+        .slice(0, 5); // Limit to 5 images for cost efficiency
+
+      debugLogger.info('Visual analysis asset filtering', {
+        totalAssets: visualAssets.length,
+        validImages: imagesToAnalyze.length,
+        imageUrls: imagesToAnalyze.map(a => a.url)
+      });
 
       if (imagesToAnalyze.length === 0) {
-        throw new Error('No images found for visual analysis');
+        throw new Error('No valid HTTP image URLs found for visual analysis. Base64 images are not currently supported.');
       }
 
       const analysisPrompt = this.buildAnalysisPrompt(contentContext, url);
@@ -175,19 +189,19 @@ export class VisualAnalysisService {
 
       return this.processAnalysisResult(analysis);
 
-    } catch (error) {
+    } catch (error: any) {
       debugLogger.error('Visual analysis failed:', error);
       
       await analyticsService.trackFeatureUsage(
         'visual-analysis',
         'analysis-failed',
         {
-          error: error.message,
+          error: error?.message || 'Unknown error',
           assetsCount: visualAssets.length
         }
       );
 
-      throw new Error(`Visual analysis failed: ${error.message}`);
+      throw new Error(`Visual analysis failed: ${error?.message || 'Unknown error'}`);
     }
   }
 
@@ -335,10 +349,10 @@ Focus on providing actionable strategic insights that give competitive advantage
         visualFilter: { aesthetic: 'natural', lighting: 'natural', processing: 'unfiltered' }
       },
       culturalVisualMoments: {
-        memeElements: { present: false, type: 'none', viralPotential: 'low', lifecycle: 'evergreen' },
+        memeElements: { present: false, type: 'none', viralPotential: 'low', lifecycle: 'emerging' },
         generationalAesthetics: { primary: 'cross-generational', indicators: [], authenticity: 'corporate' },
         culturalSymbols: { symbols: [], meaning: [], relevance: 'low', controversy: 'none' },
-        viralPatterns: { elements: [], shareability: 'low', platformOptimization: [], timingRelevance: 'evergreen' }
+        viralPatterns: { elements: [], shareability: 'low', platformOptimization: [], timingRelevance: 'trending' }
       },
       competitiveVisualInsights: {
         brandStrategy: { approach: 'accessible', positioning: 'follower', consistency: 'consistent' },
@@ -348,7 +362,7 @@ Focus on providing actionable strategic insights that give competitive advantage
       socialMediaIntelligence: {
         platformOptimization: { bestPlatforms: [], currentPlatform: 'unknown', adaptationNeeded: [], crossPlatformPotential: 'medium' },
         engagementPrediction: { likeability: 'medium', shareability: 'medium', commentability: 'medium', factors: [] },
-        trendAlignment: { currentTrends: [], alignment: 'somewhat-aligned', trendLifecycle: 'evergreen' }
+        trendAlignment: { currentTrends: [], alignment: 'somewhat-aligned', trendLifecycle: 'emerging' }
       },
       strategicRecommendations: ['Analysis completed with limited visual data'],
       confidenceScore: 50
