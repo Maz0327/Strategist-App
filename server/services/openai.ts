@@ -56,10 +56,10 @@ Focus on:
 - Competitive landscape insights
 - Attention and engagement potential
 
-For medium analysis, provide 5-6 sentences per field in truthAnalysis (fact, observation, insight, humanTruth, culturalMoment).
-Each field should be comprehensive and detailed while maintaining readability.
+For medium analysis, provide substantial detail in each truthAnalysis field (fact, observation, insight, humanTruth, culturalMoment).
+Each field should be comprehensive, well-developed, and contain enough detail to be strategically useful.
 
-IMPORTANT: For the 'fact' field, state the actual facts directly - don't say "the content discusses" or "the post mentions". Instead, state what actually happened, who was involved, specific numbers, examples, and verifiable information.
+IMPORTANT: For the 'fact' field, state the actual facts directly - don't say "the content discusses" or "the post mentions". Instead, state what actually happened, who was involved, specific numbers, examples, and verifiable information. Provide comprehensive factual details.
 
 Return valid JSON only.`;
   }
@@ -85,7 +85,7 @@ Return valid JSON only.`;
 
   private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     // Create stable cache key base with version for prompt changes
-    const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v12-improved-fact-comprehensive';
+    const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v13-content-depth-approach';
     
     // Step 1: Check if we have the requested length preference cached
     const targetCacheKey = createCacheKey(cacheKeyBase + lengthPreference, 'analysis');
@@ -141,10 +141,10 @@ Return valid JSON only.`;
     const userPrompt = `Analyze this content for strategic insights. 
 
 CRITICAL REQUIREMENTS: 
-- For truthAnalysis fields, provide exactly 5-6 sentences per field
-- Each field must be comprehensive and detailed
-- For 'fact' field: State actual facts directly - don't say "the content discusses" or "this post talks about". Instead state what actually happened, who was involved, specific data/numbers, concrete examples
-- For observation, insight, humanTruth, culturalMoment: Provide comprehensive analysis with rich detail
+- For truthAnalysis fields, provide substantial, well-developed content in each field
+- Each field must be comprehensive, detailed, and strategically useful
+- For 'fact' field: State actual facts directly - don't say "the content discusses" or "this post talks about". Instead state what actually happened, who was involved, specific data/numbers, concrete examples. Provide comprehensive factual details.
+- For observation, insight, humanTruth, culturalMoment: Provide rich, comprehensive analysis with deep insights
 
 Title: ${title}
 Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}
@@ -157,11 +157,11 @@ Return JSON with this structure:
   "keywords": ["relevant", "strategic", "keywords"],
   "confidence": "85%",
   "truthAnalysis": {
-    "fact": "5-6 detailed sentences stating the core facts directly - what actually happened, who was involved, what numbers/data are mentioned, what specific examples are given",
-    "observation": "5-6 comprehensive sentences about patterns, connections, strategic observations, and underlying dynamics you notice", 
-    "insight": "5-6 comprehensive sentences about strategic implications, business intelligence, and deeper strategic meaning",
-    "humanTruth": "5-6 comprehensive sentences about human motivations, psychological drivers, emotional triggers, and behavioral patterns",
-    "culturalMoment": "5-6 comprehensive sentences about cultural context, societal trends, generational dynamics, and broader cultural relevance",
+    "fact": "Comprehensive factual details stating what actually happened, who was involved, specific numbers/data mentioned, concrete examples given, and verifiable information",
+    "observation": "Comprehensive analysis of patterns, connections, strategic observations, underlying dynamics, and what this reveals about the situation", 
+    "insight": "Comprehensive strategic implications, business intelligence, deeper strategic meaning, and actionable intelligence",
+    "humanTruth": "Comprehensive analysis of human motivations, psychological drivers, emotional triggers, behavioral patterns, and what drives people",
+    "culturalMoment": "Comprehensive cultural context, societal trends, generational dynamics, broader cultural relevance, and cultural significance",
     "attentionValue": "high/medium/low",
     "platform": "relevant platform",
     "cohortOpportunities": ["target audience segments"]
@@ -195,11 +195,11 @@ Return JSON with this structure:
               truthAnalysis: {
                 type: "object",
                 properties: {
-                  fact: { type: "string", description: "MUST be exactly 5-6 complete sentences stating core facts directly - what happened, who was involved, specific data/examples" },
-                  observation: { type: "string", description: "MUST be exactly 5-6 complete sentences about comprehensive patterns, connections, and strategic observations" },
-                  insight: { type: "string", description: "MUST be exactly 5-6 complete sentences about comprehensive strategic implications and business intelligence" },
-                  humanTruth: { type: "string", description: "MUST be exactly 5-6 complete sentences about comprehensive human motivations and psychological drivers" },
-                  culturalMoment: { type: "string", description: "MUST be exactly 5-6 complete sentences about comprehensive cultural context and societal relevance" },
+                  fact: { type: "string", description: "Comprehensive factual details - state what actually happened, who was involved, specific data/examples, verifiable information" },
+                  observation: { type: "string", description: "Comprehensive analysis of patterns, connections, strategic observations, and underlying dynamics" },
+                  insight: { type: "string", description: "Comprehensive strategic implications, business intelligence, and actionable intelligence" },
+                  humanTruth: { type: "string", description: "Comprehensive analysis of human motivations, psychological drivers, and behavioral patterns" },
+                  culturalMoment: { type: "string", description: "Comprehensive cultural context, societal trends, and broader cultural significance" },
                   attentionValue: { type: "string", enum: ["high", "medium", "low"] },
                   platform: { type: "string" },
                   cohortOpportunities: { type: "array", items: { type: "string" } }
@@ -311,10 +311,10 @@ CURRENT ANALYSIS (Medium length):
 ${JSON.stringify(mediumAnalysis.truthAnalysis, null, 2)}
 
 CRITICAL REQUIREMENTS:
-- ${lengthPreference === 'short' ? 'Exactly 3-4 sentences per field' : 'Exactly 7-9 sentences per field'}
+- For ${lengthPreference} analysis: ${lengthPreference === 'short' ? 'Provide concise but complete analysis in each field' : 'Provide extensive, comprehensive, and detailed analysis in each field with rich depth'}
 - For 'fact' field: State actual facts directly - don't say "the content discusses" or "this post talks about". Instead state what actually happened, who was involved, specific data/numbers, concrete examples
-- For observation, insight, humanTruth, culturalMoment: Provide comprehensive analysis with rich detail
-- Each field must be ${lengthPreference === 'short' ? 'concise but complete' : 'comprehensive and detailed'}
+- For observation, insight, humanTruth, culturalMoment: Provide ${lengthPreference === 'short' ? 'focused analysis' : 'extensive comprehensive analysis with rich detail and depth'}
+- Each field must be ${lengthPreference === 'short' ? 'concise but strategically complete' : 'comprehensive, detailed, and thoroughly developed'}
 - Keep the same strategic insights and conclusions
 - Maintain professional strategic analysis quality
 - Focus on actionable intelligence and cultural context
@@ -331,7 +331,7 @@ Return ONLY the truthAnalysis JSON object with adjusted fields.`;
 
 IMPORTANT: For the 'fact' field, state the actual facts directly - don't say "the content discusses" or "the post mentions". Instead, state what actually happened, who was involved, specific numbers, examples, and verifiable information.
 
-${lengthPreference === 'long' ? 'For long analysis, provide exactly 7-9 sentences per field with comprehensive detail and rich analysis.' : 'For short analysis, provide exactly 3-4 sentences per field while maintaining key insights.'}` },
+${lengthPreference === 'long' ? 'For long analysis, provide extensive, comprehensive, and detailed analysis in each field with rich depth.' : 'For short analysis, provide concise but complete analysis while maintaining key insights.'}` },
         { role: "user", content: adjustmentPrompt }
       ],
       response_format: { type: "json_object" },
