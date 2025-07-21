@@ -70,8 +70,9 @@ Preferred communication style: Simple, everyday language.
 ## Future Development Roadmap - Comprehensive Feature Tracking
 
 ### Immediate Priority Tasks (Next Session)
-- **Phase 4**: Today's Briefing 4-section restructure (HIGH PRIORITY)
-- Complete critical UX fixes identified by user
+- **Brief Automation System**: Implement project-based capture organization with selective screenshot Chrome extension enhancement
+- **Google Slides Integration**: Complete template engine with Truth Analysis auto-population
+- **User Workflow Testing**: End-to-end testing of capture → analysis → brief generation pipeline
 
 ### RSS Feed System (Deferred - Phases 5D & 5E)
 - **Phase 5D**: RSS Intelligence Integration - Connect RSS feeds to strategic analysis pipeline
@@ -898,6 +899,71 @@ Successfully expanded the platform from 4 to 13 comprehensive social media and b
 - **Issue**: 4 TypeScript errors for invalid component props in dashboard.tsx  
 - **Solution**: Removed unused navigation callback props from ExploreSignals, NewSignalCapture, StrategicBriefLab, ManageHub
 - **Result**: Zero TypeScript errors, clean component interfaces
+
+### Brief Automation Implementation Plan - July 21, 2025 (Evening)
+
+#### ✅ **Strategic Brief Builder System - APPROVED FOR IMPLEMENTATION**:
+Based on Jimmy John's PAC Drop analysis and user requirements, implementing automated brief generation with the following architecture:
+
+**Phase 1: Database Foundation (15-20 minutes)**
+- Create `projects` table: id, user_id, name, description, created_at, brief_template_id
+- Add `project_id` and `template_section` columns to existing `signals` table
+- Add `capture_session_id` for grouping related captures
+- Add `engagement_data` JSON field and `qual_score` field
+
+**Phase 2: Enhanced Chrome Extension with Selective Screenshots (25-30 minutes)**
+- **Project Selection UI**: Dropdown for project assignment during capture
+- **Selective Screenshot Modes**:
+  - Element selection with hover highlighting and click capture
+  - Manual region selection with drag-to-select functionality
+  - Smart content detection for semantic boundaries
+  - Preview before save with crop confirmation
+- **Section Tagging**: AI-powered template section suggestions
+- **Multi-Element Selection**: Ctrl+click for composite screenshots
+
+**Phase 3: Brief Template Engine (25-30 minutes)**
+- Jimmy John's-style template as default: Performance → Cultural Signals → Platform Signals → Opportunities → Cohorts → Ideation
+- Truth Analysis integration mapping:
+  - `fact` → Performance section
+  - `culturalMoment` → Cultural Signals
+  - `observation` → Platform Signals
+  - `humanTruth` → Cohorts
+  - `insight` → Opportunities
+- Auto-population with screenshot placement optimization
+
+**Phase 4: Google Slides Integration (20-25 minutes)**
+- Slides API authentication and template management
+- Automated image positioning based on selection type
+- Professional formatting with branded styling
+- Export engine with downloadable presentation links
+
+**Phase 5: Frontend Brief Builder Interface (15-20 minutes)**
+- Project management UI in Strategic Brief Lab
+- Drag-and-drop section organization
+- Brief preview with template visualization
+- Generate and export controls
+
+**Enhanced Chrome Extension Technical Features**:
+- Element boundary detection using `getBoundingClientRect()`
+- Canvas API for precise image cropping
+- Semantic container detection for intelligent selections
+- Multi-selection capability with Ctrl/Cmd modifier
+- Real-time selection overlays with visual feedback
+- Preview modal before capture confirmation
+
+**User Workflow Integration**:
+1. **Research Session**: User creates project, captures with selective screenshots
+2. **Smart Organization**: AI tags captures to appropriate template sections
+3. **Brief Generation**: One-click creation with Truth Analysis integration
+4. **Export**: Professional Google Slides with precisely placed visuals
+
+**System Safety Approach**:
+- All new features built as additive modules (zero breaking changes)
+- Existing Truth Analysis, Signal Capture workflows unchanged
+- Feature flags for gradual rollout
+- Backward compatible Chrome extension enhancements
+
+**Expected Timeline**: 2-2.5 hours for complete implementation
 
 ### Remaining Priorities:
 1. **Today's Briefing Structure (FUTURE)**: Re-enable when ready with 4-section layout
