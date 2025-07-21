@@ -8,18 +8,24 @@ interface AnimatedLoadingStateProps {
 }
 
 export function AnimatedLoadingState({ title, subtitle, progress = 0 }: AnimatedLoadingStateProps) {
-  const [animatedProgress, setAnimatedProgress] = useState(0);
+  const [animatedProgress, setAnimatedProgress] = useState(progress || 15);
   
   useEffect(() => {
-    const interval = setInterval(() => {
-      setAnimatedProgress(prev => {
-        if (prev >= 95) return 10; // Reset to keep it moving
-        return prev + Math.random() * 15; // Add some randomness
-      });
-    }, 500);
-    
-    return () => clearInterval(interval);
-  }, []);
+    // If progress is provided, use it. Otherwise, show steady incremental progress
+    if (progress > 0) {
+      setAnimatedProgress(progress);
+    } else {
+      const interval = setInterval(() => {
+        setAnimatedProgress(prev => {
+          // Steady incremental progress that doesn't go backwards
+          if (prev >= 85) return prev; // Stay at high progress to show we're almost done
+          return prev + Math.random() * 8 + 2; // Always moves forward 2-10%
+        });
+      }, 800);
+      
+      return () => clearInterval(interval);
+    }
+  }, [progress]);
   
   return (
     <div className="space-y-3 p-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200/50 animate-in fade-in-50">

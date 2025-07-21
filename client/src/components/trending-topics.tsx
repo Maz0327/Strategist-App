@@ -70,9 +70,11 @@ export function TrendingTopics() {
     },
   });
 
-  // Transform Bright Data response to topics format
+  // Transform Bright Data response to topics format with early return
   const topics = useMemo(() => {
-    if (!trendingData?.platforms) return [];
+    if (!trendingData || !trendingData.platforms || typeof trendingData.platforms !== 'object') {
+      return [];
+    }
     
     const allTopics: Topic[] = [];
     

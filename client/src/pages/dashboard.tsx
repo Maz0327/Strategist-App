@@ -22,7 +22,7 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ user, onLogout, onPageChange }: DashboardProps) {
-  const [activeTab, setActiveTab] = useState("briefing");
+  const [activeTab, setActiveTab] = useState("capture");
   const [activeSubTab, setActiveSubTab] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -65,12 +65,13 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
 
   // Sidebar navigation items
   const navigationItems = [
-    {
-      id: "briefing",
-      label: "Today's Briefing",
-      icon: Home,
-      subItems: []
-    },
+    // TEMPORARILY HIDDEN - Today's Briefing until other issues are resolved
+    // {
+    //   id: "briefing",
+    //   label: "Today's Briefing",
+    //   icon: Home,
+    //   subItems: []
+    // },
     {
       id: "capture",
       label: "Signal Capture",
@@ -327,34 +328,22 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
             {activeTab === "explore" && (
               <ExploreSignals 
                 activeSubTab={activeSubTab}
-                onNavigateToTrending={handleNavigateToTrending}
-                onNavigateToCapture={handleNavigateToCapture}
-                onNavigateToBrief={handleNavigateToBrief}
               />
             )}
             
             {activeTab === "capture" && (
-              <NewSignalCapture 
-                onNavigateToManage={handleNavigateToManage}
-                onNavigateToExplore={handleNavigateToExplore}
-                onNavigateToBrief={handleNavigateToBrief}
-              />
+              <NewSignalCapture />
             )}
             
             {activeTab === "brief" && (
               <StrategicBriefLab 
                 activeSubTab={activeSubTab}
-                onNavigateToCapture={handleNavigateToCapture}
-                onNavigateToManage={handleNavigateToManage}
               />
             )}
             
             {activeTab === "manage" && (
               <ManageHub 
                 activeSubTab={activeSubTab}
-                onNavigateToCapture={handleNavigateToCapture}
-                onNavigateToExplore={handleNavigateToExplore}
-                onNavigateToBrief={handleNavigateToBrief}
               />
             )}
             
