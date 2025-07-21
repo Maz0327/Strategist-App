@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { AnimatedLoadingState as StandardLoadingState } from "@/components/ui/animated-loading-state";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { apiRequest } from "@/lib/queryClient";
@@ -158,18 +159,8 @@ export function EnhancedAnalysisResults({
   // Update analysis when new data arrives
   useEffect(() => {
     setCurrentAnalysis(data);
-    // Check if visual assets are available in the analysis data - using images field
-    if (data.images && data.images.length > 0) {
-      // Convert image URLs to proper image objects for display
-      const imageObjects = data.images.map((url: string, index: number) => ({
-        url,
-        alt: `Image ${index + 1}`
-      }));
-      setExtractedImages(imageObjects);
-    } else if (data.visualAssets && data.visualAssets.length > 0) {
-      // Fallback to visualAssets if images array is not available
-      setExtractedImages(data.visualAssets);
-    }
+    // Visual assets will be loaded from the extracted content during analysis
+    // No need to check data.images or data.visualAssets here
     // Visual analysis will be done on-demand in the Visual tab
   }, [data]);
 
@@ -182,8 +173,7 @@ export function EnhancedAnalysisResults({
   console.log("EnhancedAnalysisResults received analysis:", analysis);
   console.log("Analysis data:", data);
   console.log("Extracted images state:", extractedImages);
-  console.log("Data images field:", data.images);
-  console.log("Data visualAssets field:", data.visualAssets);
+  // Note: Visual assets are loaded separately during analysis
 
   // Tab-level button handlers
   const handleBuildCohorts = async () => {
@@ -381,8 +371,8 @@ export function EnhancedAnalysisResults({
     
     try {
       const response = await apiRequest('POST', '/api/advanced-strategic-insights', {
-        content: originalContent?.content || data.content || '',
-        title: originalContent?.title || data.title || '',
+        content: originalContent?.content || '',
+        title: originalContent?.title || '',
         truthAnalysis: currentAnalysis.truthAnalysis,
         initialInsights: insightsResults,
         strategicActions: actionsResults,
@@ -430,8 +420,8 @@ export function EnhancedAnalysisResults({
     
     try {
       const response = await apiRequest('POST', '/api/advanced-competitive-intelligence', {
-        content: originalContent?.content || data.content || '',
-        title: originalContent?.title || data.title || '',
+        content: originalContent?.content || '',
+        title: originalContent?.title || '',
         truthAnalysis: currentAnalysis.truthAnalysis,
         initialCompetitive: competitiveResults
       });
@@ -469,8 +459,8 @@ export function EnhancedAnalysisResults({
     
     try {
       const response = await apiRequest('POST', '/api/advanced-strategic-actions', {
-        content: originalContent?.content || data.content || '',
-        title: originalContent?.title || data.title || '',
+        content: originalContent?.content || '',
+        title: originalContent?.title || '',
         truthAnalysis: currentAnalysis.truthAnalysis,
         initialActions: actionsResults
       });
@@ -640,7 +630,7 @@ export function EnhancedAnalysisResults({
         )
       ]);
       
-      const responseData = await response.json();
+      const responseData = await (response as Response).json();
       console.log('Visual Analysis API response:', responseData);
       setVisualAnalysisResults(responseData.visualAnalysis || responseData);
       toast({
@@ -983,7 +973,7 @@ export function EnhancedAnalysisResults({
                         ))}
                       </div>
                     ) : loadingStates.insights ? (
-                      <AnimatedLoadingState 
+                      <StandardLoadingState 
                         title="Building Strategic Insights"
                         subtitle="Analyzing content for strategic opportunities..."
                       />
@@ -1158,7 +1148,7 @@ export function EnhancedAnalysisResults({
                   )}
                 </>
               ) : loadingStates.competitive ? (
-                <AnimatedLoadingState 
+                <StandardLoadingState 
                   title="Building Competitive Intelligence"
                   subtitle="Analyzing competitive positioning and market opportunities..."
                 />
@@ -1310,7 +1300,7 @@ export function EnhancedAnalysisResults({
                   )}
                 </>
               ) : loadingStates.actions ? (
-                <AnimatedLoadingState 
+                <StandardLoadingState 
                   title="Building Strategic Actions"
                   subtitle="Generating actionable recommendations..."
                 />

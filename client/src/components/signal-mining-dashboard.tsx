@@ -17,6 +17,7 @@ import {
   ArrowRight,
   RefreshCw
 } from "lucide-react";
+import { AnimatedLoadingState } from "@/components/ui/animated-loading-state";
 
 interface TrendingTopic {
   id: string;
@@ -259,28 +260,10 @@ export function SignalMiningDashboard() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold">Signal Mining Dashboard</h2>
-            <p className="text-gray-600">Loading real-time cultural intelligence...</p>
-          </div>
-        </div>
-        <div className="grid gap-4">
-          {[1, 2, 3].map(i => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader>
-                <div className="h-6 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+      <AnimatedLoadingState 
+        title="Loading Signal Mining Dashboard"
+        subtitle="Analyzing trending topics across 13+ platforms for strategic intelligence..."
+      />
     );
   }
 

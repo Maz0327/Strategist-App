@@ -29,6 +29,7 @@ import {
   Database,
   ExternalLink
 } from "lucide-react";
+import { AnimatedLoadingState } from "@/components/ui/animated-loading-state";
 import ApiMonitoring from "./admin/api-monitoring";
 
 interface DashboardData {
@@ -148,23 +149,10 @@ export function AdminDashboard() {
 
   if (isDashboardLoading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        </div>
-        <div className="grid gap-4">
-          {[1, 2, 3, 4].map(i => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader>
-                <div className="h-6 bg-gray-200 rounded w-1/3"></div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+      <AnimatedLoadingState 
+        title="Loading Admin Dashboard"
+        subtitle="Gathering system metrics and user engagement data..."
+      />
     );
   }
 

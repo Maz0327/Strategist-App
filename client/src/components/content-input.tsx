@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { AnimatedLoadingState } from "@/components/ui/animated-loading-state";
 import { apiRequest } from "@/lib/queryClient";
 import { analyzeContentSchema, type AnalyzeContentData } from "@shared/schema";
 import { Edit, Link, Highlighter, Brain, Download, Info, Sparkles, Zap, Search, Mic, Settings } from "lucide-react";
