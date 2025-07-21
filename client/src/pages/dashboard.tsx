@@ -77,16 +77,17 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
       icon: Plus,
       subItems: []
     },
-    {
-      id: "feeds",
-      label: "Feeds",
-      icon: Brain,
-      subItems: [
-        { id: "client-feeds", label: "Client Channels" },
-        { id: "custom-feeds", label: "Custom Feeds" },
-        { id: "project-feeds", label: "Project Intelligence" }
-      ]
-    },
+    // TEMPORARILY HIDDEN - Feeds functionality needs further development
+    // {
+    //   id: "feeds",
+    //   label: "Feeds",
+    //   icon: Brain,
+    //   subItems: [
+    //     { id: "client-feeds", label: "Client Channels" },
+    //     { id: "custom-feeds", label: "Custom Feeds" },
+    //     { id: "project-feeds", label: "Project Intelligence" }
+    //   ]
+    // },
     {
       id: "explore",
       label: "Explore Signals",

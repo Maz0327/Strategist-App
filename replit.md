@@ -468,7 +468,7 @@ Successfully restructured the main navigation according to user specifications:
 **New Navigation Order:**
 1. **Today's Briefing** - Standalone homepage with intelligence overview
 2. **Signal Capture** - Content analysis and signal creation
-3. **Feeds** - RSS feeds and data sources (Client Channels, Custom Feeds, Project Intelligence)
+3. **Feeds** - RSS feeds and data sources (Client Channels, Custom Feeds, Project Intelligence) [TEMPORARILY HIDDEN - July 21, 2025]
 4. **Explore Signals** - Trending topics and signal mining
 5. **Strategic Brief Lab** - Brief generation and templates
 6. **Manage** - Dashboard and settings
@@ -661,9 +661,17 @@ Successfully resolved mobile UI overlapping issues in the Signal Capture compone
 - **Phase 4**: 🔄 IN PROGRESS - Today's Briefing 4-section restructure
 - **Phase 5**: 📋 PLANNED - Real RSS feed functionality implementation
 
+### Navigation Update - July 21, 2025 (Evening)
+
+**Feeds Tab Temporarily Hidden**: 
+- **Issue**: RSS feed functionality not working properly - showing raw XML instead of readable content
+- **Action**: Feeds tab hidden from navigation while keeping system intact for future development
+- **Status**: All feed components, services, and database tables preserved for later improvement
+- **User Feedback**: "The RSS feed is not working. Let's leave Phase 5D and 5E for later and hide the 'feeds' tab"
+
 ### Remaining Critical UX Issues:
 1. **Today's Briefing Structure (HIGH PRIORITY)**: Needs 4-section layout instead of recent signals
-2. **Feed Functionality (MEDIUM PRIORITY)**: Currently showing mock data, needs real RSS integration
+2. **Feed Functionality (DEFERRED)**: RSS system needs proper implementation - temporarily hidden from users
 
 ### Critical System Fixes - July 18, 2025
 
