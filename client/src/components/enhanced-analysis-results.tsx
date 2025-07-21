@@ -36,7 +36,7 @@ import {
 } from "lucide-react";
 
 // Enhanced Loading Component with animated progress bar
-const AnimatedLoadingState = ({ title, subtitle, progress = 0 }) => {
+const AnimatedLoadingState = ({ title, subtitle, progress = 0 }: { title: string; subtitle: string; progress?: number }) => {
   const [animatedProgress, setAnimatedProgress] = useState(0);
   
   useEffect(() => {
@@ -137,8 +137,13 @@ export function EnhancedAnalysisResults({
     competitive: false,
     advancedInsights: false,
     advancedCompetitive: false,
-    advancedActions: false
+    advancedActions: false,
+    visualAnalysis: false
   });
+
+  // Visual Intelligence state
+  const [extractedImages, setExtractedImages] = useState<any[]>([]);
+  const [visualAnalysisResults, setVisualAnalysisResults] = useState<any>(null);
 
   // Advanced Analysis Results state
   const [advancedInsightsResults, setAdvancedInsightsResults] = useState<any[]>([]);
@@ -151,6 +156,13 @@ export function EnhancedAnalysisResults({
   // Update analysis when new data arrives
   useEffect(() => {
     setCurrentAnalysis(data);
+    // Check if visual assets are available in the analysis data
+    if (data.visualAssets && data.visualAssets.length > 0) {
+      setExtractedImages(data.visualAssets);
+    }
+    if (data.visualAnalysis) {
+      setVisualAnalysisResults(data.visualAnalysis);
+    }
   }, [data]);
 
   // Sync length preference with parent component
@@ -583,6 +595,49 @@ export function EnhancedAnalysisResults({
     }
   };
 
+  // Visual Intelligence handler
+  const handleVisualAnalysis = async () => {
+    if (!originalContent?.url || !extractedImages || extractedImages.length === 0) {
+      toast({
+        title: "No Images Available",
+        description: "No images found for visual analysis. Try analyzing a URL with visual content.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoadingStates(prev => ({ ...prev, visualAnalysis: true }));
+    
+    try {
+      const response = await apiRequest(
+        'POST',
+        '/api/analyze/visual',
+        {
+          url: originalContent.url,
+          content: originalContent.content || '',
+          visualAssets: extractedImages
+        }
+      );
+      
+      const responseData = await response.json();
+      console.log('Visual Analysis API response:', responseData);
+      setVisualAnalysisResults(responseData.visualAnalysis || responseData);
+      toast({
+        title: "Success",
+        description: "Visual analysis completed successfully",
+      });
+    } catch (error: any) {
+      console.error('Visual analysis failed:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Visual analysis failed. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingStates(prev => ({ ...prev, visualAnalysis: false }));
+    }
+  };
+
   const handleFlagAsPotentialSignal = async () => {
     setIsFlagging(true);
     try {
@@ -757,7 +812,7 @@ export function EnhancedAnalysisResults({
       {/* Detailed Analysis Tabs */}
       <Tabs defaultValue="truth" className="w-full">
         <div className="overflow-x-auto">
-          <TabsList className={`${isMobile ? 'flex w-max' : 'grid w-full grid-cols-4'}`}>
+          <TabsList className={`${isMobile ? 'flex w-max' : 'grid w-full grid-cols-5'}`}>
             <TabsTrigger value="truth" className="text-xs sm:text-sm whitespace-nowrap">
               <span className="hidden sm:inline">Truth Analysis</span>
               <span className="sm:hidden">Truth</span>
@@ -769,6 +824,10 @@ export function EnhancedAnalysisResults({
             <TabsTrigger value="insights" className="text-xs sm:text-sm whitespace-nowrap">
               <span className="hidden sm:inline">Insights</span>
               <span className="sm:hidden">Insights</span>
+            </TabsTrigger>
+            <TabsTrigger value="visual" className="text-xs sm:text-sm whitespace-nowrap">
+              <span className="hidden sm:inline">Visual Intelligence</span>
+              <span className="sm:hidden">Visual</span>
             </TabsTrigger>
             <TabsTrigger value="strategic-recommendations" className="text-xs sm:text-sm whitespace-nowrap">
               <span className="hidden sm:inline">Strategic Recommendations</span>
@@ -1490,6 +1549,139 @@ export function EnhancedAnalysisResults({
                 <div className="text-center py-8 text-gray-500">
                   <Users className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                   <p>Click "Build Cohorts" to analyze audience segments</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="visual" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Eye className="h-5 w-5" />
+                Visual Intelligence
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                Analyze visual elements for brand insights, cultural moments, and competitive positioning
+              </p>
+            </CardHeader>
+            <CardContent>
+              {/* Display extracted images if available */}
+              {extractedImages && extractedImages.length > 0 ? (
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-3">Extracted Images ({extractedImages.length})</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                      {extractedImages.map((image, index) => (
+                        <div key={index} className="relative border rounded-lg overflow-hidden">
+                          <img 
+                            src={image.url} 
+                            alt={image.alt || `Image ${index + 1}`}
+                            className="w-full h-32 object-cover"
+                          />
+                          <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-1 text-xs">
+                            {image.alt || `Image ${index + 1}`}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-center">
+                    <Button 
+                      onClick={handleVisualAnalysis}
+                      disabled={loadingStates.visualAnalysis}
+                      className="flex items-center gap-2"
+                    >
+                      {loadingStates.visualAnalysis ? (
+                        <>
+                          <LoadingSpinner size="sm" />
+                          Analyzing Visuals...
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="h-4 w-4" />
+                          Analyze Visual Intelligence
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  {loadingStates.visualAnalysis && (
+                    <AnimatedLoadingState 
+                      title="Analyzing Visual Content"
+                      subtitle="Extracting brand elements, cultural moments, and strategic insights from images..."
+                    />
+                  )}
+
+                  {visualAnalysisResults && (
+                    <div className="space-y-4 mt-4">
+                      <div className="border-t pt-4">
+                        <h4 className="font-medium text-gray-900 mb-3">Visual Analysis Results</h4>
+                        
+                        {/* Brand Elements */}
+                        {visualAnalysisResults.brandElements && (
+                          <div className="mb-4">
+                            <h5 className="font-medium text-blue-900 mb-2">Brand Elements</h5>
+                            <div className="bg-blue-50 p-3 rounded text-sm">
+                              {typeof visualAnalysisResults.brandElements === 'string' 
+                                ? visualAnalysisResults.brandElements
+                                : JSON.stringify(visualAnalysisResults.brandElements, null, 2)}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Cultural Intelligence */}
+                        {visualAnalysisResults.culturalMoments && (
+                          <div className="mb-4">
+                            <h5 className="font-medium text-purple-900 mb-2">Cultural Intelligence</h5>
+                            <div className="bg-purple-50 p-3 rounded text-sm">
+                              {typeof visualAnalysisResults.culturalMoments === 'string'
+                                ? visualAnalysisResults.culturalMoments
+                                : JSON.stringify(visualAnalysisResults.culturalMoments, null, 2)}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Competitive Insights */}
+                        {visualAnalysisResults.competitiveInsights && (
+                          <div className="mb-4">
+                            <h5 className="font-medium text-green-900 mb-2">Competitive Visual Insights</h5>
+                            <div className="bg-green-50 p-3 rounded text-sm">
+                              {typeof visualAnalysisResults.competitiveInsights === 'string'
+                                ? visualAnalysisResults.competitiveInsights
+                                : JSON.stringify(visualAnalysisResults.competitiveInsights, null, 2)}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Visual Summary */}
+                        {visualAnalysisResults.summary && (
+                          <div className="mb-4">
+                            <h5 className="font-medium text-gray-900 mb-2">Visual Summary</h5>
+                            <div className="bg-gray-50 p-3 rounded text-sm">
+                              {visualAnalysisResults.summary}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Eye className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h4 className="font-medium text-gray-900 mb-2">No Images Available</h4>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Visual Intelligence requires content with images. Try analyzing:
+                  </p>
+                  <div className="text-sm text-gray-500 space-y-1">
+                    <p>• Social media posts with images</p>
+                    <p>• Blog articles with visuals</p>
+                    <p>• Product pages</p>
+                    <p>• Marketing content</p>
+                  </div>
                 </div>
               )}
             </CardContent>
