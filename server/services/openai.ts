@@ -308,23 +308,24 @@ CURRENT ANALYSIS (Medium length):
 ${JSON.stringify(mediumAnalysis.truthAnalysis, null, 2)}
 
 REQUIREMENTS:
-- ${lengthPreference === 'short' ? 'Exactly 2-3 sentences per field' : 'Exactly 5-7 sentences per field'}
+- ${lengthPreference === 'short' ? 'Exactly 2-3 sentences per field' : 'Exactly 4-6 complete sentences per field - provide comprehensive detailed analysis with rich context and strategic depth'}
 - Keep the same strategic insights and conclusions
 - Maintain professional strategic analysis quality
 - Focus on actionable intelligence and cultural context
 - Only adjust truthAnalysis fields: fact, observation, insight, humanTruth, culturalMoment
+- ${lengthPreference === 'long' ? 'CRITICAL: Each field MUST contain 4-6 complete sentences with comprehensive detail, strategic context, and actionable insights. Do not abbreviate or summarize - expand with strategic depth and cultural context.' : ''}
 
 Return ONLY the truthAnalysis JSON object with adjusted fields.`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo", // Always use GPT-3.5-turbo for adjustments
       messages: [
-        { role: "system", content: "You are a strategic content analyst. Adjust the length of the analysis while maintaining quality and insights." },
+        { role: "system", content: `You are a strategic content analyst. ${lengthPreference === 'long' ? 'Provide comprehensive, detailed analysis with strategic depth. Each field must contain 4-6 complete sentences with rich context and actionable insights.' : 'Adjust the length of the analysis while maintaining quality and insights.'}` },
         { role: "user", content: adjustmentPrompt }
       ],
       response_format: { type: "json_object" },
       temperature: 0.1,
-      max_tokens: lengthPreference === 'short' ? 800 : 1200
+      max_tokens: lengthPreference === 'short' ? 800 : lengthPreference === 'long' ? 2000 : 1200
     });
 
     const responseContent = response.choices[0]?.message?.content;
