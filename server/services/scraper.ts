@@ -14,13 +14,11 @@ export interface ExtractedContent {
   title: string;
   content: string;
   author?: string;
-  comments?: string; // Add comments field
   images?: string[]; // Add images array for compatibility
   visualAssets: VisualAsset[];
   metadata: {
     images: number;
     totalVisualAssets: number;
-    hasComments?: boolean;
   };
 }
 
@@ -45,11 +43,10 @@ export class ScraperService {
                    $('h1').first().text().trim() || 
                    'Untitled';
       
-      // Try to extract main content
+      // Try to extract main content (text only - no comments)
       let content = '';
-      let comments = '';
       
-      // LinkedIn-specific extraction
+      // Social media-specific extraction for post text
       if (url.includes('linkedin.com')) {
         // LinkedIn post content selectors
         const linkedinSelectors = [
@@ -68,19 +65,33 @@ export class ScraperService {
             break;
           }
         }
-        
-        // Extract LinkedIn comments
-        const commentSelectors = [
-          '.comments-comments-list',
-          '.social-actions-bar',
-          '.feed-shared-social-action-bar',
-          '.comments-comment-texteditor'
+      } else if (url.includes('twitter.com') || url.includes('x.com')) {
+        // Twitter/X post content
+        const twitterSelectors = [
+          '[data-testid="tweetText"]',
+          '.tweet-text',
+          '[data-testid="tweet"] [lang]'
         ];
         
-        for (const selector of commentSelectors) {
+        for (const selector of twitterSelectors) {
           const element = $(selector);
           if (element.length > 0) {
-            comments = element.text().trim();
+            content = element.text().trim();
+            break;
+          }
+        }
+      } else if (url.includes('instagram.com')) {
+        // Instagram post content
+        const instagramSelectors = [
+          'article [role="button"] span',
+          '._a9zs h1',
+          '._a9zr span'
+        ];
+        
+        for (const selector of instagramSelectors) {
+          const element = $(selector);
+          if (element.length > 0) {
+            content = element.text().trim();
             break;
           }
         }
@@ -127,13 +138,11 @@ export class ScraperService {
       return {
         title: title.substring(0, 200), // Limit title length
         content: content.substring(0, 10000), // Limit content length
-        comments: comments.substring(0, 2000), // Add comments field
         images: visualAssets.map(asset => asset.url), // Extract image URLs for compatibility
         visualAssets,
         metadata: {
           images: visualAssets.length, // All assets are images now
-          totalVisualAssets: visualAssets.length,
-          hasComments: !!comments
+          totalVisualAssets: visualAssets.length
         }
       };
     } catch (error) {

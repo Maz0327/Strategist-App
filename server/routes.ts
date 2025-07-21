@@ -1082,9 +1082,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           metadata: videoTranscription?.videoMetadata || null
         },
         comments: {
-          content: result.comments || '',
-          hasContent: !!(result.comments && result.comments.trim()),
-          count: result.commentCount || 0
+          content: '', // Comments removed per user request
+          hasContent: false,
+          count: 0
         },
         images: {
           urls: result.images || [],
