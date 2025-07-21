@@ -88,7 +88,7 @@ export class GeminiVisualAnalysisService {
       // Process images through Gemini
       const geminiResponse = await Promise.race([
         ai.models.generateContent({
-          model: "gemini-2.5-flash",
+          model: "gemini-2.5-pro",
           contents: [
             ...validImages,
             analysisPrompt
@@ -116,7 +116,7 @@ export class GeminiVisualAnalysisService {
         )
       ]);
 
-      const analysis = JSON.parse(geminiResponse.text || '{}');
+      const analysis = JSON.parse((geminiResponse as any).text || '{}');
       
       return this.processAnalysisResult(analysis);
 

@@ -9,7 +9,7 @@ import {
   type InsertGeneratedBrief,
   type GeneratedBrief 
 } from "../../shared/schema.js";
-import { analyzeWithOpenAI } from "./openaiAnalysisService.js";
+// Removed openaiAnalysisService import - now using Gemini 2.5 Pro for brief generation
 
 export class BriefService {
   // Get brief template
@@ -101,27 +101,28 @@ export class BriefService {
     return briefContent;
   }
 
-  // Generate content for a specific section
+  // Generate content for a specific section using Gemini 2.5 Pro
   private async generateSectionContent(section: any, captures: any[]) {
-    const prompt = this.buildSectionPrompt(section, captures);
-    
     try {
-      const analysis = await analyzeWithOpenAI(prompt, 'medium', 'deep');
+      // Import Gemini brief generator
+      const { geminiBriefGenerator } = await import('./gemini-brief-generator');
+      
+      // Use Gemini 2.5 Pro for enterprise-grade brief generation
+      const sectionContent = await geminiBriefGenerator.generateSectionContent(
+        section, 
+        captures,
+        `Strategic brief section for ${section.name}`
+      );
 
       return {
-        title: section.name,
-        description: section.description,
-        insights: this.extractInsights(analysis, section.content_types),
-        captures: captures.map(c => ({
-          id: c.id,
-          title: c.title,
-          url: c.url,
-          userNotes: c.userNotes,
-          visualAssets: c.visualAssets,
-          qualScore: c.qualScore
-        })),
-        opportunities: this.extractOpportunities(analysis),
-        recommendations: this.extractRecommendations(analysis)
+        title: sectionContent.title,
+        description: sectionContent.description,
+        strategicAnalysis: sectionContent.strategicAnalysis,
+        culturalContext: sectionContent.culturalContext,
+        insights: sectionContent.insights,
+        opportunities: sectionContent.opportunities,
+        recommendations: sectionContent.recommendations,
+        captures: sectionContent.captures
       };
     } catch (error) {
       console.error(`Error generating section content for ${section.id}:`, error);

@@ -128,8 +128,8 @@ Analyze this content for strategic insights. Focus on actionable intelligence an
   private async createMediumAnalysis(content: string, title: string, analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     const isDeepAnalysis = analysisMode === 'deep';
     
-    // Model selection: GPT-3.5-turbo for quick, GPT-4o-mini for deep
-    const model = isDeepAnalysis ? "gpt-4o-mini" : "gpt-3.5-turbo";
+    // Model selection: GPT-4o-mini for quick, GPT-4o for deep
+    const model = isDeepAnalysis ? "gpt-4o" : "gpt-4o-mini";
     
     const systemPrompt = this.getSystemPrompt('medium', isDeepAnalysis);
     
