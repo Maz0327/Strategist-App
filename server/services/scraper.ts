@@ -259,13 +259,16 @@ export class ScraperService {
         return false; // Block background images
       }
       
-      // ONLY allow main post content images - be extremely selective
-      const isMainPostImage = url.includes('feedshare-shrink_') && (
-        url.includes('800') || url.includes('720') || url.includes('1280') || 
-        url.includes('2048') || url.includes('1536')
+      // Allow main post content images - improved filtering
+      const isMainPostImage = (
+        url.includes('feedshare-shrink_') || // Main post images
+        url.includes('media-proxy') ||       // Media proxy images  
+        url.includes('dms/image') ||         // Direct media service
+        url.includes('media/') ||            // General media folder
+        (url.includes('media') && (url.includes('.jpg') || url.includes('.png') || url.includes('.webp')))
       );
       
-      // For LinkedIn, ONLY return the main post image, nothing else
+      // For LinkedIn, return post images while blocking UI elements
       return isMainPostImage;
     }
     
