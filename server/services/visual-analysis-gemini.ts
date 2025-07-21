@@ -56,15 +56,20 @@ export class GeminiVisualAnalysisService {
       const imageData = await Promise.all(
         imagesToAnalyze.map(async (asset) => {
           try {
-            const response = await fetch(asset.url);
+            const response = await fetch(asset.url, {
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+              }
+            });
             if (!response.ok) {
               throw new Error(`Failed to fetch image: ${response.statusText}`);
             }
             const buffer = await response.arrayBuffer();
+            const contentType = response.headers.get('content-type') || 'image/jpeg';
             return {
               inlineData: {
                 data: Buffer.from(buffer).toString("base64"),
-                mimeType: "image/jpeg",
+                mimeType: contentType,
               },
             };
           } catch (error) {
@@ -83,7 +88,7 @@ export class GeminiVisualAnalysisService {
       // Process images through Gemini
       const geminiResponse = await Promise.race([
         ai.models.generateContent({
-          model: "gemini-2.0-flash-preview",
+          model: "gemini-2.5-flash",
           contents: [
             ...validImages,
             analysisPrompt

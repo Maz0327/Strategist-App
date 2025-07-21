@@ -632,7 +632,7 @@ export function EnhancedAnalysisResults({
           }
         ),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Visual analysis timeout - please try again')), 35000) // Increased for vision model
+          setTimeout(() => reject(new Error('Visual analysis timeout - please try again')), 25000) // Optimized for Gemini
         )
       ]);
       
