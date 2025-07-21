@@ -613,9 +613,10 @@ export function EnhancedAnalysisResults({
         'POST',
         '/api/analyze/visual',
         {
-          url: originalContent.url,
+          imageUrls: extractedImages.map(img => img.url),
           content: originalContent.content || '',
-          visualAssets: extractedImages
+          context: `Visual analysis for: ${originalContent.url}`,
+          sourceUrl: originalContent.url
         }
       );
       
@@ -1448,23 +1449,7 @@ export function EnhancedAnalysisResults({
                     </p>
                   </div>
 
-                  {/* Image Display Section */}
-                  {originalContent?.url && (
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Eye className="h-4 w-4 text-indigo-600" />
-                        <h4 className="font-semibold text-indigo-900">Visual Analysis</h4>
-                      </div>
-                      <div className="bg-indigo-50 p-3 rounded">
-                        <p className="text-sm text-gray-700 mb-2">
-                          Images extracted from: {originalContent.url}
-                        </p>
-                        <div className="text-xs text-gray-500">
-                          Visual analysis feature available - upgrade to analyze images for brand elements, cultural moments, and competitive positioning
-                        </div>
-                      </div>
-                    </div>
-                  )}
+
                 </>
               ) : (
                 <div className="text-center py-8">
