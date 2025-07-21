@@ -299,8 +299,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           extractedContent = await scraperService.extractContent(data.url);
           
-          // Perform visual analysis if visual assets found
-          if (extractedContent.visualAssets && extractedContent.visualAssets.length > 0) {
+          // Only perform visual analysis for deep analysis mode to maintain speed for quick analysis
+          if (extractedContent.visualAssets && extractedContent.visualAssets.length > 0 && analysisMode === 'deep') {
             res.write(`data: ${JSON.stringify({ type: 'status', message: 'Analyzing visual content...', progress: 40 })}\n\n`);
             res.flush?.();
             
