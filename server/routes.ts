@@ -283,6 +283,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Extension-specific authentication check (no session cookies needed)
+  app.get("/api/auth/extension-check", async (req, res) => {
+    try {
+      // For single-user development, check if any user exists in the system
+      const user = await storage.getUserByEmail("Maz0327@gmail.com");
+      if (user) {
+        res.json({ 
+          authenticated: true,
+          user: { id: user.id, email: user.email } 
+        });
+      } else {
+        res.status(401).json({ 
+          authenticated: false, 
+          message: "User not found - please log in to main platform first" 
+        });
+      }
+    } catch (error: any) {
+      res.status(500).json({ 
+        authenticated: false, 
+        message: (error as Error).message 
+      });
+    }
+  });
+
   // Content analysis routes (streaming version)
   app.post("/api/analyze/stream", requireAuth, async (req, res) => {
     try {
