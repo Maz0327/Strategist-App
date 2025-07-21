@@ -83,7 +83,7 @@ Return valid JSON only.`;
 
   private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     // Create stable cache key base with version for prompt changes
-    const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v8-function-calling';
+    const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v9-increased-tokens';
     
     // Step 1: Check if we have the requested length preference cached
     const targetCacheKey = createCacheKey(cacheKeyBase + lengthPreference, 'analysis');
@@ -211,7 +211,7 @@ Return JSON with this structure:
       ],
       function_call: { name: "analyze_content" },
       temperature: 0.1,
-      max_tokens: isDeepAnalysis ? 2000 : 1500
+      max_tokens: isDeepAnalysis ? 3000 : 2500
     });
 
     const functionCall = response.choices[0]?.message?.function_call;
@@ -323,7 +323,7 @@ Return ONLY the truthAnalysis JSON object with adjusted fields.`;
       ],
       response_format: { type: "json_object" },
       temperature: 0.1,
-      max_tokens: lengthPreference === 'short' ? 800 : lengthPreference === 'long' ? 2000 : 1200
+      max_tokens: lengthPreference === 'short' ? 1200 : lengthPreference === 'long' ? 3000 : 1800
     });
 
     const responseContent = response.choices[0]?.message?.content;
