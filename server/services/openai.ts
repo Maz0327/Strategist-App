@@ -56,10 +56,9 @@ Focus on:
 - Competitive landscape insights
 - Attention and engagement potential
 
-For medium analysis, provide substantial detail in each truthAnalysis field (fact, observation, insight, humanTruth, culturalMoment).
-Each field should be comprehensive, well-developed, and contain enough detail to be strategically useful. Aim for 4-5 sentences per field.
+Analyze this content for strategic insights. Focus on actionable intelligence and cultural context.
 
-IMPORTANT: For the 'fact' field, state the actual facts directly - don't say "the content discusses" or "the post mentions". Instead, state what actually happened, who was involved, specific numbers, examples, and verifiable information. Provide comprehensive factual details.
+Return valid JSON with comprehensive analysis in each field.
 
 Return valid JSON only.`;
   }
@@ -85,7 +84,7 @@ Return valid JSON only.`;
 
   private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     // Create stable cache key base with version for prompt changes
-    const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v14-balanced-content-length';
+    const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v15-original-simple-prompts';
     
     // Step 1: Check if we have the requested length preference cached
     const targetCacheKey = createCacheKey(cacheKeyBase + lengthPreference, 'analysis');
@@ -140,11 +139,7 @@ Return valid JSON only.`;
     
     const userPrompt = `Analyze this content for strategic insights. 
 
-CRITICAL REQUIREMENTS: 
-- For truthAnalysis fields, provide substantial, well-developed content in each field (aim for 4-5 sentences per field)
-- Each field must be comprehensive, detailed, and strategically useful
-- For 'fact' field: State actual facts directly - don't say "the content discusses" or "this post talks about". Instead state what actually happened, who was involved, specific data/numbers, concrete examples. Provide comprehensive factual details.
-- For observation, insight, humanTruth, culturalMoment: Provide rich, comprehensive analysis with deep insights
+Provide strategic analysis with comprehensive details in each truthAnalysis field.
 
 Title: ${title}
 Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}
@@ -305,33 +300,18 @@ Return JSON with this structure:
       insight: mediumAnalysis.truthAnalysis.insight?.length || 0
     });
     
-    const adjustmentPrompt = `Adjust the following analysis to ${lengthPreference} format. Keep the same strategic insights and JSON structure.
+    const adjustmentPrompt = `Adjust this analysis to ${lengthPreference} length while keeping the same insights.
 
-CURRENT ANALYSIS (Medium length):
 ${JSON.stringify(mediumAnalysis.truthAnalysis, null, 2)}
 
-CRITICAL REQUIREMENTS:
-- For ${lengthPreference} analysis: ${lengthPreference === 'short' ? 'Provide concise but complete analysis in each field (2-3 sentences per field)' : 'Provide extensive, comprehensive, and detailed analysis in each field with rich depth (6-8 sentences per field)'}
-- For 'fact' field: State actual facts directly - don't say "the content discusses" or "this post talks about". Instead state what actually happened, who was involved, specific data/numbers, concrete examples
-- For observation, insight, humanTruth, culturalMoment: Provide ${lengthPreference === 'short' ? 'focused analysis' : 'extensive comprehensive analysis with rich detail and depth'}
-- Each field must be ${lengthPreference === 'short' ? 'concise but strategically complete' : 'comprehensive, detailed, and thoroughly developed'}
-- Keep the same strategic insights and conclusions
-- Maintain professional strategic analysis quality
-- Focus on actionable intelligence and cultural context
-- Only adjust truthAnalysis fields: fact, observation, insight, humanTruth, culturalMoment
-
-Return ONLY the truthAnalysis JSON object with adjusted fields.`;
+Make it ${lengthPreference === 'short' ? 'more concise' : 'more detailed and comprehensive'}. Return only the JSON object.`;
     
     debugLogger.info('Sending adjustment prompt:', adjustmentPrompt.substring(0, 500) + '...');
 
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo", // Always use GPT-3.5-turbo for adjustments
       messages: [
-        { role: "system", content: `You are a strategic content analyst. Adjust the analysis length while maintaining the same insights and quality. 
-
-IMPORTANT: For the 'fact' field, state the actual facts directly - don't say "the content discusses" or "the post mentions". Instead, state what actually happened, who was involved, specific numbers, examples, and verifiable information.
-
-${lengthPreference === 'long' ? 'For long analysis, provide extensive, comprehensive, and detailed analysis in each field with rich depth (6-8 sentences per field).' : 'For short analysis, provide concise but complete analysis while maintaining key insights (2-3 sentences per field).'}` },
+        { role: "system", content: "You are a strategic content analyst. Adjust the analysis length while maintaining the same insights and quality." },
         { role: "user", content: adjustmentPrompt }
       ],
       response_format: { type: "json_object" },
