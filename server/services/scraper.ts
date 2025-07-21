@@ -155,39 +155,66 @@ export class ScraperService {
     const visualAssets: VisualAsset[] = [];
     
     try {
-      // Extract images
-      $('img').each((_, element) => {
-        const $img = $(element);
-        const src = $img.attr('src');
-        const alt = $img.attr('alt') || '';
-        const width = $img.attr('width');
-        const height = $img.attr('height');
-        
-        if (src) {
-          const absoluteUrl = this.makeAbsoluteUrl(src, baseUrl);
+      // Enhanced image extraction optimized for social media platforms
+
+      // Enhanced image extraction with social media specific selectors
+      const imageSelectors = [
+        'img', // Standard img tags
+        '[style*="background-image"]', // CSS background images
+        '[data-background-image]', // Data attributes
+        '.feed-shared-image img', // LinkedIn specific
+        '.feed-shared-update-v2 img', // LinkedIn specific
+        '[data-test-id*="image"] img', // LinkedIn specific
+        '.update-components-image img', // LinkedIn specific
+      ];
+      
+      for (const selector of imageSelectors) {
+        $(selector).each((_, element) => {
+          const $el = $(element);
+          let src = $el.attr('src') || $el.attr('data-src') || $el.attr('data-background-image') || 
+                   $el.attr('data-delayed-url') || $el.attr('data-original') || $el.attr('data-lazy-src');
           
-          // Filter out common non-content images
-          if (!this.isContentImage(absoluteUrl, alt)) {
-            return;
+          // Handle CSS background-image
+          if (!src && $el.attr('style')) {
+            const styleMatch = $el.attr('style')?.match(/background-image:\s*url\(['"]?([^'"]+)['"]?\)/);
+            if (styleMatch) {
+              src = styleMatch[1];
+            }
           }
           
-          visualAssets.push({
-            type: 'image',
-            url: absoluteUrl,
-            alt,
-            dimensions: width && height ? { 
-              width: parseInt(width), 
-              height: parseInt(height) 
-            } : undefined,
-            format: this.getFileExtension(absoluteUrl)
-          });
-        }
-      });
+          // Process found image source
+          
+          if (src) {
+            const alt = $el.attr('alt') || $el.attr('title') || '';
+            const width = $el.attr('width');
+            const height = $el.attr('height');
+            
+            const absoluteUrl = this.makeAbsoluteUrl(src, baseUrl);
+            
+            // More permissive filtering for social media images
+            if (this.isContentImage(absoluteUrl, alt, baseUrl)) {
+              visualAssets.push({
+                type: 'image',
+                url: absoluteUrl,
+                alt,
+                dimensions: width && height ? { 
+                  width: parseInt(width), 
+                  height: parseInt(height) 
+                } : undefined,
+                format: this.getFileExtension(absoluteUrl)
+              });
+            }
+          }
+        });
+      }
 
-      // Note: Video analysis removed - focusing on images only for now
+      // Remove duplicates based on URL
+      const uniqueAssets = visualAssets.filter((asset, index, self) => 
+        index === self.findIndex(a => a.url === asset.url)
+      );
 
       // Limit to most relevant assets (top 20)
-      return visualAssets.slice(0, 20);
+      return uniqueAssets.slice(0, 20);
       
     } catch (error) {
       console.error("Visual asset extraction error:", error);
@@ -203,8 +230,45 @@ export class ScraperService {
     }
   }
 
-  private isContentImage(url: string, alt: string): boolean {
-    // Filter out common non-content images
+  private isContentImage(url: string, alt: string, baseUrl: string = ''): boolean {
+    const urlLower = url.toLowerCase();
+    const altLower = alt.toLowerCase();
+    
+    // Always include social media platform images
+    if (baseUrl.includes('linkedin.com') || baseUrl.includes('twitter.com') || 
+        baseUrl.includes('instagram.com') || baseUrl.includes('facebook.com')) {
+      
+      // Exclude only very obvious non-content images for social media
+      const socialExcludes = [
+        /favicon/i,
+        /logo.*header/i,
+        /icon.*16|32|64/i, // Small icons
+        /spinner/i,
+        /loading/i,
+        /1x1/i, // Tracking pixels
+        /tracking/i,
+        /analytics/i
+      ];
+      
+      const isExcluded = socialExcludes.some(pattern => pattern.test(urlLower) || pattern.test(altLower));
+      
+      // Include if not excluded and has reasonable size or content indicators
+      const hasReasonableSize = !url.includes('16x16') && !url.includes('32x32') && !url.includes('1x1') && 
+                                !url.includes('height="16') && !url.includes('width="16');
+      const hasContentIndicators = alt.length > 3 || url.includes('media') || url.includes('image') || 
+                                   url.includes('photo') || url.includes('content') || url.includes('feed') ||
+                                   url.includes('dms-') || url.includes('feedshare-'); // LinkedIn specific
+      
+      // For LinkedIn, be more permissive with static images
+      if (baseUrl.includes('linkedin.com')) {
+        const linkedinImage = url.includes('licdn.com') || url.includes('media.licdn.com');
+        return !isExcluded && (hasReasonableSize || hasContentIndicators || linkedinImage);
+      }
+      
+      return !isExcluded && (hasReasonableSize || hasContentIndicators);
+    }
+    
+    // For non-social media sites, use more strict filtering
     const excludePatterns = [
       /favicon/i,
       /logo/i,
@@ -216,16 +280,11 @@ export class ScraperService {
       /tracking/i,
       /analytics/i,
       /advertisement/i,
-      /ads/i,
-      /social/i,
-      /share/i
+      /ads/i
     ];
     
-    const urlLower = url.toLowerCase();
-    const altLower = alt.toLowerCase();
-    
     // Check if image seems to be content-related
-    const hasContentKeywords = /article|content|post|product|feature|hero|banner|gallery/i.test(urlLower + altLower);
+    const hasContentKeywords = /article|content|post|product|feature|hero|banner|gallery|media|photo/i.test(urlLower + altLower);
     
     // Check size indicators (avoid tiny images)
     const hasSize = url.includes('w=') || url.includes('width=') || url.includes('size=');
