@@ -56,7 +56,8 @@ Focus on:
 - Competitive landscape insights
 - Attention and engagement potential
 
-Provide analysis that varies in depth based on the requested length preference: ${lengthPreference}.
+For medium analysis, provide 3-5 sentences per field in truthAnalysis (fact, observation, insight, humanTruth, culturalMoment).
+Each field should be comprehensive and detailed while maintaining readability.
 
 Return valid JSON only.`;
   }
@@ -82,7 +83,7 @@ Return valid JSON only.`;
 
   private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     // Create stable cache key base with version for prompt changes
-    const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v5-restored';
+    const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v6-medium-fixed';
     
     // Step 1: Check if we have the requested length preference cached
     const targetCacheKey = createCacheKey(cacheKeyBase + lengthPreference, 'analysis');
