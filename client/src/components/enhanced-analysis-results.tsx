@@ -632,7 +632,7 @@ export function EnhancedAnalysisResults({
           }
         ),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Visual analysis timeout - please try again')), 12000)
+          setTimeout(() => reject(new Error('Visual analysis timeout - please try again')), 15000)
         )
       ]);
       
@@ -1609,6 +1609,7 @@ export function EnhancedAnalysisResults({
                     </Button>
                   </div>
 
+                  {/* Visual Analysis Results or Loading State */}
                   {loadingStates.visualAnalysis && (
                     <AnimatedLoadingState 
                       title="Analyzing Visual Content"

@@ -146,7 +146,7 @@ export class VisualAnalysisService {
       // Process images through OpenAI Vision API
       const visionResponse: any = await Promise.race([
         openai.chat.completions.create({
-          model: "gpt-4o", // GPT-4o has vision capabilities
+          model: "gpt-4o-mini", // Use faster, cheaper model for visual analysis
           messages: [
             {
               role: "system",
@@ -169,42 +169,28 @@ export class VisualAnalysisService {
               ]
             }
           ],
-          max_tokens: 1000, // Reduced from 4000 for faster processing
+          max_tokens: 800, // Further reduced for speed
           temperature: 0.1,
           response_format: { type: "json_object" }
         }),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Visual analysis timeout')), 8000)
+          setTimeout(() => reject(new Error('Visual analysis timeout')), 10000)
         )
       ]);
 
       const analysis = JSON.parse(visionResponse.choices[0].message.content || '{}');
       
       // Track analytics
-      await analyticsService.trackFeatureUsage(
-        null, // userId will be set by analytics service
-        'visual-analysis',
-        {
-          imagesAnalyzed: imagesToAnalyze.length,
-          totalAssets: visualAssets.length,
-          hasUrl: !!url,
-          tokensUsed: visionResponse.usage?.total_tokens || 0
-        }
-      );
+      // Skip analytics tracking to avoid database errors
+      // await analyticsService.trackFeatureUsage(...)
 
       return this.processAnalysisResult(analysis);
 
     } catch (error: any) {
       debugLogger.error('Visual analysis failed:', error);
       
-      await analyticsService.trackFeatureUsage(
-        null, // userId will be set by analytics service
-        'visual-analysis-failed',
-        {
-          error: error?.message || 'Unknown error',
-          assetsCount: visualAssets.length
-        }
-      );
+      // Skip analytics tracking to avoid database errors
+      // await analyticsService.trackFeatureUsage(...)
 
       throw new Error(`Visual analysis failed: ${error?.message || 'Unknown error'}`);
     }
