@@ -145,6 +145,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+
+
   // General rate limiting removed for performance optimization
 
   // API call tracking middleware
@@ -737,6 +739,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       debugLogger.error('Re-analysis failed', error, req);
       res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Bright Data social media scrapers
+  app.post("/api/bright-data/social", requireAuth, async (req, res) => {
+    try {
+      const { brightDataService } = await import('./services/bright-data-service');
+      const { platform, params } = req.body;
+      
+      let results: any[] = [];
+      
+      switch (platform) {
+        case 'instagram':
+          results = await brightDataService.scrapeInstagramPosts(params?.hashtags || ['tech']);
+          break;
+        case 'twitter':
+          results = await brightDataService.scrapeTwitterTrends(params?.location || 'worldwide');
+          break;
+        case 'tiktok':
+          results = await brightDataService.scrapeTikTokTrends();
+          break;
+        case 'linkedin':
+          results = await brightDataService.scrapeLinkedInContent(params?.keywords || ['ai']);
+          break;
+        default:
+          return res.status(400).json({ error: 'Unsupported platform' });
+      }
+      
+      res.json({
+        platform,
+        results,
+        count: results.length,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
     }
   });
 

@@ -624,13 +624,15 @@ export class ExternalAPIsService {
         return [];
       }
       
-      // Test social media URLs that we want to scrape with Bright Data
-      const socialUrls = [
-        'https://trends.google.com/trends/trendingsearches/daily',
-        'https://www.reddit.com/r/all/top/',
-      ];
+      // Use Bright Data's specialized social media scrapers
+      const [instagramResults, twitterResults, tiktokResults, linkedinResults] = await Promise.all([
+        brightDataService.scrapeInstagramPosts(['ai', 'startup', 'innovation', 'tech', 'business']),
+        brightDataService.scrapeTwitterTrends('worldwide'),
+        brightDataService.scrapeTikTokTrends(),
+        brightDataService.scrapeLinkedInContent(['artificial intelligence', 'startup trends'])
+      ]);
       
-      const results = await brightDataService.scrapeSocialMedia('mixed', socialUrls);
+      const results = [...instagramResults, ...twitterResults, ...tiktokResults, ...linkedinResults];
       
       return results
         .filter(r => r.success)
