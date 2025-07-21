@@ -291,6 +291,7 @@ Return JSON only.`;
     // Use OpenAI for short/long analysis (for quality depth)
     debugLogger.info('OpenAI adjustment to ' + lengthPreference);
     
+    /* ORIGINAL COMPLEX PROMPT (BACKUP):
     const adjustmentPrompt = `Adjust the following analysis to ${lengthPreference} format. Keep the same strategic insights and JSON structure.
 
 CURRENT ANALYSIS (Medium length):
@@ -304,16 +305,22 @@ REQUIREMENTS:
 - Only adjust truthAnalysis fields: fact, observation, insight, humanTruth, culturalMoment
 
 Return ONLY the truthAnalysis JSON object with adjusted fields.`;
+    */
+    
+    // OPTIMIZED SIMPLE PROMPT for faster processing
+    const adjustmentPrompt = lengthPreference === 'short' ? 
+      `Make each field exactly 2 sentences. Keep same insights:\n\n${JSON.stringify(mediumAnalysis.truthAnalysis, null, 2)}` :
+      `Expand each field to 5-6 sentences with more strategic detail:\n\n${JSON.stringify(mediumAnalysis.truthAnalysis, null, 2)}`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "You are adjusting strategic analysis length while preserving quality and insights. Write in a conversational, human tone - like discussing insights with your strategy team. Return only the truthAnalysis JSON object." },
+        { role: "system", content: "Adjust analysis length. Return JSON only." },
         { role: "user", content: adjustmentPrompt }
       ],
       response_format: { type: "json_object" },
       temperature: 0.1,
-      max_tokens: lengthPreference === 'short' ? 800 : 1500
+      max_tokens: lengthPreference === 'short' ? 400 : 800  // Reduced token limits for speed
     });
 
     const responseContent = response.choices[0]?.message?.content;
