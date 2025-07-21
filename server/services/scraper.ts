@@ -238,27 +238,35 @@ export class ScraperService {
     if (baseUrl.includes('linkedin.com') || baseUrl.includes('twitter.com') || 
         baseUrl.includes('instagram.com') || baseUrl.includes('facebook.com')) {
       
-      // COMPLETELY BLOCK LinkedIn UI elements and reaction icons
+      // BLOCK all LinkedIn UI elements, icons, and profile photos
       if (url.includes('static.licdn.com/aero-v1/sc/h/')) {
-        return false; // Block all LinkedIn UI icons
+        return false; // Block UI icons
       }
       
       if (url.includes('reaction-type') || alt.includes('reaction-type')) {
-        return false; // Block reaction type images
+        return false; // Block reaction icons
       }
       
-      // Only allow specific content image patterns
-      const contentPatterns = [
-        'feedshare-',
-        '/dms/image/',
-        'feedshare-shrink_800',
-        'article-cover_image-shrink'
-      ];
+      if (url.includes('profile-displayphoto')) {
+        return false; // Block profile pictures
+      }
       
-      const hasContentPattern = contentPatterns.some(pattern => url.includes(pattern));
+      if (url.includes('company-logo')) {
+        return false; // Block company logos
+      }
       
-      // For LinkedIn, ONLY return images that match content patterns
-      return hasContentPattern;
+      if (url.includes('profile-displaybackgroundimage')) {
+        return false; // Block background images
+      }
+      
+      // ONLY allow main post content images - be extremely selective
+      const isMainPostImage = url.includes('feedshare-shrink_') && (
+        url.includes('800') || url.includes('720') || url.includes('1280') || 
+        url.includes('2048') || url.includes('1536')
+      );
+      
+      // For LinkedIn, ONLY return the main post image, nothing else
+      return isMainPostImage;
     }
     
     // For non-social media sites, use more strict filtering
