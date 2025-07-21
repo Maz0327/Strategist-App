@@ -6,6 +6,7 @@ import { TodaysBriefing } from "@/components/todays-briefing";
 import { ExploreSignals } from "@/components/explore-signals";
 import { NewSignalCapture } from "@/components/new-signal-capture";
 import { StrategicBriefLab } from "@/components/strategic-brief-lab";
+import BriefBuilder from "./brief-builder";
 import { ManageHub } from "@/components/manage-hub";
 import { AdminDashboard } from "@/components/admin-dashboard";
 import { FeedbackWidget } from "@/components/feedback-widget";
@@ -105,6 +106,7 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
       label: "Strategic Brief Lab",
       icon: Target,
       subItems: [
+        { id: "builder", label: "Brief Builder" },
         { id: "cohorts", label: "Cohort Builder" },
         { id: "framework", label: "Define → Shift → Deliver" }
       ]
@@ -335,7 +337,11 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
               <NewSignalCapture />
             )}
             
-            {activeTab === "brief" && (
+            {activeTab === "brief" && activeSubTab === "builder" && (
+              <BriefBuilder />
+            )}
+            
+            {activeTab === "brief" && activeSubTab !== "builder" && (
               <StrategicBriefLab 
                 activeSubTab={activeSubTab}
               />

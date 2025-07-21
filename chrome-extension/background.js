@@ -1,4 +1,14 @@
-// Background service worker for Chrome extension
+// Background service worker for Chrome extension with enhanced screenshot capabilities
+
+// Handle tab capture for selective screenshots
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'captureTab') {
+    chrome.tabs.captureVisibleTab(null, { format: 'png' }, (dataUrl) => {
+      sendResponse({ screenshot: dataUrl });
+    });
+    return true; // Keep message channel open for async response
+  }
+});
 // Handles extension lifecycle and provides enhanced functionality
 
 // Installation and update handling

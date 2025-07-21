@@ -58,7 +58,44 @@ export const signals = pgTable("signals", {
   audioFormat: text("audio_format"), // File format (mp3, wav, m4a, etc.)
   audioLanguage: text("audio_language"), // Detected language from Whisper
   transcriptionConfidence: text("transcription_confidence"), // Confidence score
+  // Brief automation fields
+  projectId: integer("project_id").references(() => projects.id),
+  templateSection: text("template_section"), // cultural_signal, platform_signal, performance, etc.
+  captureSessionId: text("capture_session_id"),
+  engagementData: jsonb("engagement_data"), // Platform metrics and benchmarks
+  qualScore: text("qual_score"), // A, B, C quality rating
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const projects = pgTable("projects", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  description: text("description"),
+  briefTemplateId: text("brief_template_id").default("jimmy-johns-pac"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const briefTemplates = pgTable("brief_templates", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  sections: jsonb("sections").notNull(),
+  googleSlidesTemplateId: text("google_slides_template_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const generatedBriefs = pgTable("generated_briefs", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull().references(() => projects.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  templateId: text("template_id").notNull().references(() => briefTemplates.id),
+  content: jsonb("content").notNull(),
+  googleSlidesUrl: text("google_slides_url"),
+  status: text("status").default("draft"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const sources = pgTable("sources", {
@@ -290,6 +327,23 @@ export const insertAbTestResultsSchema = createInsertSchema(abTestResults).omit(
   timestamp: true,
 });
 
+// Brief automation schemas
+export const insertProjectSchema = createInsertSchema(projects).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertBriefTemplateSchema = createInsertSchema(briefTemplates).omit({
+  createdAt: true,
+});
+
+export const insertGeneratedBriefSchema = createInsertSchema(generatedBriefs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // RSS Feed schemas for Phase 5
 export const insertRssFeedSchema = createInsertSchema(rssFeeds).omit({
   id: true,
@@ -353,6 +407,12 @@ export type InsertSignal = z.infer<typeof insertSignalSchema>;
 export type Signal = typeof signals.$inferSelect;
 export type InsertSource = z.infer<typeof insertSourceSchema>;
 export type Source = typeof sources.$inferSelect;
+export type InsertProject = z.infer<typeof insertProjectSchema>;
+export type Project = typeof projects.$inferSelect;
+export type InsertBriefTemplate = z.infer<typeof insertBriefTemplateSchema>;
+export type BriefTemplate = typeof briefTemplates.$inferSelect;
+export type InsertGeneratedBrief = z.infer<typeof insertGeneratedBriefSchema>;
+export type GeneratedBrief = typeof generatedBriefs.$inferSelect;
 export type InsertSignalSource = z.infer<typeof insertSignalSourceSchema>;
 export type SignalSource = typeof signalSources.$inferSelect;
 export type InsertUserFeedSource = z.infer<typeof insertUserFeedSourceSchema>;

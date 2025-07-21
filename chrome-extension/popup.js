@@ -34,14 +34,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentPageInfo = null;
     let captureSettings = {};
     let autoSuggestions = [];
+    let currentProjects = [];
+    let currentScreenshot = null;
+    let selectedProject = null;
 
     // Initialize popup
     await initializePopup();
+
+    // Project management elements
+    const projectSelect = document.getElementById('projectSelect');
+    const createProjectBtn = document.getElementById('createProjectBtn');
+    const templateSectionSelect = document.getElementById('templateSectionSelect');
+    const sectionSelect = document.getElementById('sectionSelect');
+
+    // Screenshot elements
+    const elementScreenshotBtn = document.getElementById('elementScreenshotBtn');
+    const regionScreenshotBtn = document.getElementById('regionScreenshotBtn');
+    const fullPageScreenshotBtn = document.getElementById('fullPageScreenshotBtn');
+    const screenshotPreview = document.getElementById('screenshotPreview');
+    const previewImage = document.getElementById('previewImage');
+    const saveScreenshotBtn = document.getElementById('saveScreenshotBtn');
+    const retakeScreenshotBtn = document.getElementById('retakeScreenshotBtn');
 
     // Event listeners
     saveButton.addEventListener('click', handleSave);
     captureMode?.addEventListener('change', handleCaptureModeChange);
     userNotes.addEventListener('input', handleNotesChange);
+    
+    // Project management listeners
+    projectSelect?.addEventListener('change', handleProjectChange);
+    createProjectBtn?.addEventListener('click', handleCreateProject);
+    
+    // Screenshot listeners
+    elementScreenshotBtn?.addEventListener('click', () => handleScreenshotMode('element'));
+    regionScreenshotBtn?.addEventListener('click', () => handleScreenshotMode('region'));
+    fullPageScreenshotBtn?.addEventListener('click', () => handleScreenshotMode('fullPage'));
+    saveScreenshotBtn?.addEventListener('click', handleSaveScreenshot);
+    retakeScreenshotBtn?.addEventListener('click', handleRetakeScreenshot);
     
     // Visual intelligence features
     const screenshotButton = document.getElementById('screenshotButton');
@@ -67,6 +96,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Load user preferences
             const settings = await chrome.storage.local.get(['captureSettings', 'quickCapture', 'captureMode']);
             captureSettings = settings.captureSettings || {};
+            
+            // Load projects
+            await loadProjects();
             
             // Get current tab info
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });

@@ -2743,6 +2743,88 @@ The analyzed signals provide a comprehensive view of current market trends and s
     }
   });
 
+  // Brief Automation API routes
+  // Projects routes
+  app.get("/api/projects", requireAuth, async (req, res) => {
+    try {
+      const { projectService } = await import('./services/projectService.js');
+      const projects = await projectService.getUserProjects(req.session.userId!);
+      res.json(projects);
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+      res.status(500).json({ error: "Failed to fetch projects" });
+    }
+  });
+
+  app.post("/api/projects", requireAuth, async (req, res) => {
+    try {
+      const { insertProjectSchema } = await import('../shared/schema.js');
+      const { projectService } = await import('./services/projectService.js');
+      
+      const validatedData = insertProjectSchema.parse({
+        ...req.body,
+        userId: req.session.userId!
+      });
+
+      const project = await projectService.createProject(validatedData);
+      res.status(201).json(project);
+    } catch (error) {
+      console.error("Error creating project:", error);
+      res.status(400).json({ error: "Failed to create project" });
+    }
+  });
+
+  app.get("/api/projects/:id/captures", requireAuth, async (req, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const { projectService } = await import('./services/projectService.js');
+      const captures = await projectService.getProjectCaptures(projectId, req.session.userId!);
+      res.json(captures);
+    } catch (error) {
+      console.error("Error fetching captures:", error);
+      res.status(500).json({ error: "Failed to fetch captures" });
+    }
+  });
+
+  app.post("/api/projects/:id/assign-signal", requireAuth, async (req, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const { signalId, templateSection } = req.body;
+      const { projectService } = await import('./services/projectService.js');
+      
+      const signal = await projectService.assignSignalToProject(
+        signalId, 
+        projectId, 
+        req.session.userId!,
+        templateSection
+      );
+      
+      if (!signal) {
+        return res.status(404).json({ error: "Signal not found" });
+      }
+
+      res.json(signal);
+    } catch (error) {
+      console.error("Error assigning signal:", error);
+      res.status(400).json({ error: "Failed to assign signal" });
+    }
+  });
+
+  // Brief routes
+  app.post("/api/briefs/generate/:projectId", requireAuth, async (req, res) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const { templateId = "jimmy-johns-pac" } = req.body;
+      const { briefService } = await import('./services/briefService.js');
+      
+      const brief = await briefService.generateBrief(projectId, req.session.userId!, templateId);
+      res.status(201).json(brief);
+    } catch (error) {
+      console.error("Error generating brief:", error);
+      res.status(400).json({ error: error.message || "Failed to generate brief" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
