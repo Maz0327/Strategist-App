@@ -81,8 +81,8 @@ Return valid JSON only.`;
   }
 
   private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
-    // Create stable cache key base
-    const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v4';
+    // Create stable cache key base with version for prompt changes
+    const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v5-restored';
     
     // Step 1: Check if we have the requested length preference cached
     const targetCacheKey = createCacheKey(cacheKeyBase + lengthPreference, 'analysis');
@@ -116,7 +116,12 @@ Return valid JSON only.`;
     const adjustedAnalysis = await this.adjustAnalysis(mediumAnalysis, lengthPreference, analysisMode);
     await analysisCache.set(targetCacheKey, adjustedAnalysis, 300);
     
-    debugLogger.info('Returning adjusted analysis', { cached: true, lengthPreference });
+    debugLogger.info('Returning adjusted analysis', { 
+      lengthPreference,
+      factLength: adjustedAnalysis.truthAnalysis.fact?.length || 0,
+      observationLength: adjustedAnalysis.truthAnalysis.observation?.length || 0,
+      insightLength: adjustedAnalysis.truthAnalysis.insight?.length || 0
+    });
     return adjustedAnalysis;
   }
 
@@ -128,7 +133,7 @@ Return valid JSON only.`;
     
     const systemPrompt = this.getSystemPrompt('medium', isDeepAnalysis);
     
-    const userPrompt = `Analyze this content for strategic insights. Length preference: ${lengthPreference}
+    const userPrompt = `Analyze this content for strategic insights. Length preference: medium
 
 Title: ${title}
 Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}
