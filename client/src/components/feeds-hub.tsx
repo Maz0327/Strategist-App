@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Brain, TrendingUp, Users, ExternalLink, RefreshCw, Plus, Rss } from 'lucide-react';
 import { StandardizedLoading } from '@/components/ui/standardized-loading';
 import { RssFeedManager } from '@/components/rss-feed-manager';
+import { RSSFeedPreview } from '@/components/rss-feed-preview';
 import { useRssFeeds, useRssArticles } from '@/hooks/use-rss-feeds';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -68,10 +69,12 @@ export function FeedsHub({ activeSubTab = "client-feeds", onNavigateToCapture, o
                       <span className="text-gray-600">Errors:</span>
                       <span className="font-medium">{feed.errorCount}</span>
                     </div>
-                    <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => window.open(feed.rssUrl, '_blank')}>
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      View Feed
-                    </Button>
+                    <div className="mt-2">
+                      <RSSFeedPreview 
+                        feedName={feed.name} 
+                        feedUrl={feed.rssUrl} 
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -146,10 +149,12 @@ export function FeedsHub({ activeSubTab = "client-feeds", onNavigateToCapture, o
                         {feed.lastFetched ? formatDistanceToNow(new Date(feed.lastFetched), { addSuffix: true }) : 'Never'}
                       </span>
                     </div>
-                    <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => window.open(feed.rssUrl, '_blank')}>
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      View Feed
-                    </Button>
+                    <div className="mt-2">
+                      <RSSFeedPreview 
+                        feedName={feed.name} 
+                        feedUrl={feed.rssUrl} 
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -224,10 +229,12 @@ export function FeedsHub({ activeSubTab = "client-feeds", onNavigateToCapture, o
                         {feed.lastFetched ? formatDistanceToNow(new Date(feed.lastFetched), { addSuffix: true }) : 'Never'}
                       </span>
                     </div>
-                    <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => window.open(feed.rssUrl, '_blank')}>
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      View Feed
-                    </Button>
+                    <div className="mt-2">
+                      <RSSFeedPreview 
+                        feedName={feed.name} 
+                        feedUrl={feed.rssUrl} 
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>

@@ -74,9 +74,34 @@ export class RSSService {
   }
 
   /**
-   * Fetch and process articles from a specific feed
+   * Fetch articles from an RSS feed URL (for preview)
    */
-  async fetchFeedArticles(feedId: number): Promise<RssArticle[]> {
+  async fetchFeedArticles(rssUrl: string): Promise<any[]> {
+    try {
+      const feed = await this.parser.parseURL(rssUrl);
+      
+      if (!feed.items) {
+        return [];
+      }
+
+      return feed.items.map(item => ({
+        title: item.title || 'Untitled',
+        link: item.link || '',
+        description: item.contentSnippet || item.content || '',
+        pubDate: item.isoDate || item.pubDate || '',
+        author: item.creator || '',
+        category: item.categories?.[0] || ''
+      }));
+    } catch (error) {
+      console.error('Error fetching RSS feed:', error);
+      throw new Error(`Failed to fetch RSS feed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Fetch and process articles from a specific feed ID
+   */
+  async fetchAndStoreArticles(feedId: number): Promise<RssArticle[]> {
     const [feed] = await db
       .select()
       .from(rssFeeds)
