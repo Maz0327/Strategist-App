@@ -377,6 +377,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const responseData = { 
         analysis: {
           ...analysis,
+          // Include images from extracted content
+          images: extractedContent?.visualAssets?.map(asset => asset.url) || [],
           visualAssets: extractedContent?.visualAssets || null,
           visualAnalysis: visualAnalysis || null
         }, 
@@ -603,7 +605,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({
         success: true,
-        analysis,
+        analysis: {
+          ...analysis,
+          // Include images from extracted content
+          images: extractedContent?.visualAssets?.map(asset => asset.url) || [],
+          visualAssets: extractedContent?.visualAssets || null
+        },
         signalId: signal.id
       });
       debugLogger.info("Analysis request completed successfully", { signalId: signal.id }, req);
@@ -694,6 +701,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userNotes = req.body.userNotes || '';
       const analysisMode = 'deep'; // Force deep analysis mode
       
+      // Extract content and visual assets if URL provided
+      let extractedContent = null;
+      
+      if (data.url) {
+        try {
+          extractedContent = await scraperService.extractContent(data.url);
+        } catch (error) {
+          debugLogger.error('Content extraction failed for deep analysis, continuing with provided content only', error, req);
+        }
+      }
+      
       const analysis = await openaiService.analyzeContent(data, lengthPreference, analysisMode);
       debugLogger.info("Deep analysis completed", { sentiment: analysis.sentiment, confidence: analysis.confidence, keywordCount: analysis.keywords.length }, req);
       
@@ -743,7 +761,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({
         success: true,
-        analysis,
+        analysis: {
+          ...analysis,
+          // Include images from extracted content for deep analysis
+          images: extractedContent?.visualAssets?.map(asset => asset.url) || [],
+          visualAssets: extractedContent?.visualAssets || null
+        },
         signalId: signal.id,
         analysisMode: 'deep'
       });
