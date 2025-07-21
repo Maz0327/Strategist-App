@@ -673,46 +673,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Re-analyze with different length preference
-  // Visual Analysis endpoint - standalone visual intelligence analysis
-  app.post("/api/analyze/visual", requireAuth, async (req, res) => {
-    try {
-      const { url, content, visualAssets } = req.body;
-      
-      if (!visualAssets || !Array.isArray(visualAssets) || visualAssets.length === 0) {
-        return res.status(400).json({ 
-          message: "Visual assets are required for visual analysis" 
-        });
-      }
-
-      debugLogger.info('Visual analysis request', { 
-        url, 
-        visualAssetsCount: visualAssets.length, 
-        userId: req.session.userId 
-      });
-
-      // Perform visual analysis using the visual analysis service
-      const visualAnalysis = await visualAnalysisService.analyzeVisualAssets(
-        visualAssets,
-        content || '',
-        url || ''
-      );
-
-      debugLogger.info('Visual analysis completed', { 
-        hasResults: !!visualAnalysis,
-        userId: req.session.userId 
-      });
-
-      res.json({ 
-        success: true, 
-        visualAnalysis 
-      });
-    } catch (error: any) {
-      debugLogger.error('Visual analysis failed', error, req);
-      res.status(500).json({ 
-        message: error.message || "Visual analysis failed" 
-      });
-    }
-  });
 
   app.post("/api/reanalyze", requireAuth, async (req, res) => {
     try {

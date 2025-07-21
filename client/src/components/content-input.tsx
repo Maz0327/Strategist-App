@@ -451,7 +451,6 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
                     <SelectItem value="short">Short</SelectItem>
                     <SelectItem value="medium">Medium</SelectItem>
                     <SelectItem value="long">Long</SelectItem>
-                    <SelectItem value="bulletpoints">Bulletpoints</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
