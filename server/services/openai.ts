@@ -59,6 +59,8 @@ Focus on:
 For medium analysis, provide 5-6 sentences per field in truthAnalysis (fact, observation, insight, humanTruth, culturalMoment).
 Each field should be comprehensive and detailed while maintaining readability.
 
+IMPORTANT: For the 'fact' field, state the actual facts directly - don't say "the content discusses" or "the post mentions". Instead, state what actually happened, who was involved, specific numbers, examples, and verifiable information.
+
 Return valid JSON only.`;
   }
 
@@ -83,7 +85,7 @@ Return valid JSON only.`;
 
   private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     // Create stable cache key base with version for prompt changes
-    const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v11-adjusted-sentence-counts';
+    const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v12-improved-fact-comprehensive';
     
     // Step 1: Check if we have the requested length preference cached
     const targetCacheKey = createCacheKey(cacheKeyBase + lengthPreference, 'analysis');
@@ -138,7 +140,11 @@ Return valid JSON only.`;
     
     const userPrompt = `Analyze this content for strategic insights. 
 
-CRITICAL REQUIREMENT: For truthAnalysis fields (fact, observation, insight, humanTruth, culturalMoment), provide exactly 5-6 sentences per field. Each field must be comprehensive and detailed.
+CRITICAL REQUIREMENTS: 
+- For truthAnalysis fields, provide exactly 5-6 sentences per field
+- Each field must be comprehensive and detailed
+- For 'fact' field: State actual facts directly - don't say "the content discusses" or "this post talks about". Instead state what actually happened, who was involved, specific data/numbers, concrete examples
+- For observation, insight, humanTruth, culturalMoment: Provide comprehensive analysis with rich detail
 
 Title: ${title}
 Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}
@@ -151,11 +157,11 @@ Return JSON with this structure:
   "keywords": ["relevant", "strategic", "keywords"],
   "confidence": "85%",
   "truthAnalysis": {
-    "fact": "5-6 detailed sentences about key factual elements and verifiable information from the content",
-    "observation": "5-6 detailed sentences about patterns, connections, and strategic observations identified", 
-    "insight": "5-6 detailed sentences about strategic implications and deeper business intelligence",
-    "humanTruth": "5-6 detailed sentences about human motivations, behaviors, and psychological drivers",
-    "culturalMoment": "5-6 detailed sentences about cultural context, trends, and societal relevance",
+    "fact": "5-6 detailed sentences stating the core facts directly - what actually happened, who was involved, what numbers/data are mentioned, what specific examples are given",
+    "observation": "5-6 comprehensive sentences about patterns, connections, strategic observations, and underlying dynamics you notice", 
+    "insight": "5-6 comprehensive sentences about strategic implications, business intelligence, and deeper strategic meaning",
+    "humanTruth": "5-6 comprehensive sentences about human motivations, psychological drivers, emotional triggers, and behavioral patterns",
+    "culturalMoment": "5-6 comprehensive sentences about cultural context, societal trends, generational dynamics, and broader cultural relevance",
     "attentionValue": "high/medium/low",
     "platform": "relevant platform",
     "cohortOpportunities": ["target audience segments"]
@@ -189,11 +195,11 @@ Return JSON with this structure:
               truthAnalysis: {
                 type: "object",
                 properties: {
-                  fact: { type: "string", description: "MUST be exactly 5-6 complete sentences about key factual elements" },
-                  observation: { type: "string", description: "MUST be exactly 5-6 complete sentences about patterns and connections" },
-                  insight: { type: "string", description: "MUST be exactly 5-6 complete sentences about strategic implications" },
-                  humanTruth: { type: "string", description: "MUST be exactly 5-6 complete sentences about human motivations" },
-                  culturalMoment: { type: "string", description: "MUST be exactly 5-6 complete sentences about cultural context" },
+                  fact: { type: "string", description: "MUST be exactly 5-6 complete sentences stating core facts directly - what happened, who was involved, specific data/examples" },
+                  observation: { type: "string", description: "MUST be exactly 5-6 complete sentences about comprehensive patterns, connections, and strategic observations" },
+                  insight: { type: "string", description: "MUST be exactly 5-6 complete sentences about comprehensive strategic implications and business intelligence" },
+                  humanTruth: { type: "string", description: "MUST be exactly 5-6 complete sentences about comprehensive human motivations and psychological drivers" },
+                  culturalMoment: { type: "string", description: "MUST be exactly 5-6 complete sentences about comprehensive cultural context and societal relevance" },
                   attentionValue: { type: "string", enum: ["high", "medium", "low"] },
                   platform: { type: "string" },
                   cohortOpportunities: { type: "array", items: { type: "string" } }
