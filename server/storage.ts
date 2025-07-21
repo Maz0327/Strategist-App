@@ -211,6 +211,25 @@ export class DbStorage implements IStorage {
       isDraft: signals.isDraft,
       capturedAt: signals.capturedAt,
       browserContext: signals.browserContext,
+      // Visual intelligence fields
+      visualAssets: signals.visualAssets,
+      visualAnalysis: signals.visualAnalysis,
+      brandElements: signals.brandElements,
+      culturalVisualMoments: signals.culturalVisualMoments,
+      competitiveVisualInsights: signals.competitiveVisualInsights,
+      // Audio intelligence fields
+      audioUrl: signals.audioUrl,
+      transcription: signals.transcription,
+      audioDuration: signals.audioDuration,
+      audioFormat: signals.audioFormat,
+      audioLanguage: signals.audioLanguage,
+      transcriptionConfidence: signals.transcriptionConfidence,
+      // Brief automation fields
+      projectId: signals.projectId,
+      templateSection: signals.templateSection,
+      captureSessionId: signals.captureSessionId,
+      engagementData: signals.engagementData,
+      qualScore: signals.qualScore,
     })
     .from(signals)
     .innerJoin(signalSources, eq(signalSources.signalId, signals.id))
@@ -326,11 +345,11 @@ export class DbStorage implements IStorage {
 
   // RSS Feeds Implementation - Phase 5
   async getRssFeeds(userId: number, category?: string): Promise<RssFeed[]> {
-    const query = db.select().from(rssFeeds).where(eq(rssFeeds.userId, userId));
     if (category) {
-      return await query.where(and(eq(rssFeeds.userId, userId), eq(rssFeeds.category, category as any)));
+      return await db.select().from(rssFeeds)
+        .where(and(eq(rssFeeds.userId, userId), eq(rssFeeds.category, category as any)));
     }
-    return await query;
+    return await db.select().from(rssFeeds).where(eq(rssFeeds.userId, userId));
   }
 
   async createRssFeed(feed: InsertRssFeed): Promise<RssFeed> {

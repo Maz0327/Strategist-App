@@ -1,6 +1,6 @@
 import { eq, and, desc } from "drizzle-orm";
-import { db } from "../storage.js";
-import { projects, signals, type InsertProject, type Project } from "../../shared/schema.js";
+import { db } from "../storage";
+import { projects, signals, type InsertProject, type Project } from "../../shared/schema";
 
 export class ProjectService {
   // Create new project

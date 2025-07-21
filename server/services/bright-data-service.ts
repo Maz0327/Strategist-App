@@ -316,12 +316,12 @@ export class BrightDataService {
       debugLogger.info(`🚀 Bright Data ${platform} API request initiated`);
       
       // Bright Data Web Scraper API endpoint format
-      // Replace 'gd_XXXXXXXXX' with your actual collector ID for each platform
+      // Bright Data Production Collector IDs
       const collectorIds = {
-        'instagram-scraper': 'gd_l1vikfch901nx3by4', // Instagram profiles/posts
-        'linkedin-scraper': 'gd_lk5ns7kz21pck8jpis', // LinkedIn posts
-        'twitter-trends-scraper': 'gd_ltppn085pokosxh13', // Twitter trends
-        'tiktok-trends-scraper': 'gd_lyclm20il4r5helnj' // TikTok content
+        'instagram-scraper': process.env.BRIGHT_DATA_INSTAGRAM_COLLECTOR || 'gd_l1vikfch901nx3by4', 
+        'linkedin-scraper': process.env.BRIGHT_DATA_LINKEDIN_COLLECTOR || 'gd_lk5ns7kz21pck8jpis', 
+        'twitter-trends-scraper': process.env.BRIGHT_DATA_TWITTER_COLLECTOR || 'gd_ltppn085pokosxh13', 
+        'tiktok-trends-scraper': process.env.BRIGHT_DATA_TIKTOK_COLLECTOR || 'gd_lyclm20il4r5helnj'
       };
 
       const collectorId = collectorIds[platform];

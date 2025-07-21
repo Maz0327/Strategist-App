@@ -2474,6 +2474,23 @@ The analyzed signals provide a comprehensive view of current market trends and s
     }
   });
 
+  // Cache monitoring endpoint
+  app.get("/api/cache/stats", requireAuth, (req, res) => {
+    try {
+      const cacheStats = getCacheStats();
+      res.json({
+        success: true,
+        cacheStats,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Cache stats failed'
+      });
+    }
+  });
+
   // New modular service endpoints
   
   // Cohort Builder Service - Load on demand

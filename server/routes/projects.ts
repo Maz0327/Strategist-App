@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { projectService } from "../services/projectService.js";
-import { insertProjectSchema } from "../../shared/schema.js";
-import { requireAuth } from "../middleware/auth.js";
+import { projectService } from "../services/projectService";
+import { insertProjectSchema } from "../../shared/schema";
+import { requireAuth } from "../auth";
 
 const router = Router();
 

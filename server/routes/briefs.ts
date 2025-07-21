@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { briefService } from "../services/briefService.js";
-import { requireAuth } from "../middleware/auth.js";
+import { briefService } from "../services/briefService";
+import { requireAuth } from "../auth";
 
 const router = Router();
 

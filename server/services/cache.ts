@@ -38,6 +38,8 @@ class DistributedCache<T> {
   private memoryCache = new Map<string, CacheEntry<T>>();
   private readonly defaultTTL = 5 * 60 * 1000; // 5 minutes
   private redisAvailable = false;
+  private hits = 0;
+  private misses = 0;
 
   constructor() {
     this.checkRedisConnection();
@@ -89,6 +91,7 @@ class DistributedCache<T> {
       try {
         const cached = await redis.get(key);
         if (cached) {
+          this.hits++;
           debugLogger.info('Cache hit in Redis', { key });
           return JSON.parse(cached);
         }
@@ -102,14 +105,17 @@ class DistributedCache<T> {
     const entry = this.memoryCache.get(key);
     
     if (!entry) {
+      this.misses++;
       return null;
     }
     
     if (Date.now() - entry.timestamp > entry.ttl) {
       this.memoryCache.delete(key);
+      this.misses++;
       return null;
     }
     
+    this.hits++;
     debugLogger.info('Cache hit in memory', { key });
     return entry.data;
   }
@@ -151,11 +157,14 @@ class DistributedCache<T> {
     }
   }
 
-  getStats(): { size: number; hitRate: number; redisAvailable: boolean } {
+  getStats(): { size: number; hitRate: number; redisAvailable: boolean; hits: number; misses: number } {
+    const total = this.hits + this.misses;
     return {
       size: this.memoryCache.size,
-      hitRate: 0, // TODO: Implement hit rate tracking
-      redisAvailable: this.redisAvailable
+      hitRate: total > 0 ? (this.hits / total) * 100 : 0,
+      redisAvailable: this.redisAvailable,
+      hits: this.hits,
+      misses: this.misses
     };
   }
 }

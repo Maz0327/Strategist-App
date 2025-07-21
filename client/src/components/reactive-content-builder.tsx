@@ -118,7 +118,7 @@ export function ReactiveContentBuilder() {
       'Music': 'Cultural expression evolution',
       'News': 'Information consumption patterns'
     };
-    return moments[category] || 'Cultural shift in progress';
+    return moments[category as keyof typeof moments] || 'Cultural shift in progress';
   };
 
   // Generate suggested angle based on category and title
@@ -135,7 +135,7 @@ export function ReactiveContentBuilder() {
       'Music': 'Tap into cultural expression',
       'News': 'Provide valuable context and insights'
     };
-    return angles[category] || 'Engage authentically with current conversation';
+    return angles[category as keyof typeof angles] || 'Engage authentically with current conversation';
   };
 
   // Generate hashtags from keywords and category
@@ -153,7 +153,7 @@ export function ReactiveContentBuilder() {
       'News': ['#News', '#CurrentEvents', '#Insights']
     };
     
-    const baseTags = categoryTags[category] || ['#Trending', '#News'];
+    const baseTags = categoryTags[category as keyof typeof categoryTags] || ['#Trending', '#News'];
     const keywordTags = keywords.slice(0, 2).map(k => `#${k.replace(/\s+/g, '')}`);
     
     return [...baseTags, ...keywordTags].slice(0, 4);
@@ -173,7 +173,7 @@ export function ReactiveContentBuilder() {
       'Music': 'humorous',
       'News': 'informative'
     };
-    return tones[category] as any || 'informative';
+    return tones[category as keyof typeof tones] as any || 'informative';
   };
 
   // Process trending data when it loads

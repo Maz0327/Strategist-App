@@ -1,6 +1,7 @@
 import { Router } from 'express';
-import { rssService } from '../services/rss-service.js';
-import { requireAuth } from '../middleware/auth.js';
+import { rssService } from '../services/rss-service';
+import { requireAuth } from '../auth';
+import { storage } from '../storage';
 
 const router = Router();
 
@@ -11,7 +12,7 @@ router.get('/:feedId/articles', requireAuth, async (req, res) => {
     const userId = req.session.userId!;
     
     // Get the feed details
-    const feed = await req.storage.getRssFeedById(feedId, userId);
+    const feed = await storage.getRssFeedById(feedId, userId);
     if (!feed) {
       return res.status(404).json({ message: 'Feed not found' });
     }

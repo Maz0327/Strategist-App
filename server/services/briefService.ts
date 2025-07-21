@@ -1,5 +1,5 @@
 import { eq, and } from "drizzle-orm";
-import { db } from "../storage.js";
+import { db } from "../storage";
 import { 
   briefTemplates, 
   generatedBriefs, 
@@ -8,7 +8,7 @@ import {
   type BriefTemplate, 
   type InsertGeneratedBrief,
   type GeneratedBrief 
-} from "../../shared/schema.js";
+} from "../../shared/schema";
 // Removed openaiAnalysisService import - now using Gemini 2.5 Pro for brief generation
 
 export class BriefService {
