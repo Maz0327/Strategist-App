@@ -69,40 +69,41 @@ export class EnhancedSocialExtractor {
     };
   }
   
-  // Enhanced extraction using Bright Data APIs
+  // Enhanced extraction using Bright Data Browser API
   private async extractWithBrightData(url: string, platform: string, contentType: string): Promise<any> {
-    // Mock implementation for demonstration - replace with actual Bright Data calls
-    const mockData = {
-      success: true,
-      data: {
-        title: `${platform} ${contentType}`,
-        content: `Enhanced content from ${platform}`,
-        author: 'mock_user',
-        platform: platform
-      },
-      engagement: {
-        likes: 100,
-        comments: 10,
-        shares: 5
-      },
-      profile: {
-        username: 'mock_user',
-        verified: false,
-        followers: 1000
+    try {
+      // Use Bright Data browser API for real-time scraping
+      const { browserApiService } = await import('./browser-api-service');
+      
+      debugLogger.info(`🌐 Using Bright Data browser API for ${platform} URL`, { url, contentType });
+      
+      const scrapingResult = await browserApiService.scrapeSocialMediaURL(url, {
+        platform: platform.toLowerCase(),
+        contentType,
+        extractEngagement: true,
+        extractProfile: true,
+        timeout: 15000
+      });
+      
+      if (scrapingResult.success) {
+        return {
+          success: true,
+          data: {
+            title: scrapingResult.content.title || `${platform} ${contentType}`,
+            content: scrapingResult.content.text || `Content from ${platform}`,
+            author: scrapingResult.content.author || 'Unknown',
+            platform: platform,
+            media: scrapingResult.content.media || []
+          },
+          engagement: scrapingResult.content.engagement || {},
+          profile: scrapingResult.content.profile || {}
+        };
+      } else {
+        throw new Error(`Bright Data extraction failed: ${scrapingResult.error}`);
       }
-    };
-    
-    switch (platform) {
-      case 'Instagram':
-        return mockData;
-      case 'Twitter':
-        return mockData;
-      case 'TikTok':
-        return mockData;
-      case 'LinkedIn':
-        return mockData;
-      default:
-        throw new Error(`Bright Data not configured for ${platform}`);
+    } catch (error) {
+      debugLogger.warn(`Bright Data browser extraction failed for ${platform}:`, error.message);
+      throw error;
     }
   }
   

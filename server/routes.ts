@@ -768,6 +768,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bright Data Browser API test endpoint
+  app.post("/api/bright-data/browser-test", requireAuth, async (req, res) => {
+    try {
+      const { browserApiService } = await import('./services/browser-api-service');
+      const { url } = req.body;
+      
+      if (!url) {
+        return res.status(400).json({ error: 'URL is required' });
+      }
+      
+      // Test Browser API with the provided URL
+      const result = await browserApiService.scrapeSocialMediaURL(url, {
+        platform: 'instagram', // Default to Instagram for testing
+        extractEngagement: true,
+        extractProfile: true,
+        timeout: 20000
+      });
+      
+      res.json({
+        success: result.success,
+        data: result.content || null,
+        method: result.method || 'browser-api',
+        error: result.error || null,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
   // Bright Data social media scrapers
   app.post("/api/bright-data/social", requireAuth, async (req, res) => {
     try {
@@ -912,8 +942,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             platform: socialAnalysis.platform,
             contentType: socialAnalysis.contentType,
             extractionMethod: socialAnalysis.extractionMethod,
-            engagement: socialAnalysis.metadata.engagement,
-            profile: socialAnalysis.metadata.profile
+            engagement: socialAnalysis.metadata?.engagement || null,
+            profile: socialAnalysis.metadata?.profile || null
           } : null
         },
         signalId: signal.id,
