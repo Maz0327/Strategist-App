@@ -1,203 +1,316 @@
-import React from "react";
-import { cn } from "@/lib/utils";
+import React, { useEffect, useRef } from 'react';
+import { Button } from './button';
 
-// Enhanced Button with accessibility features
-interface AccessibleButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  children: React.ReactNode;
-  variant?: 'default' | 'outline' | 'ghost' | 'destructive';
-  size?: 'sm' | 'md' | 'lg';
-  isLoading?: boolean;
-  loadingText?: string;
-  ariaDescription?: string;
-}
-
-export function AccessibleButton({ 
-  children, 
-  variant = 'default', 
-  size = 'md',
-  isLoading = false,
-  loadingText = 'Loading...',
-  ariaDescription,
-  className,
-  disabled,
-  ...props 
-}: AccessibleButtonProps) {
-  const baseClasses = "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none";
-  
-  const variants = {
-    default: "bg-primary text-primary-foreground hover:bg-primary/90",
-    outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-    ghost: "hover:bg-accent hover:text-accent-foreground",
-    destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90"
-  };
-
-  const sizes = {
-    sm: "h-8 px-3 text-xs",
-    md: "h-10 px-4 text-sm",
-    lg: "h-12 px-6 text-base"
-  };
-
+// Skip Navigation Link Component
+export function SkipNavLink({ targetId = 'main-content' }: { targetId?: string }) {
   return (
-    <button
-      className={cn(baseClasses, variants[variant], sizes[size], className)}
-      disabled={disabled || isLoading}
-      aria-busy={isLoading}
-      aria-describedby={ariaDescription ? `${props.id}-description` : undefined}
-      {...props}
-    >
-      {isLoading ? (
-        <>
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
-          <span className="sr-only">{loadingText}</span>
-          {loadingText}
-        </>
-      ) : (
-        children
-      )}
-      {ariaDescription && (
-        <span id={`${props.id}-description`} className="sr-only">
-          {ariaDescription}
-        </span>
-      )}
-    </button>
-  );
-}
-
-// Enhanced Input with better focus management
-interface AccessibleInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
-  error?: string;
-  helperText?: string;
-}
-
-export function AccessibleInput({ 
-  label, 
-  error, 
-  helperText, 
-  className,
-  id,
-  ...props 
-}: AccessibleInputProps) {
-  const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
-  const errorId = `${inputId}-error`;
-  const helperId = `${inputId}-helper`;
-
-  return (
-    <div className="space-y-2">
-      {label && (
-        <label 
-          htmlFor={inputId}
-          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-        >
-          {label}
-        </label>
-      )}
-      <input
-        id={inputId}
-        className={cn(
-          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background",
-          "file:border-0 file:bg-transparent file:text-sm file:font-medium",
-          "placeholder:text-muted-foreground",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-          "disabled:cursor-not-allowed disabled:opacity-50",
-          error && "border-destructive focus-visible:ring-destructive",
-          className
-        )}
-        aria-describedby={cn(
-          error && errorId,
-          helperText && helperId
-        )}
-        aria-invalid={!!error}
-        {...props}
-      />
-      {error && (
-        <p id={errorId} className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      )}
-      {helperText && !error && (
-        <p id={helperId} className="text-sm text-muted-foreground">
-          {helperText}
-        </p>
-      )}
-    </div>
-  );
-}
-
-// Skip to content link for screen readers
-export function SkipToContent() {
-  return (
-    <a 
-      href="#main-content"
+    <a
+      href={`#${targetId}`}
       className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-50 bg-primary text-primary-foreground px-4 py-2 rounded-md font-medium"
+      aria-label="Skip to main content"
     >
       Skip to main content
     </a>
   );
 }
 
-// Announcement region for screen readers
-interface LiveRegionProps {
+// Accessible Button with proper ARIA attributes
+interface AccessibleButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
-  politeness?: 'polite' | 'assertive';
+  ariaLabel?: string;
+  ariaDescribedBy?: string;
+  isLoading?: boolean;
+  loadingText?: string;
 }
 
-export function LiveRegion({ children, politeness = 'polite' }: LiveRegionProps) {
+export function AccessibleButton({
+  children,
+  ariaLabel,
+  ariaDescribedBy,
+  isLoading = false,
+  loadingText = 'Loading...',
+  ...props
+}: AccessibleButtonProps) {
+  return (
+    <Button
+      {...props}
+      aria-label={ariaLabel || (typeof children === 'string' ? children : undefined)}
+      aria-describedby={ariaDescribedBy}
+      aria-busy={isLoading}
+      disabled={props.disabled || isLoading}
+    >
+      {isLoading ? (
+        <>
+          <span className="sr-only">{loadingText}</span>
+          <span aria-hidden="true">{children}</span>
+        </>
+      ) : (
+        children
+      )}
+    </Button>
+  );
+}
+
+// Live Region for Dynamic Content Updates
+interface LiveRegionProps {
+  children: React.ReactNode;
+  politeness?: 'polite' | 'assertive' | 'off';
+  atomic?: boolean;
+  className?: string;
+}
+
+export function LiveRegion({ 
+  children, 
+  politeness = 'polite', 
+  atomic = false,
+  className = '' 
+}: LiveRegionProps) {
   return (
     <div
       aria-live={politeness}
-      aria-atomic="true"
-      className="sr-only"
+      aria-atomic={atomic}
+      className={`${className}`}
     >
       {children}
     </div>
   );
 }
 
-// Enhanced focus trap for modals
-export function FocusManager({ children, isActive }: { children: React.ReactNode; isActive: boolean }) {
-  const containerRef = React.useRef<HTMLDivElement>(null);
+// Focus Trap for Modals and Dialogs
+interface FocusTrapProps {
+  children: React.ReactNode;
+  isActive: boolean;
+  onEscape?: () => void;
+  className?: string;
+}
 
-  React.useEffect(() => {
-    if (!isActive) return;
+export function FocusTrap({ 
+  children, 
+  isActive, 
+  onEscape,
+  className = '' 
+}: FocusTrapProps) {
+  const trapRef = useRef<HTMLDivElement>(null);
+  const firstFocusableRef = useRef<HTMLElement | null>(null);
+  const lastFocusableRef = useRef<HTMLElement | null>(null);
 
-    const container = containerRef.current;
-    if (!container) return;
+  useEffect(() => {
+    if (!isActive || !trapRef.current) return;
 
-    const focusableElements = container.querySelectorAll(
+    const focusableElements = trapRef.current.querySelectorAll(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
-    
-    const firstElement = focusableElements[0] as HTMLElement;
-    const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab') return;
+    if (focusableElements.length > 0) {
+      firstFocusableRef.current = focusableElements[0] as HTMLElement;
+      lastFocusableRef.current = focusableElements[focusableElements.length - 1] as HTMLElement;
+      
+      // Focus first element
+      firstFocusableRef.current?.focus();
+    }
 
-      if (e.shiftKey) {
-        if (document.activeElement === firstElement) {
-          e.preventDefault();
-          lastElement?.focus();
-        }
-      } else {
-        if (document.activeElement === lastElement) {
-          e.preventDefault();
-          firstElement?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && onEscape) {
+        onEscape();
+        return;
+      }
+
+      if (event.key === 'Tab') {
+        if (event.shiftKey) {
+          // Shift + Tab
+          if (document.activeElement === firstFocusableRef.current) {
+            event.preventDefault();
+            lastFocusableRef.current?.focus();
+          }
+        } else {
+          // Tab
+          if (document.activeElement === lastFocusableRef.current) {
+            event.preventDefault();
+            firstFocusableRef.current?.focus();
+          }
         }
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
-    firstElement?.focus();
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isActive]);
+  }, [isActive, onEscape]);
+
+  if (!isActive) return null;
 
   return (
-    <div ref={containerRef}>
+    <div ref={trapRef} className={className}>
       {children}
     </div>
   );
+}
+
+// Screen Reader Only Content
+export function ScreenReaderOnly({ children }: { children: React.ReactNode }) {
+  return <span className="sr-only">{children}</span>;
+}
+
+// Accessible Form Field with proper labeling
+interface AccessibleFormFieldProps {
+  label: string;
+  children: React.ReactNode;
+  error?: string;
+  hint?: string;
+  required?: boolean;
+  fieldId: string;
+}
+
+export function AccessibleFormField({
+  label,
+  children,
+  error,
+  hint,
+  required = false,
+  fieldId
+}: AccessibleFormFieldProps) {
+  const hintId = hint ? `${fieldId}-hint` : undefined;
+  const errorId = error ? `${fieldId}-error` : undefined;
+  const describedBy = [hintId, errorId].filter(Boolean).join(' ') || undefined;
+
+  return (
+    <div className="space-y-2">
+      <label 
+        htmlFor={fieldId}
+        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+      >
+        {label}
+        {required && (
+          <>
+            <span className="text-destructive ml-1" aria-label="required">*</span>
+            <ScreenReaderOnly>required</ScreenReaderOnly>
+          </>
+        )}
+      </label>
+      
+      {hint && (
+        <p id={hintId} className="text-sm text-muted-foreground">
+          {hint}
+        </p>
+      )}
+      
+      <div>
+        {React.cloneElement(children as React.ReactElement, {
+          id: fieldId,
+          'aria-describedby': describedBy,
+          'aria-required': required,
+          'aria-invalid': !!error
+        })}
+      </div>
+      
+      {error && (
+        <p id={errorId} className="text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// Progress Bar with accessible labels
+interface AccessibleProgressProps {
+  value: number;
+  max?: number;
+  label?: string;
+  className?: string;
+}
+
+export function AccessibleProgress({ 
+  value, 
+  max = 100, 
+  label,
+  className = '' 
+}: AccessibleProgressProps) {
+  const percentage = Math.round((value / max) * 100);
+
+  return (
+    <div className={className}>
+      {label && (
+        <div className="flex justify-between text-sm mb-1">
+          <span>{label}</span>
+          <span>{percentage}%</span>
+        </div>
+      )}
+      <div
+        role="progressbar"
+        aria-valuenow={value}
+        aria-valuemin={0}
+        aria-valuemax={max}
+        aria-label={label || `Progress: ${percentage}%`}
+        className="w-full bg-secondary rounded-full h-2"
+      >
+        <div
+          className="bg-primary h-2 rounded-full transition-all duration-300"
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+      <ScreenReaderOnly>
+        Progress: {percentage}% complete
+      </ScreenReaderOnly>
+    </div>
+  );
+}
+
+// Hook for managing focus
+export function useFocusManagement() {
+  const restoreFocus = useRef<HTMLElement | null>(null);
+
+  const saveFocus = () => {
+    restoreFocus.current = document.activeElement as HTMLElement;
+  };
+
+  const restoreFocusToSaved = () => {
+    if (restoreFocus.current) {
+      restoreFocus.current.focus();
+      restoreFocus.current = null;
+    }
+  };
+
+  const focusElement = (element: HTMLElement | null) => {
+    if (element) {
+      element.focus();
+    }
+  };
+
+  return {
+    saveFocus,
+    restoreFocusToSaved,
+    focusElement
+  };
+}
+
+// Reduced Motion Wrapper
+export function ReducedMotionWrapper({ 
+  children, 
+  fallback 
+}: { 
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
+}) {
+  const [prefersReducedMotion, setPrefersReducedMotion] = React.useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mediaQuery.matches);
+
+    const handleChange = (e: MediaQueryListEvent) => {
+      setPrefersReducedMotion(e.matches);
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  if (prefersReducedMotion && fallback) {
+    return <>{fallback}</>;
+  }
+
+  return <>{children}</>;
 }

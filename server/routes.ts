@@ -38,7 +38,7 @@ import {
 } from "../shared/admin-schema";
 import { ERROR_MESSAGES, getErrorMessage, matchErrorPattern } from "@shared/error-messages";
 import { sql } from "./storage";
-import { authRateLimit } from './middleware/rate-limit';
+import { authRateLimit, openaiRateLimit, dailyOpenaiRateLimit, generalRateLimit } from './middleware/rate-limit';
 import { commentLimitingRouter } from './routes/comment-limiting';
 import { brightDataDemoRouter } from './routes/bright-data-demo';
 import { brightDataTestRouter } from './routes/bright-data-test';
@@ -530,7 +530,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Visual Analysis API - dedicated endpoint for image analysis using Gemini
-  app.post("/api/analyze/visual", requireAuth, async (req, res) => {
+  app.post("/api/analyze/visual", requireAuth, openaiRateLimit, dailyOpenaiRateLimit, async (req, res) => {
     try {
       const { imageUrls, content, context } = req.body;
       
@@ -578,14 +578,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       debugLogger.error('Gemini visual analysis API failed', error, req);
       res.status(500).json({ 
+        success: false,
         error: "Visual analysis failed",
-        message: (error as Error).message
+        message: (error as Error).message,
+        code: 'VISUAL_ANALYSIS_FAILED'
       });
     }
   });
 
   // Content analysis routes (standard version)
-  app.post("/api/analyze", requireAuth, async (req, res) => {
+  app.post("/api/analyze", requireAuth, openaiRateLimit, dailyOpenaiRateLimit, async (req, res) => {
     try {
       debugLogger.info("Content analysis request received", { title: req.body.title, hasUrl: !!req.body.url, contentLength: req.body.content?.length }, req);
       const data = analyzeContentSchema.parse(req.body);
@@ -708,7 +710,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       debugLogger.info("Analysis request completed successfully", { signalId: signal.id }, req);
     } catch (error: any) {
       debugLogger.error('Content analysis failed', error, req);
-      res.status(400).json({ message: (error as Error).message });
+      res.status(400).json({ 
+        success: false,
+        error: (error as Error).message,
+        code: 'CONTENT_ANALYSIS_FAILED'
+      });
     }
   });
 
@@ -720,7 +726,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { title, content, url, user_notes, browser_context } = req.body;
       
       if (!title && !content) {
-        return res.status(400).json({ message: "Title or content is required" });
+        return res.status(400).json({ 
+          success: false,
+          error: "Title or content is required",
+          code: 'VALIDATION_ERROR'
+        });
       }
       
       const signalData = {
@@ -750,18 +760,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       debugLogger.error('Draft creation failed', error, req);
-      res.status(400).json({ message: (error as Error).message });
+      res.status(400).json({ 
+        success: false,
+        error: (error as Error).message,
+        code: 'DRAFT_CREATION_FAILED'
+      });
     }
   });
 
   // Re-analyze with different length preference
-
-  app.post("/api/reanalyze", requireAuth, async (req, res) => {
+  app.post("/api/reanalyze", requireAuth, openaiRateLimit, dailyOpenaiRateLimit, async (req, res) => {
     try {
       const { content, title, url, lengthPreference, analysisMode } = req.body;
       
       if (!content || !lengthPreference) {
-        return res.status(400).json({ message: "Content and length preference are required" });
+        return res.status(400).json({ 
+          success: false,
+          error: "Content and length preference are required",
+          code: 'VALIDATION_ERROR'
+        });
       }
 
       debugLogger.info("Re-analysis request received", { title, lengthPreference, analysisMode, hasUrl: !!url }, req);
@@ -779,7 +796,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       debugLogger.error('Re-analysis failed', error, req);
-      res.status(500).json({ message: (error as Error).message });
+      res.status(500).json({ 
+        success: false,
+        error: (error as Error).message,
+        code: 'RE_ANALYSIS_FAILED'
+      });
     }
   });
 
@@ -886,6 +907,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  // Signal promotion/demotion endpoints for production workflow management
+  app.post("/api/signals/promote", requireAuth, async (req, res) => {
+    try {
+      const { signalId, newStatus, reasoning } = req.body;
+      const userId = req.session.userId!;
+
+      // Validate signal belongs to user
+      const signal = await storage.getSignalById(signalId);
+      if (!signal || signal.userId !== userId) {
+        return res.status(404).json({ 
+          success: false,
+          error: "Signal not found",
+          code: 'SIGNAL_NOT_FOUND'
+        });
+      }
+
+      // Update signal status
+      await storage.updateSignalStatus(signalId, newStatus, reasoning);
+      
+      debugLogger.info("Signal promoted", { signalId, newStatus, reasoning }, req);
+      
+      res.json({ 
+        success: true, 
+        message: "Signal status updated successfully",
+        signalId,
+        newStatus
+      });
+    } catch (error: any) {
+      debugLogger.error('Signal promotion failed', error, req);
+      res.status(500).json({ 
+        success: false,
+        error: "Failed to promote signal",
+        code: 'PROMOTION_FAILED'
+      });
+    }
+  });
+
+  app.post("/api/signals/demote", requireAuth, async (req, res) => {
+    try {
+      const { signalId, newStatus, reasoning } = req.body;
+      const userId = req.session.userId!;
+
+      // Validate signal belongs to user
+      const signal = await storage.getSignalById(signalId);
+      if (!signal || signal.userId !== userId) {
+        return res.status(404).json({ 
+          success: false,
+          error: "Signal not found",
+          code: 'SIGNAL_NOT_FOUND'
+        });
+      }
+
+      // Update signal status
+      await storage.updateSignalStatus(signalId, newStatus, reasoning);
+      
+      debugLogger.info("Signal demoted", { signalId, newStatus, reasoning }, req);
+      
+      res.json({ 
+        success: true, 
+        message: "Signal status updated successfully",
+        signalId,
+        newStatus
+      });
+    } catch (error: any) {
+      debugLogger.error('Signal demotion failed', error, req);
+      res.status(500).json({ 
+        success: false,
+        error: "Failed to demote signal",
+        code: 'DEMOTION_FAILED'
+      });
     }
   });
 

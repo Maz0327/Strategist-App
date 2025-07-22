@@ -45,28 +45,23 @@ export const signals = pgTable("signals", {
   isDraft: boolean("is_draft").default(false),
   capturedAt: timestamp("captured_at"),
   browserContext: jsonb("browser_context"), // JSON for domain, meta description, etc.
-  // Visual intelligence fields
-  visualAssets: jsonb("visual_assets"), // {images: [], videos: [], screenshots: []}
-  visualAnalysis: jsonb("visual_analysis"), // Visual trend analysis results
-  brandElements: jsonb("brand_elements"), // Logo, colors, typography, layout patterns
-  culturalVisualMoments: jsonb("cultural_visual_moments"), // Meme tracking, viral patterns
-  competitiveVisualInsights: jsonb("competitive_visual_insights"), // Visual strategy analysis
-  // Audio intelligence fields
-  audioUrl: text("audio_url"), // URL or path to audio file
-  transcription: text("transcription"), // Whisper API transcription result
-  audioDuration: integer("audio_duration"), // Duration in seconds
-  audioFormat: text("audio_format"), // File format (mp3, wav, m4a, etc.)
-  audioLanguage: text("audio_language"), // Detected language from Whisper
-  transcriptionConfidence: text("transcription_confidence"), // Confidence score
-  // Brief automation fields
-  projectId: integer("project_id").references(() => projects.id),
-  templateSection: text("template_section"), // cultural_signal, platform_signal, performance, etc.
-  captureSessionId: text("capture_session_id"),
-  engagementData: jsonb("engagement_data"), // Platform metrics and benchmarks
-  qualScore: text("qual_score"), // A, B, C quality rating
+  // Visual intelligence fields (MVP: Basic image extraction only)
+  visualAssets: jsonb("visual_assets"), // Basic image URLs from content extraction
+  // Deferred visual fields: visualAnalysis, brandElements, culturalVisualMoments, competitiveVisualInsights
+  // Audio intelligence fields (MVP: Basic transcription support only)
+  transcription: text("transcription"), // Basic transcription for video content
+  // Deferred audio fields: audioDuration, audioFormat, audioLanguage, transcriptionConfidence
+  // Brief automation fields (MVP: Deferred to Phase 2)
+  // projectId: integer("project_id").references(() => projects.id),
+  // templateSection: text("template_section"),
+  // captureSessionId: text("capture_session_id"),
+  // engagementData: jsonb("engagement_data"),
+  // qualScore: text("qual_score"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// MVP: Brief automation tables deferred to Phase 2
+/*
 export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
@@ -97,6 +92,7 @@ export const generatedBriefs = pgTable("generated_briefs", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+*/
 
 export const sources = pgTable("sources", {
   id: serial("id").primaryKey(),
@@ -327,7 +323,8 @@ export const insertAbTestResultsSchema = createInsertSchema(abTestResults).omit(
   timestamp: true,
 });
 
-// Brief automation schemas
+// Brief automation schemas (MVP: Deferred to Phase 2)
+/*
 export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,
   createdAt: true,
@@ -343,6 +340,7 @@ export const insertGeneratedBriefSchema = createInsertSchema(generatedBriefs).om
   createdAt: true,
   updatedAt: true,
 });
+*/
 
 // RSS Feed schemas for Phase 5
 export const insertRssFeedSchema = createInsertSchema(rssFeeds).omit({
@@ -407,12 +405,15 @@ export type InsertSignal = z.infer<typeof insertSignalSchema>;
 export type Signal = typeof signals.$inferSelect;
 export type InsertSource = z.infer<typeof insertSourceSchema>;
 export type Source = typeof sources.$inferSelect;
+// MVP: Project and brief types deferred to Phase 2
+/*
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type Project = typeof projects.$inferSelect;
 export type InsertBriefTemplate = z.infer<typeof insertBriefTemplateSchema>;
 export type BriefTemplate = typeof briefTemplates.$inferSelect;
 export type InsertGeneratedBrief = z.infer<typeof insertGeneratedBriefSchema>;
 export type GeneratedBrief = typeof generatedBriefs.$inferSelect;
+*/
 export type InsertSignalSource = z.infer<typeof insertSignalSourceSchema>;
 export type SignalSource = typeof signalSources.$inferSelect;
 export type InsertUserFeedSource = z.infer<typeof insertUserFeedSourceSchema>;

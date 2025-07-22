@@ -1,223 +1,240 @@
-// Mobile Optimization Utilities
-// Provides touch-friendly interactions and responsive behavior
+// Mobile optimization utilities for strategic content platform
 
-import { useEffect, useState } from 'react';
+// Touch-friendly button size constants
+export const TOUCH_TARGET_SIZE = {
+  MINIMUM: 44, // iOS/Android minimum recommendation
+  COMFORTABLE: 48, // More comfortable touch target
+  LARGE: 56 // Large touch targets for primary actions
+};
 
-// Custom hook for mobile detection
-export function useIsMobile(breakpoint: number = 768) {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkDevice = () => {
-      setIsMobile(window.innerWidth < breakpoint);
-    };
-
-    checkDevice();
-    window.addEventListener('resize', checkDevice);
-    return () => window.removeEventListener('resize', checkDevice);
-  }, [breakpoint]);
-
-  return isMobile;
-}
-
-// Touch gesture utilities
-interface TouchGestureOptions {
-  onSwipeLeft?: () => void;
-  onSwipeRight?: () => void;
-  onSwipeUp?: () => void;
-  onSwipeDown?: () => void;
-  threshold?: number;
-}
-
-export function useTouchGestures({
-  onSwipeLeft,
-  onSwipeRight,
-  onSwipeUp,
-  onSwipeDown,
-  threshold = 50
-}: TouchGestureOptions) {
-  const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(null);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    setStartPos({ x: touch.clientX, y: touch.clientY });
+// Viewport detection utilities
+export function getViewportSize() {
+  return {
+    width: window.innerWidth,
+    height: window.innerHeight
   };
+}
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!startPos) return;
+export function isMobileViewport(): boolean {
+  return window.innerWidth < 768; // Tailwind's md breakpoint
+}
 
+export function isTabletViewport(): boolean {
+  return window.innerWidth >= 768 && window.innerWidth < 1024; // Between md and lg
+}
+
+export function isDesktopViewport(): boolean {
+  return window.innerWidth >= 1024; // Tailwind's lg breakpoint and above
+}
+
+// Touch event utilities
+export function isTouchDevice(): boolean {
+  return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+}
+
+// Gesture handling utilities
+export interface SwipeGestureOptions {
+  threshold?: number; // Minimum distance for swipe (default: 50px)
+  restraint?: number; // Maximum perpendicular movement (default: 100px)
+  allowedTime?: number; // Maximum time for swipe (default: 300ms)
+}
+
+export function useSwipeGesture(
+  element: HTMLElement | null,
+  onSwipeLeft?: () => void,
+  onSwipeRight?: () => void,
+  options: SwipeGestureOptions = {}
+) {
+  const { 
+    threshold = 50, 
+    restraint = 100, 
+    allowedTime = 300 
+  } = options;
+
+  if (!element || !isTouchDevice()) return;
+
+  let startX: number;
+  let startY: number;
+  let startTime: number;
+
+  const handleTouchStart = (e: TouchEvent) => {
     const touch = e.changedTouches[0];
-    const deltaX = touch.clientX - startPos.x;
-    const deltaY = touch.clientY - startPos.y;
+    startX = touch.pageX;
+    startY = touch.pageY;
+    startTime = new Date().getTime();
+  };
 
-    // Determine primary direction
-    if (Math.abs(deltaX) > Math.abs(deltaY)) {
-      // Horizontal swipe
-      if (Math.abs(deltaX) > threshold) {
-        if (deltaX > 0) {
-          onSwipeRight?.();
-        } else {
-          onSwipeLeft?.();
-        }
-      }
-    } else {
-      // Vertical swipe
-      if (Math.abs(deltaY) > threshold) {
-        if (deltaY > 0) {
-          onSwipeDown?.();
-        } else {
-          onSwipeUp?.();
-        }
+  const handleTouchEnd = (e: TouchEvent) => {
+    const touch = e.changedTouches[0];
+    const distX = touch.pageX - startX;
+    const distY = touch.pageY - startY;
+    const elapsedTime = new Date().getTime() - startTime;
+
+    // Check if gesture meets criteria
+    if (elapsedTime <= allowedTime && Math.abs(distX) >= threshold && Math.abs(distY) <= restraint) {
+      if (distX > 0 && onSwipeRight) {
+        onSwipeRight();
+      } else if (distX < 0 && onSwipeLeft) {
+        onSwipeLeft();
       }
     }
-
-    setStartPos(null);
   };
 
-  return {
-    onTouchStart: handleTouchStart,
-    onTouchEnd: handleTouchEnd
+  element.addEventListener('touchstart', handleTouchStart, { passive: true });
+  element.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+  // Return cleanup function
+  return () => {
+    element.removeEventListener('touchstart', handleTouchStart);
+    element.removeEventListener('touchend', handleTouchEnd);
   };
 }
 
-// Mobile-optimized button sizes and spacing
-export const mobileOptimized = {
-  button: {
-    minHeight: '44px', // Apple's recommended minimum touch target
-    minWidth: '44px',
-    padding: '12px 16px'
-  },
-  spacing: {
-    xs: '4px',
-    sm: '8px',
-    md: '16px',
-    lg: '24px',
-    xl: '32px'
-  },
-  text: {
-    small: '14px',
-    body: '16px', // Prevents zoom on iOS
-    large: '18px'
-  }
-};
-
-// Responsive breakpoints
-export const breakpoints = {
-  mobile: '(max-width: 767px)',
-  tablet: '(min-width: 768px) and (max-width: 1023px)',
-  desktop: '(min-width: 1024px)',
-  touch: '(pointer: coarse)', // Touch-enabled devices
-  hover: '(hover: hover)' // Devices that support hover
-};
-
-// Mobile-friendly form validation
-export function getMobileInputProps(type: string) {
-  const baseProps = {
-    autoCapitalize: 'off',
-    autoCorrect: 'off',
-    spellCheck: false
+// Mobile-specific input utilities
+export function getMobileInputMode(inputType: string): string {
+  const inputModeMap: Record<string, string> = {
+    'email': 'email',
+    'tel': 'tel',
+    'url': 'url',
+    'search': 'search',
+    'number': 'numeric',
+    'decimal': 'decimal'
   };
 
-  switch (type) {
-    case 'email':
-      return {
-        ...baseProps,
-        inputMode: 'email' as const,
-        type: 'email'
-      };
-    case 'url':
-      return {
-        ...baseProps,
-        inputMode: 'url' as const,
-        type: 'url'
-      };
-    case 'number':
-      return {
-        ...baseProps,
-        inputMode: 'numeric' as const,
-        type: 'text', // Use text to prevent spinner on mobile
-        pattern: '[0-9]*'
-      };
-    case 'search':
-      return {
-        ...baseProps,
-        inputMode: 'search' as const,
-        type: 'search'
-      };
-    default:
-      return baseProps;
-  }
-}
-
-// Viewport utilities for mobile
-export function getViewportHeight() {
-  // Handle mobile viewport issues
-  return window.visualViewport?.height || window.innerHeight;
-}
-
-export function useViewportHeight() {
-  const [height, setHeight] = useState(getViewportHeight());
-
-  useEffect(() => {
-    const updateHeight = () => setHeight(getViewportHeight());
-    
-    window.addEventListener('resize', updateHeight);
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', updateHeight);
-    }
-
-    return () => {
-      window.removeEventListener('resize', updateHeight);
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', updateHeight);
-      }
-    };
-  }, []);
-
-  return height;
-}
-
-// Smooth scroll for mobile
-export function smoothScrollTo(elementId: string, offset: number = 0) {
-  const element = document.getElementById(elementId);
-  if (!element) return;
-
-  const y = element.getBoundingClientRect().top + window.pageYOffset - offset;
-  
-  window.scrollTo({
-    top: y,
-    behavior: 'smooth'
-  });
-}
-
-// Touch-friendly tab navigation
-export function createMobileTabProps(isActive: boolean) {
-  return {
-    role: 'tab',
-    'aria-selected': isActive,
-    tabIndex: isActive ? 0 : -1,
-    className: `
-      ${isActive ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground'}
-      min-h-[44px] px-4 py-2 text-sm font-medium rounded-md transition-colors
-      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
-      active:scale-95 touch-manipulation select-none
-    `.trim()
-  };
+  return inputModeMap[inputType] || 'text';
 }
 
 // Performance optimization for mobile
-export function useReducedMotion() {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+export function optimizeForMobile() {
+  // Disable hover effects on touch devices
+  if (isTouchDevice()) {
+    document.body.classList.add('touch-device');
+  }
 
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mediaQuery.matches);
+  // Add passive event listeners for better scroll performance
+  const addPassiveListener = (element: Element, event: string, handler: EventListener) => {
+    element.addEventListener(event, handler, { passive: true });
+  };
 
-    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
-    mediaQuery.addEventListener('change', handler);
-    
-    return () => mediaQuery.removeEventListener('change', handler);
-  }, []);
-
-  return prefersReducedMotion;
+  return { addPassiveListener };
 }
+
+// Mobile-friendly modal positioning
+export function getMobileModalPosition() {
+  const viewportHeight = window.innerHeight;
+  const keyboardHeight = viewportHeight - window.visualViewport?.height || 0;
+  
+  return {
+    maxHeight: `${viewportHeight - keyboardHeight - 40}px`, // 40px for padding
+    transform: keyboardHeight > 0 ? `translateY(-${keyboardHeight / 2}px)` : 'none'
+  };
+}
+
+// Responsive text scaling
+export function getResponsiveFontSize(baseSize: number): string {
+  const viewport = getViewportSize();
+  
+  if (viewport.width < 375) {
+    // Small phones
+    return `${Math.max(baseSize * 0.875, 12)}px`;
+  } else if (viewport.width < 768) {
+    // Regular phones
+    return `${baseSize}px`;
+  } else if (viewport.width < 1024) {
+    // Tablets
+    return `${baseSize * 1.125}px`;
+  } else {
+    // Desktop
+    return `${baseSize * 1.25}px`;
+  }
+}
+
+// Mobile-optimized loading states
+export function getMobileLoadingConfig() {
+  return {
+    spinnerSize: isMobileViewport() ? 24 : 32,
+    animationDuration: isMobileViewport() ? '1s' : '0.75s',
+    reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  };
+}
+
+// Touch-friendly spacing utilities
+export function getTouchFriendlySpacing() {
+  return {
+    buttonGap: isMobileViewport() ? '0.75rem' : '0.5rem',
+    cardPadding: isMobileViewport() ? '1rem' : '1.5rem',
+    sectionGap: isMobileViewport() ? '1.5rem' : '2rem'
+  };
+}
+
+// Mobile navigation utilities
+export function getMobileNavConfig() {
+  const isMobile = isMobileViewport();
+  
+  return {
+    showLabels: !isMobile, // Hide labels on mobile to save space
+    iconSize: isMobile ? 24 : 20,
+    tabHeight: isMobile ? 64 : 48,
+    useBottomNavigation: isMobile
+  };
+}
+
+// Virtual keyboard handling
+export function handleVirtualKeyboard() {
+  if (!window.visualViewport) return;
+
+  const viewport = window.visualViewport;
+  
+  const handleViewportChange = () => {
+    const keyboardHeight = window.innerHeight - viewport.height;
+    
+    // Adjust UI when keyboard appears
+    if (keyboardHeight > 150) { // Keyboard is likely open
+      document.documentElement.style.setProperty('--keyboard-height', `${keyboardHeight}px`);
+      document.body.classList.add('keyboard-open');
+    } else {
+      document.documentElement.style.removeProperty('--keyboard-height');
+      document.body.classList.remove('keyboard-open');
+    }
+  };
+
+  viewport.addEventListener('resize', handleViewportChange);
+  
+  return () => {
+    viewport.removeEventListener('resize', handleViewportChange);
+  };
+}
+
+// Battery and performance awareness
+export function getBatteryAwareConfig() {
+  const isMobile = isMobileViewport();
+  
+  return {
+    // Reduce animations on mobile to save battery
+    enableAnimations: !isMobile || navigator.hardwareConcurrency > 4,
+    // Reduce polling frequency on mobile
+    pollInterval: isMobile ? 10000 : 5000,
+    // Lazy load more aggressively on mobile
+    lazyLoadThreshold: isMobile ? '200px' : '100px'
+  };
+}
+
+// Export all utilities as a single object for easy importing
+export const MobileOptimization = {
+  TOUCH_TARGET_SIZE,
+  getViewportSize,
+  isMobileViewport,
+  isTabletViewport,
+  isDesktopViewport,
+  isTouchDevice,
+  useSwipeGesture,
+  getMobileInputMode,
+  optimizeForMobile,
+  getMobileModalPosition,
+  getResponsiveFontSize,
+  getMobileLoadingConfig,
+  getTouchFriendlySpacing,
+  getMobileNavConfig,
+  handleVirtualKeyboard,
+  getBatteryAwareConfig
+};

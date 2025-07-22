@@ -22,9 +22,11 @@ export interface IStorage {
   
   // Signals
   getSignal(id: number): Promise<Signal | undefined>;
+  getSignalById(id: number): Promise<Signal | undefined>;
   getSignalsByUserId(userId: number): Promise<Signal[]>;
   createSignal(signal: InsertSignal): Promise<Signal>;
   updateSignal(id: number, updates: Partial<InsertSignal>): Promise<Signal | undefined>;
+  updateSignalStatus(id: number, status: string, reasoning?: string): Promise<Signal | undefined>;
   deleteSignal(id: number): Promise<void>;
   
   // Sources
@@ -102,7 +104,26 @@ export class DbStorage implements IStorage {
     return result[0];
   }
 
+  async getSignalById(id: number): Promise<Signal | undefined> {
+    const result = await db.select().from(signals).where(eq(signals.id, id)).limit(1);
+    return result[0];
+  }
+
   async updateSignal(id: number, updates: Partial<InsertSignal>): Promise<Signal | undefined> {
+    const result = await db.update(signals)
+      .set(updates)
+      .where(eq(signals.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async updateSignalStatus(id: number, status: string, reasoning?: string): Promise<Signal | undefined> {
+    const updates: Partial<InsertSignal> = {
+      status: status as any,
+      promotionReason: reasoning || undefined,
+      promotedAt: new Date()
+    };
+
     const result = await db.update(signals)
       .set(updates)
       .where(eq(signals.id, id))

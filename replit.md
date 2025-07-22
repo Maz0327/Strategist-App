@@ -2,7 +2,9 @@
 
 ## Overview
 
-This is a full-stack web application built with React and Express that provides content analysis capabilities using OpenAI's GPT-4. The application allows users to input text or URLs, analyze content for sentiment, tone, and keywords, and store the results as "signals" for future reference.
+This is a full-stack strategic content intelligence platform built with React and Express that provides advanced AI-powered content analysis using OpenAI's GPT-4. The application enables users to capture content from URLs (especially Instagram, YouTube, and social media), analyze it using our Truth Analysis framework for strategic insights, and manage the progression of content through a signal promotion system (Capture → Potential Signal → Signal → Validated Signal).
+
+**Current Status (July 22, 2025 Evening)**: MVP Phase 3 infrastructure hardening and database cleanup successfully completed. System is production-ready with clean schema, enhanced error handling, and optimized performance.
 
 ## User Preferences
 

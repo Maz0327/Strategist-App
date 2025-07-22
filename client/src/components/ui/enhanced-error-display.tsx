@@ -1,133 +1,109 @@
-import React from "react";
-import { AlertCircle, RefreshCw, ExternalLink } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import React from 'react';
+import { AlertTriangle, RefreshCw, HelpCircle } from 'lucide-react';
+import { Button } from './button';
+import { Alert, AlertDescription, AlertTitle } from './alert';
 
 interface EnhancedErrorDisplayProps {
   error: {
-    code?: string;
     message: string;
-    userFriendlyMessage?: string;
-    source?: string;
+    code?: string;
+    suggestions?: string[];
+    retryable?: boolean;
     traceId?: string;
   };
   onRetry?: () => void;
-  onSupport?: () => void;
   className?: string;
 }
 
 export function EnhancedErrorDisplay({ 
   error, 
   onRetry, 
-  onSupport, 
-  className = "" 
+  className = '' 
 }: EnhancedErrorDisplayProps) {
-  const getErrorSeverity = (code?: string) => {
-    switch (code) {
-      case 'RATE_LIMIT_EXCEEDED':
-      case 'OPENAI_API_ERROR':
-        return 'warning';
-      case 'AUTHENTICATION_ERROR':
-      case 'DATABASE_ERROR':
-        return 'destructive';
-      default:
-        return 'secondary';
-    }
-  };
-
-  const getErrorIcon = (code?: string) => {
-    switch (code) {
-      case 'RATE_LIMIT_EXCEEDED':
-        return <RefreshCw className="h-5 w-5" />;
-      default:
-        return <AlertCircle className="h-5 w-5" />;
-    }
-  };
-
-  const getRetryDelay = (code?: string) => {
-    switch (code) {
-      case 'RATE_LIMIT_EXCEEDED':
-        return 'Please wait 30 seconds before trying again';
-      case 'OPENAI_API_ERROR':
-        return 'Please wait a moment and try again';
-      default:
-        return null;
-    }
-  };
-
   return (
-    <Card className={`border-red-200 bg-red-50 ${className}`}>
-      <CardContent className="p-4">
-        <div className="flex items-start gap-3">
-          <div className="text-red-600 mt-0.5">
-            {getErrorIcon(error.code)}
-          </div>
+    <div className={`space-y-4 ${className}`}>
+      <Alert variant="destructive">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle className="flex items-center gap-2">
+          {error.message}
+          {error.traceId && (
+            <span className="text-xs font-mono bg-red-100 dark:bg-red-900 px-2 py-1 rounded">
+              #{error.traceId}
+            </span>
+          )}
+        </AlertTitle>
+        <AlertDescription>
+          {error.code && (
+            <div className="text-xs text-muted-foreground mb-2">
+              Error Code: {error.code}
+            </div>
+          )}
           
-          <div className="flex-1 space-y-2">
-            <div className="flex items-center gap-2">
-              <h4 className="font-medium text-red-900">
-                Something went wrong
-              </h4>
-              {error.code && (
-                <Badge variant={getErrorSeverity(error.code)} className="text-xs">
-                  {error.code}
-                </Badge>
-              )}
+          {error.suggestions && error.suggestions.length > 0 && (
+            <div className="mt-3">
+              <div className="flex items-center gap-2 mb-2">
+                <HelpCircle className="h-3 w-3" />
+                <span className="text-sm font-medium">Suggestions:</span>
+              </div>
+              <ul className="text-sm space-y-1">
+                {error.suggestions.map((suggestion, index) => (
+                  <li key={index} className="flex items-start gap-2">
+                    <span className="text-muted-foreground">•</span>
+                    <span>{suggestion}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            
-            <p className="text-sm text-red-800">
-              {error.userFriendlyMessage || error.message}
-            </p>
+          )}
 
-            {getRetryDelay(error.code) && (
-              <p className="text-xs text-red-700 italic">
-                {getRetryDelay(error.code)}
-              </p>
-            )}
-
-            <div className="flex items-center gap-2 pt-2">
-              {onRetry && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={onRetry}
-                  className="text-red-700 border-red-300 hover:bg-red-100"
-                >
-                  <RefreshCw className="h-3 w-3 mr-1" />
-                  Try Again
-                </Button>
-              )}
-              
-              {onSupport && (
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={onSupport}
-                  className="text-red-600 hover:bg-red-100"
-                >
-                  <ExternalLink className="h-3 w-3 mr-1" />
-                  Get Help
-                </Button>
-              )}
+          {error.retryable && onRetry && (
+            <div className="mt-4">
+              <Button 
+                onClick={onRetry}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+              >
+                <RefreshCw className="h-3 w-3" />
+                Try Again
+              </Button>
             </div>
-
-            {/* Technical details for debugging (collapsible) */}
-            {error.traceId && (
-              <details className="text-xs text-red-600 mt-2">
-                <summary className="cursor-pointer hover:text-red-800">
-                  Technical Details
-                </summary>
-                <div className="mt-1 p-2 bg-red-100 rounded text-xs font-mono">
-                  <div>Trace ID: {error.traceId}</div>
-                  {error.source && <div>Source: {error.source}</div>}
-                  <div>Message: {error.message}</div>
-                </div>
-              </details>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+          )}
+        </AlertDescription>
+      </Alert>
+    </div>
   );
+}
+
+// Hook for handling enhanced errors
+export function useEnhancedErrorHandler() {
+  const handleError = (error: any, onRetry?: () => void) => {
+    // If it's already an enhanced error from our backend
+    if (error?.code && error?.suggestions) {
+      return {
+        message: error.error || error.message,
+        code: error.code,
+        suggestions: error.suggestions,
+        retryable: error.retryable,
+        traceId: error.traceId
+      };
+    }
+
+    // Convert regular errors to enhanced format
+    const message = error?.message || error?.error || 'An unexpected error occurred';
+    
+    return {
+      message,
+      code: 'UNKNOWN_ERROR',
+      suggestions: [
+        'Please try again',
+        'Check your internet connection',
+        'Contact support if the problem persists'
+      ],
+      retryable: true,
+      traceId: undefined
+    };
+  };
+
+  return { handleError };
 }
