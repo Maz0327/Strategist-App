@@ -65,10 +65,99 @@ class VideoTranscriptionService {
     return isVideo;
   }
 
+  // Extract YouTube video ID from URL
+  private extractYouTubeVideoId(url: string): string | null {
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+      /youtube\.com\/shorts\/([^&\n?#]+)/
+    ];
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) {
+        return match[1];
+      }
+    }
+    return null;
+  }
+
+  // Fast YouTube transcript extraction using Python API
+  private async getYouTubeTranscript(videoId: string): Promise<string> {
+    const { exec } = await import('child_process');
+    const { promisify } = await import('util');
+    const execAsync = promisify(exec);
+    
+    try {
+      const command = `python3 -c "
+from youtube_transcript_api import YouTubeTranscriptApi
+import json
+import sys
+
+try:
+    transcript = YouTubeTranscriptApi.get_transcript('${videoId}')
+    full_text = ' '.join([entry['text'] for entry in transcript])
+    result = {
+        'success': True,
+        'transcript': full_text,
+        'duration': sum([entry['duration'] for entry in transcript])
+    }
+    print(json.dumps(result))
+except Exception as e:
+    result = {'success': False, 'error': str(e)}
+    print(json.dumps(result))
+"`;
+
+      const { stdout, stderr } = await execAsync(command, { timeout: 10000 });
+      
+      if (stderr) {
+        debugLogger.warn('YouTube transcript API warning', { stderr });
+      }
+      
+      const result = JSON.parse(stdout);
+      
+      if (result.success) {
+        debugLogger.info('YouTube transcript extracted successfully', { videoId, duration: result.duration });
+        return result.transcript;
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      debugLogger.error('YouTube transcript extraction failed', { videoId, error: (error as Error).message });
+      throw error;
+    }
+  }
+
   // Extract audio from video URL and transcribe
   async transcribeVideoFromUrl(url: string): Promise<VideoTranscriptionResult> {
     try {
       debugLogger.info('Starting video transcription', { url });
+      
+      // For YouTube videos, try the fast transcript API first
+      if (url.includes('youtube.com') || url.includes('youtu.be')) {
+        const videoId = this.extractYouTubeVideoId(url);
+        if (videoId) {
+          try {
+            debugLogger.info('Attempting fast YouTube transcript extraction', { videoId });
+            const transcript = await this.getYouTubeTranscript(videoId);
+            
+            return {
+              transcription: transcript,
+              language: 'en',
+              confidence: 0.95,
+              videoMetadata: {
+                platform: 'YouTube',
+                title: 'YouTube Video'
+              }
+            };
+          } catch (transcriptError) {
+            debugLogger.warn('YouTube transcript API failed, falling back to audio extraction', { 
+              videoId, 
+              error: (transcriptError as Error).message 
+            });
+            // Continue to yt-dlp fallback below
+          }
+        }
+      }
       
       // First, try to extract video metadata
       let videoMetadata = {};
@@ -81,7 +170,7 @@ class VideoTranscriptionService {
           platform: this.detectPlatform(url)
         };
       } catch (error) {
-        debugLogger.warn('Could not extract video metadata', { url, error: error.message });
+        debugLogger.warn('Could not extract video metadata', { url, error: (error as Error).message });
       }
 
       // STRATEGY 1: Try Enhanced Video Processor (combines transcript + audio extraction)
@@ -126,11 +215,11 @@ class VideoTranscriptionService {
               videoMetadata: videoMetadata as any
             };
           } catch (whisperError) {
-            debugLogger.error('Whisper transcription failed', { error: whisperError.message });
+            debugLogger.error('Whisper transcription failed', { error: (whisperError as Error).message });
           }
         }
       } catch (error) {
-        debugLogger.warn('Enhanced video processing failed, trying fallback methods', { url, error: error.message });
+        debugLogger.warn('Enhanced video processing failed, trying fallback methods', { url, error: (error as Error).message });
       }
 
       // STRATEGY 2: Try Bright Data Browser API for advanced bypass
@@ -368,7 +457,7 @@ The system detected this as a video and attempted automatic transcription, but e
         }
         debugLogger.info('Video transcription completed within timeout', { url, duration: 'under 8s' });
       } catch (error) {
-        debugLogger.info('Video transcription skipped due to timeout - prioritizing user experience', { url, error: error.message });
+        debugLogger.info('Video transcription skipped due to timeout - prioritizing user experience', { url, error: (error as Error).message });
         
         // Add platform-specific video handling with faster fallback
         if (url.includes('linkedin.com')) {
