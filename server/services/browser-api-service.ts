@@ -452,13 +452,7 @@ class BrowserAPIService {
         'Google Trends scraping',
         'Anti-detection technology',
         'JavaScript execution',
-        'Engagement data extraction'
-      ]
-    };
-  }
-}
-
-export const browserApiService = new BrowserAPIService();
+        'Engagement data extraction',
         'Full JavaScript execution',
         'Cookie and session management'
       ]
@@ -466,4 +460,4 @@ export const browserApiService = new BrowserAPIService();
   }
 }
 
-export const browserAPIService = new BrowserAPIService();
+export const browserApiService = new BrowserAPIService();
