@@ -8,6 +8,7 @@ import analysisRoutes from './routes/analysisRoutes';
 import adminRoutes from './routes/adminRoutes';
 import userRoutes from './routes/userRoutes';
 import traceabilityRoutes from './routes/traceabilityRoutes';
+import { systemMonitor } from './services/system-monitor';
 import { setupVite, serveStatic, log } from "./vite";
 import { debugLogger, errorHandler } from "./services/debug-logger";
 
@@ -112,6 +113,21 @@ app.use((req, res, next) => {
       
       // Enhanced debug logging
       debugLogger.apiCall(req, res, duration, res.statusCode >= 400 ? new Error(capturedJsonResponse?.message || 'Request failed') : undefined);
+      
+      // Record metrics for system monitoring
+      const userId = (req as any).session?.userId;
+      const userAgent = req.get('User-Agent');
+      const errorMessage = res.statusCode >= 400 ? capturedJsonResponse?.error || 'Request failed' : undefined;
+      
+      systemMonitor.recordRequest(
+        req.method,
+        path,
+        res.statusCode,
+        duration,
+        userId,
+        userAgent,
+        errorMessage
+      );
     }
   });
 
