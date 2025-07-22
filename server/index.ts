@@ -1,7 +1,23 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
+import session from "express-session";
+import MemoryStore from "memorystore";
+// Import modular routes
+import authRoutes from './routes/authRoutes';
+import signalRoutes from './routes/signalRoutes';
+import analysisRoutes from './routes/analysisRoutes';
+import adminRoutes from './routes/adminRoutes';
+import userRoutes from './routes/userRoutes';
+import traceabilityRoutes from './routes/traceabilityRoutes';
 import { setupVite, serveStatic, log } from "./vite";
 import { debugLogger, errorHandler } from "./services/debug-logger";
+
+declare module "express-session" {
+  interface SessionData {
+    userId?: number;
+    userEmail?: string;
+    userRole?: string;
+  }
+}
 
 // API credentials should be set via environment variables
 // REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET
@@ -10,6 +26,54 @@ import { debugLogger, errorHandler } from "./services/debug-logger";
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Session configuration
+const MemoryStoreSession = MemoryStore(session);
+
+app.use(session({
+  store: new MemoryStoreSession({
+    checkPeriod: 86400000 // prune expired entries every 24h
+  }),
+  secret: process.env.SESSION_SECRET || 'default-development-secret-please-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // Always false for Replit deployment compatibility
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  }
+}));
+
+// Add CORS headers for credentials (including Chrome extension)
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Credentials', 'true');
+  const origin = req.headers.origin;
+  
+  // Allow Chrome extension origins
+  if (origin && (origin.startsWith('chrome-extension://') || origin.startsWith('moz-extension://'))) {
+    res.header('Access-Control-Allow-Origin', origin);
+  } else {
+    // Standard CORS for web clients
+    const allowedOrigins = [
+      'http://localhost:5000',
+      'http://127.0.0.1:5000',
+      process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : null
+    ].filter(Boolean);
+    
+    if (!origin || allowedOrigins.includes(origin)) {
+      res.header('Access-Control-Allow-Origin', origin || 'http://localhost:5000');
+    }
+  }
+  
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  
+  next();
+});
 
 // Add process error handlers
 process.on('uncaughtException', (error) => {
@@ -55,7 +119,20 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  const server = await registerRoutes(app);
+  // Setup modular routes with comprehensive validation
+  app.use('/api/auth', authRoutes);
+  app.use('/api/signals', signalRoutes);
+  app.use('/api/analyze', analysisRoutes);
+  app.use('/api/admin', adminRoutes);
+  app.use('/api/user', userRoutes);
+  app.use('/api/traceability', traceabilityRoutes);
+  
+  debugLogger.info('All modular routes registered successfully', {
+    routes: ['auth', 'signals', 'analyze', 'admin', 'user', 'traceability']
+  });
+  
+  const http = await import("http");
+  const server = http.createServer(app);
 
   // Enhanced error handling with debug logging
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
