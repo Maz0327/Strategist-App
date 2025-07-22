@@ -1003,8 +1003,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // MVP SIMPLIFIED - All audio endpoints temporarily removed to focus on core functionality
-  /* MVP SIMPLIFIED - Audio transcription temporarily disabled
+  // Audio transcription endpoints
   app.post("/api/audio/transcribe", requireAuth, async (req, res) => {
     try {
       debugLogger.info("Audio transcription request received", { hasFile: !!req.body.audioFile }, req);
@@ -1056,9 +1055,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ message: (error as Error).message });
     }
   });
-  */ // MVP SIMPLIFIED - End of audio transcription block
 
-  /* MVP SIMPLIFIED - Audio signals temporarily disabled
   app.post("/api/signals/audio", requireAuth, async (req, res) => {
     try {
       debugLogger.info("Audio signal creation request received", { 
@@ -1158,9 +1155,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ message: (error as Error).message });
     }
   });
-  */ // MVP SIMPLIFIED - End of audio signals block
 
-  /* MVP SIMPLIFIED - Whisper transcription temporarily disabled
+  // Whisper transcription endpoint for Chrome extension
   app.post("/api/whisper/transcribe", requireAuth, async (req, res) => {
     try {
       const { audioFile, filename } = req.body;
@@ -1213,7 +1209,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-  */ // MVP SIMPLIFIED - End of whisper transcription block
 
   // Debug and monitoring routes
   app.get("/api/debug/logs", (req, res) => {
@@ -2995,7 +2990,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
         return res.status(400).json({ error: "Name, RSS URL, and category are required" });
       }
 
-      const { rssService } = await import('./services/rss-service-simple');
+      const { rssService } = await import('./services/rss-service');
       const feed = await rssService.addFeed(req.session.userId!, {
         name,
         rssUrl,
@@ -3013,7 +3008,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
   app.get("/api/rss-feeds", requireAuth, async (req, res) => {
     try {
       const category = req.query.category as string;
-      const { rssService } = await import('./services/rss-service-simple');
+      const { rssService } = await import('./services/rss-service');
       const feeds = await rssService.getUserFeeds(req.session.userId!, category);
       res.json({ feeds });
     } catch (error) {
@@ -3027,7 +3022,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
       const category = req.params.category;
       const limit = parseInt(req.query.limit as string) || 10;
       
-      const { rssService } = await import('./services/rss-service-simple');
+      const { rssService } = await import('./services/rss-service');
       const articles = await rssService.getRecentArticles(req.session.userId!, category, limit);
       res.json({ articles });
     } catch (error) {
@@ -3038,7 +3033,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
 
   app.post("/api/rss-feeds/refresh", requireAuth, async (req, res) => {
     try {
-      const { rssService } = await import('./services/rss-service-simple');
+      const { rssService } = await import('./services/rss-service');
       const results = await rssService.fetchAllUserFeeds(req.session.userId!);
       res.json({ results });
     } catch (error) {
@@ -3049,7 +3044,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
 
   app.get("/api/rss-feeds/stats", requireAuth, async (req, res) => {
     try {
-      const { rssService } = await import('./services/rss-service-simple');
+      const { rssService } = await import('./services/rss-service');
       const stats = await rssService.getFeedStats(req.session.userId!);
       res.json(stats);
     } catch (error) {
