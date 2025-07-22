@@ -16,7 +16,37 @@ export interface TrendingTopic {
 export class TrendsService {
   async getGoogleTrends(geo: string = 'US', category: number = 12): Promise<TrendingTopic[]> {
     try {
-      // Try multiple Google Trends endpoints for better reliability
+      // First try Browser API to bypass rate limits and blocks
+      try {
+        const { browserApiService } = await import('./browser-api-service');
+        const browserResult = await browserApiService.scrapeGoogleTrends({
+          geo,
+          timeframe: 'now 1-d',
+          category
+        });
+        
+        if (browserResult.success && browserResult.data?.length > 0) {
+          console.log(`✅ Google Trends via Browser API: ${browserResult.data.length} trends`);
+          
+          // Convert browser API format to TrendingTopic format
+          return browserResult.data.map((trend: any, index: number) => ({
+            id: `google-browser-${index}`,
+            platform: 'google',
+            title: trend.keyword || trend.query || 'Trending Topic',
+            summary: `Trending in ${browserResult.geo} - ${trend.category || 'General'}`,
+            url: `https://trends.google.com/trends/explore?q=${encodeURIComponent(trend.keyword || trend.query)}&geo=${geo}`,
+            score: 100 - (index * 5), // Decrease score by ranking
+            fetchedAt: trend.extractedAt || new Date().toISOString(),
+            engagement: (100 - index * 5) * 1000,
+            source: 'Google Trends (Browser API)',
+            keywords: [trend.keyword || trend.query]
+          }));
+        }
+      } catch (browserError) {
+        console.warn('Browser API failed, falling back to direct API:', browserError.message);
+      }
+
+      // Fallback to direct Google Trends API
       const keywords = [
         'AI marketing', 'digital transformation', 'customer experience', 
         'sustainable business', 'remote work', 'data analytics',

@@ -299,6 +299,144 @@ class BrowserAPIService {
     };
   }
 
+  // Google Trends scraping with Browser API to bypass rate limits
+  async scrapeGoogleTrends(options: any = {}): Promise<any> {
+    try {
+      const {
+        geo = 'US',
+        timeframe = 'now 1-d',
+        category = 0,
+        keywords = []
+      } = options;
+
+      debugLogger.info(`🔍 Scraping Google Trends with Browser API`, { geo, timeframe, category });
+
+      // Build Google Trends URL
+      const trendsUrl = keywords.length > 0 
+        ? `https://trends.google.com/trends/explore?q=${keywords.join(',')}&geo=${geo}&date=${timeframe}&cat=${category}`
+        : `https://trends.google.com/trends/trendingsearches/daily?geo=${geo}`;
+
+      // Use Browser API to scrape Google Trends
+      const scrapingCommand = this.buildGoogleTrendsCommand(trendsUrl, options);
+      
+      const { stdout, stderr } = await execAsync(scrapingCommand, { 
+        timeout: 25000 // Google Trends can be slow
+      });
+
+      if (!stderr.includes('error') && stdout) {
+        const trendsData = this.parseGoogleTrendsContent(stdout);
+        
+        return {
+          success: true,
+          data: trendsData,
+          method: 'browser-api',
+          source: 'google-trends',
+          geo: geo,
+          timeframe: timeframe
+        };
+      } else {
+        throw new Error(`Google Trends scraping failed: ${stderr}`);
+      }
+    } catch (error) {
+      debugLogger.error(`Browser API Google Trends scraping failed:`, error.message);
+      return {
+        success: false,
+        error: error.message,
+        method: 'browser-api-failed',
+        source: 'google-trends'
+      };
+    }
+  }
+
+  private buildGoogleTrendsCommand(url: string, options: any): string {
+    const curlArgs = [
+      'curl',
+      '-s',
+      '--max-time 20',
+      '--retry 3',
+      '--retry-delay 5',
+      '--location',
+      '--compressed', // Google Trends uses compression
+      // Use Browser API as proxy for IP rotation
+      `--proxy "${this.seleniumEndpoint}"`,
+      // Google-specific headers to avoid detection
+      '-H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"',
+      '-H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"',
+      '-H "Accept-Language: en-US,en;q=0.9"',
+      '-H "Accept-Encoding: gzip, deflate, br"',
+      '-H "DNT: 1"',
+      '-H "Connection: keep-alive"',
+      '-H "Upgrade-Insecure-Requests: 1"',
+      '-H "Sec-Fetch-Dest: document"',
+      '-H "Sec-Fetch-Mode: navigate"',
+      '-H "Sec-Fetch-Site: none"',
+      '-H "Cache-Control: max-age=0"',
+      // Add referer to look more natural
+      '-H "Referer: https://trends.google.com/"',
+      `"${url}"`
+    ];
+
+    return curlArgs.join(' ');
+  }
+
+  private parseGoogleTrendsContent(htmlContent: string): any[] {
+    const trends = [];
+    
+    // Parse Google Trends data from script tags
+    const scriptRegex = /<script[^>]*>.*?window\.APP_INITIAL_STATE\s*=\s*({.*?});.*?<\/script>/gs;
+    const scriptMatch = htmlContent.match(scriptRegex);
+    
+    if (scriptMatch) {
+      try {
+        // Extract JSON data from Google Trends
+        const jsonStr = scriptMatch[0].match(/window\.APP_INITIAL_STATE\s*=\s*({.*?});/)?.[1];
+        if (jsonStr) {
+          const data = JSON.parse(jsonStr);
+          // Navigate the complex Google Trends data structure
+          const widgets = data?.widgets || [];
+          
+          widgets.forEach((widget: any, index: number) => {
+            if (widget?.request?.restriction?.geo?.country) {
+              const geo = widget.request.restriction.geo.country;
+              const keywords = widget.request.comparisonItem || [];
+              
+              keywords.forEach((item: any) => {
+                if (item.keyword) {
+                  trends.push({
+                    keyword: item.keyword,
+                    geo: geo,
+                    category: widget.request.restriction.category || 0,
+                    time: widget.request.time || 'now 1-d',
+                    source: 'google-trends',
+                    extractedAt: new Date().toISOString()
+                  });
+                }
+              });
+            }
+          });
+        }
+      } catch (parseError) {
+        debugLogger.warn('Failed to parse Google Trends JSON, using fallback extraction');
+      }
+    }
+    
+    // Fallback: Extract trending search terms from HTML
+    if (trends.length === 0) {
+      const trendingRegex = /"query":"([^"]+)"/g;
+      let match;
+      
+      while ((match = trendingRegex.exec(htmlContent)) !== null) {
+        trends.push({
+          keyword: match[1],
+          source: 'google-trends-fallback',
+          extractedAt: new Date().toISOString()
+        });
+      }
+    }
+    
+    return trends.slice(0, 20); // Limit to top 20 trends
+  }
+
   // Get Browser API status and configuration
   getBrowserAPIInfo() {
     return {
@@ -311,6 +449,7 @@ class BrowserAPIService {
         'Real browser instances',
         'Residential IP rotation',
         'Social media URL scraping',
+        'Google Trends scraping',
         'Anti-detection technology',
         'JavaScript execution',
         'Engagement data extraction'

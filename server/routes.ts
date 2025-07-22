@@ -768,6 +768,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Google Trends via Bright Data Browser API
+  app.get("/api/trends/google-browser", requireAuth, async (req, res) => {
+    try {
+      const { browserApiService } = await import('./services/browser-api-service');
+      const { geo = 'US', timeframe = 'now 1-d', category = 0, keywords } = req.query;
+      
+      // Use Browser API to scrape Google Trends
+      const result = await browserApiService.scrapeGoogleTrends({
+        geo: geo as string,
+        timeframe: timeframe as string,
+        category: parseInt(category as string) || 0,
+        keywords: keywords ? (keywords as string).split(',') : []
+      });
+      
+      if (result.success) {
+        res.json({
+          success: true,
+          trends: result.data,
+          method: 'bright-data-browser-api',
+          geo: result.geo,
+          timeframe: result.timeframe,
+          count: result.data?.length || 0,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: result.error || 'Google Trends scraping failed',
+          method: 'bright-data-browser-api-failed'
+        });
+      }
+    } catch (error: any) {
+      res.status(500).json({ 
+        success: false,
+        error: (error as Error).message,
+        method: 'bright-data-browser-api-error'
+      });
+    }
+  });
+
   // Bright Data Browser API test endpoint
   app.post("/api/bright-data/browser-test", requireAuth, async (req, res) => {
     try {
