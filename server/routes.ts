@@ -814,12 +814,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userNotes = req.body.userNotes || '';
       const analysisMode = 'deep'; // Force deep analysis mode
       
-      // Extract content and visual assets if URL provided
+      // Enhanced content extraction with social media support
       let extractedContent = null;
+      let socialAnalysis = null;
       
       if (data.url) {
         try {
-          extractedContent = await scraperService.extractContent(data.url);
+          // Check if this is a social media URL that benefits from Bright Data
+          const { enhancedSocialExtractor } = await import('./services/enhanced-social-extractor');
+          const platform = enhancedSocialExtractor.detectPlatform(data.url);
+          
+          if (['Instagram', 'Twitter', 'TikTok', 'LinkedIn'].includes(platform)) {
+            debugLogger.info("Social media URL detected - using enhanced extraction for deep analysis", { url: data.url, platform });
+            
+            try {
+              socialAnalysis = await enhancedSocialExtractor.extractSocialContent(data.url);
+              
+              // Enhance the data with social media insights
+              data.content = data.content || socialAnalysis.data.content;
+              data.title = data.title || socialAnalysis.data.title;
+              
+              debugLogger.info("Enhanced social extraction successful for deep analysis", { 
+                platform: socialAnalysis.platform,
+                contentType: socialAnalysis.contentType,
+                extractionMethod: socialAnalysis.extractionMethod,
+                hasEngagement: !!socialAnalysis.metadata.engagement
+              });
+            } catch (error) {
+              debugLogger.warn("Enhanced social extraction failed, using fallback for deep analysis", error);
+              extractedContent = await scraperService.extractContent(data.url);
+            }
+          } else {
+            // Regular content extraction for non-social URLs
+            extractedContent = await scraperService.extractContent(data.url);
+          }
         } catch (error) {
           debugLogger.error('Content extraction failed for deep analysis, continuing with provided content only', error, req);
         }
@@ -878,7 +906,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ...analysis,
           // Include images from extracted content for deep analysis
           images: extractedContent?.visualAssets?.map(asset => asset.url) || [],
-          visualAssets: extractedContent?.visualAssets || null
+          visualAssets: extractedContent?.visualAssets || null,
+          // Include social media engagement data if available
+          socialMediaMetadata: socialAnalysis ? {
+            platform: socialAnalysis.platform,
+            contentType: socialAnalysis.contentType,
+            extractionMethod: socialAnalysis.extractionMethod,
+            engagement: socialAnalysis.metadata.engagement,
+            profile: socialAnalysis.metadata.profile
+          } : null
         },
         signalId: signal.id,
         analysisMode: 'deep'
