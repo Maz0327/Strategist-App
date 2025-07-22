@@ -193,48 +193,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
-  // Auth middleware
+  // Auth middleware with consistent API response format
   const requireAuth = (req: any, res: any, next: any) => {
     debugLogger.debug("Session check", { userId: req.session?.userId, sessionId: req.sessionID }, req);
     if (!req.session?.userId) {
       debugLogger.warn("Authentication required - no session userId", { sessionId: req.sessionID }, req);
-      return res.status(401).json({ message: "Not authenticated" });
+      return res.status(401).json({ 
+        success: false, 
+        error: "Not authenticated",
+        code: 'AUTH_REQUIRED'
+      });
     }
     next();
   };
 
-  // Admin middleware
+  // Admin middleware with role-based checking and consistent API responses
   const requireAdmin = async (req: any, res: any, next: any) => {
-    if (!req.session?.userId) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-    
     try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ 
+          success: false, 
+          error: "Not authenticated",
+          code: 'AUTH_REQUIRED'
+        });
+      }
+      
       // Check if user has admin role in database
       const user = await storage.getUserById(req.session.userId);
       if (!user || user.role !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
+        debugLogger.warn("Admin access denied", { userId: req.session.userId, userRole: user?.role }, req);
+        return res.status(403).json({ 
+          success: false, 
+          error: "Admin access required",
+          code: 'ADMIN_REQUIRED'
+        });
       }
+      
+      req.user = user;
       next();
-    } catch (error) {
-      console.error('Admin check failed:', error);
-      return res.status(500).json({ message: "Failed to verify admin status" });
+    } catch (error: any) {
+      debugLogger.error("Admin middleware error", error, req);
+      res.status(500).json({ 
+        success: false, 
+        error: "Internal server error",
+        code: 'ADMIN_CHECK_FAILED'
+      });
     }
   };
 
-  // Auth routes
+  // Auth routes with consistent API responses and enhanced error handling
   app.post("/api/auth/register", authRateLimit, async (req, res) => {
     try {
       const data = registerSchema.parse(req.body);
       const user = await authService.register(data);
       req.session.userId = user.id;
       
+      debugLogger.info("User registered successfully", { userId: user.id, email: user.email }, req);
+      
       res.json({ 
         success: true, 
-        user: { id: user.id, email: user.email } 
+        data: { user: { id: user.id, email: user.email, role: user.role } }
       });
     } catch (error: any) {
-      res.status(400).json({ message: (error as Error).message });
+      debugLogger.error("Registration failed", error, req);
+      res.status(400).json({ 
+        success: false, 
+        error: (error as Error).message,
+        code: 'REGISTRATION_FAILED'
+      });
     }
   });
 
@@ -250,74 +276,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.save((err) => {
         if (err) {
           debugLogger.error("Session save error", { error: err }, req);
-          return res.status(500).json({ message: "Session save failed" });
+          return res.status(500).json({ 
+            success: false, 
+            error: "Session save failed",
+            code: 'SESSION_SAVE_FAILED'
+          });
         }
         
-        debugLogger.debug("Login successful", { 
+        debugLogger.info("Login successful", { 
           userId: user.id, 
-          sessionId: req.sessionID,
-          sessionData: req.session
+          sessionId: req.sessionID
         }, req);
         
         res.json({ 
           success: true, 
-          user: { id: user.id, email: user.email } 
+          data: { user: { id: user.id, email: user.email, role: user.role } }
         });
       });
     } catch (error: any) {
       debugLogger.warn("Login failed", { error: (error as Error).message }, req);
-      res.status(400).json({ message: (error as Error).message });
+      res.status(400).json({ 
+        success: false, 
+        error: (error as Error).message,
+        code: 'LOGIN_FAILED'
+      });
     }
   });
 
   app.post("/api/auth/logout", (req, res) => {
-    req.session.destroy((err) => {
-      if (err) {
-        return res.status(500).json({ message: "Could not log out" });
-      }
-      res.json({ success: true });
-    });
+    try {
+      const userId = req.session?.userId;
+      
+      req.session.destroy((err) => {
+        if (err) {
+          debugLogger.error("Logout failed", { error: err, userId }, req);
+          return res.status(500).json({ 
+            success: false, 
+            error: "Could not log out",
+            code: 'LOGOUT_FAILED'
+          });
+        }
+        
+        debugLogger.info("Logout successful", { userId }, req);
+        res.json({ 
+          success: true, 
+          data: { message: "Logged out successfully" }
+        });
+      });
+    } catch (error: any) {
+      debugLogger.error("Logout error", error, req);
+      res.status(500).json({ 
+        success: false, 
+        error: "Internal server error during logout",
+        code: 'LOGOUT_ERROR'
+      });
+    }
   });
 
   app.get("/api/auth/me", async (req, res) => {
-    if (!req.session.userId) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-    
     try {
+      if (!req.session.userId) {
+        return res.status(401).json({ 
+          success: false, 
+          error: "Not authenticated",
+          code: 'AUTH_REQUIRED'
+        });
+      }
+      
       const user = await authService.getUserById(req.session.userId);
       if (!user) {
-        return res.status(404).json({ message: "User not found" });
+        debugLogger.warn("User not found for session", { userId: req.session.userId }, req);
+        return res.status(404).json({ 
+          success: false, 
+          error: "User not found",
+          code: 'USER_NOT_FOUND'
+        });
       }
       
       res.json({ 
-        user: { id: user.id, email: user.email } 
+        success: true, 
+        data: { user: { id: user.id, email: user.email, role: user.role } }
       });
     } catch (error: any) {
-      res.status(500).json({ message: (error as Error).message });
+      debugLogger.error("Auth me failed", error, req);
+      res.status(500).json({ 
+        success: false, 
+        error: "Internal server error",
+        code: 'AUTH_ME_FAILED'
+      });
     }
   });
 
-  // Extension-specific authentication check (no session cookies needed)
+  // Extension-specific authentication check (no session cookies needed) 
   app.get("/api/auth/extension-check", async (req, res) => {
     try {
       // For single-user development, check if any user exists in the system
       const user = await storage.getUserByEmail("Maz0327@gmail.com");
       if (user) {
         res.json({ 
-          authenticated: true,
-          user: { id: user.id, email: user.email } 
+          success: true,
+          data: { 
+            authenticated: true,
+            user: { id: user.id, email: user.email, role: user.role } 
+          }
         });
       } else {
         res.status(401).json({ 
-          authenticated: false, 
-          message: "User not found - please log in to main platform first" 
+          success: false,
+          error: "User not found - please log in to main platform first",
+          code: 'EXTENSION_AUTH_FAILED'
         });
       }
     } catch (error: any) {
+      debugLogger.error("Extension auth check failed", error, req);
       res.status(500).json({ 
-        authenticated: false, 
-        message: (error as Error).message 
+        success: false,
+        error: "Internal server error during extension auth check",
+        code: 'EXTENSION_AUTH_ERROR'
       });
     }
   });
@@ -1317,52 +1392,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   */ // MVP SIMPLIFIED - End of whisper transcription block
 
-  // Debug and monitoring routes
-  app.get("/api/debug/logs", (req, res) => {
+  // Debug and monitoring routes with consistent API responses and admin access
+  app.get("/api/debug/logs", requireAdmin, async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 50;
       const level = req.query.level as 'info' | 'warn' | 'error' | 'debug';
       const logs = debugLogger.getRecentLogs(limit, level);
-      res.json({ logs, count: logs.length });
+      res.json({ 
+        success: true, 
+        data: { logs, count: logs.length, level, limit }
+      });
     } catch (error: any) {
       debugLogger.error('Failed to retrieve debug logs', error, req);
-      res.status(500).json({ message: (error as Error).message });
-    }
-  });
-
-  app.get("/api/debug/errors", (req, res) => {
-    try {
-      const errorSummary = debugLogger.getErrorSummary();
-      res.json(errorSummary);
-    } catch (error: any) {
-      debugLogger.error('Failed to retrieve error summary', error, req);
-      res.status(500).json({ message: (error as Error).message });
-    }
-  });
-
-  app.get("/api/debug/performance", (req, res) => {
-    try {
-      const performanceMetrics = debugLogger.getPerformanceMetrics();
-      res.json(performanceMetrics);
-    } catch (error: any) {
-      debugLogger.error('Failed to retrieve performance metrics', error, req);
       res.status(500).json({ 
-        totalRequests: 0,
-        averageResponseTime: 0,
-        p95ResponseTime: 0,
-        p99ResponseTime: 0,
-        slowRequests: 0
+        success: false, 
+        error: "Failed to retrieve debug logs",
+        code: 'DEBUG_LOGS_FAILED'
       });
     }
   });
 
-  app.post("/api/debug/clear-logs", (req, res) => {
+  app.get("/api/debug/errors", requireAdmin, async (req, res) => {
+    try {
+      const errorSummary = debugLogger.getErrorSummary();
+      res.json({ 
+        success: true, 
+        data: errorSummary
+      });
+    } catch (error: any) {
+      debugLogger.error('Failed to retrieve error summary', error, req);
+      res.status(500).json({ 
+        success: false, 
+        error: "Failed to retrieve error summary",
+        code: 'ERROR_SUMMARY_FAILED'
+      });
+    }
+  });
+
+  app.get("/api/debug/performance", requireAdmin, async (req, res) => {
+    try {
+      const performanceMetrics = debugLogger.getPerformanceMetrics();
+      res.json({ 
+        success: true, 
+        data: performanceMetrics
+      });
+    } catch (error: any) {
+      debugLogger.error('Failed to retrieve performance metrics', error, req);
+      res.status(500).json({ 
+        success: false,
+        error: "Failed to retrieve performance metrics",
+        code: 'PERFORMANCE_METRICS_FAILED',
+        data: {
+          totalRequests: 0,
+          averageResponseTime: 0,
+          p95ResponseTime: 0,
+          p99ResponseTime: 0,
+          slowRequests: 0
+        }
+      });
+    }
+  });
+
+  app.post("/api/debug/clear-logs", requireAdmin, async (req, res) => {
     try {
       debugLogger.clearLogs();
-      res.json({ message: 'Debug logs cleared successfully' });
+      res.json({ 
+        success: true, 
+        data: { message: 'Debug logs cleared successfully' }
+      });
     } catch (error: any) {
       debugLogger.error('Failed to clear debug logs', error, req);
-      res.status(500).json({ message: (error as Error).message });
+      res.status(500).json({ 
+        success: false, 
+        error: "Failed to clear debug logs",
+        code: 'CLEAR_LOGS_FAILED'
+      });
     }
   });
 
@@ -1372,7 +1476,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { url } = req.body;
       if (!url) {
-        return res.status(400).json({ message: "URL is required" });
+        return res.status(400).json({ 
+          success: false, 
+          error: "URL is required",
+          code: 'VALIDATION_ERROR'
+        });
       }
 
       debugLogger.info('URL extraction request (optimized)', { url });
@@ -1600,21 +1708,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sections
       });
     } catch (error: any) {
-      res.status(400).json({ message: (error as Error).message });
+      debugLogger.error('URL extraction failed', error, req);
+      res.status(500).json({ 
+        success: false, 
+        error: "URL extraction failed",
+        message: (error as Error).message,
+        code: 'URL_EXTRACTION_FAILED'
+      });
     }
   });
 
-  // Topic profile routes
+  // Topic profile routes with consistent API responses
   app.get("/api/user/topic-profile", requireAuth, async (req, res) => {
     try {
       const profile = await storage.getUserTopicProfile(req.session.userId!);
       if (!profile) {
-        return res.status(404).json({ message: "Topic profile not found" });
+        return res.status(404).json({ 
+          success: false, 
+          error: "Topic profile not found",
+          code: 'TOPIC_PROFILE_NOT_FOUND'
+        });
       }
-      res.json(profile);
+      res.json({ success: true, data: profile });
     } catch (error: any) {
       debugLogger.error("Failed to get topic profile", error, req);
-      res.status(500).json({ message: "Failed to get topic profile" });
+      res.status(500).json({ 
+        success: false, 
+        error: "Failed to get topic profile",
+        code: 'GET_TOPIC_PROFILE_FAILED'
+      });
     }
   });
 
@@ -1624,10 +1746,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: req.session.userId!,
         ...req.body
       });
-      res.json(profile);
+      res.json({ success: true, data: profile });
     } catch (error: any) {
       debugLogger.error("Failed to create topic profile", error, req);
-      res.status(500).json({ message: "Failed to create topic profile" });
+      res.status(500).json({ 
+        success: false, 
+        error: "Failed to create topic profile",
+        code: 'CREATE_TOPIC_PROFILE_FAILED'
+      });
     }
   });
 
@@ -1635,22 +1761,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const profile = await storage.updateUserTopicProfile(req.session.userId!, req.body);
       if (!profile) {
-        return res.status(404).json({ message: "Topic profile not found" });
+        return res.status(404).json({ 
+          success: false, 
+          error: "Topic profile not found",
+          code: 'TOPIC_PROFILE_NOT_FOUND'
+        });
       }
-      res.json(profile);
+      res.json({ success: true, data: profile });
     } catch (error: any) {
       debugLogger.error("Failed to update topic profile", error, req);
-      res.status(500).json({ message: "Failed to update topic profile" });
+      res.status(500).json({ 
+        success: false, 
+        error: "Failed to update topic profile",
+        code: 'UPDATE_TOPIC_PROFILE_FAILED'
+      });
     }
   });
 
-  // Signals routes
+  // Signals routes with consistent API responses
   app.get("/api/signals", requireAuth, async (req, res) => {
     try {
       const signals = await storage.getSignalsByUserId(req.session.userId!);
-      res.json({ signals });
+      res.json({ success: true, data: { signals } });
     } catch (error: any) {
-      res.status(500).json({ message: (error as Error).message });
+      debugLogger.error('Failed to get signals', error, req);
+      res.status(500).json({ 
+        success: false, 
+        error: "Failed to get signals",
+        code: 'GET_SIGNALS_FAILED'
+      });
     }
   });
 
@@ -1660,12 +1799,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const signal = await storage.getSignal(id);
       
       if (!signal || signal.userId !== req.session.userId) {
-        return res.status(404).json({ message: "Signal not found" });
+        return res.status(404).json({ 
+          success: false, 
+          error: "Signal not found",
+          code: 'SIGNAL_NOT_FOUND'
+        });
       }
       
-      res.json({ signal });
+      res.json({ success: true, data: { signal } });
     } catch (error: any) {
-      res.status(500).json({ message: (error as Error).message });
+      debugLogger.error('Failed to get signal', error, req);
+      res.status(500).json({ 
+        success: false, 
+        error: "Failed to get signal",
+        code: 'GET_SIGNAL_FAILED'
+      });
     }
   });
 
@@ -1676,7 +1824,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const signal = await storage.getSignal(id);
       if (!signal || signal.userId !== req.session.userId) {
-        return res.status(404).json({ message: "Signal not found" });
+        return res.status(404).json({ 
+          success: false, 
+          error: "Signal not found",
+          code: 'SIGNAL_NOT_FOUND'
+        });
       }
       
       // Track promotion timestamps
@@ -1689,9 +1841,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const updatedSignal = await storage.updateSignal(id, updates);
-      res.json({ signal: updatedSignal });
+      res.json({ success: true, data: { signal: updatedSignal } });
     } catch (error: any) {
-      res.status(400).json({ message: (error as Error).message });
+      debugLogger.error('Failed to update signal', error, req);
+      res.status(400).json({ 
+        success: false, 
+        error: "Failed to update signal",
+        code: 'UPDATE_SIGNAL_FAILED'
+      });
     }
   });
 
@@ -1701,13 +1858,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const signal = await storage.getSignal(id);
       if (!signal || signal.userId !== req.session.userId) {
-        return res.status(404).json({ message: "Signal not found" });
+        return res.status(404).json({ 
+          success: false, 
+          error: "Signal not found",
+          code: 'SIGNAL_NOT_FOUND'
+        });
       }
       
       await storage.deleteSignal(id);
-      res.json({ success: true });
+      res.json({ 
+        success: true, 
+        data: { message: "Signal deleted successfully" }
+      });
     } catch (error: any) {
-      res.status(500).json({ message: (error as Error).message });
+      debugLogger.error('Failed to delete signal', error, req);
+      res.status(500).json({ 
+        success: false, 
+        error: "Failed to delete signal",
+        code: 'DELETE_SIGNAL_FAILED'
+      });
     }
   });
 

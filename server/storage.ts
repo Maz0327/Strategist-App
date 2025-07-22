@@ -237,25 +237,10 @@ export class DbStorage implements IStorage {
       isDraft: signals.isDraft,
       capturedAt: signals.capturedAt,
       browserContext: signals.browserContext,
-      // Visual intelligence fields
+      // Visual intelligence fields (cleaned up for MVP)
       visualAssets: signals.visualAssets,
-      visualAnalysis: signals.visualAnalysis,
-      brandElements: signals.brandElements,
-      culturalVisualMoments: signals.culturalVisualMoments,
-      competitiveVisualInsights: signals.competitiveVisualInsights,
-      // Audio intelligence fields
-      audioUrl: signals.audioUrl,
+      // Audio intelligence fields (MVP: Basic transcription support only)
       transcription: signals.transcription,
-      audioDuration: signals.audioDuration,
-      audioFormat: signals.audioFormat,
-      audioLanguage: signals.audioLanguage,
-      transcriptionConfidence: signals.transcriptionConfidence,
-      // Brief automation fields
-      projectId: signals.projectId,
-      templateSection: signals.templateSection,
-      captureSessionId: signals.captureSessionId,
-      engagementData: signals.engagementData,
-      qualScore: signals.qualScore,
     })
     .from(signals)
     .innerJoin(signalSources, eq(signalSources.signalId, signals.id))
