@@ -40,8 +40,10 @@ import { ERROR_MESSAGES, getErrorMessage, matchErrorPattern } from "@shared/erro
 import { sql } from "./storage";
 import { authRateLimit } from './middleware/rate-limit';
 import { commentLimitingRouter } from './routes/comment-limiting';
+import { brightDataDemoRouter } from './routes/bright-data-demo';
 import { spawn } from 'child_process';
 import { join } from 'path';
+import { brightDataVideoService } from './services/bright-data-video-service';
 
 declare module "express-session" {
   interface SessionData {
@@ -1329,8 +1331,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('🎥 DEBUG: Video URL detected, starting universal Whisper transcription for:', url);
         
         try {
-          // Use universal Whisper transcription for ALL video platforms
-          
+          // Note: Bright Data proxy connectivity currently failing - connection issue identified
+          // When working: would bypass YouTube "Sign in to confirm you're not a bot" blocks
+          // Use Universal Whisper transcription for now
           const transcriptResult = await new Promise<any>((resolve) => {
             const pythonProcess = spawn('python3', [
               join(process.cwd(), 'server/python/simple_universal_whisper.py'),

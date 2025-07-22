@@ -70,9 +70,9 @@ Preferred communication style: Simple, everyday language.
 ## Future Development Roadmap - Comprehensive Feature Tracking
 
 ### Immediate Priority Tasks (Next Session)
-- **Brief Automation System**: Implement project-based capture organization with selective screenshot Chrome extension enhancement
+- **Bright Data Connectivity Fix**: Resolve proxy connection issues to enable residential IP bypass of platform blocking
+- **Brief Automation System**: Implement project-based capture organization with selective screenshot Chrome extension enhancement  
 - **Google Slides Integration**: Complete template engine with Truth Analysis auto-population
-- **User Workflow Testing**: End-to-end testing of capture → analysis → brief generation pipeline
 
 ### RSS Feed System (Deferred - Phases 5D & 5E)
 - **Phase 5D**: RSS Intelligence Integration - Connect RSS feeds to strategic analysis pipeline
