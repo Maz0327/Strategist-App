@@ -1,1 +1,1 @@
-{"version":2,"languages":{"nodejs-npm":{"specfileHash":"a263583da2c78765c722e6bce1131631","lockfileHash":"94efcf083303bff6ccd706a20844f852"},"python3-uv":{"specfileHash":"4baff05f2a724cda04e02fe8999404fb","lockfileHash":"7b686f6f24e9840ddea9407388796ce0"}}}
+{"version":2,"languages":{"nodejs-npm":{"specfileHash":"a263583da2c78765c722e6bce1131631","lockfileHash":"94efcf083303bff6ccd706a20844f852"},"python3-uv":{"specfileHash":"4baff05f2a724cda04e02fe8999404fb","lockfileHash":"7b686f6f24e9840ddea9407388796ce0","guessedImportsHash":"92eccc06f1ce82d97b81cf9bad08db11"}}}

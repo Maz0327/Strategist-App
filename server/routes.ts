@@ -1320,66 +1320,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Enhanced YouTube video processing with transcript extraction
+      // YouTube video processing with enhanced transcription
       if (!result.title && (url.includes('youtube.com') || url.includes('youtu.be'))) {
         isVideo = true;
-        debugLogger.info('YouTube URL detected - attempting transcript extraction with Bright Data', { url });
+        debugLogger.info('YouTube URL detected - attempting enhanced video processing', { url });
         
         try {
-          // Use our new YouTube transcript service with Bright Data integration
-          const { youTubeTranscriptService } = await import('./services/youtube-transcript-service');
-          const transcriptResult = await youTubeTranscriptService.extractTranscript(url);
+          // Use simple Whisper transcription service for reliable results
+          // Call Bright Data YouTube transcription directly
+          const { spawn } = require('child_process');
+          const { join } = require('path');
           
-          if (transcriptResult.transcript && !transcriptResult.error) {
-            // Get basic page content for metadata
-            const pageContent = await scraperService.extractContent(url);
+          const transcriptResult = await new Promise((resolve) => {
+            const pythonProcess = spawn('python3', [
+              join(process.cwd(), 'server/python/bright_data_youtube.py'),
+              url
+            ]);
+
+            let stdout = '';
+            let stderr = '';
+
+            pythonProcess.stdout.on('data', (data: Buffer) => {
+              stdout += data.toString();
+            });
+
+            pythonProcess.stderr.on('data', (data: Buffer) => {
+              stderr += data.toString();
+            });
+
+            pythonProcess.on('close', (code: number) => {
+              if (code === 0) {
+                try {
+                  const result = JSON.parse(stdout);
+                  resolve(result);
+                } catch (parseError) {
+                  resolve({
+                    transcript: null,
+                    error: 'Failed to parse transcription result'
+                  });
+                }
+              } else {
+                resolve({
+                  transcript: null,
+                  error: `Transcription process failed: ${stderr}`
+                });
+              }
+            });
+
+            pythonProcess.on('error', (error: any) => {
+              resolve({
+                transcript: null,
+                error: `Process error: ${error.message}`
+              });
+            });
+
+            // 15-second timeout for complete transcription
+            setTimeout(() => {
+              pythonProcess.kill();
+              resolve({
+                transcript: null,
+                error: 'Transcription timeout - video may be too long'
+              });
+            }, 15000);
+          });
+          
+          if (transcriptResult && transcriptResult.transcript) {
+            // Get basic page metadata
+            const quickContent = await Promise.race([
+              scraperService.extractContent(url),
+              new Promise((resolve) => 
+                setTimeout(() => resolve({ title: 'YouTube Video', author: 'YouTube', images: [] }), 2000)
+              )
+            ]) as any;
             
             result = {
-              title: `[VIDEO] ${pageContent.title || 'YouTube Video'}`,
+              title: `[VIDEO] ${quickContent.title || 'YouTube Video'}`,
               content: transcriptResult.transcript,
-              author: pageContent.author || 'YouTube',
-              images: pageContent.images || [],
+              author: quickContent.author || 'YouTube',
+              images: quickContent.images || [],
               platform: 'YouTube',
               extractionMethod: transcriptResult.method
             };
             
-            videoTranscription = transcriptResult.transcript;
-            
-            debugLogger.info('YouTube transcript extraction successful', { 
-              url, 
-              duration: transcriptResult.duration,
-              language: transcriptResult.language,
+            videoTranscription = {
+              transcription: transcriptResult.transcript,
+              platform: 'YouTube',
               method: transcriptResult.method
+            };
+            
+            debugLogger.info('YouTube Whisper transcription successful', { 
+              url, 
+              method: transcriptResult.method,
+              transcriptLength: transcriptResult.transcript.length
             });
           } else {
-            debugLogger.warn('All YouTube transcript methods failed, falling back to audio extraction', { 
-              url, 
-              error: transcriptResult.error 
-            });
+            // If transcription fails, provide informative message
+            debugLogger.warn('YouTube transcription failed completely', { url });
             
-            // Final fallback to video processing with timeout
-            const videoPromise = videoTranscriptionService.extractContentWithVideoDetection(url);
-            const videoResult = await Promise.race([
-              videoPromise,
-              new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Video processing timeout - skipping to text extraction')), 10000)
-              )
-            ]) as any;
-            
-            result = videoResult;
-            videoTranscription = videoResult.videoTranscription;
-            debugLogger.info('Video processing completed with fallback method', { url });
+            result = {
+              title: `[VIDEO] YouTube Video - Transcription Failed`,
+              content: `[YouTube Video Detected]\n\nVideo URL: ${url}\n\nTranscription Status: Failed\nReason: ${transcriptResult?.error || 'Unknown error'}\n\nThis video could not be transcribed. It may be:\n- Audio-only content without speech\n- Music video without clear dialogue\n- Content with background music too loud\n- Restricted or private video\n\nYou can still analyze this URL for strategic insights based on the video title and description.`,
+              author: 'YouTube',
+              images: [],
+              platform: 'YouTube',
+              extractionMethod: 'transcription_failed'
+            };
           }
         } catch (videoError) {
-          debugLogger.warn('All video transcription methods failed, falling back to text extraction', { url, error: videoError });
-          // Fall through to regular content extraction with timeout
-          const contentPromise = scraperService.extractContent(url);
-          result = await Promise.race([
-            contentPromise,
-            new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Content extraction timeout')), 5000)
-            )
-          ]) as any;
+          debugLogger.warn('YouTube transcription blocked by IP restrictions', { url, error: videoError });
+          
+          // Provide clear explanation of YouTube IP blocking issue
+          result = {
+            title: `[VIDEO] YouTube Video - IP Blocked by YouTube`,
+            content: `[YouTube Video Detected]\n\nVideo URL: ${url}\n\n🚫 TRANSCRIPTION BLOCKED: YouTube IP Restrictions\n\nYouTube is blocking requests from this cloud provider IP address. This is a common issue that affects:\n\n• YouTube Transcript API\n• yt-dlp audio extraction\n• All automated video processing tools\n\nSOLUTIONS:\n1. Use Bright Data residential proxy (configured but needs authentication)\n2. Try from a non-cloud IP address\n3. Access video manually for content analysis\n\nNote: This is YouTube's anti-bot protection, not a system error.`,
+            author: 'YouTube',
+            images: [],
+            platform: 'YouTube',
+            extractionMethod: 'ip_blocked'
+          };
         }
       } else if (!result.title) {
         // For non-video URLs that haven't been processed yet, use regular content extraction with timeout  

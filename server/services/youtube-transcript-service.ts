@@ -58,7 +58,7 @@ export class YouTubeTranscriptService {
     }
   }
 
-  // Regular transcript extraction (no proxy)
+  // Regular transcript extraction (no proxy) - ultra-fast mode
   private async extractWithRegularAPI(url: string): Promise<TranscriptResult> {
     return new Promise((resolve) => {
       const pythonProcess = spawn('python3', [
@@ -108,14 +108,14 @@ export class YouTubeTranscriptService {
         });
       });
 
-      // 10 second timeout for regular API
+      // Aggressive 3 second timeout for speed
       setTimeout(() => {
         pythonProcess.kill();
         resolve({
           transcript: null,
-          error: 'Regular API timeout'
+          error: 'Regular API timeout - prioritizing speed'
         });
-      }, 10000);
+      }, 3000);
     });
   }
 
@@ -178,14 +178,14 @@ export class YouTubeTranscriptService {
         });
       });
 
-      // 30 second timeout for proxy-based extraction
+      // Aggressive 5 second timeout for proxy extraction to prioritize speed
       setTimeout(() => {
         pythonProcess.kill();
         resolve({
           transcript: null,
-          error: 'Bright Data proxy timeout'
+          error: 'Bright Data proxy timeout - prioritizing speed'
         });
-      }, 30000);
+      }, 5000);
     });
   }
 
