@@ -1273,15 +1273,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let videoTranscription = null;
 
       if (isInstagram) {
-        // Direct Instagram handling with structured data 
+        // For real Instagram content extraction, we need to implement proper scraping
+        // For now, provide a more realistic response that acknowledges the limitation
         result = {
-          title: 'Instagram Post - Strategic Content Analysis',
-          content: `This Instagram post demonstrates current social media engagement patterns and cultural trends. The content provides strategic insights into brand positioning, audience interaction, and emerging market opportunities. Key themes include community building, authentic storytelling, and cultural moment identification.`,
-          author: 'strategic_account',
-          images: [`https://via.placeholder.com/400x400/FF6B6B/FFFFFF?text=Instagram+Content`],
-          platform: 'Instagram'
+          title: 'Instagram Content Requires Enhanced Extraction',
+          content: `Instagram URL detected: ${url}. This platform requires specialized authentication and scraping capabilities that are currently being enhanced. The content analysis system is designed to process Instagram posts, stories, and reels with full engagement metrics, but real-time extraction needs additional authentication setup.`,
+          author: 'Instagram Platform',
+          images: [],
+          platform: 'Instagram',
+          extractionStatus: 'needs_auth',
+          originalUrl: url
         };
-        debugLogger.info('Instagram content extracted successfully', { url });
+        debugLogger.info('Instagram URL detected - enhanced extraction needed', { url });
       } else if (isSocialMedia) {
         // For other social media platforms, try enhanced extractor (if available)
         try {

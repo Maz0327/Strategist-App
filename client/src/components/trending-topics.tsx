@@ -78,23 +78,28 @@ export function TrendingTopics() {
     
     const allTopics: Topic[] = [];
     
-    Object.entries(trendingData.platforms).forEach(([platform, platformData]: [string, any]) => {
-      if (platformData.data && Array.isArray(platformData.data)) {
-        platformData.data.forEach((item: any, index: number) => {
-          allTopics.push({
-            id: `${platform}-${index}`,
-            platform,
-            title: item.title || `${platform.charAt(0).toUpperCase() + platform.slice(1)} Content`,
-            summary: item.content?.substring(0, 150) + '...' || '',
-            url: item.url || '#',
-            score: item.engagement || 0,
-            fetchedAt: item.timestamp || trendingData.collectedAt,
-            engagement: item.engagement || 0,
-            source: platform
+    try {
+      Object.entries(trendingData.platforms).forEach(([platform, platformData]: [string, any]) => {
+        if (platformData && platformData.data && Array.isArray(platformData.data)) {
+          platformData.data.forEach((item: any, index: number) => {
+            allTopics.push({
+              id: `${platform}-${index}`,
+              platform,
+              title: item.title || `${platform.charAt(0).toUpperCase() + platform.slice(1)} Content`,
+              summary: item.content?.substring(0, 150) + '...' || '',
+              url: item.url || '#',
+              score: item.engagement || 0,
+              fetchedAt: item.timestamp || trendingData.collectedAt,
+              engagement: item.engagement || 0,
+              source: platform
+            });
           });
-        });
-      }
-    });
+        }
+      });
+    } catch (error) {
+      console.error('Error processing trending data:', error);
+      return [];
+    }
     
     // Filter by selected category
     const filtered = selectedCategory === "all" 
