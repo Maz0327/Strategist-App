@@ -39,6 +39,7 @@ import {
 import { ERROR_MESSAGES, getErrorMessage, matchErrorPattern } from "@shared/error-messages";
 import { sql } from "./storage";
 import { authRateLimit } from './middleware/rate-limit';
+import { commentLimitingRouter } from './routes/comment-limiting';
 
 declare module "express-session" {
   interface SessionData {
@@ -2821,6 +2822,9 @@ The analyzed signals provide a comprehensive view of current market trends and s
       res.status(500).json({ error: 'Failed to get performance stats' });
     }
   });
+
+  // Comment Limiting API routes
+  app.use("/api/comment-limits", commentLimitingRouter);
 
   // RSS Feed Management API endpoints - Phase 5
   app.post("/api/rss-feeds", requireAuth, async (req, res) => {

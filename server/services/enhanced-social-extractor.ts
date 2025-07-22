@@ -69,9 +69,11 @@ export class EnhancedSocialExtractor {
     };
   }
   
-  // Enhanced extraction using Bright Data Browser API
+  // Enhanced extraction using Bright Data Browser API with comment limiting
   private async extractWithBrightData(url: string, platform: string, contentType: string): Promise<any> {
     try {
+      const { commentLimitingService } = await import('./comment-limiting-service');
+      
       // Use Bright Data browser API for real-time scraping
       const { browserApiService } = await import('./browser-api-service');
       
@@ -86,6 +88,26 @@ export class EnhancedSocialExtractor {
       });
       
       if (scrapingResult.success) {
+        // Apply comment limiting to prevent system overload
+        const commentSample = await commentLimitingService.extractCommentsWithLimits(
+          scrapingResult.rawHtml || '',
+          platform.toLowerCase(),
+          {
+            maxComments: 50,
+            maxCommentLength: 500,
+            maxTotalCommentCharacters: 25000,
+            samplingStrategy: 'intelligent'
+          }
+        );
+
+        debugLogger.info('Comment extraction with limits applied', {
+          platform,
+          totalFound: commentSample.totalFound,
+          sampled: commentSample.comments.length,
+          strategy: commentSample.sampleStrategy,
+          processingTime: commentSample.processingTime
+        });
+
         return {
           success: true,
           data: {
@@ -93,7 +115,9 @@ export class EnhancedSocialExtractor {
             content: scrapingResult.content.text || `Content from ${platform}`,
             author: scrapingResult.content.author || 'Unknown',
             platform: platform,
-            media: scrapingResult.content.media || []
+            media: scrapingResult.content.media || [],
+            comments: commentSample.comments,
+            commentStats: commentLimitingService.getProcessingStats(commentSample)
           },
           engagement: scrapingResult.content.engagement || {},
           profile: scrapingResult.content.profile || {}
@@ -249,9 +273,48 @@ export class EnhancedSocialExtractor {
     return ['Instagram', 'Twitter', 'TikTok', 'LinkedIn'].includes(platform);
   }
   
-  // Fallback to standard scraping
+  // Fallback to standard scraping with comment limiting
   private async extractWithFallback(url: string): Promise<any> {
-    return await scraperService.extractContent(url);
+    const { commentLimitingService } = await import('./comment-limiting-service');
+    const platform = this.detectPlatform(url);
+    
+    try {
+      const scrapedContent = await scraperService.extractContent(url);
+      
+      // Apply comment limiting to scraped content if it's a social platform
+      if (['Instagram', 'Twitter', 'TikTok', 'LinkedIn', 'Reddit', 'YouTube'].includes(platform)) {
+        const commentSample = await commentLimitingService.extractCommentsWithLimits(
+          scrapedContent.raw || '',
+          platform.toLowerCase(),
+          {
+            maxComments: 30, // Lower limit for fallback mode
+            maxCommentLength: 300,
+            maxTotalCommentCharacters: 15000,
+            samplingStrategy: 'balanced'
+          }
+        );
+
+        debugLogger.info('Fallback extraction with comment limiting', {
+          platform,
+          url,
+          totalComments: commentSample.totalFound,
+          sampledComments: commentSample.comments.length,
+          strategy: commentSample.sampleStrategy
+        });
+
+        return {
+          ...scrapedContent,
+          comments: commentSample.comments,
+          commentStats: commentLimitingService.getProcessingStats(commentSample),
+          enhanced: false
+        };
+      }
+      
+      return scrapedContent;
+    } catch (error) {
+      debugLogger.error('Fallback extraction failed', { url, platform, error: error.message });
+      throw error;
+    }
   }
   
   // Helper methods for formatting social media content
