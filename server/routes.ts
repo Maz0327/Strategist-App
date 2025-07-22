@@ -1253,6 +1253,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+
+
   app.post("/api/extract-url", async (req, res) => {
     try {
       const { url } = req.body;
@@ -1318,24 +1320,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // If not social media or social extraction failed, check for YouTube video processing
-      if (!result.title && url.includes('youtube.com') && videoTranscriptionService.isVideoUrl(url)) {
+      // Enhanced YouTube video processing with transcript extraction
+      if (!result.title && (url.includes('youtube.com') || url.includes('youtu.be'))) {
         isVideo = true;
+        debugLogger.info('YouTube URL detected - attempting transcript extraction with Bright Data', { url });
+        
         try {
-          // Set aggressive timeout of 10 seconds for video processing
-          const videoPromise = videoTranscriptionService.extractContentWithVideoDetection(url);
-          const videoResult = await Promise.race([
-            videoPromise,
-            new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Video processing timeout - skipping to text extraction')), 10000)
-            )
-          ]) as any;
+          // Use our new YouTube transcript service with Bright Data integration
+          const { youTubeTranscriptService } = await import('./services/youtube-transcript-service');
+          const transcriptResult = await youTubeTranscriptService.extractTranscript(url);
           
-          result = videoResult;
-          videoTranscription = videoResult.videoTranscription;
-          debugLogger.info('Video processing completed quickly', { url });
+          if (transcriptResult.transcript && !transcriptResult.error) {
+            // Get basic page content for metadata
+            const pageContent = await scraperService.extractContent(url);
+            
+            result = {
+              title: `[VIDEO] ${pageContent.title || 'YouTube Video'}`,
+              content: transcriptResult.transcript,
+              author: pageContent.author || 'YouTube',
+              images: pageContent.images || [],
+              platform: 'YouTube',
+              extractionMethod: transcriptResult.method
+            };
+            
+            videoTranscription = transcriptResult.transcript;
+            
+            debugLogger.info('YouTube transcript extraction successful', { 
+              url, 
+              duration: transcriptResult.duration,
+              language: transcriptResult.language,
+              method: transcriptResult.method
+            });
+          } else {
+            debugLogger.warn('All YouTube transcript methods failed, falling back to audio extraction', { 
+              url, 
+              error: transcriptResult.error 
+            });
+            
+            // Final fallback to video processing with timeout
+            const videoPromise = videoTranscriptionService.extractContentWithVideoDetection(url);
+            const videoResult = await Promise.race([
+              videoPromise,
+              new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Video processing timeout - skipping to text extraction')), 10000)
+              )
+            ]) as any;
+            
+            result = videoResult;
+            videoTranscription = videoResult.videoTranscription;
+            debugLogger.info('Video processing completed with fallback method', { url });
+          }
         } catch (videoError) {
-          debugLogger.warn('Video transcription skipped due to timeout, falling back to text extraction', { url, error: videoError });
+          debugLogger.warn('All video transcription methods failed, falling back to text extraction', { url, error: videoError });
           // Fall through to regular content extraction with timeout
           const contentPromise = scraperService.extractContent(url);
           result = await Promise.race([

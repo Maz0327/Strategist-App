@@ -18,6 +18,142 @@ class BrowserAPIService {
     debugLogger.info('Browser API Service initialized with Bright Data endpoints');
   }
 
+  // Enhanced YouTube transcript extraction using Bright Data Browser API to bypass IP restrictions
+  async extractYouTubeTranscriptWithBrightData(url: string): Promise<{ 
+    success: boolean; 
+    transcript?: string; 
+    duration?: number; 
+    language?: string; 
+    error?: string; 
+  }> {
+    try {
+      debugLogger.info('Starting YouTube transcript extraction with Bright Data Browser API', { url });
+
+      // Use Bright Data's residential proxy network to bypass YouTube's cloud IP blocks
+      const command = this.buildBrightDataTranscriptCommand(url);
+      
+      debugLogger.info('Executing Python transcript extraction with Bright Data proxy', { 
+        command: command.substring(0, 100) + '...' 
+      });
+
+      const { stdout, stderr } = await execAsync(command, { 
+        timeout: 30000 // 30 seconds for proxy-based transcript extraction
+      });
+
+      // Parse the result
+      try {
+        const result = JSON.parse(stdout);
+        
+        if (result.transcript && !result.error) {
+          debugLogger.info('Bright Data transcript extraction successful', { 
+            url,
+            duration: result.duration,
+            language: result.language,
+            segments: result.segments
+          });
+          
+          return { 
+            success: true, 
+            transcript: result.transcript,
+            duration: result.duration,
+            language: result.language
+          };
+        } else {
+          debugLogger.warn('Bright Data transcript extraction failed', { 
+            url, 
+            error: result.error 
+          });
+          
+          return { 
+            success: false, 
+            error: result.error || 'No transcript available via Bright Data'
+          };
+        }
+      } catch (parseError) {
+        debugLogger.error('Failed to parse Bright Data transcript result', { 
+          url, 
+          stdout: stdout.substring(0, 500),
+          parseError: parseError.message 
+        });
+        
+        return { 
+          success: false, 
+          error: 'Failed to parse transcript result from Bright Data'
+        };
+      }
+
+    } catch (error) {
+      debugLogger.error('Bright Data transcript extraction failed', { 
+        url, 
+        error: error.message 
+      });
+      
+      return { 
+        success: false, 
+        error: error.message 
+      };
+    }
+  }
+
+  private buildBrightDataTranscriptCommand(url: string): string {
+    // Enhanced Python command that uses Bright Data proxy for YouTube transcript extraction
+    return `python3 -c "
+import sys
+import json
+import requests
+from youtube_transcript_api import YouTubeTranscriptApi
+from urllib.parse import urlparse, parse_qs
+
+# Bright Data proxy configuration for residential IP bypass
+proxies = {
+    'http': 'http://brd-customer-hl_d2c6dd0f-zone-scraping_browser1:wl58vcxlx0ph@brd.superproxy.io:22225',
+    'https': 'http://brd-customer-hl_d2c6dd0f-zone-scraping_browser1:wl58vcxlx0ph@brd.superproxy.io:22225'
+}
+
+# Set proxy for requests (used by youtube-transcript-api)
+import os
+os.environ['HTTP_PROXY'] = proxies['http']
+os.environ['HTTPS_PROXY'] = proxies['https']
+
+def extract_video_id(url):
+    if 'youtu.be' in url:
+        return url.split('/')[-1].split('?')[0]
+    elif 'youtube.com' in url:
+        parsed = urlparse(url)
+        return parse_qs(parsed.query).get('v', [None])[0]
+    return None
+
+try:
+    video_id = extract_video_id('${url}')
+    if not video_id:
+        raise Exception('Could not extract video ID from URL')
+    
+    # Try to get transcript using Bright Data residential proxy
+    transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
+    
+    if transcript_list:
+        full_text = ' '.join([entry['text'] for entry in transcript_list])
+        total_duration = max([entry['start'] + entry['duration'] for entry in transcript_list]) if transcript_list else 0
+        
+        result = {
+            'transcript': full_text,
+            'duration': total_duration,
+            'language': 'en',
+            'segments': len(transcript_list),
+            'method': 'bright_data_proxy',
+            'error': None
+        }
+    else:
+        result = {'error': 'No transcript available', 'transcript': None}
+    
+    print(json.dumps(result))
+    
+except Exception as e:
+    result = {'error': str(e), 'transcript': None}
+    print(json.dumps(result))
+"`;
+  }
+
   // Enhanced yt-dlp with Browser API (using selenium-based approach)
   async extractVideoWithBrowserAPI(url: string, outputTemplate: string): Promise<{ success: boolean; output?: string; error?: string }> {
     try {

@@ -132,30 +132,41 @@ except Exception as e:
     try {
       debugLogger.info('Starting video transcription', { url });
       
-      // For YouTube videos, try the fast transcript API first
+      // For YouTube videos, try the Python transcript API first (fastest method)
       if (url.includes('youtube.com') || url.includes('youtu.be')) {
-        const videoId = this.extractYouTubeVideoId(url);
-        if (videoId) {
-          try {
-            debugLogger.info('Attempting fast YouTube transcript extraction', { videoId });
-            const transcript = await this.getYouTubeTranscript(videoId);
+        try {
+          debugLogger.info('Attempting YouTube transcript extraction with Python service', { url });
+          const transcriptResult = await this.extractYouTubeTranscriptWithPython(url);
+          
+          if (transcriptResult.transcript && !transcriptResult.error) {
+            debugLogger.info('YouTube transcript extracted successfully', { 
+              url, 
+              duration: transcriptResult.duration,
+              language: transcriptResult.language 
+            });
             
             return {
-              transcription: transcript,
-              language: 'en',
-              confidence: 0.95,
+              transcription: transcriptResult.transcript,
+              duration: transcriptResult.duration || 0,
+              language: transcriptResult.language || 'en',
+              confidence: 0.95, // High confidence for official transcripts
               videoMetadata: {
                 platform: 'YouTube',
-                title: 'YouTube Video'
+                method: 'youtube_transcript_api',
+                segments: transcriptResult.segments || 0
               }
             };
-          } catch (transcriptError) {
-            debugLogger.warn('YouTube transcript API failed, falling back to audio extraction', { 
-              videoId, 
-              error: (transcriptError as Error).message 
+          } else {
+            debugLogger.info('YouTube transcript not available - will try Bright Data Browser API for audio extraction', { 
+              url, 
+              error: transcriptResult.error 
             });
-            // Continue to yt-dlp fallback below
           }
+        } catch (transcriptError) {
+          debugLogger.warn('YouTube transcript extraction failed, falling back to Bright Data Browser API', { 
+            url, 
+            error: (transcriptError as Error).message 
+          });
         }
       }
       
