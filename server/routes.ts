@@ -41,6 +41,8 @@ import { sql } from "./storage";
 import { authRateLimit } from './middleware/rate-limit';
 import { commentLimitingRouter } from './routes/comment-limiting';
 import { brightDataDemoRouter } from './routes/bright-data-demo';
+import { brightDataTestRouter } from './routes/bright-data-test';
+import { brightDataTestService } from './services/bright-data-test-service';
 import { spawn } from 'child_process';
 import { join } from 'path';
 import { brightDataVideoService } from './services/bright-data-video-service';
@@ -2680,6 +2682,9 @@ The analyzed signals provide a comprehensive view of current market trends and s
       });
     }
   });
+
+  // Add bright data test router
+  app.use('/api/bright-data-test', brightDataTestRouter);
 
   app.post("/api/feeds/refresh", requireAuth, async (req, res) => {
     try {
