@@ -205,9 +205,11 @@ export function NewSignalCapture({ activeSubTab, onNavigateToExplore, onNavigate
                 <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h4 className="font-medium text-gray-900 mb-2">Batch Processing</h4>
                 <p className="text-gray-600 mb-4">Process multiple URLs or text blocks at once</p>
-                <Button disabled>
+                <Button disabled className="bg-gray-300 hover:bg-gray-300 cursor-not-allowed">
+                  <FileText className="w-4 h-4 mr-2" />
                   Coming Soon
                 </Button>
+                <p className="text-xs text-gray-500 mt-2">Multi-URL batch processing will be available in a future update</p>
               </div>
             </CardContent>
           </Card>

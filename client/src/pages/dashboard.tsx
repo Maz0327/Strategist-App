@@ -61,8 +61,13 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
     // TODO: Could add platform filtering here if needed
   };
 
-  // Check if user is admin (assuming admin check logic)
-  const isAdmin = user?.email === "Maz0327@gmail.com"; // Replace with proper admin check
+  // Get user role from auth API
+  const { data: currentUser } = useQuery({ 
+    queryKey: ['/api/auth/me'],
+    staleTime: 5 * 60 * 1000 // Cache for 5 minutes
+  });
+  
+  const isAdmin = currentUser?.role === 'admin';
 
   // Sidebar navigation items
   const navigationItems = [

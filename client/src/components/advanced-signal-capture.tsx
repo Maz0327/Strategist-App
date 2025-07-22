@@ -403,9 +403,16 @@ export function AdvancedSignalCapture() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-center text-gray-500 py-8">
-                Multi-URL batch processing coming soon...
-              </p>
+              <div className="text-center py-8">
+                <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h4 className="font-medium text-gray-900 mb-2">Batch URL Processing</h4>
+                <p className="text-gray-600 mb-4">Upload multiple URLs for simultaneous analysis</p>
+                <Button disabled className="bg-gray-300 hover:bg-gray-300 cursor-not-allowed">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Coming Soon
+                </Button>
+                <p className="text-xs text-gray-500 mt-2">Feature under development - will support CSV upload and bulk processing</p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

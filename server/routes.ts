@@ -204,14 +204,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Admin middleware
-  const requireAdmin = (req: any, res: any, next: any) => {
+  const requireAdmin = async (req: any, res: any, next: any) => {
     if (!req.session?.userId) {
       return res.status(401).json({ message: "Not authenticated" });
     }
     
-    // Check if user is admin (you can enhance this with database lookup)
-    // For now, we'll add a simple admin check
-    next();
+    try {
+      // Check if user has admin role in database
+      const user = await storage.getUserById(req.session.userId);
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      next();
+    } catch (error) {
+      console.error('Admin check failed:', error);
+      return res.status(500).json({ message: "Failed to verify admin status" });
+    }
   };
 
   // Auth routes
