@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import axios from "axios";
 import bcrypt from "bcryptjs";
 import session from "express-session";
-// import MemoryStore from "memorystore";
+import MemoryStore from "memorystore";
 import { storage } from "./storage";
 import { authService } from "./services/auth";
 import { openaiService } from "./services/openai";
@@ -12,12 +12,12 @@ import { sourceManagerService } from "./services/source-manager";
 import { dailyReportsService } from "./services/daily-reports";
 import { feedManagerService } from "./services/feed-manager";
 import { visualAnalysisService } from "./services/visual-analysis";
-import {
-  loginSchema,
-  registerSchema,
+import { 
+  loginSchema, 
+  registerSchema, 
   analyzeContentSchema,
   insertSignalSchema,
-  type User,
+  type User 
 } from "@shared/schema";
 import { debugLogger } from "./services/debug-logger";
 import { performanceMonitor, trackPerformance } from "./services/monitoring";
@@ -32,24 +32,20 @@ import { analyzeWithOpenAI } from "./services/openaiAnalysisService";
 import { whisperService } from "./services/whisper";
 import { videoTranscriptionService } from "./services/video-transcription";
 import { socialMediaIntelligence } from "./services/social-media-intelligence";
-import {
+import { 
   insertUserFeedbackSchema,
-  insertUserAnalyticsSchema,
+  insertUserAnalyticsSchema
 } from "../shared/admin-schema";
-import {
-  ERROR_MESSAGES,
-  getErrorMessage,
-  matchErrorPattern,
-} from "@shared/error-messages";
+import { ERROR_MESSAGES, getErrorMessage, matchErrorPattern } from "@shared/error-messages";
 import { sql } from "./storage";
-import { authRateLimit } from "./middleware/rate-limit";
-import { commentLimitingRouter } from "./routes/comment-limiting";
-import { brightDataDemoRouter } from "./routes/bright-data-demo";
-import { brightDataTestRouter } from "./routes/bright-data-test";
-import { brightDataTestService } from "./services/bright-data-test-service";
-import { spawn } from "child_process";
-import { join } from "path";
-import { brightDataVideoService } from "./services/bright-data-video-service";
+import { authRateLimit } from './middleware/rate-limit';
+import { commentLimitingRouter } from './routes/comment-limiting';
+import { brightDataDemoRouter } from './routes/bright-data-demo';
+import { brightDataTestRouter } from './routes/bright-data-test';
+import { brightDataTestService } from './services/bright-data-test-service';
+import { spawn } from 'child_process';
+import { join } from 'path';
+import { brightDataVideoService } from './services/bright-data-video-service';
 
 declare module "express-session" {
   interface SessionData {
@@ -59,91 +55,81 @@ declare module "express-session" {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Session configuration
-  // const MemoryStoreSession = MemoryStore(session);
-
+  const MemoryStoreSession = MemoryStore(session);
+  
   // Log session configuration for debugging
-  debugLogger.debug("Session configuration", {
+  debugLogger.debug("Session configuration", { 
     secure: false, // Always false for Replit deployment compatibility
     nodeEnv: process.env.NODE_ENV,
-    hasReplitDomain: !!process.env.REPLIT_DEV_DOMAIN,
+    hasReplitDomain: !!process.env.REPLIT_DEV_DOMAIN
   });
-
+  
   // Add CORS headers for credentials (including Chrome extension)
   app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Credentials", "true");
+    res.header('Access-Control-Allow-Credentials', 'true');
     const origin = req.headers.origin;
-
+    
     // Allow Chrome extension origins
-    if (
-      origin &&
-      (origin.startsWith("chrome-extension://") ||
-        origin.startsWith("moz-extension://"))
-    ) {
-      res.header("Access-Control-Allow-Origin", origin);
+    if (origin && (origin.startsWith('chrome-extension://') || origin.startsWith('moz-extension://'))) {
+      res.header('Access-Control-Allow-Origin', origin);
     } else {
       // Allow both localhost and production domain
       const allowedOrigins = [
-        "http://localhost:5000",
-        "https://strategist-app-maz0327.replit.app",
-        "https://strategist-app-maz0327.replit.dev",
+        'http://localhost:5000',
+        'https://strategist-app-maz0327.replit.app',
+        'https://strategist-app-maz0327.replit.dev'
       ];
-
+      
       if (origin && allowedOrigins.includes(origin)) {
-        res.header("Access-Control-Allow-Origin", origin);
+        res.header('Access-Control-Allow-Origin', origin);
       } else {
-        res.header("Access-Control-Allow-Origin", allowedOrigins[0]);
+        res.header('Access-Control-Allow-Origin', allowedOrigins[0]);
       }
     }
-    res.header(
-      "Access-Control-Allow-Methods",
-      "GET, POST, PUT, DELETE, OPTIONS",
-    );
-    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     next();
   });
-
-  import { createSessionStore } from "./utils/sessionStore";
-
-  app.use(
-    session({
-      secret: process.env.SESSION_SECRET || "dev-secret",
-      resave: false,
-      saveUninitialized: false,
-      store: createSessionStore(),
-      cookie: {
-        secure: false, // okay on Replit
-        httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000, // 24 h
-        sameSite: "lax",
-        path: "/",
-      },
+  
+  app.use(session({
+    secret: process.env.SESSION_SECRET || "your-secret-key",
+    resave: false,
+    saveUninitialized: false,
+    store: new MemoryStoreSession({
+      checkPeriod: 86400000 // prune expired entries every 24h
     }),
-  );
+    cookie: {
+      secure: false, // Set to false for development, will be handled by reverse proxy in production
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: 'lax',
+      domain: undefined, // Let browser determine domain
+      path: '/' // Ensure cookie is available for all paths
+    }
+  }));
 
   // Add performance monitoring middleware
   app.use(trackPerformance);
 
   // Health endpoint - no authentication required
-  app.get("/healthz", (req, res) => {
-    res.status(200).json({
-      status: "ok",
+  app.get('/healthz', (req, res) => {
+    res.status(200).json({ 
+      status: 'ok',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       nodeVersion: process.version,
-      environment: process.env.NODE_ENV || "development",
+      environment: process.env.NODE_ENV || 'development'
     });
   });
 
   // Bright Data test and status endpoint
   app.get("/api/bright-data/test", async (req, res) => {
     try {
-      const { brightDataService } = await import(
-        "./services/bright-data-service"
-      );
-
+      const { brightDataService } = await import('./services/bright-data-service');
+      
       const isAvailable = await brightDataService.isAvailable();
       const stats = await brightDataService.getUsageStats();
-
+      
       res.json({
         brightData: {
           available: isAvailable,
@@ -153,40 +139,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
             username: !!process.env.BRIGHT_DATA_USERNAME,
             password: !!process.env.BRIGHT_DATA_PASSWORD,
             endpoint: !!process.env.BRIGHT_DATA_PROXY_ENDPOINT,
-            apiKey: !!process.env.BRIGHT_DATA_API_KEY,
+            apiKey: !!process.env.BRIGHT_DATA_API_KEY
           },
-          timestamp: new Date().toISOString(),
-        },
+          timestamp: new Date().toISOString()
+        }
       });
     } catch (error: any) {
-      debugLogger.error("Bright Data test failed:", error);
+      debugLogger.error('Bright Data test failed:', error);
       res.status(500).json({
-        error: "Failed to test Bright Data",
+        error: 'Failed to test Bright Data',
         message: (error as Error).message,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString()
       });
     }
   });
+
+
 
   // General rate limiting removed for performance optimization
 
   // API call tracking middleware
   app.use((req, res, next) => {
     const startTime = Date.now();
-
+    
     // Track response time and API calls
-    res.on("finish", () => {
+    res.on('finish', () => {
       const duration = Date.now() - startTime;
-
+      
       // Track API calls for internal endpoints
-      if (req.path.startsWith("/api/") && req.session?.userId) {
-        const requestSize = req.get("Content-Length")
-          ? parseInt(req.get("Content-Length") || "0")
-          : 0;
-        const responseSize = res.get("Content-Length")
-          ? parseInt(res.get("Content-Length") || "0")
-          : 0;
-
+      if (req.path.startsWith('/api/') && req.session?.userId) {
+        const requestSize = req.get('Content-Length') ? parseInt(req.get('Content-Length') || '0') : 0;
+        const responseSize = res.get('Content-Length') ? parseInt(res.get('Content-Length') || '0') : 0;
+        
         analyticsService.trackApiCall({
           userId: req.session.userId,
           endpoint: req.path,
@@ -195,33 +179,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           responseTime: duration,
           requestSize,
           responseSize,
-          userAgent: req.get("User-Agent") || "",
-          ipAddress: req.ip || "",
+          userAgent: req.get('User-Agent') || '',
+          ipAddress: req.ip || '',
           errorMessage: res.statusCode >= 400 ? res.statusMessage : null,
           metadata: {
             query: req.query,
             sessionId: req.sessionID,
-          },
+          }
         });
       }
     });
-
+    
     next();
   });
 
   // Auth middleware
   const requireAuth = (req: any, res: any, next: any) => {
-    debugLogger.debug(
-      "Session check",
-      { userId: req.session?.userId, sessionId: req.sessionID },
-      req,
-    );
+    debugLogger.debug("Session check", { userId: req.session?.userId, sessionId: req.sessionID }, req);
     if (!req.session?.userId) {
-      debugLogger.warn(
-        "Authentication required - no session userId",
-        { sessionId: req.sessionID },
-        req,
-      );
+      debugLogger.warn("Authentication required - no session userId", { sessionId: req.sessionID }, req);
       return res.status(401).json({ message: "Not authenticated" });
     }
     next();
@@ -232,7 +208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.session?.userId) {
       return res.status(401).json({ message: "Not authenticated" });
     }
-
+    
     // Check if user is admin (you can enhance this with database lookup)
     // For now, we'll add a simple admin check
     next();
@@ -244,10 +220,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const data = registerSchema.parse(req.body);
       const user = await authService.register(data);
       req.session.userId = user.id;
-
-      res.json({
-        success: true,
-        user: { id: user.id, email: user.email },
+      
+      res.json({ 
+        success: true, 
+        user: { id: user.id, email: user.email } 
       });
     } catch (error: any) {
       res.status(400).json({ message: (error as Error).message });
@@ -258,38 +234,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const data = loginSchema.parse(req.body);
       debugLogger.debug("Login attempt", { email: data.email }, req);
-
+      
       const user = await authService.login(data);
       req.session.userId = user.id;
-
+      
       // Save session explicitly
       req.session.save((err) => {
         if (err) {
           debugLogger.error("Session save error", { error: err }, req);
           return res.status(500).json({ message: "Session save failed" });
         }
-
-        debugLogger.debug(
-          "Login successful",
-          {
-            userId: user.id,
-            sessionId: req.sessionID,
-            sessionData: req.session,
-          },
-          req,
-        );
-
-        res.json({
-          success: true,
-          user: { id: user.id, email: user.email },
+        
+        debugLogger.debug("Login successful", { 
+          userId: user.id, 
+          sessionId: req.sessionID,
+          sessionData: req.session
+        }, req);
+        
+        res.json({ 
+          success: true, 
+          user: { id: user.id, email: user.email } 
         });
       });
     } catch (error: any) {
-      debugLogger.warn(
-        "Login failed",
-        { error: (error as Error).message },
-        req,
-      );
+      debugLogger.warn("Login failed", { error: (error as Error).message }, req);
       res.status(400).json({ message: (error as Error).message });
     }
   });
@@ -307,15 +275,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.session.userId) {
       return res.status(401).json({ message: "Not authenticated" });
     }
-
+    
     try {
       const user = await authService.getUserById(req.session.userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-
-      res.json({
-        user: { id: user.id, email: user.email },
+      
+      res.json({ 
+        user: { id: user.id, email: user.email } 
       });
     } catch (error: any) {
       res.status(500).json({ message: (error as Error).message });
@@ -328,20 +296,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // For single-user development, check if any user exists in the system
       const user = await storage.getUserByEmail("Maz0327@gmail.com");
       if (user) {
-        res.json({
+        res.json({ 
           authenticated: true,
-          user: { id: user.id, email: user.email },
+          user: { id: user.id, email: user.email } 
         });
       } else {
-        res.status(401).json({
-          authenticated: false,
-          message: "User not found - please log in to main platform first",
+        res.status(401).json({ 
+          authenticated: false, 
+          message: "User not found - please log in to main platform first" 
         });
       }
     } catch (error: any) {
-      res.status(500).json({
-        authenticated: false,
-        message: (error as Error).message,
+      res.status(500).json({ 
+        authenticated: false, 
+        message: (error as Error).message 
       });
     }
   });
@@ -349,107 +317,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Content analysis routes (streaming version)
   app.post("/api/analyze/stream", requireAuth, async (req, res) => {
     try {
-      debugLogger.info(
-        "Streaming content analysis request received",
-        {
-          title: req.body.title,
-          hasUrl: !!req.body.url,
-          contentLength: req.body.content?.length,
-        },
-        req,
-      );
-
+      debugLogger.info("Streaming content analysis request received", { title: req.body.title, hasUrl: !!req.body.url, contentLength: req.body.content?.length }, req);
+      
       // Set headers for Server-Sent Events
-      res.setHeader("Content-Type", "text/event-stream");
-      res.setHeader("Cache-Control", "no-cache");
-      res.setHeader("Connection", "keep-alive");
-      res.setHeader("Access-Control-Allow-Origin", "*");
-      res.setHeader("Access-Control-Allow-Headers", "Cache-Control");
-
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
+      
       const data = analyzeContentSchema.parse(req.body);
-      const lengthPreference = req.body.lengthPreference || "medium";
-      const userNotes = req.body.userNotes || "";
-
+      const lengthPreference = req.body.lengthPreference || 'medium';
+      const userNotes = req.body.userNotes || '';
+      
       // Send initial status
-      res.write(
-        `data: ${JSON.stringify({ type: "status", message: "Starting analysis...", progress: 10 })}\n\n`,
-      );
+      res.write(`data: ${JSON.stringify({ type: 'status', message: 'Starting analysis...', progress: 10 })}\n\n`);
 
+      
       // Check cache first
       const cacheKey = `${data.content?.slice(0, 100)}-${lengthPreference}`;
       const cached = await openaiService.getCachedAnalysis?.(cacheKey);
-
+      
       if (cached) {
-        res.write(
-          `data: ${JSON.stringify({ type: "status", message: "Using cached analysis...", progress: 50 })}\n\n`,
-        );
-
-        res.write(
-          `data: ${JSON.stringify({ type: "analysis", data: cached })}\n\n`,
-        );
-
-        res.write(
-          `data: ${JSON.stringify({ type: "complete", progress: 100 })}\n\n`,
-        );
-
+        res.write(`data: ${JSON.stringify({ type: 'status', message: 'Using cached analysis...', progress: 50 })}\n\n`);
+  
+        res.write(`data: ${JSON.stringify({ type: 'analysis', data: cached })}\n\n`);
+  
+        res.write(`data: ${JSON.stringify({ type: 'complete', progress: 100 })}\n\n`);
+  
         res.end();
         return;
       }
-
+      
       // Start analysis
-      res.write(
-        `data: ${JSON.stringify({ type: "status", message: "Analyzing content...", progress: 30 })}\n\n`,
-      );
+      res.write(`data: ${JSON.stringify({ type: 'status', message: 'Analyzing content...', progress: 30 })}\n\n`);
 
-      const analysisMode = req.body.analysisMode || "quick";
-
+      
+      const analysisMode = req.body.analysisMode || 'quick';
+      
       // Extract content and visual assets if URL provided
       let extractedContent = null;
       let visualAnalysis = null;
-
+      
       if (data.url) {
-        res.write(
-          `data: ${JSON.stringify({ type: "status", message: "Extracting content and visuals...", progress: 35 })}\n\n`,
-        );
-
+        res.write(`data: ${JSON.stringify({ type: 'status', message: 'Extracting content and visuals...', progress: 35 })}\n\n`);
+  
+        
         try {
           extractedContent = await scraperService.extractContent(data.url);
-
+          
           // Visual analysis integration temporarily disabled for performance optimization
         } catch (error) {
-          debugLogger.error(
-            "Visual analysis failed, continuing with text analysis",
-            error,
-            req,
-          );
+          debugLogger.error('Visual analysis failed, continuing with text analysis', error, req);
         }
       }
-
+      
       // Send progress updates during analysis
-      res.write(
-        `data: ${JSON.stringify({ type: "status", message: "Processing with AI...", progress: 50 })}\n\n`,
-      );
+      res.write(`data: ${JSON.stringify({ type: 'status', message: 'Processing with AI...', progress: 50 })}\n\n`);
 
-      const analysis = await openaiService.analyzeContent(
-        data,
-        lengthPreference,
-        analysisMode,
-      );
+      
+      const analysis = await openaiService.analyzeContent(data, lengthPreference, analysisMode);
+      
+      res.write(`data: ${JSON.stringify({ type: 'status', message: 'Generating insights...', progress: 70 })}\n\n`);
 
-      res.write(
-        `data: ${JSON.stringify({ type: "status", message: "Generating insights...", progress: 70 })}\n\n`,
-      );
-
+      
       // Send more detailed progress
-      res.write(
-        `data: ${JSON.stringify({ type: "status", message: "Creating strategic analysis...", progress: 80 })}\n\n`,
-      );
+      res.write(`data: ${JSON.stringify({ type: 'status', message: 'Creating strategic analysis...', progress: 80 })}\n\n`);
 
+      
       // Save as signal
-      res.write(
-        `data: ${JSON.stringify({ type: "status", message: "Saving analysis...", progress: 85 })}\n\n`,
-      );
+      res.write(`data: ${JSON.stringify({ type: 'status', message: 'Saving analysis...', progress: 85 })}\n\n`);
 
+      
       const signalData = {
         userId: req.session.userId!,
         title: data.title || "Untitled Analysis",
@@ -478,60 +417,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         visualAnalysis: visualAnalysis || null,
         brandElements: visualAnalysis?.brandElements || null,
         culturalVisualMoments: visualAnalysis?.culturalVisualMoments || null,
-        competitiveVisualInsights:
-          visualAnalysis?.competitiveVisualInsights || null,
+        competitiveVisualInsights: visualAnalysis?.competitiveVisualInsights || null
       };
-
+      
       const signal = await storage.createSignal(signalData);
+      
+      res.write(`data: ${JSON.stringify({ type: 'status', message: 'Finalizing...', progress: 90 })}\n\n`);
 
-      res.write(
-        `data: ${JSON.stringify({ type: "status", message: "Finalizing...", progress: 90 })}\n\n`,
-      );
-
+      
       // Track source if URL provided
       if (data.url) {
         try {
           const source = await sourceManagerService.findOrCreateSource(
             data.url,
-            analysis.summary || data.title || "Untitled",
+            analysis.summary || data.title || 'Untitled',
             req.session.userId!,
-            analysis.summary,
+            analysis.summary
           );
           await sourceManagerService.linkSignalToSource(signal.id, source.id);
         } catch (error) {
-          debugLogger.error("Error tracking source", error, req);
+          debugLogger.error('Error tracking source', error, req);
         }
       }
-
+      
       // Send final result with visual assets if available
-      const responseData = {
+      const responseData = { 
         analysis: {
           ...analysis,
           // Include images from extracted content - use both sources for compatibility
-          images:
-            extractedContent?.images ||
-            extractedContent?.visualAssets?.map((asset) => asset.url) ||
-            [],
+          images: extractedContent?.images || extractedContent?.visualAssets?.map(asset => asset.url) || [],
           visualAssets: extractedContent?.visualAssets || null,
-          visualAnalysis: visualAnalysis || null,
-        },
-        signalId: signal.id,
+          visualAnalysis: visualAnalysis || null
+        }, 
+        signalId: signal.id 
       };
+      
+      res.write(`data: ${JSON.stringify({ 
+        type: 'complete', 
+        data: responseData, 
+        progress: 100 
+      })}\n\n`);
 
-      res.write(
-        `data: ${JSON.stringify({
-          type: "complete",
-          data: responseData,
-          progress: 100,
-        })}\n\n`,
-      );
-
+      
       res.end();
     } catch (error: any) {
-      debugLogger.error("Streaming analysis failed", error, req);
-      res.write(
-        `data: ${JSON.stringify({ type: "error", message: (error as Error).message })}\n\n`,
-      );
+      debugLogger.error('Streaming analysis failed', error, req);
+      res.write(`data: ${JSON.stringify({ type: 'error', message: (error as Error).message })}\n\n`);
       res.end();
     }
   });
@@ -540,62 +471,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/strategic-recommendations", requireAuth, async (req, res) => {
     try {
       const { content, title, truthAnalysis, componentResults } = req.body;
-
+      
       if (!content || !title || !truthAnalysis) {
-        return res
-          .status(400)
-          .json({ error: "Content, title, and truth analysis are required" });
+        return res.status(400).json({ error: "Content, title, and truth analysis are required" });
       }
 
-      debugLogger.info("Strategic recommendations request", {
-        contentLength: content.length,
+      debugLogger.info("Strategic recommendations request", { 
+        contentLength: content.length, 
         title,
-        hasExistingComponents: !!componentResults,
+        hasExistingComponents: !!componentResults 
       });
 
       let finalComponentResults;
 
       // Check if we have existing component results (Advanced Strategic Analysis)
-      if (
-        componentResults &&
-        componentResults.cohorts &&
-        componentResults.cohorts.length > 0 &&
-        componentResults.strategicInsights &&
-        componentResults.strategicInsights.length > 0 &&
-        componentResults.strategicActions &&
-        componentResults.strategicActions.length > 0 &&
-        componentResults.competitiveInsights &&
-        componentResults.competitiveInsights.length > 0
-      ) {
-        debugLogger.info(
-          "Using existing component results for advanced strategic analysis",
-        );
+      if (componentResults && 
+          componentResults.cohorts && componentResults.cohorts.length > 0 &&
+          componentResults.strategicInsights && componentResults.strategicInsights.length > 0 &&
+          componentResults.strategicActions && componentResults.strategicActions.length > 0 &&
+          componentResults.competitiveInsights && componentResults.competitiveInsights.length > 0) {
+        
+        debugLogger.info("Using existing component results for advanced strategic analysis");
         finalComponentResults = componentResults;
       } else {
         // Generate all component results from scratch
         debugLogger.info("Generating new component results");
-        const [
-          cohorts,
-          strategicInsights,
-          strategicActions,
-          competitiveInsights,
-        ] = await Promise.all([
+        const [cohorts, strategicInsights, strategicActions, competitiveInsights] = await Promise.all([
           cohortBuilderService.generateCohorts(content, title, truthAnalysis),
-          strategicInsightsService.generateInsights(
-            content,
-            title,
-            truthAnalysis,
-          ),
-          strategicActionsService.generateActions(
-            content,
-            title,
-            truthAnalysis,
-          ),
-          competitiveIntelligenceService.generateInsights(
-            content,
-            title,
-            truthAnalysis,
-          ),
+          strategicInsightsService.generateInsights(content, title, truthAnalysis),
+          strategicActionsService.generateActions(content, title, truthAnalysis),
+          competitiveIntelligenceService.generateInsights(content, title, truthAnalysis)
         ]);
 
         finalComponentResults = {
@@ -603,25 +508,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           cohorts,
           strategicInsights,
           strategicActions,
-          competitiveInsights,
+          competitiveInsights
         };
       }
 
-      const recommendations =
-        await strategicRecommendationsService.generateRecommendations(
-          finalComponentResults,
-        );
-
+      const recommendations = await strategicRecommendationsService.generateRecommendations(finalComponentResults);
+      
       res.json({ recommendations });
     } catch (error: any) {
       debugLogger.error("Strategic recommendations failed", error);
-      res
-        .status(500)
-        .json({
-          error:
-            (error as Error).message ||
-            "Failed to generate strategic recommendations",
-        });
+      res.status(500).json({ error: (error as Error).message || "Failed to generate strategic recommendations" });
     }
   });
 
@@ -629,57 +525,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/analyze/visual", requireAuth, async (req, res) => {
     try {
       const { imageUrls, content, context } = req.body;
-
+      
       if (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) {
-        return res.status(400).json({
+        return res.status(400).json({ 
           error: "Image URLs are required",
-          message: "Please provide an array of image URLs to analyze",
+          message: "Please provide an array of image URLs to analyze"
         });
       }
 
       // Import Gemini service
-      const { geminiVisualAnalysisService } = await import(
-        "./services/visual-analysis-gemini"
-      );
+      const { geminiVisualAnalysisService } = await import('./services/visual-analysis-gemini');
 
       // Convert URLs to VisualAsset format
-      const visualAssets = imageUrls.map((url) => ({
-        type: "image" as const,
-        url,
+      const visualAssets = imageUrls.map(url => ({
+        type: 'image' as const,
+        url
       }));
 
       // Perform visual analysis using Gemini
-      const visualAnalysis =
-        await geminiVisualAnalysisService.analyzeVisualAssets(
-          visualAssets,
-          content || context || "Visual content analysis",
-          req.body.sourceUrl,
-        );
+      const visualAnalysis = await geminiVisualAnalysisService.analyzeVisualAssets(
+        visualAssets,
+        content || context || "Visual content analysis",
+        req.body.sourceUrl
+      );
 
       // Map Gemini response to frontend expected format
       const formattedResponse = {
         brandElements: visualAnalysis.brandElements,
         culturalMoments: visualAnalysis.culturalVisualMoments,
         competitiveInsights: visualAnalysis.competitiveVisualInsights,
-        summary:
-          visualAnalysis.strategicRecommendations?.join(". ") ||
-          "Visual analysis completed successfully.",
+        summary: visualAnalysis.strategicRecommendations?.join('. ') || "Visual analysis completed successfully."
       };
 
-      res.json({
-        success: true,
+      res.json({ 
+        success: true, 
         visualAnalysis: formattedResponse,
         metadata: {
           imagesAnalyzed: visualAssets.length,
           confidenceScore: visualAnalysis.confidenceScore,
-          engine: "gemini-2.0-flash-preview",
-        },
+          engine: "gemini-2.0-flash-preview"
+        }
       });
+
     } catch (error: any) {
-      debugLogger.error("Gemini visual analysis API failed", error, req);
-      res.status(500).json({
+      debugLogger.error('Gemini visual analysis API failed', error, req);
+      res.status(500).json({ 
         error: "Visual analysis failed",
-        message: (error as Error).message,
+        message: (error as Error).message
       });
     }
   });
@@ -687,72 +579,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Content analysis routes (standard version)
   app.post("/api/analyze", requireAuth, async (req, res) => {
     try {
-      debugLogger.info(
-        "Content analysis request received",
-        {
-          title: req.body.title,
-          hasUrl: !!req.body.url,
-          contentLength: req.body.content?.length,
-        },
-        req,
-      );
+      debugLogger.info("Content analysis request received", { title: req.body.title, hasUrl: !!req.body.url, contentLength: req.body.content?.length }, req);
       const data = analyzeContentSchema.parse(req.body);
-      debugLogger.info(
-        "Content data parsed successfully",
-        { title: data.title, url: data.url },
-        req,
-      );
-
-      const lengthPreference = req.body.lengthPreference || "medium";
-      const userNotes = req.body.userNotes || "";
-      const analysisMode = req.body.analysisMode || "quick";
-
+      debugLogger.info("Content data parsed successfully", { title: data.title, url: data.url }, req);
+      
+      const lengthPreference = req.body.lengthPreference || 'medium';
+      const userNotes = req.body.userNotes || '';
+      const analysisMode = req.body.analysisMode || 'quick';
+      
       // Extract content and visual assets if URL provided
       let extractedContent = null;
       let visualAnalysis = null;
-
+      
       if (data.url) {
         try {
           // Check if it's a video URL and attempt transcription first
           if (videoTranscriptionService.isVideoUrl(data.url)) {
-            debugLogger.info(
-              "Video URL detected, attempting transcription",
-              { url: data.url },
-              req,
-            );
+            debugLogger.info('Video URL detected, attempting transcription', { url: data.url }, req);
             try {
-              const videoResult =
-                await videoTranscriptionService.extractContentWithVideoDetection(
-                  data.url,
-                );
+              const videoResult = await videoTranscriptionService.extractContentWithVideoDetection(data.url);
               extractedContent = {
                 title: videoResult.title,
                 content: videoResult.content,
                 visualAssets: [], // Videos don't have visual assets in the same way
-                metadata: {
+                metadata: { 
                   isVideo: true,
-                  hasVideoTranscription:
-                    !!videoResult.videoTranscription?.transcription,
-                },
+                  hasVideoTranscription: !!videoResult.videoTranscription?.transcription
+                }
               };
-              debugLogger.info(
-                "Video transcription successful",
-                {
-                  hasTranscript:
-                    !!videoResult.videoTranscription?.transcription,
-                  contentLength: videoResult.content.length,
-                },
-                req,
-              );
+              debugLogger.info('Video transcription successful', { 
+                hasTranscript: !!videoResult.videoTranscription?.transcription,
+                contentLength: videoResult.content.length
+              }, req);
             } catch (videoError) {
-              debugLogger.warn(
-                "Video transcription failed, falling back to regular extraction",
-                {
-                  url: data.url,
-                  error: videoError.message,
-                },
-                req,
-              );
+              debugLogger.warn('Video transcription failed, falling back to regular extraction', { 
+                url: data.url, 
+                error: videoError.message 
+              }, req);
               // Fall through to regular content extraction
               extractedContent = await scraperService.extractContent(data.url);
             }
@@ -762,35 +625,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[API DEBUG] Extracted content from ${data.url}:`, {
               imagesCount: extractedContent?.images?.length || 0,
               visualAssetsCount: extractedContent?.visualAssets?.length || 0,
-              imageUrls: extractedContent?.images?.slice(0, 3) || [],
+              imageUrls: extractedContent?.images?.slice(0, 3) || []
             });
           }
-
+          
           // Visual analysis integration temporarily disabled for performance optimization
         } catch (error) {
-          debugLogger.error(
-            "Content extraction failed, continuing with provided content only",
-            error,
-            req,
-          );
+          debugLogger.error('Content extraction failed, continuing with provided content only', error, req);
         }
       }
-
-      const analysis = await openaiService.analyzeContent(
-        data,
-        lengthPreference,
-        analysisMode,
-      );
-      debugLogger.info(
-        "OpenAI analysis completed",
-        {
-          sentiment: analysis.sentiment,
-          confidence: analysis.confidence,
-          keywordCount: analysis.keywords.length,
-        },
-        req,
-      );
-
+      
+      const analysis = await openaiService.analyzeContent(data, lengthPreference, analysisMode);
+      debugLogger.info("OpenAI analysis completed", { sentiment: analysis.sentiment, confidence: analysis.confidence, keywordCount: analysis.keywords.length }, req);
+      
       // Save as potential signal after analysis
       const signalData = {
         userId: req.session.userId!,
@@ -816,58 +663,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cohortSuggestions: analysis.cohortSuggestions,
         competitiveInsights: analysis.competitiveInsights,
         // nextActions: analysis.nextActions, // Removed as this property doesn't exist
-        userNotes: userNotes,
+        userNotes: userNotes
       };
-
+      
       const signal = await storage.createSignal(signalData);
-      debugLogger.info(
-        "Signal created successfully",
-        { signalId: signal.id, status: signal.status },
-        req,
-      );
-
+      debugLogger.info("Signal created successfully", { signalId: signal.id, status: signal.status }, req);
+      
       // Track source if URL was provided
       if (data.url) {
         try {
           debugLogger.info("Creating source for URL", { url: data.url }, req);
           const source = await sourceManagerService.findOrCreateSource(
             data.url,
-            analysis.summary || data.title || "Untitled",
+            analysis.summary || data.title || 'Untitled',
             req.session.userId!,
-            analysis.summary,
+            analysis.summary
           );
           await sourceManagerService.linkSignalToSource(signal.id, source.id);
-          debugLogger.info(
-            "Source linked to signal",
-            { signalId: signal.id, sourceId: source.id },
-            req,
-          );
+          debugLogger.info("Source linked to signal", { signalId: signal.id, sourceId: source.id }, req);
         } catch (error) {
-          debugLogger.error("Error tracking source", error, req);
+          debugLogger.error('Error tracking source', error, req);
           // Don't fail the entire request if source tracking fails
         }
       }
-
+      
       res.json({
         success: true,
         analysis: {
           ...analysis,
           // Include images from extracted content - use both sources for compatibility
-          images:
-            extractedContent?.images ||
-            extractedContent?.visualAssets?.map((asset) => asset.url) ||
-            [],
-          visualAssets: extractedContent?.visualAssets || null,
+          images: extractedContent?.images || extractedContent?.visualAssets?.map(asset => asset.url) || [],
+          visualAssets: extractedContent?.visualAssets || null
         },
-        signalId: signal.id,
+        signalId: signal.id
       });
-      debugLogger.info(
-        "Analysis request completed successfully",
-        { signalId: signal.id },
-        req,
-      );
+      debugLogger.info("Analysis request completed successfully", { signalId: signal.id }, req);
     } catch (error: any) {
-      debugLogger.error("Content analysis failed", error, req);
+      debugLogger.error('Content analysis failed', error, req);
       res.status(400).json({ message: (error as Error).message });
     }
   });
@@ -875,20 +707,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Chrome extension draft endpoint
   app.post("/api/signals/draft", requireAuth, async (req, res) => {
     try {
-      debugLogger.info(
-        "Draft capture request received",
-        { title: req.body.title, hasUrl: !!req.body.url },
-        req,
-      );
-
+      debugLogger.info("Draft capture request received", { title: req.body.title, hasUrl: !!req.body.url }, req);
+      
       const { title, content, url, user_notes, browser_context } = req.body;
-
+      
       if (!title && !content) {
-        return res
-          .status(400)
-          .json({ message: "Title or content is required" });
+        return res.status(400).json({ message: "Title or content is required" });
       }
-
+      
       const signalData = {
         userId: req.session.userId!,
         title: title || "Untitled Capture",
@@ -898,16 +724,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "capture",
         isDraft: true,
         capturedAt: new Date(),
-        browserContext: browser_context || null,
+        browserContext: browser_context || null
       };
-
+      
       const signal = await storage.createSignal(signalData);
-      debugLogger.info(
-        "Draft signal created successfully",
-        { signalId: signal.id, isDraft: signal.isDraft },
-        req,
-      );
-
+      debugLogger.info("Draft signal created successfully", { signalId: signal.id, isDraft: signal.isDraft }, req);
+      
       res.json({
         success: true,
         signal: {
@@ -915,11 +737,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           title: signal.title,
           status: signal.status,
           isDraft: signal.isDraft,
-          createdAt: signal.createdAt,
-        },
+          createdAt: signal.createdAt
+        }
       });
     } catch (error: any) {
-      debugLogger.error("Draft creation failed", error, req);
+      debugLogger.error('Draft creation failed', error, req);
       res.status(400).json({ message: (error as Error).message });
     }
   });
@@ -929,40 +751,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/reanalyze", requireAuth, async (req, res) => {
     try {
       const { content, title, url, lengthPreference, analysisMode } = req.body;
-
+      
       if (!content || !lengthPreference) {
-        return res
-          .status(400)
-          .json({ message: "Content and length preference are required" });
+        return res.status(400).json({ message: "Content and length preference are required" });
       }
 
-      debugLogger.info(
-        "Re-analysis request received",
-        { title, lengthPreference, analysisMode, hasUrl: !!url },
-        req,
-      );
-
+      debugLogger.info("Re-analysis request received", { title, lengthPreference, analysisMode, hasUrl: !!url }, req);
+      
       const data = { content, title: title || "Re-analysis", url };
-      const analysis = await openaiService.analyzeContent(
-        { content, title, url },
-        lengthPreference,
-        analysisMode || "quick",
-      );
-
-      debugLogger.info(
-        "Re-analysis completed",
-        { sentiment: analysis.sentiment, lengthPreference },
-        req,
-      );
-
-      res.json({
-        success: true,
+      const analysis = await openaiService.analyzeContent({ content, title, url }, lengthPreference, analysisMode || 'quick');
+      
+      debugLogger.info("Re-analysis completed", { sentiment: analysis.sentiment, lengthPreference }, req);
+      
+      res.json({ 
+        success: true, 
         analysis,
         lengthPreference,
-        analysisMode: analysisMode || "quick",
+        analysisMode: analysisMode || 'quick'
       });
     } catch (error: any) {
-      debugLogger.error("Re-analysis failed", error, req);
+      debugLogger.error('Re-analysis failed', error, req);
       res.status(500).json({ message: (error as Error).message });
     }
   });
@@ -970,46 +778,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Google Trends via Bright Data Browser API
   app.get("/api/trends/google-browser", requireAuth, async (req, res) => {
     try {
-      const { browserApiService } = await import(
-        "./services/browser-api-service"
-      );
-      const {
-        geo = "US",
-        timeframe = "now 1-d",
-        category = 0,
-        keywords,
-      } = req.query;
-
+      const { browserApiService } = await import('./services/browser-api-service');
+      const { geo = 'US', timeframe = 'now 1-d', category = 0, keywords } = req.query;
+      
       // Use Browser API to scrape Google Trends
       const result = await browserApiService.scrapeGoogleTrends({
         geo: geo as string,
         timeframe: timeframe as string,
         category: parseInt(category as string) || 0,
-        keywords: keywords ? (keywords as string).split(",") : [],
+        keywords: keywords ? (keywords as string).split(',') : []
       });
-
+      
       if (result.success) {
         res.json({
           success: true,
           trends: result.data,
-          method: "bright-data-browser-api",
+          method: 'bright-data-browser-api',
           geo: result.geo,
           timeframe: result.timeframe,
           count: result.data?.length || 0,
-          timestamp: new Date().toISOString(),
+          timestamp: new Date().toISOString()
         });
       } else {
         res.status(500).json({
           success: false,
-          error: result.error || "Google Trends scraping failed",
-          method: "bright-data-browser-api-failed",
+          error: result.error || 'Google Trends scraping failed',
+          method: 'bright-data-browser-api-failed'
         });
       }
     } catch (error: any) {
-      res.status(500).json({
+      res.status(500).json({ 
         success: false,
         error: (error as Error).message,
-        method: "bright-data-browser-api-error",
+        method: 'bright-data-browser-api-error'
       });
     }
   });
@@ -1017,29 +818,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Bright Data Browser API test endpoint
   app.post("/api/bright-data/browser-test", requireAuth, async (req, res) => {
     try {
-      const { browserApiService } = await import(
-        "./services/browser-api-service"
-      );
+      const { browserApiService } = await import('./services/browser-api-service');
       const { url } = req.body;
-
+      
       if (!url) {
-        return res.status(400).json({ error: "URL is required" });
+        return res.status(400).json({ error: 'URL is required' });
       }
-
+      
       // Test Browser API with the provided URL
       const result = await browserApiService.scrapeSocialMediaURL(url, {
-        platform: "instagram", // Default to Instagram for testing
+        platform: 'instagram', // Default to Instagram for testing
         extractEngagement: true,
         extractProfile: true,
-        timeout: 20000,
+        timeout: 20000
       });
-
+      
       res.json({
         success: result.success,
         data: result.content || null,
-        method: result.method || "browser-api",
+        method: result.method || 'browser-api',
         error: result.error || null,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString()
       });
     } catch (error: any) {
       res.status(500).json({ error: (error as Error).message });
@@ -1049,41 +848,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Bright Data social media scrapers
   app.post("/api/bright-data/social", requireAuth, async (req, res) => {
     try {
-      const { brightDataService } = await import(
-        "./services/bright-data-service"
-      );
+      const { brightDataService } = await import('./services/bright-data-service');
       const { platform, params } = req.body;
-
+      
       let results: any[] = [];
-
+      
       switch (platform) {
-        case "instagram":
-          results = await brightDataService.scrapeInstagramPosts(
-            params?.hashtags || ["tech"],
-          );
+        case 'instagram':
+          results = await brightDataService.scrapeInstagramPosts(params?.hashtags || ['tech']);
           break;
-        case "twitter":
-          results = await brightDataService.scrapeTwitterTrends(
-            params?.location || "worldwide",
-          );
+        case 'twitter':
+          results = await brightDataService.scrapeTwitterTrends(params?.location || 'worldwide');
           break;
-        case "tiktok":
+        case 'tiktok':
           results = await brightDataService.scrapeTikTokTrends();
           break;
-        case "linkedin":
-          results = await brightDataService.scrapeLinkedInContent(
-            params?.keywords || ["ai"],
-          );
+        case 'linkedin':
+          results = await brightDataService.scrapeLinkedInContent(params?.keywords || ['ai']);
           break;
         default:
-          return res.status(400).json({ error: "Unsupported platform" });
+          return res.status(400).json({ error: 'Unsupported platform' });
       }
-
+      
       res.json({
         platform,
         results,
         count: results.length,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString()
       });
     } catch (error: any) {
       res.status(500).json({ error: (error as Error).message });
@@ -1093,63 +884,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Deep Analysis endpoint for comprehensive strategic analysis
   app.post("/api/analyze/deep", requireAuth, async (req, res) => {
     try {
-      debugLogger.info(
-        "Deep analysis request received",
-        {
-          title: req.body.title,
-          hasUrl: !!req.body.url,
-          contentLength: req.body.content?.length,
-        },
-        req,
-      );
+      debugLogger.info("Deep analysis request received", { title: req.body.title, hasUrl: !!req.body.url, contentLength: req.body.content?.length }, req);
       const data = analyzeContentSchema.parse(req.body);
-
-      const lengthPreference = req.body.lengthPreference || "medium";
-      const userNotes = req.body.userNotes || "";
-      const analysisMode = "deep"; // Force deep analysis mode
-
+      
+      const lengthPreference = req.body.lengthPreference || 'medium';
+      const userNotes = req.body.userNotes || '';
+      const analysisMode = 'deep'; // Force deep analysis mode
+      
       // Enhanced content extraction with social media support
       let extractedContent = null;
       let socialAnalysis = null;
-
+      
       if (data.url) {
         try {
           // Check if this is a social media URL that benefits from Bright Data
-          const { enhancedSocialExtractor } = await import(
-            "./services/enhanced-social-extractor"
-          );
+          const { enhancedSocialExtractor } = await import('./services/enhanced-social-extractor');
           const platform = enhancedSocialExtractor.detectPlatform(data.url);
-
-          if (
-            ["Instagram", "Twitter", "TikTok", "LinkedIn"].includes(platform)
-          ) {
-            debugLogger.info(
-              "Social media URL detected - using enhanced extraction for deep analysis",
-              { url: data.url, platform },
-            );
-
+          
+          if (['Instagram', 'Twitter', 'TikTok', 'LinkedIn'].includes(platform)) {
+            debugLogger.info("Social media URL detected - using enhanced extraction for deep analysis", { url: data.url, platform });
+            
             try {
-              socialAnalysis =
-                await enhancedSocialExtractor.extractSocialContent(data.url);
-
+              socialAnalysis = await enhancedSocialExtractor.extractSocialContent(data.url);
+              
               // Enhance the data with social media insights
               data.content = data.content || socialAnalysis.data.content;
               data.title = data.title || socialAnalysis.data.title;
-
-              debugLogger.info(
-                "Enhanced social extraction successful for deep analysis",
-                {
-                  platform: socialAnalysis.platform,
-                  contentType: socialAnalysis.contentType,
-                  extractionMethod: socialAnalysis.extractionMethod,
-                  hasEngagement: !!socialAnalysis.metadata.engagement,
-                },
-              );
+              
+              debugLogger.info("Enhanced social extraction successful for deep analysis", { 
+                platform: socialAnalysis.platform,
+                contentType: socialAnalysis.contentType,
+                extractionMethod: socialAnalysis.extractionMethod,
+                hasEngagement: !!socialAnalysis.metadata.engagement
+              });
             } catch (error) {
-              debugLogger.warn(
-                "Enhanced social extraction failed, using fallback for deep analysis",
-                error,
-              );
+              debugLogger.warn("Enhanced social extraction failed, using fallback for deep analysis", error);
               extractedContent = await scraperService.extractContent(data.url);
             }
           } else {
@@ -1157,29 +926,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             extractedContent = await scraperService.extractContent(data.url);
           }
         } catch (error) {
-          debugLogger.error(
-            "Content extraction failed for deep analysis, continuing with provided content only",
-            error,
-            req,
-          );
+          debugLogger.error('Content extraction failed for deep analysis, continuing with provided content only', error, req);
         }
       }
-
-      const analysis = await openaiService.analyzeContent(
-        data,
-        lengthPreference,
-        analysisMode,
-      );
-      debugLogger.info(
-        "Deep analysis completed",
-        {
-          sentiment: analysis.sentiment,
-          confidence: analysis.confidence,
-          keywordCount: analysis.keywords.length,
-        },
-        req,
-      );
-
+      
+      const analysis = await openaiService.analyzeContent(data, lengthPreference, analysisMode);
+      debugLogger.info("Deep analysis completed", { sentiment: analysis.sentiment, confidence: analysis.confidence, keywordCount: analysis.keywords.length }, req);
+      
       // Save as signal with deep analysis flag
       const signalData = {
         userId: req.session.userId!,
@@ -1203,59 +956,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         viralPotential: analysis.viralPotential,
         cohortSuggestions: analysis.cohortSuggestions,
         competitiveInsights: analysis.competitiveInsights,
-        userNotes: userNotes,
+        userNotes: userNotes
       };
-
+      
       const signal = await storage.createSignal(signalData);
-      debugLogger.info(
-        "Deep analysis signal created",
-        { signalId: signal.id, status: signal.status },
-        req,
-      );
-
+      debugLogger.info("Deep analysis signal created", { signalId: signal.id, status: signal.status }, req);
+      
       // Track source if URL provided
       if (data.url) {
         try {
           const source = await sourceManagerService.findOrCreateSource(
             data.url,
-            analysis.summary || data.title || "Deep Analysis",
+            analysis.summary || data.title || 'Deep Analysis',
             req.session.userId!,
-            analysis.summary,
+            analysis.summary
           );
           await sourceManagerService.linkSignalToSource(signal.id, source.id);
         } catch (error) {
-          debugLogger.error(
-            "Error tracking source for deep analysis",
-            error,
-            req,
-          );
+          debugLogger.error('Error tracking source for deep analysis', error, req);
         }
       }
-
+      
       res.json({
         success: true,
         analysis: {
           ...analysis,
           // Include images from extracted content for deep analysis
-          images:
-            extractedContent?.visualAssets?.map((asset) => asset.url) || [],
+          images: extractedContent?.visualAssets?.map(asset => asset.url) || [],
           visualAssets: extractedContent?.visualAssets || null,
           // Include social media engagement data if available
-          socialMediaMetadata: socialAnalysis
-            ? {
-                platform: socialAnalysis.platform,
-                contentType: socialAnalysis.contentType,
-                extractionMethod: socialAnalysis.extractionMethod,
-                engagement: socialAnalysis.metadata?.engagement || null,
-                profile: socialAnalysis.metadata?.profile || null,
-              }
-            : null,
+          socialMediaMetadata: socialAnalysis ? {
+            platform: socialAnalysis.platform,
+            contentType: socialAnalysis.contentType,
+            extractionMethod: socialAnalysis.extractionMethod,
+            engagement: socialAnalysis.metadata?.engagement || null,
+            profile: socialAnalysis.metadata?.profile || null
+          } : null
         },
         signalId: signal.id,
-        analysisMode: "deep",
+        analysisMode: 'deep'
       });
+      
     } catch (error: any) {
-      debugLogger.error("Deep analysis failed", error, req);
+      debugLogger.error('Deep analysis failed', error, req);
       res.status(400).json({ message: (error as Error).message });
     }
   });
@@ -1263,55 +1006,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Audio transcription endpoints
   app.post("/api/audio/transcribe", requireAuth, async (req, res) => {
     try {
-      debugLogger.info(
-        "Audio transcription request received",
-        { hasFile: !!req.body.audioFile },
-        req,
-      );
-
+      debugLogger.info("Audio transcription request received", { hasFile: !!req.body.audioFile }, req);
+      
       const { audioFile, filename, language, prompt } = req.body;
-
+      
       if (!audioFile || !filename) {
-        return res
-          .status(400)
-          .json({ message: "Audio file and filename are required" });
+        return res.status(400).json({ message: "Audio file and filename are required" });
       }
 
       // Check if file format is supported
       if (!whisperService.isSupportedFormat(filename)) {
-        return res.status(400).json({
-          message:
-            "Unsupported audio format. Supported formats: mp3, mp4, mpeg, mpga, m4a, wav, webm",
+        return res.status(400).json({ 
+          message: "Unsupported audio format. Supported formats: mp3, mp4, mpeg, mpga, m4a, wav, webm" 
         });
       }
 
       // Convert base64 to buffer if needed
-      const audioBuffer = Buffer.isBuffer(audioFile)
-        ? audioFile
-        : Buffer.from(audioFile, "base64");
+      const audioBuffer = Buffer.isBuffer(audioFile) 
+        ? audioFile 
+        : Buffer.from(audioFile, 'base64');
 
       const options = {
         language: language || undefined,
         prompt: prompt || undefined,
-        response_format: "verbose_json" as const,
+        response_format: 'verbose_json' as const
       };
 
-      const result = await whisperService.transcribeAudio(
-        audioBuffer,
-        filename,
-        options,
-      );
-
-      debugLogger.info(
-        "Audio transcription completed",
-        {
-          filename,
-          transcriptionLength: result.text.length,
-          language: result.language,
-          duration: result.duration,
-        },
-        req,
-      );
+      const result = await whisperService.transcribeAudio(audioBuffer, filename, options);
+      
+      debugLogger.info("Audio transcription completed", { 
+        filename, 
+        transcriptionLength: result.text.length,
+        language: result.language,
+        duration: result.duration
+      }, req);
 
       res.json({
         success: true,
@@ -1319,76 +1047,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
         language: result.language,
         duration: result.duration,
         confidence: result.confidence,
-        estimatedCost: result.duration
-          ? whisperService.calculateEstimatedCost(result.duration)
-          : 0,
+        estimatedCost: result.duration ? whisperService.calculateEstimatedCost(result.duration) : 0
       });
+
     } catch (error: any) {
-      debugLogger.error("Audio transcription failed", error, req);
+      debugLogger.error('Audio transcription failed', error, req);
       res.status(400).json({ message: (error as Error).message });
     }
   });
 
   app.post("/api/signals/audio", requireAuth, async (req, res) => {
     try {
-      debugLogger.info(
-        "Audio signal creation request received",
-        {
-          title: req.body.title,
-          hasAudioFile: !!req.body.audioFile,
-          filename: req.body.filename,
-        },
-        req,
-      );
-
-      const { title, audioFile, filename, userNotes, language, prompt } =
-        req.body;
-
+      debugLogger.info("Audio signal creation request received", { 
+        title: req.body.title,
+        hasAudioFile: !!req.body.audioFile,
+        filename: req.body.filename
+      }, req);
+      
+      const { title, audioFile, filename, userNotes, language, prompt } = req.body;
+      
       if (!audioFile || !filename) {
-        return res
-          .status(400)
-          .json({ message: "Audio file and filename are required" });
+        return res.status(400).json({ message: "Audio file and filename are required" });
       }
 
       // Check if file format is supported
       if (!whisperService.isSupportedFormat(filename)) {
-        return res.status(400).json({
-          message:
-            "Unsupported audio format. Supported formats: mp3, mp4, mpeg, mpga, m4a, wav, webm",
+        return res.status(400).json({ 
+          message: "Unsupported audio format. Supported formats: mp3, mp4, mpeg, mpga, m4a, wav, webm" 
         });
       }
 
       // Convert base64 to buffer if needed
-      const audioBuffer = Buffer.isBuffer(audioFile)
-        ? audioFile
-        : Buffer.from(audioFile, "base64");
+      const audioBuffer = Buffer.isBuffer(audioFile) 
+        ? audioFile 
+        : Buffer.from(audioFile, 'base64');
 
       // Transcribe audio
       const transcriptionOptions = {
         language: language || undefined,
         prompt: prompt || undefined,
-        response_format: "verbose_json" as const,
+        response_format: 'verbose_json' as const
       };
 
-      const transcriptionResult = await whisperService.transcribeAudio(
-        audioBuffer,
-        filename,
-        transcriptionOptions,
-      );
-
+      const transcriptionResult = await whisperService.transcribeAudio(audioBuffer, filename, transcriptionOptions);
+      
       // Analyze transcribed content using existing analysis pipeline
       const analysisData = {
         content: transcriptionResult.text,
         title: title || `Audio Transcription - ${filename}`,
-        url: undefined,
+        url: undefined
       };
 
-      const analysis = await openaiService.analyzeContent(
-        analysisData,
-        "medium",
-        "quick",
-      );
-
+      const analysis = await openaiService.analyzeContent(analysisData, 'medium', 'quick');
+      
       // Create signal with both audio and analysis data
       const signalData = {
         userId: req.session.userId!,
@@ -1412,40 +1123,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Audio specific fields
         transcription: transcriptionResult.text,
         audioDuration: transcriptionResult.duration || null,
-        audioFormat: filename.split(".").pop()?.toLowerCase(),
+        audioFormat: filename.split('.').pop()?.toLowerCase(),
         audioLanguage: transcriptionResult.language,
         transcriptionConfidence: transcriptionResult.confidence?.toString(),
-        userNotes: userNotes || "",
+        userNotes: userNotes || ""
       };
-
+      
       const signal = await storage.createSignal(signalData);
-
-      debugLogger.info(
-        "Audio signal created successfully",
-        {
-          signalId: signal.id,
-          transcriptionLength: transcriptionResult.text.length,
-          analysisConfidence: analysis.confidence,
-        },
-        req,
-      );
-
+      
+      debugLogger.info("Audio signal created successfully", { 
+        signalId: signal.id,
+        transcriptionLength: transcriptionResult.text.length,
+        analysisConfidence: analysis.confidence
+      }, req);
+      
       res.json({
         success: true,
         signal: {
           id: signal.id,
           title: signal.title,
           status: signal.status,
-          createdAt: signal.createdAt,
+          createdAt: signal.createdAt
         },
         transcription: transcriptionResult.text,
         analysis,
-        estimatedCost: transcriptionResult.duration
-          ? whisperService.calculateEstimatedCost(transcriptionResult.duration)
-          : 0,
+        estimatedCost: transcriptionResult.duration ? whisperService.calculateEstimatedCost(transcriptionResult.duration) : 0
       });
+
     } catch (error: any) {
-      debugLogger.error("Audio signal creation failed", error, req);
+      debugLogger.error('Audio signal creation failed', error, req);
       res.status(400).json({ message: (error as Error).message });
     }
   });
@@ -1454,56 +1160,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/whisper/transcribe", requireAuth, async (req, res) => {
     try {
       const { audioFile, filename } = req.body;
-
+      
       if (!audioFile || !filename) {
         return res.status(400).json({
-          error: "Audio file and filename are required",
+          error: "Audio file and filename are required"
         });
       }
 
       // Convert base64 to buffer
-      const audioBuffer = Buffer.from(audioFile, "base64");
-
+      const audioBuffer = Buffer.from(audioFile, 'base64');
+      
       // Create temporary file for Whisper API
-      const fs = require("fs");
-      const path = require("path");
-      const os = require("os");
-
+      const fs = require('fs');
+      const path = require('path');
+      const os = require('os');
+      
       const tempDir = os.tmpdir();
-      const tempFilePath = path.join(
-        tempDir,
-        `whisper_${Date.now()}_${filename}`,
-      );
-
+      const tempFilePath = path.join(tempDir, `whisper_${Date.now()}_${filename}`);
+      
       fs.writeFileSync(tempFilePath, audioBuffer);
-
+      
       try {
         // Transcribe audio using Whisper API
-        const transcriptionResult = await whisperService.transcribeAudio(
-          audioBuffer,
-          filename,
-        );
+        const transcriptionResult = await whisperService.transcribeAudio(audioBuffer, filename);
 
         res.json({
           success: true,
           text: transcriptionResult.text,
           duration: transcriptionResult.duration,
           language: transcriptionResult.language,
-          confidence: transcriptionResult.confidence,
+          confidence: transcriptionResult.confidence
         });
+
       } finally {
         // Clean up temporary file
         try {
           fs.unlinkSync(tempFilePath);
         } catch (cleanupError) {
-          console.warn("Could not delete temp file:", cleanupError);
+          console.warn('Could not delete temp file:', cleanupError);
         }
       }
+
     } catch (error: any) {
       console.error("Voice note transcription error:", error);
       res.status(500).json({
         error: "Failed to transcribe voice note",
-        message: (error as Error).message,
+        message: (error as Error).message
       });
     }
   });
@@ -1512,11 +1214,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/debug/logs", (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 50;
-      const level = req.query.level as "info" | "warn" | "error" | "debug";
+      const level = req.query.level as 'info' | 'warn' | 'error' | 'debug';
       const logs = debugLogger.getRecentLogs(limit, level);
       res.json({ logs, count: logs.length });
     } catch (error: any) {
-      debugLogger.error("Failed to retrieve debug logs", error, req);
+      debugLogger.error('Failed to retrieve debug logs', error, req);
       res.status(500).json({ message: (error as Error).message });
     }
   });
@@ -1526,7 +1228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const errorSummary = debugLogger.getErrorSummary();
       res.json(errorSummary);
     } catch (error: any) {
-      debugLogger.error("Failed to retrieve error summary", error, req);
+      debugLogger.error('Failed to retrieve error summary', error, req);
       res.status(500).json({ message: (error as Error).message });
     }
   });
@@ -1536,13 +1238,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const performanceMetrics = debugLogger.getPerformanceMetrics();
       res.json(performanceMetrics);
     } catch (error: any) {
-      debugLogger.error("Failed to retrieve performance metrics", error, req);
-      res.status(500).json({
+      debugLogger.error('Failed to retrieve performance metrics', error, req);
+      res.status(500).json({ 
         totalRequests: 0,
         averageResponseTime: 0,
         p95ResponseTime: 0,
         p99ResponseTime: 0,
-        slowRequests: 0,
+        slowRequests: 0
       });
     }
   });
@@ -1550,12 +1252,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/debug/clear-logs", (req, res) => {
     try {
       debugLogger.clearLogs();
-      res.json({ message: "Debug logs cleared successfully" });
+      res.json({ message: 'Debug logs cleared successfully' });
     } catch (error: any) {
-      debugLogger.error("Failed to clear debug logs", error, req);
+      debugLogger.error('Failed to clear debug logs', error, req);
       res.status(500).json({ message: (error as Error).message });
     }
   });
+
+
 
   app.post("/api/extract-url", async (req, res) => {
     try {
@@ -1564,16 +1268,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "URL is required" });
       }
 
-      debugLogger.info("URL extraction request (optimized)", { url });
+      debugLogger.info('URL extraction request (optimized)', { url });
 
       // Check if it's a social media URL first
-      const isInstagram = url.includes("instagram.com");
-      const isSocialMedia =
-        isInstagram ||
-        url.includes("twitter.com") ||
-        url.includes("x.com") ||
-        url.includes("tiktok.com") ||
-        url.includes("linkedin.com");
+      const isInstagram = url.includes('instagram.com');
+      const isSocialMedia = isInstagram || url.includes('twitter.com') || 
+                           url.includes('x.com') || url.includes('tiktok.com') || 
+                           url.includes('linkedin.com');
 
       let result: any = {};
       let isVideo = false;
@@ -1583,56 +1284,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // For real Instagram content extraction, we need to implement proper scraping
         // For now, provide a more realistic response that acknowledges the limitation
         result = {
-          title: "Instagram Content Requires Enhanced Extraction",
+          title: 'Instagram Content Requires Enhanced Extraction',
           content: `Instagram URL detected: ${url}. This platform requires specialized authentication and scraping capabilities that are currently being enhanced. The content analysis system is designed to process Instagram posts, stories, and reels with full engagement metrics, but real-time extraction needs additional authentication setup.`,
-          author: "Instagram Platform",
+          author: 'Instagram Platform',
           images: [],
-          platform: "Instagram",
-          extractionStatus: "needs_auth",
-          originalUrl: url,
+          platform: 'Instagram',
+          extractionStatus: 'needs_auth',
+          originalUrl: url
         };
-        debugLogger.info(
-          "Instagram URL detected - enhanced extraction needed",
-          { url },
-        );
+        debugLogger.info('Instagram URL detected - enhanced extraction needed', { url });
       } else if (isSocialMedia) {
         // For other social media platforms, try enhanced extractor (if available)
         try {
-          const { enhancedSocialExtractor } = await import(
-            "./services/enhanced-social-extractor"
-          );
-          debugLogger.info(
-            "Using enhanced social extractor for social media URL",
-            { url },
-          );
-          const socialResult =
-            await enhancedSocialExtractor.extractSocialContent(url);
-
+          const { enhancedSocialExtractor } = await import('./services/enhanced-social-extractor');
+          debugLogger.info('Using enhanced social extractor for social media URL', { url });
+          const socialResult = await enhancedSocialExtractor.extractSocialContent(url);
+          
           if (socialResult.success) {
             result = {
               title: socialResult.data.title,
               content: socialResult.data.content,
               author: socialResult.data.author,
               images: socialResult.data.media || [],
-              platform: socialResult.data.platform,
+              platform: socialResult.data.platform
             };
-
-            debugLogger.info("Enhanced social extraction successful", {
-              url,
+            
+            debugLogger.info('Enhanced social extraction successful', { 
+              url, 
               platform: socialResult.data.platform,
-              enhanced: socialResult.enhanced || false,
+              enhanced: socialResult.enhanced || false
             });
           } else {
-            throw new Error("Enhanced social extraction failed");
+            throw new Error('Enhanced social extraction failed');
           }
         } catch (socialError) {
-          debugLogger.warn(
-            "Enhanced social extraction failed, falling back to regular extraction",
-            {
-              url,
-              error: socialError.message,
-            },
-          );
+          debugLogger.warn('Enhanced social extraction failed, falling back to regular extraction', { 
+            url, 
+            error: socialError.message 
+          });
           // Fall through to regular extraction for other platforms
         }
       }
@@ -1640,37 +1329,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Universal video processing with Whisper transcription for ALL platforms
       if (!result.title && videoTranscriptionService.isVideoUrl(url)) {
         isVideo = true;
-        debugLogger.info(
-          "Video URL detected - attempting universal Whisper transcription",
-          { url },
-        );
-        console.log(
-          "🎥 DEBUG: Video URL detected, starting universal Whisper transcription for:",
-          url,
-        );
-
+        debugLogger.info('Video URL detected - attempting universal Whisper transcription', { url });
+        console.log('🎥 DEBUG: Video URL detected, starting universal Whisper transcription for:', url);
+        
         try {
           // Note: Bright Data proxy connectivity currently failing - connection issue identified
           // When working: would bypass YouTube "Sign in to confirm you're not a bot" blocks
           // Use Universal Whisper transcription for now
           const transcriptResult = await new Promise<any>((resolve) => {
-            const pythonProcess = spawn("python3", [
-              join(process.cwd(), "server/python/simple_universal_whisper.py"),
-              url,
+            const pythonProcess = spawn('python3', [
+              join(process.cwd(), 'server/python/simple_universal_whisper.py'),
+              url
             ]);
 
-            let stdout = "";
-            let stderr = "";
+            let stdout = '';
+            let stderr = '';
 
-            pythonProcess.stdout.on("data", (data: Buffer) => {
+            pythonProcess.stdout.on('data', (data: Buffer) => {
               stdout += data.toString();
             });
 
-            pythonProcess.stderr.on("data", (data: Buffer) => {
+            pythonProcess.stderr.on('data', (data: Buffer) => {
               stderr += data.toString();
             });
 
-            pythonProcess.on("close", (code: number) => {
+            pythonProcess.on('close', (code: number) => {
               if (code === 0) {
                 try {
                   const result = JSON.parse(stdout);
@@ -1678,21 +1361,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 } catch (parseError) {
                   resolve({
                     transcript: null,
-                    error: "Failed to parse transcription result",
+                    error: 'Failed to parse transcription result'
                   });
                 }
               } else {
                 resolve({
                   transcript: null,
-                  error: `Transcription process failed: ${stderr}`,
+                  error: `Transcription process failed: ${stderr}`
                 });
               }
             });
 
-            pythonProcess.on("error", (error: any) => {
+            pythonProcess.on('error', (error: any) => {
               resolve({
                 transcript: null,
-                error: `Process error: ${error.message}`,
+                error: `Process error: ${error.message}`
               });
             });
 
@@ -1701,128 +1384,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
               pythonProcess.kill();
               resolve({
                 transcript: null,
-                error: "Whisper transcription timeout - video may be too long",
+                error: 'Whisper transcription timeout - video may be too long'
               });
             }, 25000);
           });
-
-          if (
-            transcriptResult &&
-            transcriptResult.transcript &&
-            transcriptResult.transcript.trim()
-          ) {
+          
+          if (transcriptResult && transcriptResult.transcript && transcriptResult.transcript.trim()) {
             // Get basic page metadata
-            const quickContent = (await Promise.race([
+            const quickContent = await Promise.race([
               scraperService.extractContent(url),
-              new Promise((resolve) =>
-                setTimeout(
-                  () =>
-                    resolve({
-                      title: "YouTube Video",
-                      author: "YouTube",
-                      images: [],
-                    }),
-                  2000,
-                ),
-              ),
-            ])) as any;
-
+              new Promise((resolve) => 
+                setTimeout(() => resolve({ title: 'YouTube Video', author: 'YouTube', images: [] }), 2000)
+              )
+            ]) as any;
+            
             result = {
               title: `[VIDEO] ${quickContent.title || `${transcriptResult.platform} Video`}`,
               content: transcriptResult.transcript,
               author: quickContent.author || transcriptResult.platform,
               images: quickContent.images || [],
               platform: transcriptResult.platform,
-              extractionMethod: transcriptResult.method,
+              extractionMethod: transcriptResult.method
             };
-
+            
             videoTranscription = {
               transcription: transcriptResult.transcript,
               platform: transcriptResult.platform,
               method: transcriptResult.method,
-              language: transcriptResult.language,
+              language: transcriptResult.language
             };
-
-            debugLogger.info("Universal Whisper transcription successful", {
-              url,
+            
+            debugLogger.info('Universal Whisper transcription successful', { 
+              url, 
               platform: transcriptResult.platform,
               method: transcriptResult.method,
-              transcriptLength: transcriptResult.transcript.length,
+              transcriptLength: transcriptResult.transcript.length
             });
           } else {
             // If transcription fails, provide informative message with proper error handling
-            debugLogger.warn("Universal video transcription failed", {
-              url,
-              platform: transcriptResult?.platform,
-              reason: transcriptResult?.reason,
-            });
-
+            debugLogger.warn('Universal video transcription failed', { url, platform: transcriptResult?.platform, reason: transcriptResult?.reason });
+            
             result = {
-              title: `[VIDEO] ${transcriptResult?.platform || "Video"} - Universal Whisper Transcription`,
-              content: `[${transcriptResult?.platform || "Video"} Video Detected]\n\nVideo URL: ${url}\n\n🎯 UNIVERSAL WHISPER TRANSCRIPTION RESULT\n\nPlatform: ${transcriptResult?.platform || "Unknown"}\nMethod: ${transcriptResult?.method || "Unknown"}\nStatus: ${transcriptResult?.error || "Processing failed"}\n\nTechnical Details:\n${transcriptResult?.reason || "No specific reason provided"}\n\nPossible Solutions:\n${(transcriptResult?.solutions || ["Try again later", "Check video accessibility"]).map((s) => `• ${s}`).join("\n")}\n\nNote: This demonstrates the Universal Whisper Transcription system successfully detecting and processing video URLs from ALL platforms (YouTube, TikTok, Instagram, LinkedIn, Twitter, etc.).`,
-              author: transcriptResult?.platform || "Video Platform",
+              title: `[VIDEO] ${transcriptResult?.platform || 'Video'} - Universal Whisper Transcription`,
+              content: `[${transcriptResult?.platform || 'Video'} Video Detected]\n\nVideo URL: ${url}\n\n🎯 UNIVERSAL WHISPER TRANSCRIPTION RESULT\n\nPlatform: ${transcriptResult?.platform || 'Unknown'}\nMethod: ${transcriptResult?.method || 'Unknown'}\nStatus: ${transcriptResult?.error || 'Processing failed'}\n\nTechnical Details:\n${transcriptResult?.reason || 'No specific reason provided'}\n\nPossible Solutions:\n${(transcriptResult?.solutions || ['Try again later', 'Check video accessibility']).map(s => `• ${s}`).join('\n')}\n\nNote: This demonstrates the Universal Whisper Transcription system successfully detecting and processing video URLs from ALL platforms (YouTube, TikTok, Instagram, LinkedIn, Twitter, etc.).`,
+              author: transcriptResult?.platform || 'Video Platform',
               images: [],
-              platform: transcriptResult?.platform || "unknown",
-              extractionMethod: transcriptResult?.method || "universal_whisper",
+              platform: transcriptResult?.platform || 'unknown',
+              extractionMethod: transcriptResult?.method || 'universal_whisper'
             };
           }
         } catch (videoError) {
-          debugLogger.warn("Universal video transcription process failed", {
-            url,
-            error: videoError,
-          });
-
+          debugLogger.warn('Universal video transcription process failed', { url, error: videoError });
+          
           // Provide clear explanation of video processing failure
           result = {
             title: `[VIDEO] Video Transcription System Error`,
-            content: `[Video URL Detected]\n\nVideo URL: ${url}\n\n⚠️ WHISPER TRANSCRIPTION SYSTEM ERROR\n\nThe universal video transcription system encountered an error:\n\n${videoError.message || "Unknown system error"}\n\nThis affects:\n• Audio extraction from video platforms\n• Whisper transcription processing\n• Content analysis pipeline\n\nSOLUTIONS:\n1. Try again in a few moments\n2. Check if video is publicly accessible\n3. Verify video contains spoken content\n4. Contact support if issue persists\n\nNote: This is a system processing error, not platform blocking.`,
-            author: "Video System",
+            content: `[Video URL Detected]\n\nVideo URL: ${url}\n\n⚠️ WHISPER TRANSCRIPTION SYSTEM ERROR\n\nThe universal video transcription system encountered an error:\n\n${videoError.message || 'Unknown system error'}\n\nThis affects:\n• Audio extraction from video platforms\n• Whisper transcription processing\n• Content analysis pipeline\n\nSOLUTIONS:\n1. Try again in a few moments\n2. Check if video is publicly accessible\n3. Verify video contains spoken content\n4. Contact support if issue persists\n\nNote: This is a system processing error, not platform blocking.`,
+            author: 'Video System',
             images: [],
-            platform: "video_system_error",
-            extractionMethod: "system_error",
+            platform: 'video_system_error',
+            extractionMethod: 'system_error'
           };
         }
       } else if (!result.title) {
-        // For non-video URLs that haven't been processed yet, use regular content extraction with timeout
+        // For non-video URLs that haven't been processed yet, use regular content extraction with timeout  
         const contentPromise = scraperService.extractContent(url);
-        result = (await Promise.race([
+        result = await Promise.race([
           contentPromise,
-          new Promise((_, reject) =>
-            setTimeout(
-              () => reject(new Error("Content extraction timeout")),
-              5000,
-            ),
-          ),
-        ])) as any;
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Content extraction timeout')), 5000)
+          )
+        ]) as any;
       }
 
       // Structure content into sections for new UI
       const sections = {
         text: {
-          content: result.content || "",
-          hasContent: !!(result.content && result.content.trim()),
+          content: result.content || '',
+          hasContent: !!(result.content && result.content.trim())
         },
         transcript: {
-          content: videoTranscription?.transcription || "",
-          hasContent: !!(
-            videoTranscription?.transcription &&
-            !videoTranscription.transcription.includes(
-              "[Video Content Detected but Audio Extraction Limited]",
-            )
-          ),
+          content: videoTranscription?.transcription || '',
+          hasContent: !!(videoTranscription?.transcription && !videoTranscription.transcription.includes("[Video Content Detected but Audio Extraction Limited]")),
           platform: videoTranscription?.platform || null,
-          metadata: videoTranscription?.videoMetadata || null,
+          metadata: videoTranscription?.videoMetadata || null
         },
         comments: {
-          content: "", // Comments removed per user request
+          content: '', // Comments removed per user request
           hasContent: false,
-          count: 0,
+          count: 0
         },
         images: {
           urls: result.images || [],
           hasContent: !!(result.images && result.images.length > 0),
-          count: result.images?.length || 0,
-        },
+          count: result.images?.length || 0
+        }
       };
 
       // Return backward-compatible response with new sections
@@ -1834,7 +1490,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isVideo,
         videoTranscription,
         // New structured sections for enhanced UI
-        sections,
+        sections
       });
     } catch (error: any) {
       res.status(400).json({ message: (error as Error).message });
@@ -1859,7 +1515,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const profile = await storage.createUserTopicProfile({
         userId: req.session.userId!,
-        ...req.body,
+        ...req.body
       });
       res.json(profile);
     } catch (error: any) {
@@ -1870,10 +1526,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/user/topic-profile", requireAuth, async (req, res) => {
     try {
-      const profile = await storage.updateUserTopicProfile(
-        req.session.userId!,
-        req.body,
-      );
+      const profile = await storage.updateUserTopicProfile(req.session.userId!, req.body);
       if (!profile) {
         return res.status(404).json({ message: "Topic profile not found" });
       }
@@ -1898,11 +1551,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const signal = await storage.getSignal(id);
-
+      
       if (!signal || signal.userId !== req.session.userId) {
         return res.status(404).json({ message: "Signal not found" });
       }
-
+      
       res.json({ signal });
     } catch (error: any) {
       res.status(500).json({ message: (error as Error).message });
@@ -1913,12 +1566,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const updates = req.body;
-
+      
       const signal = await storage.getSignal(id);
       if (!signal || signal.userId !== req.session.userId) {
         return res.status(404).json({ message: "Signal not found" });
       }
-
+      
       // Track promotion timestamps
       if (updates.status && updates.status !== signal.status) {
         if (updates.status === "potential_signal") {
@@ -1927,7 +1580,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           updates.promotedAt = new Date();
         }
       }
-
+      
       const updatedSignal = await storage.updateSignal(id, updates);
       res.json({ signal: updatedSignal });
     } catch (error: any) {
@@ -1938,12 +1591,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/signals/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-
+      
       const signal = await storage.getSignal(id);
       if (!signal || signal.userId !== req.session.userId) {
         return res.status(404).json({ message: "Signal not found" });
       }
-
+      
       await storage.deleteSignal(id);
       res.json({ success: true });
     } catch (error: any) {
@@ -1955,53 +1608,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/suggestions", requireAuth, async (req, res) => {
     try {
       const captures = await storage.getSignalsByUserId(req.session.userId!);
-      const captureOnly = captures.filter((s) => s.status === "capture");
-
+      const captureOnly = captures.filter(s => s.status === "capture");
+      
       // Generate AI suggestions for why captures should become potential signals
-      const suggestions = captureOnly.slice(0, 5).map((capture) => {
+      const suggestions = captureOnly.slice(0, 5).map(capture => {
         let reason = "";
         let priority = "medium";
-
+        
         // High attention value
         if (capture.attentionValue === "high") {
-          reason =
-            "High attention value detected - this could be an underpriced opportunity";
+          reason = "High attention value detected - this could be an underpriced opportunity";
           priority = "high";
         }
         // High viral potential
         else if (capture.viralPotential === "high") {
-          reason =
-            "High viral potential - consider for cross-platform strategy";
+          reason = "High viral potential - consider for cross-platform strategy";
           priority = "high";
         }
         // Cultural moment
-        else if (
-          capture.culturalMoment &&
-          capture.culturalMoment.includes("shift")
-        ) {
+        else if (capture.culturalMoment && capture.culturalMoment.includes("shift")) {
           reason = "Cultural shift identified - early adoption opportunity";
           priority = "medium";
         }
         // Multiple cohort opportunities
-        else if (
-          capture.cohortSuggestions &&
-          capture.cohortSuggestions.length >= 3
-        ) {
+        else if (capture.cohortSuggestions && capture.cohortSuggestions.length >= 3) {
           reason = `Multiple cohort opportunities (${capture.cohortSuggestions.length}) - broad strategic value`;
           priority = "medium";
-        } else {
+        }
+        else {
           reason = "Contains strategic insights worth exploring further";
           priority = "low";
         }
-
+        
         return {
           capture,
           reason,
           priority,
-          suggestedAction: "Flag as Potential Signal",
+          suggestedAction: "Flag as Potential Signal"
         };
       });
-
+      
       res.json({ suggestions });
     } catch (error: any) {
       res.status(500).json({ message: (error as Error).message });
@@ -2013,76 +1659,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { platform } = req.query;
       const platformFilter = platform as string | undefined;
-
-      debugLogger.info(
-        `Fetching trending topics`,
-        { platform: platformFilter, userId: req.session.userId || "anonymous" },
-        req,
-      );
-
+      
+      debugLogger.info(`Fetching trending topics`, { platform: platformFilter, userId: req.session.userId || 'anonymous' }, req);
+      
       // Set response timeout to prevent long waits
       const timeoutMs = 10000; // 10 seconds max
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(
-          () => reject(new Error("Topics request timeout")),
-          timeoutMs,
-        );
+        setTimeout(() => reject(new Error('Topics request timeout')), timeoutMs);
       });
-
-      const { externalAPIsService } = await import("./services/external-apis");
-
+      
+      const { externalAPIsService } = await import('./services/external-apis');
+      
       // Race between data fetch and timeout
-      const topics = (await Promise.race([
+      const topics = await Promise.race([
         externalAPIsService.getAllTrendingTopics(platformFilter),
-        timeoutPromise,
-      ])) as any[];
-
-      debugLogger.info(
-        `Retrieved ${topics.length} trending topics`,
-        { count: topics.length, platform: platformFilter },
-        req,
-      );
+        timeoutPromise
+      ]) as any[];
+      
+      debugLogger.info(`Retrieved ${topics.length} trending topics`, { count: topics.length, platform: platformFilter }, req);
       res.json({ topics });
     } catch (error: any) {
-      debugLogger.error("Error fetching trending topics", error, req);
-
+      debugLogger.error('Error fetching trending topics', error, req);
+      
       // Return cached/fallback data on timeout or error
       const fallbackTopics = [
         {
-          id: "fallback-1",
-          platform: "system",
-          title: "AI and Machine Learning Trends",
-          summary: "Latest developments in artificial intelligence",
-          url: "#",
+          id: 'fallback-1',
+          platform: 'system',
+          title: 'AI and Machine Learning Trends',
+          summary: 'Latest developments in artificial intelligence',
+          url: '#',
           score: 100,
           fetchedAt: new Date().toISOString(),
-          engagement: 95,
+          engagement: 95
         },
         {
-          id: "fallback-2",
-          platform: "system",
-          title: "Digital Marketing Evolution",
-          summary: "New strategies in digital marketing landscape",
-          url: "#",
+          id: 'fallback-2', 
+          platform: 'system',
+          title: 'Digital Marketing Evolution',
+          summary: 'New strategies in digital marketing landscape',
+          url: '#',
           score: 90,
           fetchedAt: new Date().toISOString(),
-          engagement: 88,
+          engagement: 88
         },
         {
-          id: "fallback-3",
-          platform: "system",
-          title: "Remote Work Culture Shift",
-          summary: "Changes in workplace dynamics and culture",
-          url: "#",
+          id: 'fallback-3',
+          platform: 'system', 
+          title: 'Remote Work Culture Shift',
+          summary: 'Changes in workplace dynamics and culture',
+          url: '#',
           score: 85,
           fetchedAt: new Date().toISOString(),
-          engagement: 82,
-        },
+          engagement: 82
+        }
       ];
-
-      res.json({
+      
+      res.json({ 
         topics: fallbackTopics,
-        notice: "Using cached data due to slow API response",
+        notice: 'Using cached data due to slow API response'
       });
     }
   });
@@ -2091,20 +1726,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/topics/search", async (req, res) => {
     try {
       const { q: query, platform } = req.query;
-
-      if (!query || typeof query !== "string") {
-        return res.status(400).json({ message: "Query parameter is required" });
+      
+      if (!query || typeof query !== 'string') {
+        return res.status(400).json({ message: 'Query parameter is required' });
       }
 
-      const { externalAPIsService } = await import("./services/external-apis");
-      const topics = await externalAPIsService.searchTrends(
-        query,
-        platform as string,
-      );
-
+      const { externalAPIsService } = await import('./services/external-apis');
+      const topics = await externalAPIsService.searchTrends(query, platform as string);
+      
       res.json({ topics });
     } catch (error: any) {
-      debugLogger.error("Error searching trending topics", error, req);
+      debugLogger.error('Error searching trending topics', error, req);
       res.status(500).json({ message: (error as Error).message });
     }
   });
@@ -2112,12 +1744,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Check API health status (public access)
   app.get("/api/topics/health", async (req, res) => {
     try {
-      const { externalAPIsService } = await import("./services/external-apis");
+      const { externalAPIsService } = await import('./services/external-apis');
       const health = await externalAPIsService.checkAPIHealth();
-
+      
       res.json({ health });
     } catch (error: any) {
-      debugLogger.error("Error checking API health", error, req);
+      debugLogger.error('Error checking API health', error, req);
       res.status(500).json({ message: (error as Error).message });
     }
   });
@@ -2126,25 +1758,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/trending/:platform", requireAuth, async (req, res) => {
     try {
       const { platform } = req.params;
-      const { externalAPIsService } = await import("./services/external-apis");
-
+      const { externalAPIsService } = await import('./services/external-apis');
+      
       // Use the same logic as the main /api/topics route
-      const topics = await externalAPIsService.getAllTrendingTopics(
-        platform === "all" ? undefined : platform,
-      );
-
-      debugLogger.info(
-        `Retrieved ${topics.length} topics for platform: ${platform}`,
-        { platform, count: topics.length },
-        req,
-      );
+      const topics = await externalAPIsService.getAllTrendingTopics(platform === 'all' ? undefined : platform);
+      
+      debugLogger.info(`Retrieved ${topics.length} topics for platform: ${platform}`, { platform, count: topics.length }, req);
       res.json({ topics });
     } catch (error: any) {
-      debugLogger.error(
-        `Error fetching ${req.params.platform} trends`,
-        error,
-        req,
-      );
+      debugLogger.error(`Error fetching ${req.params.platform} trends`, error, req);
       res.status(500).json({ message: (error as Error).message });
     }
   });
@@ -2154,28 +1776,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { date } = req.query;
       const reportDate = date as string | undefined;
-
-      debugLogger.info(
-        "Generating daily report",
-        { userId: req.session.userId, date: reportDate },
-        req,
-      );
-
-      const report = await dailyReportsService.generateDailyReport(
-        req.session.userId!,
-        reportDate,
-      );
-
-      debugLogger.info(
-        "Daily report generated successfully",
-        {
-          userId: req.session.userId,
-          signalCount: report.stats.totalSignals,
-          reportId: report.id,
-        },
-        req,
-      );
-
+      
+      debugLogger.info("Generating daily report", { userId: req.session.userId, date: reportDate }, req);
+      
+      const report = await dailyReportsService.generateDailyReport(req.session.userId!, reportDate);
+      
+      debugLogger.info("Daily report generated successfully", { 
+        userId: req.session.userId, 
+        signalCount: report.stats.totalSignals,
+        reportId: report.id
+      }, req);
+      
       res.json(report);
     } catch (error: any) {
       debugLogger.error("Error generating daily report", error, req);
@@ -2187,39 +1798,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/brief/generate", requireAuth, async (req, res) => {
     try {
       const { title, signalIds } = req.body;
-
+      
       if (!title || !signalIds || !Array.isArray(signalIds)) {
-        return res
-          .status(400)
-          .json({ message: "Title and signal IDs are required" });
+        return res.status(400).json({ message: "Title and signal IDs are required" });
       }
-
+      
       const signals = await Promise.all(
-        signalIds.map((id) => storage.getSignal(id)),
+        signalIds.map(id => storage.getSignal(id))
       );
-
-      const validSignals = signals.filter(
-        (signal) => signal && signal.userId === req.session.userId,
+      
+      const validSignals = signals.filter(signal => 
+        signal && signal.userId === req.session.userId
       );
-
+      
       if (validSignals.length === 0) {
         return res.status(400).json({ message: "No valid signals found" });
       }
+      
+      const briefSections = validSignals.map(signal => {
+        if (!signal) return '';
+        return `## ${signal.title || 'Untitled Signal'}
 
-      const briefSections = validSignals.map((signal) => {
-        if (!signal) return "";
-        return `## ${signal.title || "Untitled Signal"}
-
-**Source:** ${signal.url || "Manual Entry"}
-**Sentiment:** ${signal.sentiment || "Neutral"}
-**Tone:** ${signal.tone || "Professional"}
-**Confidence:** ${signal.confidence || "N/A"}
+**Source:** ${signal.url || 'Manual Entry'}
+**Sentiment:** ${signal.sentiment || 'Neutral'}
+**Tone:** ${signal.tone || 'Professional'}
+**Confidence:** ${signal.confidence || 'N/A'}
 
 ### Summary
-${signal.summary || "No summary available"}
+${signal.summary || 'No summary available'}
 
 ### Key Insights
-${signal.keywords?.map((keyword) => `- ${keyword}`).join("\n") || "No keywords available"}
+${signal.keywords?.map(keyword => `- ${keyword}`).join('\n') || 'No keywords available'}
 
 ---
 `;
@@ -2235,7 +1844,7 @@ This strategic brief analyzes ${validSignals.length} key signals to provide acti
 
 ## Key Signals
 
-${briefSections.join("\n")}
+${briefSections.join('\n')}
 
 ## Strategic Recommendations
 
@@ -2272,24 +1881,24 @@ The analyzed signals provide a comprehensive view of current market trends and s
 
   app.get("/api/sources/analytics", requireAuth, async (req, res) => {
     try {
-      const analytics = await sourceManagerService.getSourceAnalytics(
-        req.session.userId!,
-      );
+      const analytics = await sourceManagerService.getSourceAnalytics(req.session.userId!);
       res.json(analytics);
     } catch (error: any) {
       res.status(500).json({ message: (error as Error).message });
     }
   });
 
+
+
   app.get("/api/sources/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const source = await storage.getSource(id);
-
+      
       if (!source || source.userId !== req.session.userId) {
         return res.status(404).json({ message: "Source not found" });
       }
-
+      
       const relatedSignals = await storage.getSignalsForSource(id);
       res.json({ source, relatedSignals });
     } catch (error: any) {
@@ -2301,12 +1910,12 @@ The analyzed signals provide a comprehensive view of current market trends and s
     try {
       const id = parseInt(req.params.id);
       const updates = req.body;
-
+      
       const source = await storage.getSource(id);
       if (!source || source.userId !== req.session.userId) {
         return res.status(404).json({ message: "Source not found" });
       }
-
+      
       const updatedSource = await storage.updateSource(id, updates);
       res.json({ source: updatedSource });
     } catch (error: any) {
@@ -2318,49 +1927,48 @@ The analyzed signals provide a comprehensive view of current market trends and s
   app.post("/api/auth/reset-admin-password", async (req, res) => {
     try {
       const { email, newPassword } = req.body;
-
+      
       if (!email || !newPassword) {
-        return res.status(400).json({
-          error: {
-            title: "Missing Information",
-            message: "Email and new password are required",
-          },
+        return res.status(400).json({ 
+          error: { 
+            title: "Missing Information", 
+            message: "Email and new password are required" 
+          } 
         });
       }
-
+      
       // Validate password strength
-      const passwordRegex =
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
       if (!passwordRegex.test(newPassword)) {
-        return res.status(400).json({
-          error: {
-            title: "Password Too Weak",
-            message:
-              "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (minimum 8 characters)",
-          },
+        return res.status(400).json({ 
+          error: { 
+            title: "Password Too Weak", 
+            message: "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (minimum 8 characters)" 
+          } 
         });
       }
-
+      
       // Hash the new password
       const hashedPassword = await bcrypt.hash(newPassword, 12);
-
+      
       // Update the password in database
       await sql`
         UPDATE users 
         SET password = ${hashedPassword} 
         WHERE email = ${email.toLowerCase()}
       `;
-
-      res.json({
-        success: true,
-        message: `Password reset successfully for ${email}`,
+      
+      res.json({ 
+        success: true, 
+        message: `Password reset successfully for ${email}` 
       });
+      
     } catch (error: any) {
-      res.status(500).json({
-        error: {
-          title: "Reset Failed",
-          message: (error as Error).message || "Failed to reset password",
-        },
+      res.status(500).json({ 
+        error: { 
+          title: "Reset Failed", 
+          message: (error as Error).message || "Failed to reset password" 
+        } 
       });
     }
   });
@@ -2369,65 +1977,56 @@ The analyzed signals provide a comprehensive view of current market trends and s
   app.post("/api/auth/register-admin", async (req, res) => {
     try {
       debugLogger.info("Admin registration attempt", { body: req.body }, req);
-
+      
       // Validate the request body
       const parseResult = registerSchema.safeParse(req.body);
       if (!parseResult.success) {
         debugLogger.error("Validation failed", parseResult.error.issues, req);
-        const validationErrors = parseResult.error.issues.map((issue) => ({
-          field: issue.path.join("."),
-          message: issue.message,
+        const validationErrors = parseResult.error.issues.map(issue => ({
+          field: issue.path.join('.'),
+          message: issue.message
         }));
-
-        return res.status(400).json({
+        
+        return res.status(400).json({ 
           error: {
             title: "Please Fix These Issues",
             message: "Some fields contain errors that need to be corrected.",
-            solution:
-              "Check the highlighted fields and fix any issues before trying again.",
-            code: "VAL_003",
+            solution: "Check the highlighted fields and fix any issues before trying again.",
+            code: "VAL_003"
           },
-          validationErrors,
+          validationErrors
         });
       }
-
+      
       const data = parseResult.data;
-
+      
       // Create admin user
-      const adminData = { ...data, role: "admin" };
-      debugLogger.info(
-        "Creating admin user",
-        { email: adminData.email, role: adminData.role },
-        req,
-      );
+      const adminData = { ...data, role: 'admin' };
+      debugLogger.info("Creating admin user", { email: adminData.email, role: adminData.role }, req);
       const user = await authService.register(adminData);
       req.session.userId = user.id;
-
-      debugLogger.info(
-        "Admin user created successfully",
-        { userId: user.id, email: user.email },
-        req,
-      );
-
-      res.json({
-        success: true,
+      
+      debugLogger.info("Admin user created successfully", { userId: user.id, email: user.email }, req);
+      
+      res.json({ 
+        success: true, 
         message: "Admin account created successfully",
-        user: { id: user.id, email: user.email, role: "admin" },
+        user: { id: user.id, email: user.email, role: 'admin' }
       });
     } catch (error: any) {
       debugLogger.error("Admin registration failed", error, req);
-
+      
       // Handle specific error types
       if (error.name === "EMAIL_ALREADY_EXISTS") {
-        return res.status(400).json({
-          error: ERROR_MESSAGES.EMAIL_ALREADY_EXISTS,
+        return res.status(400).json({ 
+          error: ERROR_MESSAGES.EMAIL_ALREADY_EXISTS 
         });
       }
-
+      
       // Handle generic errors
       const errorMessage = matchErrorPattern((error as Error).message);
-      res.status(400).json({
-        error: errorMessage,
+      res.status(400).json({ 
+        error: errorMessage 
       });
     }
   });
@@ -2435,8 +2034,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
   // Admin analytics routes
   app.get("/api/admin/dashboard", requireAuth, async (req, res) => {
     try {
-      const timeRange =
-        (req.query.timeRange as "day" | "week" | "month") || "week";
+      const timeRange = req.query.timeRange as 'day' | 'week' | 'month' || 'week';
       const dashboardData = await analyticsService.getDashboardData(timeRange);
       res.json(dashboardData);
     } catch (error: any) {
@@ -2448,9 +2046,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
   app.get("/api/admin/feedback", requireAuth, async (req, res) => {
     try {
       const status = req.query.status as string;
-      const feedback = await analyticsService.getAllFeedback(
-        status !== "all" ? status : undefined,
-      );
+      const feedback = await analyticsService.getAllFeedback(status !== 'all' ? status : undefined);
       res.json(feedback);
     } catch (error: any) {
       debugLogger.error("Failed to get feedback", error, req);
@@ -2462,7 +2058,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
     try {
       const id = parseInt(req.params.id);
       const { status, adminResponse } = req.body;
-
+      
       await analyticsService.updateFeedbackStatus(id, status, adminResponse);
       res.json({ success: true });
     } catch (error: any) {
@@ -2476,21 +2072,21 @@ The analyzed signals provide a comprehensive view of current market trends and s
     try {
       const feedbackData = insertUserFeedbackSchema.parse({
         ...req.body,
-        userId: req.session.userId,
+        userId: req.session.userId
       });
-
+      
       const feedback = await analyticsService.submitFeedback(feedbackData);
-
+      
       // Track the feedback submission as an analytics event
       await analyticsService.trackUserAction({
         userId: req.session.userId!,
-        action: "feedback_submitted",
-        feature: "feedback_system",
+        action: 'feedback_submitted',
+        feature: 'feedback_system',
         details: { type: feedbackData.type, category: feedbackData.category },
-        userAgent: req.headers["user-agent"] || "",
-        ipAddress: req.ip || "",
+        userAgent: req.headers['user-agent'] || '',
+        ipAddress: req.ip || ''
       });
-
+      
       res.json(feedback);
     } catch (error: any) {
       debugLogger.error("Failed to submit feedback", error, req);
@@ -2502,16 +2098,16 @@ The analyzed signals provide a comprehensive view of current market trends and s
   app.post("/api/analytics/track", requireAuth, async (req, res) => {
     try {
       const { event, metadata, ...rest } = req.body;
-
+      
       const analyticsData = insertUserAnalyticsSchema.parse({
         action: event, // Map 'event' to 'action'
         details: metadata, // Map 'metadata' to 'details'
         userId: req.session.userId,
-        userAgent: req.headers["user-agent"] || "",
-        ipAddress: req.ip || "",
-        ...rest,
+        userAgent: req.headers['user-agent'] || '',
+        ipAddress: req.ip || '',
+        ...rest
       });
-
+      
       await analyticsService.trackUserAction(analyticsData);
       res.json({ success: true });
     } catch (error: any) {
@@ -2523,8 +2119,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
   // API call statistics endpoint
   app.get("/api/admin/api-stats", requireAuth, async (req, res) => {
     try {
-      const timeRange =
-        (req.query.timeRange as "day" | "week" | "month") || "week";
+      const timeRange = req.query.timeRange as 'day' | 'week' | 'month' || 'week';
       const stats = await analyticsService.getApiCallStats(timeRange);
       res.json(stats);
     } catch (error: any) {
@@ -2547,34 +2142,32 @@ The analyzed signals provide a comprehensive view of current market trends and s
   });
 
   // Debug and performance monitoring routes
-  app.get("/api/debug/logs", requireAuth, (req, res) => {
+  app.get('/api/debug/logs', requireAuth, (req, res) => {
     const logs = debugLogger.getRecentLogs(100);
     res.json({ logs });
   });
 
-  app.get("/api/debug/errors", requireAuth, (req, res) => {
+  app.get('/api/debug/errors', requireAuth, (req, res) => {
     const errorSummary = debugLogger.getErrorSummary();
     res.json({ errorSummary });
   });
 
-  app.get("/api/debug/performance", requireAuth, (req, res) => {
+  app.get('/api/debug/performance', requireAuth, (req, res) => {
     const metrics = performanceMonitor.getMetrics();
     const endpointStats = performanceMonitor.getEndpointStats();
     res.json({ metrics, endpointStats });
   });
 
-  app.delete("/api/debug/logs", requireAuth, (req, res) => {
+  app.delete('/api/debug/logs', requireAuth, (req, res) => {
     debugLogger.clearLogs();
     performanceMonitor.clearMetrics();
-    res.json({ message: "Logs and metrics cleared" });
+    res.json({ message: 'Logs and metrics cleared' });
   });
 
   // Feed management routes
   app.get("/api/feeds/sources", requireAuth, async (req, res) => {
     try {
-      const feedSources = await feedManagerService.getUserFeedSources(
-        req.session.userId!,
-      );
+      const feedSources = await feedManagerService.getUserFeedSources(req.session.userId!);
       res.json({ feedSources });
     } catch (error: any) {
       res.status(500).json({ message: (error as Error).message });
@@ -2583,28 +2176,18 @@ The analyzed signals provide a comprehensive view of current market trends and s
 
   app.post("/api/feeds/sources", requireAuth, async (req, res) => {
     try {
-      const {
+      const { name, feedType, sourceType, sourceUrl, sourceConfig, updateFrequency } = req.body;
+      
+      const feedSource = await feedManagerService.createUserFeedSource(req.session.userId!, {
         name,
         feedType,
         sourceType,
         sourceUrl,
         sourceConfig,
-        updateFrequency,
-      } = req.body;
-
-      const feedSource = await feedManagerService.createUserFeedSource(
-        req.session.userId!,
-        {
-          name,
-          feedType,
-          sourceType,
-          sourceUrl,
-          sourceConfig,
-          updateFrequency: updateFrequency || "4h",
-          isActive: true,
-        },
-      );
-
+        updateFrequency: updateFrequency || "4h",
+        isActive: true
+      });
+      
       res.json({ feedSource });
     } catch (error: any) {
       res.status(400).json({ message: (error as Error).message });
@@ -2615,11 +2198,8 @@ The analyzed signals provide a comprehensive view of current market trends and s
     try {
       const id = parseInt(req.params.id);
       const updates = req.body;
-
-      const feedSource = await feedManagerService.updateUserFeedSource(
-        id,
-        updates,
-      );
+      
+      const feedSource = await feedManagerService.updateUserFeedSource(id, updates);
       res.json({ feedSource });
     } catch (error: any) {
       res.status(400).json({ message: (error as Error).message });
@@ -2640,12 +2220,8 @@ The analyzed signals provide a comprehensive view of current market trends and s
     try {
       const feedType = req.query.feedType as string;
       const limit = parseInt(req.query.limit as string) || 20;
-
-      const feedItems = await feedManagerService.fetchFeedItems(
-        req.session.userId!,
-        feedType,
-        limit,
-      );
+      
+      const feedItems = await feedManagerService.fetchFeedItems(req.session.userId!, feedType, limit);
       res.json({ feedItems });
     } catch (error: any) {
       res.status(500).json({ message: (error as Error).message });
@@ -2653,247 +2229,204 @@ The analyzed signals provide a comprehensive view of current market trends and s
   });
 
   // Social Intelligence Routes (Beta Testing)
-  app.post(
-    "/api/social/linkedin/company/:slug",
-    requireAuth,
-    async (req, res) => {
-      try {
-        const { slug } = req.params;
-        debugLogger.info("LinkedIn company intelligence request", {
-          slug,
-          userId: req.session.userId,
-        });
-
-        const result =
-          await socialMediaIntelligence.scrapeLinkedInCompany(slug);
-
-        if (result.success) {
-          res.json({
-            success: true,
-            data: result.data,
-            metadata: result.metadata,
-            platform: "LinkedIn",
-          });
-        } else {
-          res.status(400).json({
-            success: false,
-            error: result.error,
-            platform: "LinkedIn",
-          });
-        }
-      } catch (error) {
-        debugLogger.error("LinkedIn company scraping error", {
-          error: (error as Error).message,
-        });
-        res.status(500).json({
-          success: false,
-          error: "Failed to scrape LinkedIn company data",
-        });
-      }
-    },
-  );
-
-  app.get("/api/social/twitter/trends", requireAuth, async (req, res) => {
+  app.post('/api/social/linkedin/company/:slug', requireAuth, async (req, res) => {
     try {
-      const { location = "worldwide" } = req.query;
-      debugLogger.info("Twitter trends request", {
-        location,
-        userId: req.session.userId,
-      });
-
-      const result = await socialMediaIntelligence.scrapeTwitterTrends(
-        location as string,
-      );
-
+      const { slug } = req.params;
+      debugLogger.info('LinkedIn company intelligence request', { slug, userId: req.session.userId });
+      
+      const result = await socialMediaIntelligence.scrapeLinkedInCompany(slug);
+      
       if (result.success) {
         res.json({
           success: true,
           data: result.data,
           metadata: result.metadata,
-          platform: "Twitter",
+          platform: 'LinkedIn'
         });
       } else {
         res.status(400).json({
           success: false,
           error: result.error,
-          platform: "Twitter",
+          platform: 'LinkedIn'
         });
       }
     } catch (error) {
-      debugLogger.error("Twitter trends scraping error", {
-        error: (error as Error).message,
-      });
+      debugLogger.error('LinkedIn company scraping error', { error: (error as Error).message });
       res.status(500).json({
         success: false,
-        error: "Failed to scrape Twitter trends",
+        error: 'Failed to scrape LinkedIn company data'
       });
     }
   });
 
-  app.post("/api/social/instagram/hashtags", requireAuth, async (req, res) => {
+  app.get('/api/social/twitter/trends', requireAuth, async (req, res) => {
+    try {
+      const { location = 'worldwide' } = req.query;
+      debugLogger.info('Twitter trends request', { location, userId: req.session.userId });
+      
+      const result = await socialMediaIntelligence.scrapeTwitterTrends(location as string);
+      
+      if (result.success) {
+        res.json({
+          success: true,
+          data: result.data,
+          metadata: result.metadata,
+          platform: 'Twitter'
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: result.error,
+          platform: 'Twitter'
+        });
+      }
+    } catch (error) {
+      debugLogger.error('Twitter trends scraping error', { error: (error as Error).message });
+      res.status(500).json({
+        success: false,
+        error: 'Failed to scrape Twitter trends'
+      });
+    }
+  });
+
+  app.post('/api/social/instagram/hashtags', requireAuth, async (req, res) => {
     try {
       const { hashtags } = req.body;
       if (!Array.isArray(hashtags) || hashtags.length === 0) {
         return res.status(400).json({
           success: false,
-          error: "Hashtags array is required",
+          error: 'Hashtags array is required'
         });
       }
-
-      debugLogger.info("Instagram hashtag intelligence request", {
-        hashtags,
-        userId: req.session.userId,
-      });
-
-      const results =
-        await socialMediaIntelligence.scrapeInstagramHashtags(hashtags);
-
+      
+      debugLogger.info('Instagram hashtag intelligence request', { hashtags, userId: req.session.userId });
+      
+      const results = await socialMediaIntelligence.scrapeInstagramHashtags(hashtags);
+      
       res.json({
         success: true,
         data: results,
-        platform: "Instagram",
-        hashtagsAnalyzed: hashtags.length,
+        platform: 'Instagram',
+        hashtagsAnalyzed: hashtags.length
       });
     } catch (error: any) {
-      debugLogger.error("Instagram hashtag intelligence failed", error, req);
+      debugLogger.error('Instagram hashtag intelligence failed', error, req);
       res.status(500).json({
         success: false,
-        error: "Failed to analyze Instagram hashtags",
-        details: (error as Error).message,
+        error: 'Failed to analyze Instagram hashtags',
+        details: (error as Error).message
       });
     }
   });
 
   // AUTOMATED BRIGHT DATA ENDPOINTS FOR TRENDING TABS
-
+  
   // Main trending data endpoint - gets ALL platform data
-  app.get("/api/trending/all", requireAuth, async (req, res) => {
+  app.get('/api/trending/all', requireAuth, async (req, res) => {
     try {
-      debugLogger.info("🚀 All-platform trending data request", {
-        userId: req.session.userId,
-      });
-
-      const automatedService = new (
-        await import("../services/automated-bright-data")
-      ).AutomatedBrightDataService();
+      debugLogger.info('🚀 All-platform trending data request', { userId: req.session.userId });
+      
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const trendingData = await automatedService.getTrendingData();
-
+      
       // Transform for frontend consumption
-      const transformedData = trendingData.reduce(
-        (acc: any, platform: any) => {
-          acc[platform.platform] = {
-            data: platform.data,
-            success: platform.success,
-            timestamp: platform.timestamp,
-            snapshotId: platform.snapshotId,
-            count: platform.data.length,
-          };
-          return acc;
-        },
-        {} as Record<string, any>,
-      );
-
-      debugLogger.info(
-        `✅ Trending data collected from ${trendingData.length} platforms`,
-      );
-
+      const transformedData = trendingData.reduce((acc: any, platform: any) => {
+        acc[platform.platform] = {
+          data: platform.data,
+          success: platform.success,
+          timestamp: platform.timestamp,
+          snapshotId: platform.snapshotId,
+          count: platform.data.length
+        };
+        return acc;
+      }, {} as Record<string, any>);
+      
+      debugLogger.info(`✅ Trending data collected from ${trendingData.length} platforms`);
+      
       res.json({
         success: true,
         platforms: transformedData,
-        totalItems: trendingData.reduce(
-          (sum: number, p: any) => sum + p.data.length,
-          0,
-        ),
-        collectedAt: new Date().toISOString(),
+        totalItems: trendingData.reduce((sum: number, p: any) => sum + p.data.length, 0),
+        collectedAt: new Date().toISOString()
       });
+      
     } catch (error) {
-      debugLogger.error(
-        "Trending data collection failed:",
-        (error as Error).message,
-      );
+      debugLogger.error('Trending data collection failed:', (error as Error).message);
       res.status(500).json({
         success: false,
-        error: "Failed to collect trending data",
-        details: (error as Error).message,
+        error: 'Failed to collect trending data',
+        details: (error as Error).message
       });
     }
   });
 
   // Individual platform trending endpoints
-  app.get("/api/trending/instagram", requireAuth, async (req, res) => {
+  app.get('/api/trending/instagram', requireAuth, async (req, res) => {
     try {
-      const automatedService = new (
-        await import("../services/automated-bright-data")
-      ).AutomatedBrightDataService();
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const instagramData = data.find((p: any) => p.platform === "instagram");
-
+      const instagramData = data.find((p: any) => p.platform === 'instagram');
+      
       res.json({
         success: true,
-        platform: "instagram",
+        platform: 'instagram',
         data: instagramData?.data || [],
         timestamp: instagramData?.timestamp,
-        snapshotId: instagramData?.snapshotId,
+        snapshotId: instagramData?.snapshotId
       });
     } catch (error) {
       res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
-  app.get("/api/trending/twitter", requireAuth, async (req, res) => {
+  app.get('/api/trending/twitter', requireAuth, async (req, res) => {
     try {
-      const automatedService = new (
-        await import("../services/automated-bright-data")
-      ).AutomatedBrightDataService();
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const twitterData = data.find((p: any) => p.platform === "twitter");
-
+      const twitterData = data.find((p: any) => p.platform === 'twitter');
+      
       res.json({
         success: true,
-        platform: "twitter",
+        platform: 'twitter',
         data: twitterData?.data || [],
         timestamp: twitterData?.timestamp,
-        snapshotId: twitterData?.snapshotId,
+        snapshotId: twitterData?.snapshotId
       });
     } catch (error) {
       res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
-  app.get("/api/trending/tiktok", requireAuth, async (req, res) => {
+  app.get('/api/trending/tiktok', requireAuth, async (req, res) => {
     try {
-      const automatedService = new (
-        await import("../services/automated-bright-data")
-      ).AutomatedBrightDataService();
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const tiktokData = data.find((p: any) => p.platform === "tiktok");
-
+      const tiktokData = data.find((p: any) => p.platform === 'tiktok');
+      
       res.json({
         success: true,
-        platform: "tiktok",
+        platform: 'tiktok',
         data: tiktokData?.data || [],
         timestamp: tiktokData?.timestamp,
-        snapshotId: tiktokData?.snapshotId,
+        snapshotId: tiktokData?.snapshotId
       });
     } catch (error) {
       res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
-  app.get("/api/trending/linkedin", requireAuth, async (req, res) => {
+  app.get('/api/trending/linkedin', requireAuth, async (req, res) => {
     try {
-      const automatedService = new (
-        await import("../services/automated-bright-data")
-      ).AutomatedBrightDataService();
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const linkedinData = data.find((p: any) => p.platform === "linkedin");
-
+      const linkedinData = data.find((p: any) => p.platform === 'linkedin');
+      
       res.json({
         success: true,
-        platform: "linkedin",
+        platform: 'linkedin',
         data: linkedinData?.data || [],
         timestamp: linkedinData?.timestamp,
-        snapshotId: linkedinData?.snapshotId,
+        snapshotId: linkedinData?.snapshotId
       });
     } catch (error) {
       res.status(500).json({ success: false, error: (error as Error).message });
@@ -2903,62 +2436,54 @@ The analyzed signals provide a comprehensive view of current market trends and s
   // NEW PLATFORM ENDPOINTS FOR 9 ADDITIONAL PLATFORMS
 
   // Content Intelligence Platforms
-  app.get("/api/trending/medium", requireAuth, async (req, res) => {
+  app.get('/api/trending/medium', requireAuth, async (req, res) => {
     try {
-      const automatedService = new (
-        await import("../services/automated-bright-data")
-      ).AutomatedBrightDataService();
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const mediumData = data.find((p: any) => p.platform === "medium");
-
+      const mediumData = data.find((p: any) => p.platform === 'medium');
+      
       res.json({
         success: true,
-        platform: "medium",
+        platform: 'medium',
         data: mediumData?.data || [],
         timestamp: mediumData?.timestamp,
-        snapshotId: mediumData?.snapshotId,
+        snapshotId: mediumData?.snapshotId
       });
     } catch (error) {
       res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
-  app.get("/api/trending/substack", requireAuth, async (req, res) => {
+  app.get('/api/trending/substack', requireAuth, async (req, res) => {
     try {
-      const automatedService = new (
-        await import("../services/automated-bright-data")
-      ).AutomatedBrightDataService();
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const substackData = data.find((p: any) => p.platform === "substack");
-
+      const substackData = data.find((p: any) => p.platform === 'substack');
+      
       res.json({
         success: true,
-        platform: "substack",
+        platform: 'substack',
         data: substackData?.data || [],
         timestamp: substackData?.timestamp,
-        snapshotId: substackData?.snapshotId,
+        snapshotId: substackData?.snapshotId
       });
     } catch (error) {
       res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
-  app.get("/api/trending/producthunt", requireAuth, async (req, res) => {
+  app.get('/api/trending/producthunt', requireAuth, async (req, res) => {
     try {
-      const automatedService = new (
-        await import("../services/automated-bright-data")
-      ).AutomatedBrightDataService();
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const producthuntData = data.find(
-        (p: any) => p.platform === "producthunt",
-      );
-
+      const producthuntData = data.find((p: any) => p.platform === 'producthunt');
+      
       res.json({
         success: true,
-        platform: "producthunt",
+        platform: 'producthunt',
         data: producthuntData?.data || [],
         timestamp: producthuntData?.timestamp,
-        snapshotId: producthuntData?.snapshotId,
+        snapshotId: producthuntData?.snapshotId
       });
     } catch (error) {
       res.status(500).json({ success: false, error: (error as Error).message });
@@ -2966,80 +2491,72 @@ The analyzed signals provide a comprehensive view of current market trends and s
   });
 
   // Business Intelligence Platforms
-  app.get("/api/trending/glassdoor", requireAuth, async (req, res) => {
+  app.get('/api/trending/glassdoor', requireAuth, async (req, res) => {
     try {
-      const automatedService = new (
-        await import("../services/automated-bright-data")
-      ).AutomatedBrightDataService();
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const glassdoorData = data.find((p: any) => p.platform === "glassdoor");
-
+      const glassdoorData = data.find((p: any) => p.platform === 'glassdoor');
+      
       res.json({
         success: true,
-        platform: "glassdoor",
+        platform: 'glassdoor',
         data: glassdoorData?.data || [],
         timestamp: glassdoorData?.timestamp,
-        snapshotId: glassdoorData?.snapshotId,
+        snapshotId: glassdoorData?.snapshotId
       });
     } catch (error) {
       res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
-  app.get("/api/trending/trustpilot", requireAuth, async (req, res) => {
+  app.get('/api/trending/trustpilot', requireAuth, async (req, res) => {
     try {
-      const automatedService = new (
-        await import("../services/automated-bright-data")
-      ).AutomatedBrightDataService();
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const trustpilotData = data.find((p: any) => p.platform === "trustpilot");
-
+      const trustpilotData = data.find((p: any) => p.platform === 'trustpilot');
+      
       res.json({
         success: true,
-        platform: "trustpilot",
+        platform: 'trustpilot',
         data: trustpilotData?.data || [],
         timestamp: trustpilotData?.timestamp,
-        snapshotId: trustpilotData?.snapshotId,
+        snapshotId: trustpilotData?.snapshotId
       });
     } catch (error) {
       res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
-  app.get("/api/trending/g2", requireAuth, async (req, res) => {
+  app.get('/api/trending/g2', requireAuth, async (req, res) => {
     try {
-      const automatedService = new (
-        await import("../services/automated-bright-data")
-      ).AutomatedBrightDataService();
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const g2Data = data.find((p: any) => p.platform === "g2");
-
+      const g2Data = data.find((p: any) => p.platform === 'g2');
+      
       res.json({
         success: true,
-        platform: "g2",
+        platform: 'g2',
         data: g2Data?.data || [],
         timestamp: g2Data?.timestamp,
-        snapshotId: g2Data?.snapshotId,
+        snapshotId: g2Data?.snapshotId
       });
     } catch (error) {
       res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
-  app.get("/api/trending/capterra", requireAuth, async (req, res) => {
+  app.get('/api/trending/capterra', requireAuth, async (req, res) => {
     try {
-      const automatedService = new (
-        await import("../services/automated-bright-data")
-      ).AutomatedBrightDataService();
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const capterraData = data.find((p: any) => p.platform === "capterra");
-
+      const capterraData = data.find((p: any) => p.platform === 'capterra');
+      
       res.json({
         success: true,
-        platform: "capterra",
+        platform: 'capterra',
         data: capterraData?.data || [],
         timestamp: capterraData?.timestamp,
-        snapshotId: capterraData?.snapshotId,
+        snapshotId: capterraData?.snapshotId
       });
     } catch (error) {
       res.status(500).json({ success: false, error: (error as Error).message });
@@ -3047,150 +2564,131 @@ The analyzed signals provide a comprehensive view of current market trends and s
   });
 
   // Alternative Social Platforms
-  app.get("/api/trending/soundcloud", requireAuth, async (req, res) => {
+  app.get('/api/trending/soundcloud', requireAuth, async (req, res) => {
     try {
-      const automatedService = new (
-        await import("../services/automated-bright-data")
-      ).AutomatedBrightDataService();
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const soundcloudData = data.find((p: any) => p.platform === "soundcloud");
-
+      const soundcloudData = data.find((p: any) => p.platform === 'soundcloud');
+      
       res.json({
         success: true,
-        platform: "soundcloud",
+        platform: 'soundcloud',
         data: soundcloudData?.data || [],
         timestamp: soundcloudData?.timestamp,
-        snapshotId: soundcloudData?.snapshotId,
+        snapshotId: soundcloudData?.snapshotId
       });
     } catch (error) {
       res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
-  app.get("/api/trending/mastodon", requireAuth, async (req, res) => {
+  app.get('/api/trending/mastodon', requireAuth, async (req, res) => {
     try {
-      const automatedService = new (
-        await import("../services/automated-bright-data")
-      ).AutomatedBrightDataService();
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const mastodonData = data.find((p: any) => p.platform === "mastodon");
-
+      const mastodonData = data.find((p: any) => p.platform === 'mastodon');
+      
       res.json({
         success: true,
-        platform: "mastodon",
+        platform: 'mastodon',
         data: mastodonData?.data || [],
         timestamp: mastodonData?.timestamp,
-        snapshotId: mastodonData?.snapshotId,
+        snapshotId: mastodonData?.snapshotId
       });
     } catch (error) {
       res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
-  app.get("/api/trending/nextdoor", requireAuth, async (req, res) => {
+  app.get('/api/trending/nextdoor', requireAuth, async (req, res) => {
     try {
-      const automatedService = new (
-        await import("../services/automated-bright-data")
-      ).AutomatedBrightDataService();
+      const automatedService = new (await import('../services/automated-bright-data')).AutomatedBrightDataService();
       const data = await automatedService.getTrendingData();
-      const nextdoorData = data.find((p: any) => p.platform === "nextdoor");
-
+      const nextdoorData = data.find((p: any) => p.platform === 'nextdoor');
+      
       res.json({
         success: true,
-        platform: "nextdoor",
+        platform: 'nextdoor',
         data: nextdoorData?.data || [],
         timestamp: nextdoorData?.timestamp,
-        snapshotId: nextdoorData?.snapshotId,
+        snapshotId: nextdoorData?.snapshotId
       });
     } catch (error) {
       res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
+
+
   // Snapshot status checker endpoint
-  app.get(
-    "/api/bright-data/snapshot/:snapshotId",
-    requireAuth,
-    async (req, res) => {
-      try {
-        const { snapshotId } = req.params;
-        const apiKey = process.env.BRIGHT_DATA_API_KEY;
-
-        if (!apiKey) {
-          return res
-            .status(500)
-            .json({ error: "Bright Data API key not configured" });
-        }
-
-        debugLogger.info(`🔍 Checking snapshot: ${snapshotId}`);
-
-        const response = await axios.get(
-          `https://api.brightdata.com/dca/snapshot/${snapshotId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${apiKey}`,
-              "Content-Type": "application/json",
-            },
-            timeout: 10000,
-          },
-        );
-
-        res.json({
-          snapshot_id: snapshotId,
-          status: response.data.status,
-          results_count: response.data.results?.length || 0,
-          results: response.data.results || [],
-          start_time: response.data.start_time,
-          end_time: response.data.end_time,
-          checked_at: new Date().toISOString(),
-        });
-      } catch (error) {
-        debugLogger.error(
-          `Snapshot check failed for ${req.params.snapshotId}:`,
-          (error as Error).message,
-        );
-        res.status(500).json({
-          error: "Failed to check snapshot",
-          snapshot_id: req.params.snapshotId,
-          details: (error as Error).message,
-        });
+  app.get('/api/bright-data/snapshot/:snapshotId', requireAuth, async (req, res) => {
+    try {
+      const { snapshotId } = req.params;
+      const apiKey = process.env.BRIGHT_DATA_API_KEY;
+      
+      if (!apiKey) {
+        return res.status(500).json({ error: 'Bright Data API key not configured' });
       }
-    },
-  );
+      
+      debugLogger.info(`🔍 Checking snapshot: ${snapshotId}`);
+      
+      const response = await axios.get(`https://api.brightdata.com/dca/snapshot/${snapshotId}`, {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 10000
+      });
+      
+      res.json({
+        snapshot_id: snapshotId,
+        status: response.data.status,
+        results_count: response.data.results?.length || 0,
+        results: response.data.results || [],
+        start_time: response.data.start_time,
+        end_time: response.data.end_time,
+        checked_at: new Date().toISOString()
+      });
+      
+    } catch (error) {
+      debugLogger.error(`Snapshot check failed for ${req.params.snapshotId}:`, (error as Error).message);
+      res.status(500).json({
+        error: 'Failed to check snapshot',
+        snapshot_id: req.params.snapshotId,
+        details: (error as Error).message
+      });
+    }
+  });
 
-  app.get("/api/social/capabilities", requireAuth, async (req, res) => {
+  app.get('/api/social/capabilities', requireAuth, async (req, res) => {
     try {
       const capabilities = socialMediaIntelligence.getSocialCapabilities();
-
+      
       res.json({
         success: true,
         capabilities,
-        betaStatus: "Active",
+        betaStatus: 'Active',
         costEstimation: {
-          dailyBudget: "$5-15",
-          monthlyEstimate: "$150-450",
-          perRequestCost: "$0.005-0.02",
-        },
+          dailyBudget: '$5-15',
+          monthlyEstimate: '$150-450',
+          perRequestCost: '$0.005-0.02'
+        }
       });
     } catch (error) {
-      debugLogger.error("Social capabilities error", {
-        error: (error as Error).message,
-      });
+      debugLogger.error('Social capabilities error', { error: (error as Error).message });
       res.status(500).json({
         success: false,
-        error: "Failed to retrieve social capabilities",
+        error: 'Failed to retrieve social capabilities'
       });
     }
   });
 
   // Add bright data test router
-  app.use("/api/bright-data-test", brightDataTestRouter);
+  app.use('/api/bright-data-test', brightDataTestRouter);
 
   app.post("/api/feeds/refresh", requireAuth, async (req, res) => {
     try {
-      const result = await feedManagerService.refreshUserFeeds(
-        req.session.userId!,
-      );
+      const result = await feedManagerService.refreshUserFeeds(req.session.userId!);
       res.json(result);
     } catch (error: any) {
       res.status(500).json({ message: (error as Error).message });
@@ -3199,9 +2697,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
 
   app.get("/api/feeds/profile", requireAuth, async (req, res) => {
     try {
-      const profile = await feedManagerService.getUserTopicProfile(
-        req.session.userId!,
-      );
+      const profile = await feedManagerService.getUserTopicProfile(req.session.userId!);
       res.json({ profile });
     } catch (error: any) {
       res.status(500).json({ message: (error as Error).message });
@@ -3210,9 +2706,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
 
   app.get("/api/user/topic-profile", requireAuth, async (req, res) => {
     try {
-      const profile = await feedManagerService.getUserTopicProfile(
-        req.session.userId!,
-      );
+      const profile = await feedManagerService.getUserTopicProfile(req.session.userId!);
       res.json(profile);
     } catch (error: any) {
       res.status(500).json({ message: (error as Error).message });
@@ -3221,10 +2715,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
 
   app.post("/api/user/topic-profile", requireAuth, async (req, res) => {
     try {
-      const profile = await feedManagerService.updateUserTopicProfile(
-        req.session.userId!,
-        req.body,
-      );
+      const profile = await feedManagerService.updateUserTopicProfile(req.session.userId!, req.body);
       res.json(profile);
     } catch (error: any) {
       res.status(400).json({ message: (error as Error).message });
@@ -3233,10 +2724,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
 
   app.put("/api/user/topic-profile", requireAuth, async (req, res) => {
     try {
-      const profile = await feedManagerService.updateUserTopicProfile(
-        req.session.userId!,
-        req.body,
-      );
+      const profile = await feedManagerService.updateUserTopicProfile(req.session.userId!, req.body);
       res.json(profile);
     } catch (error: any) {
       res.status(400).json({ message: (error as Error).message });
@@ -3245,10 +2733,7 @@ The analyzed signals provide a comprehensive view of current market trends and s
 
   app.put("/api/feeds/profile", requireAuth, async (req, res) => {
     try {
-      const profile = await feedManagerService.updateUserTopicProfile(
-        req.session.userId!,
-        req.body,
-      );
+      const profile = await feedManagerService.updateUserTopicProfile(req.session.userId!, req.body);
       res.json({ profile });
     } catch (error: any) {
       res.status(400).json({ message: (error as Error).message });
@@ -3282,278 +2767,214 @@ The analyzed signals provide a comprehensive view of current market trends and s
       res.json({
         success: true,
         cacheStats,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString()
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : "Cache stats failed",
+        error: error instanceof Error ? error.message : 'Cache stats failed'
       });
     }
   });
 
   // New modular service endpoints
-
+  
   // Cohort Builder Service - Load on demand
   app.post("/api/cohorts", requireAuth, async (req, res) => {
     try {
       const { content, title, truthAnalysis } = req.body;
-
-      debugLogger.info("Cohort analysis request", {
+      
+      debugLogger.info('Cohort analysis request', { 
         userId: req.session.userId,
         contentLength: content?.length || 0,
         title,
-        hasTruthAnalysis: !!truthAnalysis,
+        hasTruthAnalysis: !!truthAnalysis 
       });
-
+      
       if (!content) {
-        return res.status(400).json({ error: "Content is required" });
+        return res.status(400).json({ error: 'Content is required' });
       }
-
-      const cohorts = await cohortBuilderService.generateCohorts(
-        content,
-        title,
-        truthAnalysis,
-      );
-
-      debugLogger.info("Cohort analysis response", {
+      
+      const cohorts = await cohortBuilderService.generateCohorts(content, title, truthAnalysis);
+      
+      debugLogger.info('Cohort analysis response', { 
         userId: req.session.userId,
-        cohortCount: cohorts?.length || 0,
+        cohortCount: cohorts?.length || 0 
       });
-
+      
       res.json({ cohorts });
+      
     } catch (error: any) {
-      debugLogger.error("Cohort analysis failed", error, req);
-      res.status(500).json({ error: "Failed to analyze cohorts" });
+      debugLogger.error('Cohort analysis failed', error, req);
+      res.status(500).json({ error: 'Failed to analyze cohorts' });
     }
   });
-
+  
   // Competitive Intelligence Service - Load on demand
   app.post("/api/competitive-intelligence", requireAuth, async (req, res) => {
     try {
       const { content, title, truthAnalysis } = req.body;
-
+      
       if (!content) {
-        return res.status(400).json({ error: "Content is required" });
+        return res.status(400).json({ error: 'Content is required' });
       }
-
-      const insights =
-        await competitiveIntelligenceService.getCompetitiveInsights(
-          content,
-          title,
-          truthAnalysis,
-        );
+      
+      const insights = await competitiveIntelligenceService.getCompetitiveInsights(content, title, truthAnalysis);
       res.json({ insights });
+      
     } catch (error: any) {
-      debugLogger.error("Competitive intelligence failed", error, req);
-      res
-        .status(500)
-        .json({ error: "Failed to analyze competitive intelligence" });
+      debugLogger.error('Competitive intelligence failed', error, req);
+      res.status(500).json({ error: 'Failed to analyze competitive intelligence' });
     }
   });
-
+  
   // Strategic Insights Service - Load on demand
   app.post("/api/strategic-insights", requireAuth, async (req, res) => {
     try {
       const { content, title, truthAnalysis } = req.body;
-
+      
       if (!content) {
-        return res.status(400).json({ error: "Content is required" });
+        return res.status(400).json({ error: 'Content is required' });
       }
-
-      const insights = await strategicInsightsService.generateInsights(
-        content,
-        title,
-        truthAnalysis,
-      );
+      
+      const insights = await strategicInsightsService.generateInsights(content, title, truthAnalysis);
       res.json({ insights });
+      
     } catch (error: any) {
-      debugLogger.error("Strategic insights failed", error, req);
-      res.status(500).json({ error: "Failed to analyze strategic insights" });
+      debugLogger.error('Strategic insights failed', error, req);
+      res.status(500).json({ error: 'Failed to analyze strategic insights' });
     }
   });
-
+  
   // Strategic Actions Service - Load on demand
   app.post("/api/strategic-actions", requireAuth, async (req, res) => {
     try {
       const { content, title, truthAnalysis } = req.body;
-
+      
       if (!content) {
-        return res.status(400).json({ error: "Content is required" });
+        return res.status(400).json({ error: 'Content is required' });
       }
-
-      const actions = await strategicActionsService.generateActions(
-        content,
-        title,
-        truthAnalysis,
-      );
+      
+      const actions = await strategicActionsService.generateActions(content, title, truthAnalysis);
       res.json({ actions });
+      
     } catch (error: any) {
-      debugLogger.error("Strategic actions failed", error, req);
-      res.status(500).json({ error: "Failed to analyze strategic actions" });
+      debugLogger.error('Strategic actions failed', error, req);
+      res.status(500).json({ error: 'Failed to analyze strategic actions' });
     }
   });
 
   // Advanced Strategic Insights Service - Enhanced analysis of existing insights
-  app.post(
-    "/api/advanced-strategic-insights",
-    requireAuth,
-    async (req, res) => {
-      try {
-        const {
-          content,
-          title,
-          truthAnalysis,
-          initialInsights,
-          strategicActions,
-          competitiveIntelligence,
-        } = req.body;
-
-        if (!content || !initialInsights || !initialInsights.length) {
-          return res
-            .status(400)
-            .json({ error: "Content and initial insights are required" });
-        }
-
-        debugLogger.info(
-          "Advanced strategic insights request",
-          {
-            userId: req.session.userId,
-            contentLength: content?.length,
-            initialInsightsCount: initialInsights?.length || 0,
-            hasActions: !!strategicActions?.length,
-            hasCompetitive: !!competitiveIntelligence?.length,
-          },
-          req,
-        );
-
-        // Use the strategic insights service to generate advanced analysis
-        const advancedInsights =
-          await strategicInsightsService.generateAdvancedInsights(
-            content,
-            title,
-            truthAnalysis,
-            initialInsights,
-            strategicActions,
-            competitiveIntelligence,
-          );
-
-        res.json({ advancedInsights });
-      } catch (error: any) {
-        debugLogger.error("Advanced strategic insights failed", error, req);
-        res
-          .status(500)
-          .json({ error: "Failed to generate advanced strategic insights" });
+  app.post("/api/advanced-strategic-insights", requireAuth, async (req, res) => {
+    try {
+      const { content, title, truthAnalysis, initialInsights, strategicActions, competitiveIntelligence } = req.body;
+      
+      if (!content || !initialInsights || !initialInsights.length) {
+        return res.status(400).json({ error: 'Content and initial insights are required' });
       }
-    },
-  );
+      
+      debugLogger.info("Advanced strategic insights request", { 
+        userId: req.session.userId, 
+        contentLength: content?.length,
+        initialInsightsCount: initialInsights?.length || 0,
+        hasActions: !!strategicActions?.length,
+        hasCompetitive: !!competitiveIntelligence?.length
+      }, req);
+      
+      // Use the strategic insights service to generate advanced analysis
+      const advancedInsights = await strategicInsightsService.generateAdvancedInsights(
+        content, 
+        title, 
+        truthAnalysis,
+        initialInsights,
+        strategicActions,
+        competitiveIntelligence
+      );
+      
+      res.json({ advancedInsights });
+      
+    } catch (error: any) {
+      debugLogger.error('Advanced strategic insights failed', error, req);
+      res.status(500).json({ error: 'Failed to generate advanced strategic insights' });
+    }
+  });
 
   // Advanced Competitive Intelligence Service - Enhanced analysis of competitive insights
-  app.post(
-    "/api/advanced-competitive-intelligence",
-    requireAuth,
-    async (req, res) => {
-      try {
-        const { content, title, truthAnalysis, initialCompetitive } = req.body;
-
-        if (!content || !initialCompetitive || !initialCompetitive.length) {
-          return res
-            .status(400)
-            .json({
-              error:
-                "Content and initial competitive intelligence are required",
-            });
-        }
-
-        debugLogger.info(
-          "Advanced competitive intelligence request",
-          {
-            userId: req.session.userId,
-            contentLength: content?.length,
-            initialCompetitiveCount: initialCompetitive?.length || 0,
-          },
-          req,
-        );
-
-        // Use the competitive intelligence service to generate advanced analysis
-        const advancedCompetitive =
-          await competitiveIntelligenceService.generateAdvancedCompetitive(
-            content,
-            title,
-            truthAnalysis,
-            initialCompetitive,
-          );
-
-        res.json({ advancedCompetitive });
-      } catch (error: any) {
-        debugLogger.error(
-          "Advanced competitive intelligence failed",
-          error,
-          req,
-        );
-        res
-          .status(500)
-          .json({
-            error: "Failed to generate advanced competitive intelligence",
-          });
+  app.post("/api/advanced-competitive-intelligence", requireAuth, async (req, res) => {
+    try {
+      const { content, title, truthAnalysis, initialCompetitive } = req.body;
+      
+      if (!content || !initialCompetitive || !initialCompetitive.length) {
+        return res.status(400).json({ error: 'Content and initial competitive intelligence are required' });
       }
-    },
-  );
+      
+      debugLogger.info("Advanced competitive intelligence request", { 
+        userId: req.session.userId, 
+        contentLength: content?.length,
+        initialCompetitiveCount: initialCompetitive?.length || 0
+      }, req);
+      
+      // Use the competitive intelligence service to generate advanced analysis
+      const advancedCompetitive = await competitiveIntelligenceService.generateAdvancedCompetitive(
+        content, 
+        title, 
+        truthAnalysis,
+        initialCompetitive
+      );
+      
+      res.json({ advancedCompetitive });
+      
+    } catch (error: any) {
+      debugLogger.error('Advanced competitive intelligence failed', error, req);
+      res.status(500).json({ error: 'Failed to generate advanced competitive intelligence' });
+    }
+  });
 
   // Advanced Strategic Actions Service - Enhanced analysis of strategic actions
   app.post("/api/advanced-strategic-actions", requireAuth, async (req, res) => {
     try {
       const { content, title, truthAnalysis, initialActions } = req.body;
-
+      
       if (!content || !initialActions || !initialActions.length) {
-        return res
-          .status(400)
-          .json({
-            error: "Content and initial strategic actions are required",
-          });
+        return res.status(400).json({ error: 'Content and initial strategic actions are required' });
       }
-
-      debugLogger.info(
-        "Advanced strategic actions request",
-        {
-          userId: req.session.userId,
-          contentLength: content?.length,
-          initialActionsCount: initialActions?.length || 0,
-        },
-        req,
-      );
-
+      
+      debugLogger.info("Advanced strategic actions request", { 
+        userId: req.session.userId, 
+        contentLength: content?.length,
+        initialActionsCount: initialActions?.length || 0
+      }, req);
+      
       // Use the strategic actions service to generate advanced analysis
-      const advancedActions =
-        await strategicActionsService.generateAdvancedActions(
-          content,
-          title,
-          truthAnalysis,
-          initialActions,
-        );
-
+      const advancedActions = await strategicActionsService.generateAdvancedActions(
+        content, 
+        title, 
+        truthAnalysis,
+        initialActions
+      );
+      
       res.json({ advancedActions });
+      
     } catch (error: any) {
-      debugLogger.error("Advanced strategic actions failed", error, req);
-      res
-        .status(500)
-        .json({ error: "Failed to generate advanced strategic actions" });
+      debugLogger.error('Advanced strategic actions failed', error, req);
+      res.status(500).json({ error: 'Failed to generate advanced strategic actions' });
     }
   });
-
+  
   // Performance monitoring endpoint
   app.get("/api/performance", requireAuth, async (req, res) => {
     try {
       const stats = performanceMonitor.getStats();
       const cacheStats = getCacheStats();
-
+      
       res.json({
         performance: stats,
-        cache: cacheStats,
+        cache: cacheStats
       });
+      
     } catch (error: any) {
-      debugLogger.error("Performance stats failed", error, req);
-      res.status(500).json({ error: "Failed to get performance stats" });
+      debugLogger.error('Performance stats failed', error, req);
+      res.status(500).json({ error: 'Failed to get performance stats' });
     }
   });
 
@@ -3564,14 +2985,12 @@ The analyzed signals provide a comprehensive view of current market trends and s
   app.post("/api/rss-feeds", requireAuth, async (req, res) => {
     try {
       const { name, rssUrl, category, fetchFrequency } = req.body;
-
+      
       if (!name || !rssUrl || !category) {
-        return res
-          .status(400)
-          .json({ error: "Name, RSS URL, and category are required" });
+        return res.status(400).json({ error: "Name, RSS URL, and category are required" });
       }
 
-      const { rssService } = await import("./services/rss-service");
+      const { rssService } = await import('./services/rss-service');
       const feed = await rssService.addFeed(req.session.userId!, {
         name,
         rssUrl,
@@ -3581,74 +3000,56 @@ The analyzed signals provide a comprehensive view of current market trends and s
 
       res.json(feed);
     } catch (error) {
-      console.error("Failed to add RSS feed:", error);
-      res
-        .status(500)
-        .json({
-          error:
-            error instanceof Error
-              ? (error as Error).message
-              : "Failed to add RSS feed",
-        });
+      console.error('Failed to add RSS feed:', error);
+      res.status(500).json({ error: error instanceof Error ? (error as Error).message : 'Failed to add RSS feed' });
     }
   });
 
   app.get("/api/rss-feeds", requireAuth, async (req, res) => {
     try {
       const category = req.query.category as string;
-      const { rssService } = await import("./services/rss-service");
-      const feeds = await rssService.getUserFeeds(
-        req.session.userId!,
-        category,
-      );
+      const { rssService } = await import('./services/rss-service');
+      const feeds = await rssService.getUserFeeds(req.session.userId!, category);
       res.json({ feeds });
     } catch (error) {
-      console.error("Failed to get RSS feeds:", error);
-      res.status(500).json({ error: "Failed to get RSS feeds" });
+      console.error('Failed to get RSS feeds:', error);
+      res.status(500).json({ error: 'Failed to get RSS feeds' });
     }
   });
 
-  app.get(
-    "/api/rss-feeds/category/:category/articles",
-    requireAuth,
-    async (req, res) => {
-      try {
-        const category = req.params.category;
-        const limit = parseInt(req.query.limit as string) || 10;
-
-        const { rssService } = await import("./services/rss-service");
-        const articles = await rssService.getRecentArticles(
-          req.session.userId!,
-          category,
-          limit,
-        );
-        res.json({ articles });
-      } catch (error) {
-        console.error("Failed to get category articles:", error);
-        res.status(500).json({ error: "Failed to get articles" });
-      }
-    },
-  );
+  app.get("/api/rss-feeds/category/:category/articles", requireAuth, async (req, res) => {
+    try {
+      const category = req.params.category;
+      const limit = parseInt(req.query.limit as string) || 10;
+      
+      const { rssService } = await import('./services/rss-service');
+      const articles = await rssService.getRecentArticles(req.session.userId!, category, limit);
+      res.json({ articles });
+    } catch (error) {
+      console.error('Failed to get category articles:', error);
+      res.status(500).json({ error: 'Failed to get articles' });
+    }
+  });
 
   app.post("/api/rss-feeds/refresh", requireAuth, async (req, res) => {
     try {
-      const { rssService } = await import("./services/rss-service");
+      const { rssService } = await import('./services/rss-service');
       const results = await rssService.fetchAllUserFeeds(req.session.userId!);
       res.json({ results });
     } catch (error) {
-      console.error("Failed to refresh feeds:", error);
-      res.status(500).json({ error: "Failed to refresh feeds" });
+      console.error('Failed to refresh feeds:', error);
+      res.status(500).json({ error: 'Failed to refresh feeds' });
     }
   });
 
   app.get("/api/rss-feeds/stats", requireAuth, async (req, res) => {
     try {
-      const { rssService } = await import("./services/rss-service");
+      const { rssService } = await import('./services/rss-service');
       const stats = await rssService.getFeedStats(req.session.userId!);
       res.json(stats);
     } catch (error) {
-      console.error("Failed to get feed stats:", error);
-      res.status(500).json({ error: "Failed to get feed stats" });
+      console.error('Failed to get feed stats:', error);
+      res.status(500).json({ error: 'Failed to get feed stats' });
     }
   });
 
@@ -3656,10 +3057,8 @@ The analyzed signals provide a comprehensive view of current market trends and s
   // Projects routes
   app.get("/api/projects", requireAuth, async (req, res) => {
     try {
-      const { projectService } = await import("./services/projectService.js");
-      const projects = await projectService.getUserProjects(
-        req.session.userId!,
-      );
+      const { projectService } = await import('./services/projectService.js');
+      const projects = await projectService.getUserProjects(req.session.userId!);
       res.json(projects);
     } catch (error) {
       console.error("Error fetching projects:", error);
@@ -3669,12 +3068,12 @@ The analyzed signals provide a comprehensive view of current market trends and s
 
   app.post("/api/projects", requireAuth, async (req, res) => {
     try {
-      const { insertProjectSchema } = await import("../shared/schema.js");
-      const { projectService } = await import("./services/projectService.js");
-
+      const { insertProjectSchema } = await import('../shared/schema.js');
+      const { projectService } = await import('./services/projectService.js');
+      
       const validatedData = insertProjectSchema.parse({
         ...req.body,
-        userId: req.session.userId!,
+        userId: req.session.userId!
       });
 
       const project = await projectService.createProject(validatedData);
@@ -3688,11 +3087,8 @@ The analyzed signals provide a comprehensive view of current market trends and s
   app.get("/api/projects/:id/captures", requireAuth, async (req, res) => {
     try {
       const projectId = parseInt(req.params.id);
-      const { projectService } = await import("./services/projectService.js");
-      const captures = await projectService.getProjectCaptures(
-        projectId,
-        req.session.userId!,
-      );
+      const { projectService } = await import('./services/projectService.js');
+      const captures = await projectService.getProjectCaptures(projectId, req.session.userId!);
       res.json(captures);
     } catch (error) {
       console.error("Error fetching captures:", error);
@@ -3704,15 +3100,15 @@ The analyzed signals provide a comprehensive view of current market trends and s
     try {
       const projectId = parseInt(req.params.id);
       const { signalId, templateSection } = req.body;
-      const { projectService } = await import("./services/projectService.js");
-
+      const { projectService } = await import('./services/projectService.js');
+      
       const signal = await projectService.assignSignalToProject(
-        signalId,
-        projectId,
+        signalId, 
+        projectId, 
         req.session.userId!,
-        templateSection,
+        templateSection
       );
-
+      
       if (!signal) {
         return res.status(404).json({ error: "Signal not found" });
       }
@@ -3729,21 +3125,13 @@ The analyzed signals provide a comprehensive view of current market trends and s
     try {
       const projectId = parseInt(req.params.projectId);
       const { templateId = "jimmy-johns-pac" } = req.body;
-      const { briefService } = await import("./services/briefService.js");
-
-      const brief = await briefService.generateBrief(
-        projectId,
-        req.session.userId!,
-        templateId,
-      );
+      const { briefService } = await import('./services/briefService.js');
+      
+      const brief = await briefService.generateBrief(projectId, req.session.userId!, templateId);
       res.status(201).json(brief);
     } catch (error) {
       console.error("Error generating brief:", error);
-      res
-        .status(400)
-        .json({
-          error: (error as Error).message || "Failed to generate brief",
-        });
+      res.status(400).json({ error: (error as Error).message || "Failed to generate brief" });
     }
   });
 
