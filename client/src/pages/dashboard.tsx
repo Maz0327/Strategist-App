@@ -1,4 +1,5 @@
 import { useState } from "react";
+import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { SignalsSidebar } from "@/components/signals-sidebar";
@@ -15,15 +16,33 @@ import { authService } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Brain, Bell, User, Home, Search, Plus, Target, Settings, ChevronRight, BarChart3, ChevronLeft, Menu, X } from "lucide-react";
+import { Link, useLocation } from "wouter";
 
 interface DashboardProps {
   user: { id: number; email: string };
   onLogout: () => void;
   onPageChange?: (page: string) => void;
+  currentPage?: string;
 }
 
-export default function Dashboard({ user, onLogout, onPageChange }: DashboardProps) {
-  const [activeTab, setActiveTab] = useState("capture");
+export default function Dashboard({ user, onLogout, onPageChange, currentPage }: DashboardProps) {
+  const [location] = useLocation();
+  const [activeTab, setActiveTab] = useState(currentPage || "dashboard");
+  
+  // Update active tab when route changes
+  React.useEffect(() => {
+    const pathToTab = {
+      '/dashboard': 'briefing',
+      '/capture': 'capture',
+      '/explore': 'explore',
+      '/brief': 'brief',
+      '/manage': 'manage',
+      '/admin': 'admin'
+    };
+    
+    const newTab = pathToTab[location] || currentPage || 'briefing';
+    setActiveTab(newTab);
+  }, [location, currentPage]);
   const [activeSubTab, setActiveSubTab] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -267,23 +286,24 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
           <nav className="p-2 space-y-1">
             {navigationItems.map((item) => (
               <div key={item.id}>
-                <Button
-                  variant={activeTab === item.id ? "default" : "ghost"}
-                  className={`w-full justify-between ${sidebarCollapsed && !isMobile ? 'px-2' : 'px-3'}`}
-                  onClick={() => {
-                    handleTabChange(item.id);
-                    if (isMobile) setMobileMenuOpen(false);
-                  }}
-                >
-                  <div className="flex items-center">
-                    <item.icon className={`h-4 w-4 ${sidebarCollapsed && !isMobile ? '' : 'mr-2'}`} />
-                    {(!sidebarCollapsed || isMobile) && item.label}
-                  </div>
-                  {/* Show chevron for items with sub-menus on desktop only */}
-                  {item.subItems.length > 0 && !isMobile && !sidebarCollapsed && (
-                    <ChevronRight className={`h-4 w-4 transition-transform ${activeTab === item.id ? 'rotate-90' : ''}`} />
-                  )}
-                </Button>
+                <Link href={`/${item.id === 'briefing' ? 'dashboard' : item.id}`}>
+                  <Button
+                    variant={activeTab === item.id ? "default" : "ghost"}
+                    className={`w-full justify-between ${sidebarCollapsed && !isMobile ? 'px-2' : 'px-3'}`}
+                    onClick={() => {
+                      if (isMobile) setMobileMenuOpen(false);
+                    }}
+                  >
+                    <div className="flex items-center">
+                      <item.icon className={`h-4 w-4 ${sidebarCollapsed && !isMobile ? '' : 'mr-2'}`} />
+                      {(!sidebarCollapsed || isMobile) && item.label}
+                    </div>
+                    {/* Show chevron for items with sub-menus on desktop only */}
+                    {item.subItems.length > 0 && !isMobile && !sidebarCollapsed && (
+                      <ChevronRight className={`h-4 w-4 transition-transform ${activeTab === item.id ? 'rotate-90' : ''}`} />
+                    )}
+                  </Button>
+                </Link>
                 
                 {/* Sub-navigation */}
                 {item.subItems.length > 0 && activeTab === item.id && (!sidebarCollapsed || isMobile) && (
