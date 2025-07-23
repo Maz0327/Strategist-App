@@ -55,12 +55,14 @@ export class OpenAIService {
     }
   }
 
-  private getSystemPrompt(sentenceCount: number): string {
-    return `You are an expert content strategist.
-When asked to analyze, return only valid JSON matching the schema I'll provide.
-Every text field must be exactly ${sentenceCount} sentences long—no more, no fewer.
-Write in a natural, conversational tone.
-Do not include any extra keys, commentary, or markdown.`;
+  private getSystemPrompt(model: string, sentenceRange: string): string {
+    if (model === 'gpt-4o-mini') {
+      return `You are a brand strategist. Output valid JSON only. Each field must be ${sentenceRange} sentences. Use conversational but analytical tone. Prioritize usefulness over flair.`;
+    } else if (model === 'gpt-4o') {
+      return `You are a senior cultural strategist. Return valid JSON only. Each field must be ${sentenceRange} sentences. Be precise, insightful, and tie observations to cultural undercurrents.`;
+    }
+    // Fallback to current system
+    return `You are an expert content strategist. Return only valid JSON matching the schema I'll provide. Every text field must be exactly ${sentenceRange} sentences long. Write in a natural, conversational tone.`;
   }
 
   async analyzeContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', analysisMode: 'speed' | 'quick' | 'deep' = 'quick'): Promise<EnhancedAnalysisResult> {
@@ -84,7 +86,7 @@ Do not include any extra keys, commentary, or markdown.`;
 
   private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'speed' | 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     // Create stable cache key base with version for prompt changes
-    const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v17-clean-prompts';
+    const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v18-model-specific-prompts';
     
     // Step 1: Check if we have the requested length preference cached
     const targetCacheKey = createCacheKey(cacheKeyBase + lengthPreference, 'analysis');
@@ -130,34 +132,33 @@ Do not include any extra keys, commentary, or markdown.`;
   }
 
   private async createMediumAnalysis(content: string, title: string, analysisMode: 'speed' | 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
-    // Define sentence count based on analysis mode
-    const sentenceCount = analysisMode === 'speed' ? 2 : analysisMode === 'deep' ? 7 : 4;
-    
-    // Three-tier AI model selection
+    // Two-tier AI model selection (eliminating speed/GPT-3.5 as requested)
     let model: string;
-    if (analysisMode === 'speed') {
-      model = "gpt-3.5-turbo"; // Speed mode: fast content triage
-    } else if (analysisMode === 'deep') {
+    let sentenceRange: string;
+    
+    if (analysisMode === 'deep') {
       model = "gpt-4o"; // Deep mode: enterprise strategic intelligence
+      sentenceRange = "4-7"; // Flexible range for natural depth
     } else {
-      model = "gpt-4o-mini"; // Quick mode: balanced default
+      model = "gpt-4o-mini"; // Quick mode: balanced default (covers both 'speed' and 'quick')
+      sentenceRange = "2-4"; // Flexible range for efficiency
     }
     
-    const systemPrompt = this.getSystemPrompt(sentenceCount);
+    const systemPrompt = this.getSystemPrompt(model, sentenceRange);
     
-    // Clean schema definition
+    // Enhanced schema definition with specific field guidance
     const schema = {
-      summary: "string",            // Strategic overview
+      summary: "Strategic overview",
       sentiment: "positive|neutral|negative",
       tone: "professional|casual|urgent|analytical|conversational|authoritative",
       keywords: ["string"],         // 3–20 items
       confidence: "85%",
       truthAnalysis: {
-        fact: "string",             // sentenceCount sentences
-        observation: "string",      // sentenceCount sentences
-        insight: "string",          // sentenceCount sentences
-        humanTruth: "string",       // sentenceCount sentences
-        culturalMoment: "string",   // sentenceCount sentences
+        fact: "What happened exactly",
+        observation: "Notable patterns/behavior", 
+        insight: "Why it matters strategically",
+        humanTruth: "Deeper human drive behind the pattern",
+        culturalMoment: "What macro societal trend or event it fits into",
         attentionValue: "high|medium|low",
         platform: "string",
         cohortOpportunities: ["string"]
@@ -175,12 +176,12 @@ Analyze this content:
 Title: ${title}
 Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
 
-    debugLogger.info('Creating analysis with clean prompts', { model, mode: analysisMode, sentenceCount });
+    debugLogger.info('Creating analysis with model-specific prompts', { model, mode: analysisMode, sentenceRange });
 
     const response = await openai.chat.completions.create({
       model: model,
       temperature: 0.7,
-      max_tokens: sentenceCount === 2 ? 1500 : sentenceCount === 7 ? 4000 : 2500,
+      max_tokens: model === 'gpt-4o' ? 4000 : 2500,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
@@ -273,24 +274,24 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
       insight: mediumAnalysis.truthAnalysis.insight?.length || 0
     });
     
-    const targetSentenceCount = lengthPreference === 'short' ? 2 : 7;
-    const adjustmentPrompt = `Adjust each field to exactly ${targetSentenceCount} sentences:
+    const targetSentenceRange = lengthPreference === 'short' ? '1-2' : '5-7';
+    const adjustmentPrompt = `Adjust each field to ${targetSentenceRange} sentences:
 
 ${JSON.stringify(mediumAnalysis.truthAnalysis, null, 2)}
 
-Return JSON with each field adjusted to ${targetSentenceCount} sentences.`;
+Return JSON with each field adjusted to ${targetSentenceRange} sentences.`;
     
     debugLogger.info('Sending adjustment prompt:', adjustmentPrompt.substring(0, 500) + '...');
 
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo", // Always use GPT-3.5-turbo for adjustments
       messages: [
-        { role: "system", content: `You are a content editor. Adjust text length while keeping the same insights. Each field must be exactly ${targetSentenceCount} sentences.` },
+        { role: "system", content: `You are a content editor. Adjust text length while keeping the same insights. Each field must be ${targetSentenceRange} sentences.` },
         { role: "user", content: adjustmentPrompt }
       ],
       response_format: { type: "json_object" },
       temperature: 0.1,
-      max_tokens: targetSentenceCount === 2 ? 1200 : 3000
+      max_tokens: lengthPreference === 'short' ? 1200 : 3000
     });
 
     const responseContent = response.choices[0]?.message?.content;
