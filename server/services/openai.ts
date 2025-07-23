@@ -60,7 +60,7 @@ export class OpenAIService {
       return `You are a brand strategist who specializes in practical strategic insights. Return only valid JSON matching the schema provided. Write each field in a clear, conversational tone with useful depth — aim for around 3-4 sentences per field. Avoid bullet points, markdown, or explanation — just complete sentences that flow naturally.`;
     } else if (model === 'gpt-4o') {
       if (analysisMode === 'deep') {
-        return `You are a senior brand strategist who specializes in uncovering deep truths in culture, behavior, and content. Return only valid JSON matching the schema provided. Write each field in a clear, natural tone with strategic depth — aim for around 7 sentences per field. 6 is okay. Up to 10 is acceptable. Avoid bullet points, markdown, or explanation — just complete sentences that flow insightfully.`;
+        return `You are a senior brand strategist who specializes in uncovering deep truths in culture, behavior, and content. Return only valid JSON matching the schema provided. Write each field with comprehensive strategic depth — aim for around 7 sentences per field that flow naturally. Each field should be substantial and detailed. 6-10 sentences is the target range. Avoid bullet points, markdown, or explanation — just complete sentences that provide thorough strategic insight.`;
       } else {
         return `You are a senior cultural strategist who specializes in strategic cultural insights. Return only valid JSON matching the schema provided. Write each field in a clear, natural tone with strategic depth — aim for around 4-5 sentences per field. Avoid bullet points, markdown, or explanation — just complete sentences that flow insightfully.`;
       }
@@ -90,7 +90,7 @@ export class OpenAIService {
 
   private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     // Create stable cache key base with version for prompt changes
-    const cacheKeyBase = content.substring(0, 1000) + title + 'v24-natural-flow-prompts';
+    const cacheKeyBase = content.substring(0, 1000) + title + 'v25-comprehensive-depth-prompts';
     
     // Step 1: Check if we have the exact analysis mode cached
     const targetCacheKey = createCacheKey(cacheKeyBase + analysisMode, 'analysis');
@@ -272,8 +272,8 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
 
       return convertedAnalysis;
     } else {
-      // Convert Quick → Deep: Expand with natural strategic depth
-      const conversionPrompt = `Expand this analysis into comprehensive deep strategic intelligence with natural depth — aim for around 7 sentences per field (6-10 is fine). Write with strategic insight and cultural intelligence that flows naturally.`;
+      // Convert Quick → Deep: Expand with comprehensive strategic depth
+      const conversionPrompt = `Expand this analysis into comprehensive deep strategic intelligence. Each field should be substantially detailed with around 7 sentences (6-10 sentences is the target). Write with thorough strategic insight and cultural intelligence that provides comprehensive depth.`;
       
       const response = await openai.chat.completions.create({
         model: "gpt-4o", // Use Deep mode model for consistency
@@ -283,7 +283,7 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
         messages: [
           { 
             role: "system", 
-            content: "You are a senior brand strategist who specializes in uncovering deep truths in culture and behavior. Return only valid JSON. Write with natural strategic depth that flows insightfully." 
+            content: "You are a senior brand strategist who specializes in uncovering deep truths in culture and behavior. Return only valid JSON. Write with comprehensive strategic depth — each field should be substantial and detailed with thorough analysis." 
           },
           { 
             role: "user", 
