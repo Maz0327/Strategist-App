@@ -82,8 +82,9 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
         return;
       }
       
-      // For Quick Analysis, use streaming endpoint
-      const response = await fetch('/api/analyze/stream', {
+      // For Quick Analysis, determine endpoint based on content type
+      const endpoint = data.url ? '/api/analyze' : '/api/analyze/text';
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -93,56 +94,35 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
       });
 
       if (!response.ok) {
-        throw new Error('Failed to start streaming analysis');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to analyze content');
       }
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-
-      if (!reader) {
-        throw new Error('No response stream available');
-      }
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const eventData = JSON.parse(line.slice(6));
-              
-              if (eventData.type === 'status') {
-                const progressData = { stage: eventData.message, progress: eventData.progress };
-                setAnalysisProgress(progressData);
-                onAnalysisProgress?.(progressData);
-              } else if (eventData.type === 'analysis') {
-                // Handle analysis result
-                console.log('Analysis data received:', eventData);
-                onAnalysisComplete?.(eventData.data, data);
-              } else if (eventData.type === 'complete') {
-                console.log('Analysis complete event received:', eventData);
-                setAnalysisProgress({ stage: 'Complete!', progress: 100 });
-                onAnalysisProgress?.({ stage: 'Complete!', progress: 100 });
-                
-                // eventData.data contains { analysis, signalId }
-                onAnalysisComplete?.(eventData.data.analysis, data);
-                toast({
-                  title: "Analysis Complete", 
-                  description: "Content captured and analyzed with real-time progress tracking.",
-                });
-              } else if (eventData.type === 'error') {
-                throw new Error(eventData.message);
-              }
-            } catch (e) {
-              // Skip invalid JSON lines
-            }
-          }
-        }
-      }
+      // Handle regular JSON response (not streaming)
+      const result = await response.json();
+      
+      // Simulate progress updates for user experience
+      setAnalysisProgress({ stage: 'Processing content...', progress: 30 });
+      onAnalysisProgress?.({ stage: 'Processing content...', progress: 30 });
+      
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setAnalysisProgress({ stage: 'Analyzing insights...', progress: 70 });
+      onAnalysisProgress?.({ stage: 'Analyzing insights...', progress: 70 });
+      
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      setAnalysisProgress({ stage: 'Complete!', progress: 100 });
+      onAnalysisProgress?.({ stage: 'Complete!', progress: 100 });
+      
+      // Extract analysis from result
+      const analysis = result.data?.analysis || result.analysis;
+      onAnalysisComplete?.(analysis, data);
+      
+      toast({
+        title: "Analysis Complete", 
+        description: "Content captured and analyzed successfully.",
+      });
     } catch (error: any) {
       toast({
         title: "Error",
@@ -206,22 +186,25 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
 
     setIsLoading(true);
     try {
-      const response = await apiRequest("POST", "/api/extract-url", { url });
+      const response = await apiRequest("POST", "/api/analyze/extract-url", { url });
       const result = await response.json();
       
+      // Extract data from the correct response structure
+      const extractedContent = result.data || result;
+      
       // Store sections for new UI
-      if (result.sections) {
-        setExtractedSections(result.sections);
+      if (extractedContent.sections) {
+        setExtractedSections(extractedContent.sections);
       }
       
       // Set form values (backward compatibility)
-      form.setValue("content", result.content);
-      form.setValue("title", result.title);
-      setCharCount(result.content.length);
+      form.setValue("content", extractedContent.content || "");
+      form.setValue("title", extractedContent.title || "");
+      setCharCount((extractedContent.content || "").length);
       
       toast({
         title: "Success",
-        description: result.sections ? "Content extracted with structured sections" : "Content extracted successfully",
+        description: extractedContent.sections ? "Content extracted with structured sections" : "Content extracted successfully",
       });
     } catch (error: any) {
       toast({
