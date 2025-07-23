@@ -69,16 +69,16 @@ interface EnhancedAnalysisResultsProps {
     title?: string;
     url?: string;
   };
-  currentLengthPreference?: 'short' | 'medium' | 'long' | 'bulletpoints';
-  onLengthPreferenceChange?: (newPreference: 'short' | 'medium' | 'long' | 'bulletpoints') => void;
+  currentAnalysisMode?: 'quick' | 'deep';
+  onAnalysisModeChange?: (newMode: 'quick' | 'deep') => void;
   isReanalyzing?: boolean;
 }
 
 export function EnhancedAnalysisResults({ 
   analysis, 
   originalContent, 
-  currentLengthPreference = 'medium',
-  onLengthPreferenceChange,
+  currentAnalysisMode = 'quick',
+  onAnalysisModeChange,
   isReanalyzing = false
 }: EnhancedAnalysisResultsProps) {
   // Analysis data is passed directly from API response
@@ -87,11 +87,11 @@ export function EnhancedAnalysisResults({
   const isMobile = useIsMobile();
 
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
-  const [lengthPreference, setLengthPreference] = useState<'short' | 'medium' | 'long' | 'bulletpoints'>(currentLengthPreference);
+  const [analysisMode, setAnalysisMode] = useState<'quick' | 'deep'>(currentAnalysisMode);
   const [isFlagging, setIsFlagging] = useState(false);
   const [currentAnalysis, setCurrentAnalysis] = useState(data);
   const [analysisCache, setAnalysisCache] = useState<Record<string, any>>({
-    [currentLengthPreference]: data // Cache the initial analysis with current length
+    [currentAnalysisMode]: data // Cache the initial analysis with current mode
   });
   const [showDeepAnalysisDialog, setShowDeepAnalysisDialog] = useState(false);
   const [dontAskAgain, setDontAskAgain] = useState(false);
@@ -132,10 +132,10 @@ export function EnhancedAnalysisResults({
     // Visual analysis will be done on-demand in the Visual tab
   }, [data]);
 
-  // Sync length preference with parent component
+  // Sync analysis mode with parent component
   useEffect(() => {
-    setLengthPreference(currentLengthPreference);
-  }, [currentLengthPreference]);
+    setAnalysisMode(currentAnalysisMode);
+  }, [currentAnalysisMode]);
 
   // Debug logging for analysis data
   console.log("EnhancedAnalysisResults received analysis:", analysis);
@@ -504,21 +504,21 @@ export function EnhancedAnalysisResults({
     );
   }
 
-  const handleLengthPreferenceChange = async (newLength: 'short' | 'medium' | 'long' | 'bulletpoints') => {
-    setLengthPreference(newLength);
+  const handleAnalysisModeChange = async (newMode: 'quick' | 'deep') => {
+    setAnalysisMode(newMode);
     
     // If parent handler is provided, use it for automatic re-analysis and caching
-    if (onLengthPreferenceChange) {
-      onLengthPreferenceChange(newLength);
+    if (onAnalysisModeChange) {
+      onAnalysisModeChange(newMode);
       return;
     }
     
     // Fallback to local handling if no parent handler
-    if (analysisCache[newLength]) {
-      setCurrentAnalysis(analysisCache[newLength]);
+    if (analysisCache[newMode]) {
+      setCurrentAnalysis(analysisCache[newMode]);
       toast({
-        title: "Length Switched",
-        description: `Showing ${newLength} analysis from cache.`,
+        title: "Analysis Mode Switched",
+        description: `Showing ${newMode} analysis from cache.`,
       });
       return;
     }
@@ -526,11 +526,11 @@ export function EnhancedAnalysisResults({
     // If not cached and we have original content, re-analyze
     if (originalContent) {
       try {
-        const response = await apiRequest("POST", "/api/reanalyze", {
+        const response = await apiRequest("POST", "/api/analyze/text", {
           content: originalContent.content,
           title: originalContent.title,
           url: originalContent.url,
-          lengthPreference: newLength
+          analysisMode: newMode
         });
         
         if (!response.ok) {
@@ -543,14 +543,14 @@ export function EnhancedAnalysisResults({
         // Cache the new analysis
         setAnalysisCache(prev => ({
           ...prev,
-          [newLength]: newAnalysis
+          [newMode]: newAnalysis
         }));
         
         setCurrentAnalysis(newAnalysis);
         
         toast({
           title: "Analysis Updated",
-          description: `Generated new ${newLength} analysis.`,
+          description: `Generated new ${newMode} analysis.`,
         });
       } catch (error: any) {
         toast({
@@ -560,10 +560,10 @@ export function EnhancedAnalysisResults({
         });
       }
     } else {
-      // No original content, just update preference
+      // No original content, just update mode
       toast({
-        title: "Length Preference Updated",
-        description: `Truth analysis will use ${newLength} format for future analyses.`,
+        title: "Analysis Mode Updated", 
+        description: `Truth analysis will use ${newMode} format for future analyses.`,
       });
     }
   };
@@ -1369,16 +1369,14 @@ export function EnhancedAnalysisResults({
                   Truth Framework Analysis
                 </CardTitle>
                 <div className="flex items-center gap-2">
-                  <Label htmlFor="length-preference" className="text-sm">Length:</Label>
-                  <Select value={lengthPreference} onValueChange={(value: any) => handleLengthPreferenceChange(value)} disabled={isReanalyzing}>
-                    <SelectTrigger className="w-full sm:w-32">
+                  <Label htmlFor="analysis-mode" className="text-sm">Mode:</Label>
+                  <Select value={analysisMode} onValueChange={(value: any) => handleAnalysisModeChange(value)} disabled={isReanalyzing}>
+                    <SelectTrigger className="w-full sm:w-40">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="short">Short (2 sentences)</SelectItem>
-                      <SelectItem value="medium">Medium (3-5 sentences)</SelectItem>
-                      <SelectItem value="long">Long (5-7 sentences)</SelectItem>
-                      <SelectItem value="bulletpoints">Bulletpoints (5-12 points)</SelectItem>
+                      <SelectItem value="quick">Quick (2-4 sentences)</SelectItem>
+                      <SelectItem value="deep">Deep (4-7 sentences)</SelectItem>
                     </SelectContent>
                   </Select>
                   {isReanalyzing && (

@@ -86,52 +86,38 @@ export class OpenAIService {
 
   private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     // Create stable cache key base with version for prompt changes
-    const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v18-model-specific-prompts';
+    const cacheKeyBase = content.substring(0, 1000) + title + 'v19-bidirectional-cache';
     
-    // Step 1: Check if we have the requested length preference cached
-    const targetCacheKey = createCacheKey(cacheKeyBase + lengthPreference, 'analysis');
+    // Step 1: Check if we have the exact analysis mode cached
+    const targetCacheKey = createCacheKey(cacheKeyBase + analysisMode, 'analysis');
     let cachedAnalysis = await analysisCache.get(targetCacheKey) as EnhancedAnalysisResult | null;
     
     if (cachedAnalysis) {
-      debugLogger.info('Returning cached analysis for ' + lengthPreference, { cacheKey: targetCacheKey });
+      debugLogger.info(`Returning cached ${analysisMode} analysis`, { cacheKey: targetCacheKey });
       return cachedAnalysis;
     }
     
-    // Step 2: Get or create medium analysis as baseline
-    const mediumCacheKey = createCacheKey(cacheKeyBase + 'medium', 'analysis');
-    let mediumAnalysis = await analysisCache.get(mediumCacheKey) as EnhancedAnalysisResult | null;
+    // Step 2: Check for opposite mode analysis to reuse (bidirectional caching)
+    const oppositeMode = analysisMode === 'quick' ? 'deep' : 'quick';
+    const oppositeCacheKey = createCacheKey(cacheKeyBase + oppositeMode, 'analysis');
+    let oppositeAnalysis = await analysisCache.get(oppositeCacheKey) as EnhancedAnalysisResult | null;
     
-    if (!mediumAnalysis) {
-      debugLogger.info('Creating new medium analysis baseline');
-      mediumAnalysis = await this.createMediumAnalysis(content, title, analysisMode);
-      await analysisCache.set(mediumCacheKey, mediumAnalysis, 300);
-    } else {
-      debugLogger.info('Using cached medium analysis');
+    if (oppositeAnalysis) {
+      debugLogger.info(`Found cached ${oppositeMode} analysis, converting to ${analysisMode}`);
+      const convertedAnalysis = await this.convertAnalysisMode(oppositeAnalysis, analysisMode);
+      await analysisCache.set(targetCacheKey, convertedAnalysis, 300);
+      return convertedAnalysis;
     }
     
-    // Step 3: If user wants medium, return it immediately
-    if (lengthPreference === 'medium') {
-      debugLogger.info('Returning medium analysis');
-      return mediumAnalysis;
-    }
+    // Step 3: No cached analysis found, create fresh analysis
+    debugLogger.info(`Creating fresh ${analysisMode} analysis`);
+    const freshAnalysis = await this.createAnalysis(content, title, analysisMode);
+    await analysisCache.set(targetCacheKey, freshAnalysis, 300);
     
-    // Step 4: Adjust from medium baseline for other lengths
-    debugLogger.info('Adjusting analysis from medium to ' + lengthPreference);
-    const adjustedAnalysis = await this.adjustAnalysis(mediumAnalysis, lengthPreference, analysisMode);
-    await analysisCache.set(targetCacheKey, adjustedAnalysis, 300);
-    
-    debugLogger.info('Returning adjusted analysis', { 
-      lengthPreference,
-      factLength: adjustedAnalysis.truthAnalysis.fact?.length || 0,
-      observationLength: adjustedAnalysis.truthAnalysis.observation?.length || 0,
-      insightLength: adjustedAnalysis.truthAnalysis.insight?.length || 0,
-      factContent: adjustedAnalysis.truthAnalysis.fact?.substring(0, 100) + '...',
-      observationContent: adjustedAnalysis.truthAnalysis.observation?.substring(0, 100) + '...'
-    });
-    return adjustedAnalysis;
+    return freshAnalysis;
   }
 
-  private async createMediumAnalysis(content: string, title: string, analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
+  private async createAnalysis(content: string, title: string, analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     // Two-tier AI model selection (eliminating speed/GPT-3.5 as requested)
     let model: string;
     let sentenceRange: string;
@@ -238,100 +224,91 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
     return result;
   }
 
-  private async adjustAnalysis(mediumAnalysis: EnhancedAnalysisResult, lengthPreference: 'short' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
-    // Use smart text manipulation for bullet points (instant)
-    if (lengthPreference === 'bulletpoints') {
-      debugLogger.info('Fast text adjustment to bulletpoints');
+  private async convertAnalysisMode(existingAnalysis: EnhancedAnalysisResult, targetMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
+    debugLogger.info(`Converting analysis to ${targetMode} mode`);
+    
+    if (targetMode === 'quick') {
+      // Convert Deep → Quick: Condense to 2-4 sentences per field
+      const conversionPrompt = `Convert this comprehensive analysis to a quick format with 2-4 sentences per field. Maintain the key strategic insights but make it concise and actionable. Return only the JSON object with each field condensed to 2-4 sentences.`;
       
-      const adjustToBulletPoints = (text: string): string => {
-        if (!text) return text;
-        const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
-        return sentences.slice(0, 5).map(s => `• ${s.trim()}`).join('\n');
-      };
-
-      const result: EnhancedAnalysisResult = {
-        ...mediumAnalysis,
-        truthAnalysis: {
-          fact: adjustToBulletPoints(mediumAnalysis.truthAnalysis.fact),
-          observation: adjustToBulletPoints(mediumAnalysis.truthAnalysis.observation),
-          insight: adjustToBulletPoints(mediumAnalysis.truthAnalysis.insight),
-          humanTruth: adjustToBulletPoints(mediumAnalysis.truthAnalysis.humanTruth),
-          culturalMoment: adjustToBulletPoints(mediumAnalysis.truthAnalysis.culturalMoment),
-          attentionValue: mediumAnalysis.truthAnalysis.attentionValue,
-          platform: mediumAnalysis.truthAnalysis.platform,
-          cohortOpportunities: mediumAnalysis.truthAnalysis.cohortOpportunities
-        }
-      };
-
-      debugLogger.info('Fast bulletpoint adjustment complete');
-      return result;
-    }
-
-    debugLogger.info('Adjusting to ' + lengthPreference);
-    debugLogger.info('Current medium analysis field lengths:', {
-      fact: mediumAnalysis.truthAnalysis.fact?.length || 0,
-      observation: mediumAnalysis.truthAnalysis.observation?.length || 0,
-      insight: mediumAnalysis.truthAnalysis.insight?.length || 0
-    });
-    
-    const targetSentenceRange = lengthPreference === 'short' ? '1-2' : '5-7';
-    const adjustmentPrompt = `Adjust each field to ${targetSentenceRange} sentences:
-
-${JSON.stringify(mediumAnalysis.truthAnalysis, null, 2)}
-
-Return JSON with each field adjusted to ${targetSentenceRange} sentences.`;
-    
-    debugLogger.info('Sending adjustment prompt:', adjustmentPrompt.substring(0, 500) + '...');
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo", // Always use GPT-3.5-turbo for adjustments
-      messages: [
-        { role: "system", content: `You are a content editor. Adjust text length while keeping the same insights. Each field must be ${targetSentenceRange} sentences.` },
-        { role: "user", content: adjustmentPrompt }
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.1,
-      max_tokens: lengthPreference === 'short' ? 1200 : 3000
-    });
-
-    const responseContent = response.choices[0]?.message?.content;
-    if (!responseContent) {
-      debugLogger.error('No response from OpenAI adjustment');
-      return mediumAnalysis;
-    }
-
-    debugLogger.info('OpenAI adjustment response:', responseContent.substring(0, 800) + '...');
-
-    let adjustedTruthAnalysis;
-    try {
-      adjustedTruthAnalysis = JSON.parse(responseContent);
-      debugLogger.info('Parsed adjustment result field lengths:', {
-        fact: adjustedTruthAnalysis.fact?.length || 0,
-        observation: adjustedTruthAnalysis.observation?.length || 0,
-        insight: adjustedTruthAnalysis.insight?.length || 0
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini", // Use Quick mode model for consistency
+        temperature: 0.1,
+        max_tokens: 2500,
+        messages: [
+          { 
+            role: "system", 
+            content: "You are an expert brand strategist. Convert comprehensive analysis to concise, actionable insights. Return only valid JSON with 2-4 sentences per field." 
+          },
+          { 
+            role: "user", 
+            content: `${conversionPrompt}\n\nOriginal analysis:\n${JSON.stringify(existingAnalysis, null, 2)}` 
+          }
+        ],
+        response_format: { type: "json_object" }
       });
-    } catch (parseError) {
-      debugLogger.error('Failed to parse OpenAI adjustment response', { error: parseError, responseContent });
-      return mediumAnalysis;
-    }
 
-    const result: EnhancedAnalysisResult = {
-      ...mediumAnalysis,
-      truthAnalysis: {
-        fact: adjustedTruthAnalysis.fact || mediumAnalysis.truthAnalysis.fact,
-        observation: adjustedTruthAnalysis.observation || mediumAnalysis.truthAnalysis.observation,
-        insight: adjustedTruthAnalysis.insight || mediumAnalysis.truthAnalysis.insight,
-        humanTruth: adjustedTruthAnalysis.humanTruth || mediumAnalysis.truthAnalysis.humanTruth,
-        culturalMoment: adjustedTruthAnalysis.culturalMoment || mediumAnalysis.truthAnalysis.culturalMoment,
-        attentionValue: mediumAnalysis.truthAnalysis.attentionValue,
-        platform: mediumAnalysis.truthAnalysis.platform,
-        cohortOpportunities: mediumAnalysis.truthAnalysis.cohortOpportunities
+      const responseContent = response.choices[0]?.message?.content;
+      if (!responseContent) {
+        throw new Error('No response content from Deep→Quick conversion');
       }
-    };
 
-    debugLogger.info('OpenAI adjustment complete', { lengthPreference });
-    return result;
+      let convertedAnalysis;
+      try {
+        convertedAnalysis = JSON.parse(responseContent);
+        debugLogger.info('Successfully converted Deep→Quick', { 
+          factLength: convertedAnalysis.truthAnalysis?.fact?.length || 0,
+          observationLength: convertedAnalysis.truthAnalysis?.observation?.length || 0
+        });
+      } catch (parseError) {
+        debugLogger.error('JSON parsing failed in Deep→Quick conversion', { response: responseContent, error: parseError });
+        throw new Error('Invalid JSON response from Deep→Quick conversion');
+      }
+
+      return convertedAnalysis;
+    } else {
+      // Convert Quick → Deep: Expand to 4-7 sentences per field
+      const conversionPrompt = `Expand this quick analysis into comprehensive strategic intelligence with 4-7 sentences per field. Add deeper cultural insights, strategic context, and nuanced observations while maintaining the core insights. Return only the JSON object with each field expanded to 4-7 sentences with rich detail.`;
+      
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o", // Use Deep mode model for consistency
+        temperature: 0.7,
+        max_tokens: 4000,
+        messages: [
+          { 
+            role: "system", 
+            content: "You are a senior cultural strategist. Expand analysis with deep strategic insights and cultural intelligence. Return only valid JSON with 4-7 sentences per field." 
+          },
+          { 
+            role: "user", 
+            content: `${conversionPrompt}\n\nOriginal analysis:\n${JSON.stringify(existingAnalysis, null, 2)}` 
+          }
+        ],
+        response_format: { type: "json_object" }
+      });
+
+      const responseContent = response.choices[0]?.message?.content;
+      if (!responseContent) {
+        throw new Error('No response content from Quick→Deep conversion');
+      }
+
+      let convertedAnalysis;
+      try {
+        convertedAnalysis = JSON.parse(responseContent);
+        debugLogger.info('Successfully converted Quick→Deep', { 
+          factLength: convertedAnalysis.truthAnalysis?.fact?.length || 0,
+          observationLength: convertedAnalysis.truthAnalysis?.observation?.length || 0
+        });
+      } catch (parseError) {
+        debugLogger.error('JSON parsing failed in Quick→Deep conversion', { response: responseContent, error: parseError });  
+        throw new Error('Invalid JSON response from Quick→Deep conversion');
+      }
+
+      return convertedAnalysis;
+    }
   }
+
+
 
   async generateStrategicRecommendations(content: string, title: string, truthAnalysis: any): Promise<any[]> {
     debugLogger.info('Generating strategic recommendations based on truth analysis', { contentLength: content.length, title });

@@ -21,7 +21,7 @@ export function NewSignalCapture({ activeSubTab, onNavigateToExplore, onNavigate
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [originalContent, setOriginalContent] = useState<any>(null);
   const [analysisCache, setAnalysisCache] = useState<Map<string, any>>(new Map());
-  const [currentLengthPreference, setCurrentLengthPreference] = useState<'short' | 'medium' | 'long' | 'bulletpoints'>('medium');
+  const [currentAnalysisMode, setCurrentAnalysisMode] = useState<'quick' | 'deep'>('quick');
   const [analysisProgress, setAnalysisProgress] = useState<{stage: string, progress: number}>({ stage: '', progress: 0 });
   
   const handleAnalysisStart = () => {
@@ -30,8 +30,8 @@ export function NewSignalCapture({ activeSubTab, onNavigateToExplore, onNavigate
   };
   
   const handleAnalysisComplete = (result: any, content?: any) => {
-    // Cache the result for the current length preference
-    const cacheKey = `${currentLengthPreference}:${content?.content || ''}:${content?.url || ''}`;
+    // Cache the result for the current analysis mode
+    const cacheKey = `${currentAnalysisMode}:${content?.content || ''}:${content?.url || ''}`;
     setAnalysisCache(prev => new Map(prev).set(cacheKey, result));
     
     setAnalysisResult(result);
@@ -47,27 +47,27 @@ export function NewSignalCapture({ activeSubTab, onNavigateToExplore, onNavigate
     }, 100);
   };
 
-  const handleLengthPreferenceChange = (newPreference: 'short' | 'medium' | 'long' | 'bulletpoints') => {
-    if (newPreference === currentLengthPreference) return;
+  const handleAnalysisModeChange = (newMode: 'quick' | 'deep') => {
+    if (newMode === currentAnalysisMode) return;
     
-    setCurrentLengthPreference(newPreference);
+    setCurrentAnalysisMode(newMode);
     
-    // Check if we have cached result for this preference
+    // Check if we have cached result for this mode
     if (originalContent) {
-      const cacheKey = `${newPreference}:${originalContent?.content || ''}:${originalContent?.url || ''}`;
+      const cacheKey = `${newMode}:${originalContent?.content || ''}:${originalContent?.url || ''}`;
       const cachedResult = analysisCache.get(cacheKey);
       
       if (cachedResult) {
         // Use cached result
         setAnalysisResult(cachedResult);
       } else {
-        // Trigger new analysis with the new preference
-        triggerReanalysis(newPreference);
+        // Trigger new analysis with the new mode
+        triggerReanalysis(newMode);
       }
     }
   };
 
-  const triggerReanalysis = async (lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints') => {
+  const triggerReanalysis = async (analysisMode: 'quick' | 'deep') => {
     if (!originalContent) return;
     
     setIsAnalyzing(true);
@@ -77,9 +77,8 @@ export function NewSignalCapture({ activeSubTab, onNavigateToExplore, onNavigate
       // Import the analysis logic from ContentInput
       const requestData = { 
         ...originalContent, 
-        lengthPreference, 
-        userNotes: '', 
-        analysisMode: 'quick' 
+        analysisMode, 
+        userNotes: ''
       };
       
       const response = await fetch('/api/analyze/stream', {
@@ -229,8 +228,8 @@ export function NewSignalCapture({ activeSubTab, onNavigateToExplore, onNavigate
               <EnhancedAnalysisResults 
                 analysis={analysisResult} 
                 originalContent={originalContent}
-                currentLengthPreference={currentLengthPreference}
-                onLengthPreferenceChange={handleLengthPreferenceChange}
+                currentAnalysisMode={currentAnalysisMode}
+                onAnalysisModeChange={handleAnalysisModeChange}
                 isReanalyzing={isAnalyzing}
               />
             ) : null}

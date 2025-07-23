@@ -4,7 +4,7 @@
 
 This is a full-stack strategic content intelligence platform built with React and Express that provides advanced AI-powered content analysis using OpenAI's GPT-4. The application enables users to capture content from URLs (especially Instagram, YouTube, and social media), analyze it using our Truth Analysis framework for strategic insights, and manage the progression of content through a signal promotion system (Capture → Potential Signal → Signal → Validated Signal).
 
-**Current Status (July 23, 2025)**: ROUTING SYSTEM FULLY OPTIMIZED + THREE-TIER AI SYSTEM OPERATIONAL. Successfully implemented declarative routing with wouter Switch/Route components, eliminating manual switch/case logic. Router centralized in main.tsx for optimal performance. Console errors confirmed as Redis warnings only - routing system operating perfectly. Three-tier AI model selection (Speed/Quick/Deep) fully operational with enterprise-grade visual intelligence capabilities.
+**Current Status (July 23, 2025)**: ROUTING SYSTEM FULLY OPTIMIZED + TWO-TIER AI SYSTEM OPERATIONAL. Successfully implemented declarative routing with wouter Switch/Route components, eliminating manual switch/case logic. Router centralized in main.tsx for optimal performance. Console errors confirmed as Redis warnings only - routing system operating perfectly. Simplified two-tier AI model selection (Quick/Deep) with bidirectional smart caching fully operational and all frontend components updated.
 
 ## User Preferences
 
@@ -71,12 +71,18 @@ Preferred communication style: Simple, everyday language.
 
 ## Premium Two-Tier AI System Implementation - July 23, 2025
 
-### ✅ **PREMIUM TWO-TIER AI SYSTEM - COMPLETED**:
-Successfully implemented premium two-tier AI model selection with model-specific prompts and strategic optimization:
+### ✅ **PREMIUM TWO-TIER AI SYSTEM WITH BIDIRECTIONAL CACHING - COMPLETED**:
+Successfully implemented premium two-tier AI model selection with bidirectional smart caching and simplified frontend architecture:
 
 **Two-Tier Premium Model Architecture:**
 - **Quick Mode**: GPT-4o-mini as "brand strategist" with practical 2-4 sentence analysis (1.5-2s response time)
 - **Deep Mode**: GPT-4o as "senior cultural strategist" with strategic 4-7 sentence intelligence (2.5-3s response time)
+
+**Bidirectional Smart Caching System:**
+- **Quick↔Deep Conversion**: Users can seamlessly switch between analysis modes without duplicate AI calls
+- **Cache-First Strategy**: System checks for cached results before making new API requests
+- **Performance Optimization**: Eliminates redundant AI processing, reducing costs and response times
+- **User Experience**: Instant mode switching when cached results are available
 
 **Model-Specific Optimization Benefits:**
 - **Strategic Specialization**: Each AI model optimized for its unique strengths and capabilities
@@ -88,13 +94,13 @@ Successfully implemented premium two-tier AI model selection with model-specific
 - **Model-Specific System Prompts**: GPT-4o-mini as "brand strategist", GPT-4o as "senior cultural strategist"
 - **Enhanced Field Descriptions**: Specific guidance for each Truth Analysis field (fact, observation, insight, etc.)
 - **Flexible Sentence Ranges**: Natural 2-4 and 4-7 sentence ranges instead of rigid counts
-- **Updated Cache Version**: v18-model-specific-prompts for fresh optimized results
+- **Bidirectional Analysis API**: Updated endpoints support both Quick→Deep and Deep→Quick conversions
 
-**Frontend Integration:**
-- **Two-Tier Selection**: Updated UI to show Quick (GPT-4o-mini) and Deep (GPT-4o) modes only
-- **Model-Specific Tooltips**: Clear identification of AI models and their specialized roles
-- **Strategic Messaging**: Brand strategist vs cultural strategist messaging for user clarity
-- **Premium Positioning**: UI reflects enterprise-grade AI model selection
+**Frontend Architecture Simplification:**
+- **Clean Two-Tier Selection**: Simple Quick/Deep mode selection replacing complex length preference controls
+- **Updated Components**: All frontend components (content-input.tsx, enhanced-analysis-results.tsx, new-signal-capture.tsx) use new analysisMode system
+- **Removed Complexity**: Eliminated overengineered "medium baseline + adjustment" logic
+- **Zero Compilation Errors**: Successfully transitioned entire codebase from lengthPreference to analysisMode
 
 **Visual Analysis Restoration:**
 - **Gemini Integration**: Restored `/api/analyze/visual` endpoint with Gemini 2.5 Pro

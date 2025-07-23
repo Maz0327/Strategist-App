@@ -28,7 +28,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
   const [isLoading, setIsLoading] = useState(false);
   const [charCount, setCharCount] = useState(0);
   const [activeTab, setActiveTab] = useState("text");
-  const [lengthPreference, setLengthPreference] = useState<'short' | 'medium' | 'long' | 'bulletpoints'>('medium');
+  // Removed lengthPreference - now handled by analysisMode (quick/deep)
   const [userNotes, setUserNotes] = useState("");
   const [analysisProgress, setAnalysisProgress] = useState({ stage: '', progress: 0 });
   const [useStreaming, setUseStreaming] = useState(true);
@@ -68,7 +68,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
     onAnalysisStart?.();
 
     try {
-      const requestData = { ...data, lengthPreference, userNotes, analysisMode };
+      const requestData = { ...data, userNotes, analysisMode };
       
       // Use the same endpoint for both quick and deep modes
       const endpoint = data.url ? '/api/analyze' : '/api/analyze/text';
@@ -132,7 +132,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
       setIsLoading(true);
       onAnalysisStart?.();
       try {
-        const requestData = { ...data, lengthPreference, userNotes, analysisMode };
+        const requestData = { ...data, userNotes, analysisMode };
         
         const result = await retryRequest(async () => {
           const endpoint = "/api/analyze/text";
