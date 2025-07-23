@@ -1,0 +1,86 @@
+Phase 1: Core API Restoration (30 min)
+Consolidate OpenAI Services
+
+Merge fragmented OpenAI service files
+Remove conflicting cache implementations
+Restore simple, working analysis flow
+Fix Routing Priority
+
+Ensure API routes are registered before Vite middleware
+Add proper CORS headers for all endpoints
+Test direct API access without authentication conflicts
+Remove Over-Defensive Code
+
+Remove excessive null checks that mask real errors
+Restore normal error handling that was working July 21
+Allow proper error propagation for debugging
+Phase 2: Visual Analysis Re-Integration (20 min)
+Restore Visual Analysis to Truth Analysis
+
+Re-enable visual analysis in truth analysis workflow
+Remove artificial separation that broke user expectations
+Restore seamless visual + text analysis
+Fix Visual Intelligence Tab
+
+Ensure images extracted during URL analysis appear properly
+Restore automatic visual analysis during deep mode
+Fix standalone visual analysis functionality
+Phase 3: URL Extraction Optimization (15 min)
+Simplify Scraper Service
+
+Remove complex timeout handling
+Restore simple, fast content extraction
+Fix Instagram and social media URL processing
+Video Transcription Cleanup
+
+Remove complex video detection that was failing
+Restore simple URL content extraction
+Add proper fallback handling
+Phase 4: Cache System Simplification (10 min)
+Simplify Cache Implementation
+
+Remove complex Redis fallback logic
+Use single cache implementation
+Fix cache key generation and retrieval
+Restore Performance
+
+Remove unnecessary cache complexity
+Restore 45ms OpenAI response times
+Fix progressive analysis system
+Phase 5: Testing & Verification (15 min)
+API Endpoint Testing
+
+Test all analysis endpoints directly
+Verify truth analysis integration
+Confirm visual analysis functionality
+Frontend Integration Testing
+
+Test content input component
+Verify URL extraction workflow
+Confirm analysis results display
+RESTORATION STRATEGY
+Approach: "Surgical Rollback"
+Instead of major rewrite, I'll surgically restore the working state by:
+
+Identifying Working Code: Use the July 21 state as reference
+Minimal Changes: Only modify what's actually broken
+Progressive Testing: Test each component as it's restored
+Preserve Improvements: Keep beneficial changes from recent sessions
+Success Metrics
+Truth Analysis: <3 seconds response time
+URL Extraction: <10 seconds for all social media
+Visual Analysis: Integrated into truth analysis workflow
+Zero TypeScript errors
+All API endpoints returning JSON (not HTML)
+MY RECOMMENDATIONS
+Immediate Action
+Start with API Routing Fix - This is the safest and will immediately show progress
+Restore Visual Analysis Integration - Users expect this to work seamlessly
+Simplify Cache System - Remove complexity that's causing race conditions
+Remove Over-Defensive Code - Let errors surface properly for debugging
+Long-Term Strategy
+Document Working State - Once restored, freeze the working configuration
+Gradual Improvements - Make incremental changes with thorough testing
+User Testing - Validate each restoration phase with real usage
+Performance Monitoring - Add metrics to catch regressions early
+This plan addresses the root causes identified while minimizing risk to the working components. The system was fundamentally sound on July 21 - we just need to restore that clean, optimized state.
