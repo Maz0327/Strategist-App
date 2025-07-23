@@ -170,7 +170,6 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
       model: model,
       temperature: 0.7,
       max_tokens: model === 'gpt-4o' ? 4000 : 2500,
-      timeout: 6000, // 6 second timeout for faster response
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
@@ -238,7 +237,6 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
         model: "gpt-4o-mini", // Use Quick mode model for consistency
         temperature: 0.1,
         max_tokens: 2500,
-        timeout: 5000, // 5 second timeout for quick conversions
         messages: [
           { 
             role: "system", 
@@ -278,7 +276,6 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
         model: "gpt-4o", // Use Deep mode model for consistency
         temperature: 0.7,
         max_tokens: 4000,
-        timeout: 6000, // 6 second timeout for deep conversions
         messages: [
           { 
             role: "system", 
