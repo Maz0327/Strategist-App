@@ -1,0 +1,108 @@
+This setup is already extremely well-structured — you're striking the right balance between schema control, tone naturality, and format enforcement.
+
+Here's a breakdown of how to **maximize quality per model** while respecting speed constraints and ensuring consistency in strategic accuracy:
+
+---
+
+### 🔍 Breakdown of the 5 Truth Analysis Categories (Clarified for Model Alignment)
+
+| Category            | Goal (for the AI)                                                               |
+| ------------------- | ------------------------------------------------------------------------------- |
+| **Fact**            | What happened, plain and objective (data, events, quotes).                      |
+| **Observation**     | Patterns, anomalies, or strategic takeaways based on the fact.                  |
+| **Insight**         | The “So what?”—implication that can be acted on.                                |
+| **Human Truth**     | The underlying belief, motivation, or psychological driver behind the behavior. |
+| **Cultural Moment** | The macro social context or why this matters right now in culture.              |
+
+---
+
+### 🧠 Model-Specific Strategy for API Calls
+
+#### ✅ GPT-3.5 Turbo
+
+* **Best Use**: Speed-first use cases. Only good for *Fact* and *Observation*.
+* **Weakness**: Struggles with abstraction (Insight, Human Truth, Culture).
+* **Recommended Prompt Modifications**:
+
+  * Use only:
+
+    ```json
+    {
+      "fact": "...",
+      "observation": "..."
+    }
+    ```
+  * Use sentenceCount = 1 or 2
+  * Use fewer creative verbs, more literal phrasing. Use “describe”, “explain”, not “reveal” or “uncover”
+
+#### ⚡ GPT-4o-Mini
+
+* **Best Use**: Mid-tier performance. Handles *Insight* with basic accuracy. Fast enough for prototyping or bulk runs.
+* **Suggested Prompt Modifications**:
+
+  * Keep full `truthAnalysis` schema
+  * Set sentenceCount = 2–3
+  * Use adjusted field guidance like:
+
+    ```json
+    "insight": "Describe a meaningful conclusion we can draw from the observation"
+    ```
+  * Keep all schema-based structure. Add optional `hints` if it begins hallucinating cultural references.
+
+#### 🧠 GPT-4o
+
+* **Best Use**: Premium accuracy for all 5 categories.
+* **Strength**: Handles abstract reasoning + cultural nuance.
+* **Recommended Prompt Modifications**:
+
+  * Use sentenceCount = 4–7 (based on Speed/Deep toggle)
+  * Maintain full schema (including competitiveInsights, cohortOpportunities, etc.)
+  * Add these subtle role instructions in the **system prompt** for deeper coherence:
+
+    ```
+    Your job is to think like a cultural strategist building a client presentation.
+    Go beyond surface-level. Tie context to behavior, emotion to trends.
+    Emphasize audience psychology and social shifts.
+    ```
+
+---
+
+### 📐 Smart Prompt Control Suggestions
+
+* **Add `content_type` metadata** (e.g. tweet, IG caption, headline, blog) — different content types yield different signal depth. This helps GPT pick appropriate tone.
+* **Platform-specific examples** in prompt if known (`platform: "TikTok"` → style changes).
+* **Contextual backfill**: If original content is sparse, allow you to include surrounding social post, replies, etc., to give AI more context.
+
+---
+
+### 🔄 Unified Prompt Adaptation System (Optional Layer)
+
+You could build a **Truth Analysis Optimizer Layer**:
+
+1. Detect content complexity or platform.
+2. Route content to the appropriate model:
+
+   * Simple = GPT-3.5
+   * Moderate = 4o-Mini
+   * Complex/Nuanced = 4o
+3. Inject custom system prompt rules (speed toggle: Speed / Quick / Deep).
+
+---
+
+### ✅ Summary Recommendations
+
+| Model         | Use Case                     | sentenceCount | Fields to Include        | Notes                                                                |
+| ------------- | ---------------------------- | ------------- | ------------------------ | -------------------------------------------------------------------- |
+| GPT-3.5 Turbo | Rapid facts, light analysis  | 1–2           | fact, observation        | Don't use for Human Truth or Cultural Moment                         |
+| GPT-4o-Mini   | Balanced speed + nuance      | 2–4           | All fields               | Great for prototyping and mid-range automation                       |
+| GPT-4o        | High-quality strategy output | 4–7           | All fields + full schema | Best model for anything client-facing or involving cultural strategy |
+
+---
+
+Let me know if you’d like:
+
+* API-optimized prompt formats for each model
+* Routing pseudocode for dynamic model assignment
+* An adjustment schema to tune outputs based on sentence count or depth preference (e.g. "Speed", "Deep Dive", etc.)
+
+This architecture you're building is deeply sound — you're designing it like a strategist would.
