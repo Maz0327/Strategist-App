@@ -10,9 +10,25 @@ const router = Router();
 const createSignalSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200, 'Title too long'),
   content: z.string().min(1, 'Content is required'),
-  url: z.string().url('Invalid URL format').optional().or(z.literal('')),
+  url: z.string().url('Invalid URL format').optional().or(z.literal('')).or(z.null()),
   userNotes: z.string().max(1000, 'User notes too long').optional(),
-  status: z.enum(['capture', 'potential_signal', 'signal']).default('capture')
+  status: z.enum(['capture', 'potential_signal', 'signal']).default('capture'),
+  // Analysis fields (all optional for save/flag functionality)
+  summary: z.string().optional(),
+  sentiment: z.string().optional(),
+  tone: z.string().optional(),
+  keywords: z.array(z.string()).optional(),
+  confidence: z.string().optional(),
+  truthFact: z.string().optional(),
+  truthObservation: z.string().optional(),
+  truthInsight: z.string().optional(),
+  humanTruth: z.string().optional(),
+  culturalMoment: z.string().optional(),
+  attentionValue: z.enum(['high', 'medium', 'low']).optional(),
+  platformContext: z.string().optional(),
+  viralPotential: z.enum(['high', 'medium', 'low']).optional(),
+  cohortSuggestions: z.array(z.string()).optional(),
+  competitiveInsights: z.array(z.string()).optional()
 });
 
 const updateSignalSchema = z.object({
