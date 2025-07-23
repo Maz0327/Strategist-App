@@ -1,0 +1,87 @@
+1. Define a single “sentenceCount” variable
+At the top of the file where you call OpenAI, insert:
+
+js
+Copy
+Edit
+// how many sentences each text field should be
+const sentenceCount = 3;   // change this number when you need 2, 4, 5, etc.
+2. Centralize the “rules” in your System prompt
+Replace all the repeated “MANDATORY: Each field must contain exactly X sentences…” lines with one short system message:
+
+js
+Copy
+Edit
+const systemPrompt = `
+You are an expert content strategist.
+When asked to analyze, return only valid JSON matching the schema I’ll provide.
+Every text field must be exactly ${sentenceCount} sentences long—no more, no fewer.
+Write in a natural, conversational tone.
+Do not include any extra keys, commentary, or markdown.
+`;
+Why?
+
+Keeps your instructions to the model in one place
+
+Cuts down on tokens by not repeating “MANDATORY” everywhere
+
+Makes it trivial to adjust the sentence count for all fields
+
+3. Declare your JSON schema once in a “user” prompt
+Immediately after the system prompt, serialize your schema object into the user message:
+
+js
+Copy
+Edit
+const schema = {
+  summary: "string",            // 3 sentences
+  sentiment: "positive|neutral|negative",
+  tone: "professional|casual|urgent|analytical|conversational",
+  keywords: ["string"],         // 3–20 items
+  truthAnalysis: {
+    fact: "string",             // 3 sentences
+    observation: "string",      // 3 sentences
+    insight: "string",          // 3 sentences
+    humanTruth: "string",       // 3 sentences
+    culturalMoment: "string"    // 3 sentences
+  }
+};
+
+const userPrompt = `
+Schema:
+${JSON.stringify(schema, null, 2)}
+
+Analyze this content:
+Title: ${contentTitle}
+Text: ${contentBody}
+`;
+Why?
+
+The schema lives in one object you can tweak freely
+
+The model sees exactly what fields you expect, and how long each should be
+
+4. Make the API call with just two messages
+You no longer need dozens of lines in every endpoint—just:
+
+js
+Copy
+Edit
+const response = await openai.chat.completions.create({
+  model: "gpt-4o-mini",
+  temperature: 0.7,
+  max_tokens: 2000,
+  messages: [
+    { role: "system", content: systemPrompt },
+    { role: "user",   content: userPrompt   }
+  ]
+});
+5. Reuse this pattern across all endpoints
+For your /strategic-insights, /competitive-intel, etc.:
+
+Swap out the schema object for that endpoint’s JSON shape.
+
+Keep the same sentenceCount variable and systemPrompt.
+
+Plug in the same two‑message API call.
+
