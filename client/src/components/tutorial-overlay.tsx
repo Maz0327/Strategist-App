@@ -235,7 +235,7 @@ export function TutorialOverlay({ currentPage, isEnabled, onToggle }: TutorialOv
     return (
       <Button
         onClick={() => onToggle(true)}
-        className="fixed bottom-4 right-4 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3 shadow-lg"
+        className="fixed bottom-20 right-4 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3 shadow-lg"
         title="Enable Tutorial"
       >
         <HelpCircle className="h-5 w-5" />
@@ -285,7 +285,7 @@ export function TutorialOverlay({ currentPage, isEnabled, onToggle }: TutorialOv
     return (
       <Button
         onClick={() => onToggle(false)}
-        className="fixed bottom-4 right-4 z-50 bg-gray-600 hover:bg-gray-700 text-white rounded-full p-3 shadow-lg"
+        className="fixed bottom-20 right-4 z-50 bg-gray-600 hover:bg-gray-700 text-white rounded-full p-3 shadow-lg"
         title="Disable Tutorial"
       >
         <HelpCircle className="h-5 w-5" />

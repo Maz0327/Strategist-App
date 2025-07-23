@@ -162,7 +162,7 @@ export function DebugPanel() {
         <Button 
           variant="outline" 
           size="sm" 
-          className="fixed bottom-4 left-4 z-50 md:bottom-4 md:right-20 w-fit min-w-0 flex-none"
+          className="fixed bottom-4 right-4 z-[9999] bg-white border-2 border-primary shadow-lg hover:bg-primary hover:text-white"
         >
           <Bug className="mr-2 h-4 w-4" />
           Debug
