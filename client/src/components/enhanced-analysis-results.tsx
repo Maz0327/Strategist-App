@@ -587,10 +587,9 @@ export function EnhancedAnalysisResults({
           'POST',
           '/api/analyze/visual',
           {
+            signalId: analysis.signalId || 1,
             imageUrls: extractedImages.map(img => img.url),
-            content: originalContent.content || '',
-            context: `Visual analysis for: ${originalContent.url}`,
-            sourceUrl: originalContent.url
+            analysisType: 'brand'
           }
         ),
         new Promise((_, reject) => 
@@ -1116,7 +1115,7 @@ export function EnhancedAnalysisResults({
                   )}
                 </>
               ) : loadingStates.competitive ? (
-                <StandardLoadingState 
+                <AnimatedLoadingState 
                   title="Building Competitive Intelligence"
                   subtitle="Analyzing competitive positioning and market opportunities..."
                 />

@@ -96,13 +96,11 @@ router.post("/analyze", requireAuth, async (req, res) => {
 
     if (isVideo) {
       try {
-        videoTranscription = await videoTranscriptionService.transcribeVideo(url);
-        extractedContent = {
-          title: videoTranscription.title || 'Video Content',
-          content: videoTranscription.transcript || '',
-          author: videoTranscription.author || '',
-          publishDate: videoTranscription.publishDate || '',
-          url: url
+        extractedContent = await videoTranscriptionService.extractContentWithVideoDetection(url);
+        videoTranscription = {
+          transcript: extractedContent.content,
+          title: extractedContent.title,
+          author: extractedContent.author
         };
       } catch (videoError) {
         debugLogger.warn('Video transcription failed, falling back to regular extraction', videoError, req);
@@ -137,7 +135,7 @@ router.post("/analyze", requireAuth, async (req, res) => {
       status: 'capture' as const,
       truthAnalysis: analysis,
       author: extractedContent.author,
-      publishDate: extractedContent.publishDate
+      publishDate: extractedContent.publishDate || null
     };
 
     const signal = await storage.createSignal(signalData);
@@ -156,9 +154,8 @@ router.post("/analyze", requireAuth, async (req, res) => {
       reliability: 'unknown' // Will be updated based on analysis success
     });
 
-    // Update signal with source traceability metadata
-    signalData.sourceDomain = new URL(url).hostname;
-    signalData.sourceType = isVideo ? 'video' : 'webpage';
+    // Source metadata is handled in the source record creation above
+    // signalData already contains all required fields
     
     debugLogger.info('Source record created for signal traceability', {
       sourceId: source.id,
@@ -286,20 +283,20 @@ router.post("/extract-url", requireAuth, async (req, res) => {
 
     if (isVideo) {
       try {
-        videoTranscription = await videoTranscriptionService.transcribeVideo(url);
-        extractedContent = {
-          title: videoTranscription.title || 'Video Content',
-          content: videoTranscription.transcript || '',
-          author: videoTranscription.author || '',
-          publishDate: videoTranscription.publishDate || '',
-          url: url,
-          images: [],
-          sections: [{
+        extractedContent = await videoTranscriptionService.extractContentWithVideoDetection(url);
+        videoTranscription = {
+          transcript: extractedContent.content,
+          title: extractedContent.title,
+          author: extractedContent.author
+        };
+        // Add video section if not already present
+        if (!extractedContent.sections) {
+          extractedContent.sections = [{
             type: 'video',
             title: 'Video Transcript',
-            content: videoTranscription.transcript || ''
-          }]
-        };
+            content: extractedContent.content || ''
+          }];
+        }
       } catch (videoError) {
         debugLogger.warn('Video transcription failed, falling back to regular extraction', videoError, req);
         extractedContent = await scraperService.extractContent(url);
@@ -338,6 +335,86 @@ router.post("/extract-url", requireAuth, async (req, res) => {
       error: "URL extraction failed",
       message: error.message,
       code: 'URL_EXTRACTION_FAILED'
+    });
+  }
+});
+
+// Visual Analysis Route - Enhanced with Gemini
+router.post("/analyze/visual", requireAuth, async (req, res) => {
+  try {
+    const result = visualAnalysisSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Validation failed',
+        details: result.error.errors,
+        code: 'VALIDATION_ERROR'
+      });
+    }
+
+    const { signalId, imageUrls, analysisType } = result.data;
+    
+    debugLogger.info('Starting visual analysis', { 
+      signalId, 
+      imageCount: imageUrls.length,
+      analysisType,
+      userId: req.session.userId 
+    }, req);
+
+    // Import Gemini visual analysis service
+    const { GeminiVisualAnalysisService } = await import('../services/visual-analysis-gemini');
+    const visualAnalysisService = new GeminiVisualAnalysisService();
+
+    // Convert URLs to visual assets format
+    const visualAssets = imageUrls.map(url => ({
+      type: 'image' as const,
+      url: url,
+      alt: '',
+      caption: ''
+    }));
+
+    // Get signal context for analysis
+    const signal = await storage.getSignal(signalId);
+    const contentContext = signal?.content || '';
+
+    // Perform visual analysis with Gemini
+    const visualAnalysis = await visualAnalysisService.analyzeVisualAssets(
+      visualAssets,
+      contentContext,
+      signal?.url
+    );
+
+    // Format response to match frontend expectations
+    const formattedResponse = {
+      brandElements: visualAnalysis.brandElements,
+      culturalMoments: visualAnalysis.culturalVisualMoments,
+      competitiveInsights: visualAnalysis.competitiveVisualInsights,
+      summary: visualAnalysis.strategicRecommendations?.join('. '),
+      confidenceScore: visualAnalysis.confidenceScore
+    };
+
+    debugLogger.info('Visual analysis completed successfully', { 
+      signalId,
+      userId: req.session.userId,
+      analysisType,
+      confidenceScore: visualAnalysis.confidenceScore
+    }, req);
+
+    res.json({ 
+      success: true, 
+      data: {
+        visualAnalysis: formattedResponse,
+        signalId,
+        imageCount: imageUrls.length
+      }
+    });
+  } catch (error: any) {
+    debugLogger.error('Visual analysis failed', error, req);
+    res.status(500).json({ 
+      success: false, 
+      error: "Visual analysis failed",
+      message: error.message,
+      code: 'VISUAL_ANALYSIS_FAILED'
     });
   }
 });
