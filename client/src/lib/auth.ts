@@ -12,7 +12,11 @@ export interface AuthResponse {
 export class AuthService {
   async login(data: LoginData): Promise<AuthResponse> {
     const response = await apiRequest("POST", "/api/auth/login", data);
-    return response.json();
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result.error || 'Login failed');
+    }
+    return { success: true, user: result.data };
   }
 
   async register(data: RegisterData): Promise<AuthResponse> {
@@ -26,7 +30,11 @@ export class AuthService {
 
   async getCurrentUser(): Promise<{ user: { id: number; email: string } }> {
     const response = await apiRequest("GET", "/api/auth/me");
-    return response.json();
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result.error || 'Not authenticated');
+    }
+    return { user: result.data };
   }
 }
 
