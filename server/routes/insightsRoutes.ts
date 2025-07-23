@@ -67,7 +67,7 @@ Generate specific, implementable strategic recommendations across categories lik
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       temperature: 0.7,
-      max_tokens: 4000,
+      max_tokens: 2000,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
@@ -82,10 +82,36 @@ Generate specific, implementable strategic recommendations across categories lik
 
     let insightsData;
     try {
+      debugLogger.info('Raw insights response', { 
+        responseLength: responseContent.length,
+        responsePreview: responseContent.substring(0, 200) + '...'
+      });
+      
       insightsData = JSON.parse(responseContent);
     } catch (parseError) {
-      debugLogger.error('JSON parsing failed for insights', { response: responseContent, error: parseError }, req);
-      throw new Error('Invalid JSON response from AI');
+      debugLogger.error('JSON parsing failed for insights', { 
+        response: responseContent, 
+        responseLength: responseContent.length,
+        error: (parseError as Error).message 
+      });
+      
+      // Try to clean and retry parsing (same as Truth Analysis fix)
+      try {
+        const cleanedContent = responseContent
+          .replace(/```json\s*/g, '')
+          .replace(/```\s*/g, '')
+          .replace(/^\s*/, '')
+          .replace(/\s*$/, '');
+        
+        insightsData = JSON.parse(cleanedContent);
+        debugLogger.info('Successfully parsed cleaned insights JSON');
+      } catch (secondParseError) {
+        debugLogger.error('Second insights parse attempt failed', { 
+          cleanedContentLength: cleanedContent.length,
+          error: (secondParseError as Error).message 
+        });
+        throw new Error('Invalid JSON response from AI');
+      }
     }
 
     debugLogger.info('Strategic insights generated', { 

@@ -249,7 +249,7 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
         debugLogger.info('Successfully parsed cleaned JSON');
       } catch (secondParseError) {
         debugLogger.error('Second JSON parse attempt failed', { 
-          cleanedContent,
+          cleanedContentLength: cleanedContent.length,
           error: (secondParseError as Error).message 
         });
         throw new Error('Invalid JSON response from OpenAI');
