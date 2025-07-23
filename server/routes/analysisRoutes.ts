@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/require-auth';
 import { debugLogger } from '../services/debug-logger';
-import { analyzeWithOpenAI as analyzeContentWithOpenAI } from '../services/openaiAnalysisService';
+import { openaiService } from '../services/openai';
 import { scraperService } from '../services/scraper';
 import { storage } from '../storage';
 import { videoTranscriptionService } from '../services/video-transcription';
@@ -392,7 +392,7 @@ router.post("/stream", requireAuth, async (req, res) => {
       sendProgress(`Generating ${analysisMode === 'deep' ? 'comprehensive strategic' : 'quick strategic'} insights...`, 40);
       
       // Perform actual analysis with progress updates during AI call
-      const analysisPromise = analyzeContentWithOpenAI(content, lengthPreference, analysisMode);
+      const analysisPromise = openaiService.analyzeContent({ content, title, url: '' }, lengthPreference, analysisMode);
       
       // Send periodic progress updates while waiting for AI
       let progressValue = 45;
