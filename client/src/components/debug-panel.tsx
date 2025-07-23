@@ -71,7 +71,7 @@ export function DebugPanel() {
     },
     retry: false,
     refetchOnWindowFocus: false,
-    enabled: isOpen, // Only fetch when panel is open
+    enabled: true, // Always fetch data for debug panel
   });
 
   const { data: errorSummary, refetch: refetchErrors, error: errorsError } = useQuery<ErrorSummary>({
@@ -87,7 +87,7 @@ export function DebugPanel() {
     },
     retry: false,
     refetchOnWindowFocus: false,
-    enabled: isOpen, // Only fetch when panel is open
+    enabled: true, // Always fetch data for debug panel
   });
 
   const { data: performanceMetrics, refetch: refetchPerformance, error: performanceError } = useQuery<PerformanceMetrics>({
@@ -103,7 +103,7 @@ export function DebugPanel() {
     },
     retry: false,
     refetchOnWindowFocus: false,
-    enabled: isOpen, // Only fetch when panel is open
+    enabled: true, // Always fetch data for debug panel
   });
 
   const clearLogsMutation = useMutation({
@@ -168,7 +168,7 @@ export function DebugPanel() {
           Debug
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-6xl max-h-[90vh]">
+      <DialogContent className="max-w-6xl max-h-[90vh]" aria-describedby="debug-panel-description">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span className="flex items-center">
@@ -192,6 +192,10 @@ export function DebugPanel() {
             </div>
           </DialogTitle>
         </DialogHeader>
+        
+        <div id="debug-panel-description" className="sr-only">
+          Comprehensive debug and monitoring panel showing system logs, error analytics, and performance metrics for troubleshooting and system health monitoring.
+        </div>
 
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
