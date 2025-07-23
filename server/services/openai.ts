@@ -60,18 +60,9 @@ export class OpenAIService {
       return `You are a brand strategist. Output valid JSON only. CRITICAL: Each truthAnalysis field must be MINIMUM 3 sentences, ideally ${sentenceRange} sentences. Use conversational but analytical tone. Prioritize usefulness over flair. DO NOT write single sentences - always write at least 3 complete sentences per field.`;
     } else if (model === 'gpt-4o') {
       if (analysisMode === 'deep') {
-        return `You are a senior cultural strategist providing comprehensive deep analysis. Return valid JSON only. 
+        return `You are a senior cultural strategist. Return valid JSON only. 
 
-CRITICAL REQUIREMENT: Each truthAnalysis field must contain EXACTLY 7 detailed sentences. This is mandatory.
-
-ANALYSIS FRAMEWORK:
-- fact: What objectively happened (7 sentences covering specific details, context, timeline)
-- observation: What patterns you notice (7 sentences covering themes, behaviors, engagement)  
-- insight: Why these patterns matter strategically (7 sentences covering mechanisms, psychology)
-- humanTruth: Core human driver behind resonance (7 sentences covering needs, emotions, triggers)
-- culturalMoment: Broader cultural shift represented (7 sentences covering zeitgeist, movements, values)
-
-Write exactly 7 comprehensive sentences per field with strategic depth and cultural intelligence.`;
+CRITICAL: Each truthAnalysis field must contain EXACTLY 7 sentences. Be comprehensive and detailed in your analysis.`;
       } else {
         return `You are a senior cultural strategist. Return valid JSON only. CRITICAL: Each truthAnalysis field must be MINIMUM 4 sentences, ideally ${sentenceRange} sentences. Be precise, insightful, and tie observations to cultural undercurrents. Always provide comprehensive multi-sentence analysis.`;
       }
@@ -101,7 +92,7 @@ Write exactly 7 comprehensive sentences per field with strategic depth and cultu
 
   private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     // Create stable cache key base with version for prompt changes
-    const cacheKeyBase = content.substring(0, 1000) + title + 'v22-deep-7-sentences';
+    const cacheKeyBase = content.substring(0, 1000) + title + 'v23-simplified-prompts';
     
     // Step 1: Check if we have the exact analysis mode cached
     const targetCacheKey = createCacheKey(cacheKeyBase + analysisMode, 'analysis');
@@ -285,16 +276,7 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
       return convertedAnalysis;
     } else {
       // Convert Quick → Deep: Expand to EXACTLY 7 sentences per field
-      const conversionPrompt = `Expand this quick analysis into comprehensive deep strategic intelligence with EXACTLY 7 detailed sentences per field. 
-
-EXPANSION FRAMEWORK:
-- fact: What happened (7 sentences with specific details, context, timeline)
-- observation: Patterns noticed (7 sentences covering themes, behaviors, engagement)
-- insight: Strategic meaning (7 sentences covering mechanisms, psychology, implications)
-- humanTruth: Core human driver (7 sentences covering needs, emotions, motivations)
-- culturalMoment: Cultural shift (7 sentences covering zeitgeist, movements, societal changes)
-
-CRITICAL: Each field must have EXACTLY 7 detailed sentences. Expand with strategic depth and cultural intelligence.`;
+      const conversionPrompt = `Expand this analysis into comprehensive deep intelligence with EXACTLY 7 detailed sentences per field. Be thorough and strategic in your expansion.`;
       
       const response = await openai.chat.completions.create({
         model: "gpt-4o", // Use Deep mode model for consistency
@@ -303,7 +285,7 @@ CRITICAL: Each field must have EXACTLY 7 detailed sentences. Expand with strateg
         messages: [
           { 
             role: "system", 
-            content: "You are a senior cultural strategist providing comprehensive deep analysis. Expand analysis with deep strategic insights and cultural intelligence. CRITICAL: Each truthAnalysis field must contain EXACTLY 7 detailed, comprehensive sentences. Return only valid JSON with exactly 7 sentences per field." 
+            content: "You are a senior cultural strategist. Expand analysis with deep strategic insights. CRITICAL: Each truthAnalysis field must contain EXACTLY 7 sentences. Return only valid JSON." 
           },
           { 
             role: "user", 
