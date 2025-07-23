@@ -60,7 +60,12 @@ export class OpenAIService {
       return `You are a brand strategist who specializes in practical strategic insights. Return only valid JSON matching the schema provided. Write each field in a clear, conversational tone with useful depth — aim for around 3-4 sentences per field. Avoid bullet points, markdown, or explanation — just complete sentences that flow naturally.`;
     } else if (model === 'gpt-4o') {
       if (analysisMode === 'deep') {
-        return `You are a senior content strategist writing deep cultural and strategic analysis. Only return valid JSON with full sentences for each field. Each field should feel like a well-written paragraph with real insight and flow. Write around 7 sentences per field. Do not go under 6. You can go up to 10 if needed. If a response is too short or lacks detail, it is not valid. Do not include markdown, labels, or commentary.`;
+        return `You are a senior content strategist writing deep cultural and strategic analysis.
+Only return valid JSON with full sentences for each field.
+Each field should feel like a well-written paragraph with real insight and flow.
+Write around 7 sentences per field. Do not go under 6. You can go up to 10 if needed.
+If a response is too short or lacks detail, it is not valid.
+Do not include markdown, labels, or commentary.`;
       } else {
         return `You are a senior cultural strategist who specializes in strategic cultural insights. Return only valid JSON matching the schema provided. Write each field in a clear, natural tone with strategic depth — aim for around 4-5 sentences per field. Avoid bullet points, markdown, or explanation — just complete sentences that flow insightfully.`;
       }
@@ -90,7 +95,7 @@ export class OpenAIService {
 
   private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     // Create stable cache key base with version for prompt changes
-    const cacheKeyBase = content.substring(0, 1000) + title + 'v26-enforced-length-prompts';
+    const cacheKeyBase = content.substring(0, 1000) + title + 'v27-expert-recommended-prompts';
     
     // Step 1: Check if we have the exact analysis mode cached
     const targetCacheKey = createCacheKey(cacheKeyBase + analysisMode, 'analysis');
@@ -160,9 +165,27 @@ export class OpenAIService {
     };
 
     const userPrompt = `Schema:
-${JSON.stringify(schema, null, 2)}
+{
+  "truthAnalysis": {
+    "fact": "string",              // A detailed factual summary, 6–10 full sentences
+    "observation": "string",       // What patterns you noticed, 6–10 full sentences
+    "insight": "string",           // What this reveals strategically, 6–10 full sentences
+    "humanTruth": "string",        // What this shows about people's motivations, 6–10 full sentences
+    "culturalMoment": "string"     // Why this matters in today's culture, 6–10 full sentences
+  },
+  "summary": "Strategic overview",
+  "sentiment": "positive|neutral|negative",
+  "tone": "professional|casual|urgent|analytical|conversational|authoritative",
+  "keywords": ["string"],
+  "confidence": "85%",
+  "cohortSuggestions": ["string"],
+  "platformContext": "string",
+  "viralPotential": "high|medium|low",
+  "competitiveInsights": ["string"]
+}
 
 Analyze the following content deeply. Fill each field with strategic depth. Return only valid JSON:
+
 Title: ${title}
 Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
 
@@ -283,7 +306,12 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
         messages: [
           { 
             role: "system", 
-            content: "You are a senior content strategist writing deep cultural and strategic analysis. Only return valid JSON with full sentences. Each field should feel like a well-written paragraph with real insight and flow. Write around 7 sentences per field. Do not go under 6. If a response is too short or lacks detail, it is not valid." 
+            content: `You are a senior content strategist writing deep cultural and strategic analysis.
+Only return valid JSON with full sentences for each field.
+Each field should feel like a well-written paragraph with real insight and flow.
+Write around 7 sentences per field. Do not go under 6. You can go up to 10 if needed.
+If a response is too short or lacks detail, it is not valid.
+Do not include markdown, labels, or commentary.` 
           },
           { 
             role: "user", 
