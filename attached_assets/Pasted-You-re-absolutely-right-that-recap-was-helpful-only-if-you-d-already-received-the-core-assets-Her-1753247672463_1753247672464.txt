@@ -1,0 +1,143 @@
+You're absolutely right — that recap was helpful only if you'd already received the core assets. Here's the **actual full deliverable** broken out properly now, including:
+
+---
+
+## ✅ 1. **API-Optimized Prompt Formats (per model)**
+
+### 🔹 GPT-3.5 Turbo — *Speed-first, shallow context*
+
+```json
+System: "You are a content analyst. Return only valid JSON. Each field must be 1–2 sentences max. Avoid interpretation. Stick to surface-level facts and obvious observations."
+User:
+Schema:
+{
+  "truthAnalysis": {
+    "fact": "string",              // What happened (literal)
+    "observation": "string"        // What patterns can be noticed
+  }
+}
+Analyze this content: {content}
+```
+
+➡️ **Use Case:** Fast bulk tagging, scanning TikTok trends, low-latency jobs.
+
+---
+
+### 🔹 GPT-4o-Mini — *Balance of quality and speed*
+
+```json
+System: "You are a brand strategist. Output valid JSON only. Each field must be 2–4 sentences. Use conversational but analytical tone. Prioritize usefulness over flair."
+User:
+Schema:
+{
+  "truthAnalysis": {
+    "fact": "string",              // Ground truth or event
+    "observation": "string",       // Pattern or behavior
+    "insight": "string",           // Strategic interpretation
+    "humanTruth": "string",        // What drives the people involved
+    "culturalMoment": "string"     // Cultural context or macro pattern
+  }
+}
+Analyze this content: {content}
+```
+
+➡️ **Use Case:** Mid-depth platform analysis, strategist review, research QA.
+
+---
+
+### 🔹 GPT-4o — *Maximum accuracy & depth*
+
+```json
+System: "You are a senior cultural strategist. Return valid JSON only. Each field must be 4–7 sentences. Be precise, insightful, and tie observations to cultural undercurrents."
+User:
+Schema:
+{
+  "truthAnalysis": {
+    "fact": "string",              // What happened exactly
+    "observation": "string",       // Notable patterns/behavior
+    "insight": "string",           // Why it matters strategically
+    "humanTruth": "string",        // Deeper human drive behind the pattern
+    "culturalMoment": "string"     // What macro societal trend or event it fits into
+  }
+}
+Analyze this content: {content}
+```
+
+➡️ **Use Case:** Final presentation content, client-ready insights, analyst QA.
+
+---
+
+## ✅ 2. **Routing Pseudocode: Dynamic Model Assignment**
+
+```ts
+function routeModel({ contentType, depthMode }) {
+  if (depthMode === 'Speed') return 'gpt-3.5-turbo';
+  if (depthMode === 'Quick') return 'gpt-4o-mini';
+  if (depthMode === 'Deep Dive') return 'gpt-4o';
+  return 'gpt-4o-mini'; // fallback
+}
+
+const selectedModel = routeModel({ contentType: "trend", depthMode: "Quick" });
+```
+
+You can enhance this by:
+
+* Adding timeouts + retries
+* Scoring each content piece’s complexity for automatic routing
+* Injecting per-model temperature/top\_p config dynamically
+
+---
+
+## ✅ 3. **Adjustment Schema: Sentence Control by Depth Mode**
+
+### UI or API Input:
+
+```json
+"depthMode": "Speed" | "Quick" | "Deep Dive"
+```
+
+### Mapping Table:
+
+| Depth Mode    | Sentences per Field | Model         | Description                       |
+| ------------- | ------------------- | ------------- | --------------------------------- |
+| **Speed**     | 1–2                 | GPT-3.5 Turbo | Surface-level tagging             |
+| **Quick**     | 2–4                 | GPT-4o-Mini   | Useful + interpretable            |
+| **Deep Dive** | 4–7                 | GPT-4o        | Strategy deck / Brief-ready depth |
+
+### Dynamic Injection in Prompts:
+
+```js
+const sentenceCount = getSentenceCount(depthMode);
+
+System Prompt: 
+"You are a strategist. Return only valid JSON. Every text field must be exactly {sentenceCount} sentences long."
+```
+
+---
+
+## ✅ Bonus: Unified Prompt Template (fully dynamic)
+
+```ts
+function buildPrompt(content, depthMode) {
+  const sentenceCount = getSentenceCount(depthMode);
+  return {
+    system: `You are a strategist. Return valid JSON. Each field must be exactly ${sentenceCount} sentences long.`,
+    user: {
+      schema: {
+        truthAnalysis: {
+          fact: "string",
+          observation: "string",
+          insight: "string",
+          humanTruth: "string",
+          culturalMoment: "string"
+        }
+      },
+      content
+    }
+  }
+}
+```
+
+---
+
+Would you like me to wrap this into a `ready-to-run backend file`, `Replit-ready function`, or embed it into your full-stack codebase logic next?
