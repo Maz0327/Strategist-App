@@ -18,7 +18,7 @@ const insightsAnalysisSchema = z.object({
   })
 });
 
-router.post('/api/insights', requireAuth, async (req, res) => {
+router.post('/api/strategic-insights', requireAuth, async (req, res) => {
   try {
     const result = insightsAnalysisSchema.safeParse(req.body);
     if (!result.success) {
@@ -107,7 +107,6 @@ Generate specific, implementable strategic recommendations across categories lik
         debugLogger.info('Successfully parsed cleaned insights JSON');
       } catch (secondParseError) {
         debugLogger.error('Second insights parse attempt failed', { 
-          cleanedContentLength: cleanedContent.length,
           error: (secondParseError as Error).message 
         });
         throw new Error('Invalid JSON response from AI');
