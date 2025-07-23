@@ -64,7 +64,12 @@ export function DebugPanel() {
       try {
         const level = selectedLevel === 'all' ? '' : selectedLevel;
         const response = await apiRequest("GET", `/api/debug/logs?limit=100${level ? `&level=${level}` : ''}`);
-        return response.json();
+        const result = await response.json();
+        // Handle new API response format with success/data structure
+        if (result.success && result.data) {
+          return { logs: result.data.logs || [], count: result.data.count || 0 };
+        }
+        return { logs: [], count: 0 };
       } catch (error) {
         console.warn('Failed to fetch logs:', error);
         return { logs: [], count: 0 };
@@ -80,7 +85,12 @@ export function DebugPanel() {
     queryFn: async () => {
       try {
         const response = await apiRequest("GET", "/api/debug/errors");
-        return response.json();
+        const result = await response.json();
+        // Handle new API response format with success/data structure
+        if (result.success && result.data) {
+          return result.data;
+        }
+        return { totalErrors: 0, recentErrors: [], errorCounts: {}, errorsByEndpoint: {}, errorsByUser: {} };
       } catch (error) {
         console.warn('Failed to fetch error summary:', error);
         return { totalErrors: 0, recentErrors: [], errorCounts: {}, errorsByEndpoint: {}, errorsByUser: {} };
@@ -96,7 +106,12 @@ export function DebugPanel() {
     queryFn: async () => {
       try {
         const response = await apiRequest("GET", "/api/debug/performance");
-        return response.json();
+        const result = await response.json();
+        // Handle new API response format with success/data structure
+        if (result.success && result.data) {
+          return result.data;
+        }
+        return { totalRequests: 0, averageResponseTime: 0, p95ResponseTime: 0, p99ResponseTime: 0, slowRequests: 0 };
       } catch (error) {
         console.warn('Failed to fetch performance metrics:', error);
         return { totalRequests: 0, averageResponseTime: 0, p95ResponseTime: 0, p99ResponseTime: 0, slowRequests: 0 };

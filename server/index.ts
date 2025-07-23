@@ -138,6 +138,58 @@ app.use((req, res, next) => {
 
 
 (async () => {
+  // Public debug endpoints (no admin required) for frontend debug panel - must be before other routes
+  app.get('/api/debug/logs', async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const level = req.query.level as string;
+      const validLevel = level && ['error', 'warn', 'info', 'debug'].includes(level) ? level as 'error' | 'warn' | 'info' | 'debug' : undefined;
+      const logs = debugLogger.getRecentLogs(limit, validLevel);
+      res.json({ 
+        success: true, 
+        data: { logs, count: logs.length, level, limit }
+      });
+    } catch (error: any) {
+      debugLogger.error('Failed to retrieve debug logs', error, req);
+      res.status(500).json({ 
+        success: false, 
+        error: "Failed to retrieve debug logs"
+      });
+    }
+  });
+
+  app.get('/api/debug/errors', async (req, res) => {
+    try {
+      const errorSummary = debugLogger.getErrorSummary();
+      res.json({ 
+        success: true, 
+        data: errorSummary
+      });
+    } catch (error: any) {
+      debugLogger.error('Failed to retrieve error summary', error, req);
+      res.status(500).json({ 
+        success: false, 
+        error: "Failed to retrieve error summary"
+      });
+    }
+  });
+
+  app.get('/api/debug/performance', async (req, res) => {
+    try {
+      const performanceMetrics = debugLogger.getPerformanceMetrics();
+      res.json({ 
+        success: true, 
+        data: performanceMetrics
+      });
+    } catch (error: any) {
+      debugLogger.error('Failed to retrieve performance metrics', error, req);
+      res.status(500).json({ 
+        success: false, 
+        error: "Failed to retrieve performance metrics"
+      });
+    }
+  });
+  
   // Setup modular routes with comprehensive validation
   app.use('/api/auth', authRoutes);
   app.use('/api/signals', signalRoutes);
