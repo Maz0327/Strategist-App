@@ -135,6 +135,8 @@ app.use((req, res, next) => {
   next();
 });
 
+
+
 (async () => {
   // Setup modular routes with comprehensive validation
   app.use('/api/auth', authRoutes);
@@ -147,6 +149,8 @@ app.use((req, res, next) => {
   
 
   
+
+
   debugLogger.info('All modular routes registered successfully', {
     routes: ['auth', 'signals', 'analyze', 'admin', 'user', 'traceability', 'trending']
   });

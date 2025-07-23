@@ -70,6 +70,7 @@ const visualAnalysisSchema = z.object({
 // Analysis routes
 
 
+
 router.post("/", requireAuth, async (req, res) => {
   try {
     const result = analyzeUrlSchema.safeParse(req.body);
