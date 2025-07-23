@@ -1,0 +1,99 @@
+// App.tsx
+import React, { useState, useEffect } from 'react';
+import { QueryClientProvider, useQuery } from '@tanstack/react-query';
+import { useRoutes } from 'wouter';
+import { queryClient } from './lib/queryClient';
+import { Toaster } from '@/components/ui/toaster';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { authService } from './lib/auth';
+import AuthPage from './pages/auth';
+import Dashboard from './pages/dashboard';
+import AdminRegister from './components/admin-register';
+import NotFound from './pages/not-found';
+import { DebugPanel } from './components/debug-panel';
+import { TutorialOverlay } from './components/tutorial-overlay';
+import { useTutorial } from './hooks/use-tutorial';
+import { ErrorBoundary, setupGlobalErrorHandlers } from './components/error-boundary';
+
+export default function App() {
+  const [user, setUser] = useState<{ id: number; email: string } | null>(null);
+  const [initialized, setInitialized] = useState(false);
+  const { isEnabled: tutorialEnabled, toggleTutorial } = useTutorial();
+
+  // global JS error handlers
+  useEffect(setupGlobalErrorHandlers, []);
+
+  // auth check
+  const { data, isLoading } = useQuery(
+    ['authUser'],
+    () => authService.getCurrentUser().catch(() => null),
+    { retry: false, enabled: !initialized, refetchOnWindowFocus: false }
+  );
+  useEffect(() => {
+    if (!isLoading) {
+      setUser(data?.user ?? null);
+      setInitialized(true);
+    }
+  }, [isLoading, data]);
+
+  if (!initialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <LoadingSpinner size="lg" />
+        <p className="mt-4 text-gray-600">Loading application...</p>
+      </div>
+    );
+  }
+
+  // declarative route map
+  const routes = {
+    '/admin-register': <AdminRegister />,
+    '/auth': !user
+      ? <AuthPage onAuthSuccess={d => setUser(d.user)} />
+      : <Dashboard user={user} onLogout={() => setUser(null)} currentPage="briefing" />,
+    '/dashboard': user
+      ? <Dashboard user={user} onLogout={() => setUser(null)} currentPage="briefing" />
+      : <AuthPage onAuthSuccess={d => setUser(d.user)} />,
+    '/capture': user
+      ? <Dashboard user={user} onLogout={() => setUser(null)} currentPage="capture" />
+      : <AuthPage onAuthSuccess={d => setUser(d.user)} />,
+    '/signals': user
+      ? <Dashboard user={user} onLogout={() => setUser(null)} currentPage="signals" />
+      : <AuthPage onAuthSuccess={d => setUser(d.user)} />,
+    '/briefing': user
+      ? <Dashboard user={user} onLogout={() => setUser(null)} currentPage="briefing" />
+      : <AuthPage onAuthSuccess={d => setUser(d.user)} />,
+    '/explore': user
+      ? <Dashboard user={user} onLogout={() => setUser(null)} currentPage="explore" />
+      : <AuthPage onAuthSuccess={d => setUser(d.user)} />,
+    '/brief': user
+      ? <Dashboard user={user} onLogout={() => setUser(null)} currentPage="brief" />
+      : <AuthPage onAuthSuccess={d => setUser(d.user)} />,
+    '/manage': user
+      ? <Dashboard user={user} onLogout={() => setUser(null)} currentPage="manage" />
+      : <AuthPage onAuthSuccess={d => setUser(d.user)} />,
+    '/admin': user
+      ? <Dashboard user={user} onLogout={() => setUser(null)} currentPage="admin" />
+      : <AuthPage onAuthSuccess={d => setUser(d.user)} />,
+    '/': user
+      ? <Dashboard user={user} onLogout={() => setUser(null)} currentPage="briefing" />
+      : <AuthPage onAuthSuccess={d => setUser(d.user)} />,
+    '*': <NotFound />
+  };
+
+  const element = useRoutes(routes);
+
+  return (
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          {element}
+          <TutorialOverlay isEnabled={tutorialEnabled} onToggle={toggleTutorial} />
+          <DebugPanel />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
+  );
+}
