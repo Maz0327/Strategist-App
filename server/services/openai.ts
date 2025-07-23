@@ -55,11 +55,26 @@ export class OpenAIService {
     }
   }
 
-  private getSystemPrompt(model: string, sentenceRange: string): string {
+  private getSystemPrompt(model: string, sentenceRange: string, analysisMode: 'quick' | 'deep' = 'quick'): string {
     if (model === 'gpt-4o-mini') {
       return `You are a brand strategist. Output valid JSON only. CRITICAL: Each truthAnalysis field must be MINIMUM 3 sentences, ideally ${sentenceRange} sentences. Use conversational but analytical tone. Prioritize usefulness over flair. DO NOT write single sentences - always write at least 3 complete sentences per field.`;
     } else if (model === 'gpt-4o') {
-      return `You are a senior cultural strategist. Return valid JSON only. CRITICAL: Each truthAnalysis field must be MINIMUM 4 sentences, ideally ${sentenceRange} sentences. Be precise, insightful, and tie observations to cultural undercurrents. Always provide comprehensive multi-sentence analysis.`;
+      if (analysisMode === 'deep') {
+        return `You are a senior cultural strategist providing comprehensive deep analysis. Return valid JSON only. 
+
+CRITICAL REQUIREMENT: Each truthAnalysis field must contain EXACTLY 7 detailed, comprehensive sentences. This is non-negotiable.
+
+FIELD DEFINITIONS FOR COMPREHENSIVE ANALYSIS:
+- fact: What objectively happened in this content. Include specific details, numbers, names, actions taken. Describe the concrete elements, timeline, and measurable components. Context should be clear and factual without interpretation.
+- observation: What patterns, behaviors, or trends you notice from analyzing this content. Look for recurring themes, audience reactions, engagement patterns, stylistic choices, and structural elements. Connect dots between different aspects of the content.
+- insight: Why these patterns exist and what deeper meaning they reveal about the situation, market, or audience psychology. Explain the underlying mechanisms, motivations, and systemic factors driving what you observed.
+- humanTruth: The fundamental human psychological, emotional, or behavioral driver that makes this content resonate. Dig into universal human needs, fears, desires, social dynamics, and emotional triggers that create connection.
+- culturalMoment: The broader cultural, societal, or generational shift this content represents or capitalizes on. Connect to zeitgeist, social movements, technological changes, and evolving cultural values or behaviors.
+
+Each field requires EXACTLY 7 comprehensive, detailed sentences that thoroughly explore every aspect of that category.`;
+      } else {
+        return `You are a senior cultural strategist. Return valid JSON only. CRITICAL: Each truthAnalysis field must be MINIMUM 4 sentences, ideally ${sentenceRange} sentences. Be precise, insightful, and tie observations to cultural undercurrents. Always provide comprehensive multi-sentence analysis.`;
+      }
     }
     // Fallback to current system
     return `You are an expert content strategist. Return only valid JSON matching the schema I'll provide. CRITICAL: Every truthAnalysis field must be MINIMUM 3 sentences, ideally ${sentenceRange} sentences long. Write in a natural, conversational tone.`;
@@ -86,7 +101,7 @@ export class OpenAIService {
 
   private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     // Create stable cache key base with version for prompt changes
-    const cacheKeyBase = content.substring(0, 1000) + title + 'v21-performance-optimized';
+    const cacheKeyBase = content.substring(0, 1000) + title + 'v22-deep-7-sentences';
     
     // Step 1: Check if we have the exact analysis mode cached
     const targetCacheKey = createCacheKey(cacheKeyBase + analysisMode, 'analysis');
@@ -124,13 +139,13 @@ export class OpenAIService {
     
     if (analysisMode === 'deep') {
       model = "gpt-4o"; // Deep mode: enterprise strategic intelligence
-      sentenceRange = "4-7"; // Flexible range for natural depth
+      sentenceRange = "7"; // Exactly 7 sentences for comprehensive analysis
     } else {
       model = "gpt-4o-mini"; // Quick mode: brand strategist for practical analysis
       sentenceRange = "3-4"; // Minimum 3 sentences for adequate analysis
     }
     
-    const systemPrompt = this.getSystemPrompt(model, sentenceRange);
+    const systemPrompt = this.getSystemPrompt(model, sentenceRange, analysisMode);
     
     // Enhanced schema definition with specific field guidance
     const schema = {
@@ -269,8 +284,17 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
 
       return convertedAnalysis;
     } else {
-      // Convert Quick → Deep: Expand to 4-7 sentences per field
-      const conversionPrompt = `Expand this quick analysis into comprehensive strategic intelligence with 4-7 sentences per field. Add deeper cultural insights, strategic context, and nuanced observations while maintaining the core insights. Return only the JSON object with each field expanded to 4-7 sentences with rich detail.`;
+      // Convert Quick → Deep: Expand to EXACTLY 7 sentences per field
+      const conversionPrompt = `Expand this quick analysis into comprehensive deep strategic intelligence with EXACTLY 7 detailed sentences per field. 
+
+FIELD DEFINITIONS FOR COMPREHENSIVE EXPANSION:
+- fact: What objectively happened in this content. Include specific details, numbers, names, actions taken. Describe the concrete elements, timeline, and measurable components. Context should be clear and factual without interpretation.
+- observation: What patterns, behaviors, or trends you notice from analyzing this content. Look for recurring themes, audience reactions, engagement patterns, stylistic choices, and structural elements. Connect dots between different aspects of the content.
+- insight: Why these patterns exist and what deeper meaning they reveal about the situation, market, or audience psychology. Explain the underlying mechanisms, motivations, and systemic factors driving what you observed.
+- humanTruth: The fundamental human psychological, emotional, or behavioral driver that makes this content resonate. Dig into universal human needs, fears, desires, social dynamics, and emotional triggers that create connection.
+- culturalMoment: The broader cultural, societal, or generational shift this content represents or capitalizes on. Connect to zeitgeist, social movements, technological changes, and evolving cultural values or behaviors.
+
+CRITICAL: Each field must contain EXACTLY 7 comprehensive, detailed sentences. Return only the JSON object with each field expanded to exactly 7 sentences with rich detail and cultural intelligence.`;
       
       const response = await openai.chat.completions.create({
         model: "gpt-4o", // Use Deep mode model for consistency
@@ -279,7 +303,7 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
         messages: [
           { 
             role: "system", 
-            content: "You are a senior cultural strategist. Expand analysis with deep strategic insights and cultural intelligence. Return only valid JSON with 4-7 sentences per field." 
+            content: "You are a senior cultural strategist providing comprehensive deep analysis. Expand analysis with deep strategic insights and cultural intelligence. CRITICAL: Each truthAnalysis field must contain EXACTLY 7 detailed, comprehensive sentences. Return only valid JSON with exactly 7 sentences per field." 
           },
           { 
             role: "user", 
