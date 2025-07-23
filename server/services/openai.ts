@@ -57,18 +57,16 @@ export class OpenAIService {
 
   private getSystemPrompt(model: string, sentenceRange: string, analysisMode: 'quick' | 'deep' = 'quick'): string {
     if (model === 'gpt-4o-mini') {
-      return `You are a brand strategist. Output valid JSON only. CRITICAL: Each truthAnalysis field must be MINIMUM 3 sentences, ideally ${sentenceRange} sentences. Use conversational but analytical tone. Prioritize usefulness over flair. DO NOT write single sentences - always write at least 3 complete sentences per field.`;
+      return `You are a brand strategist who specializes in practical strategic insights. Return only valid JSON matching the schema provided. Write each field in a clear, conversational tone with useful depth — aim for around 3-4 sentences per field. Avoid bullet points, markdown, or explanation — just complete sentences that flow naturally.`;
     } else if (model === 'gpt-4o') {
       if (analysisMode === 'deep') {
-        return `You are a senior cultural strategist. Return valid JSON only. 
-
-CRITICAL: Each truthAnalysis field must contain EXACTLY 7 sentences. Be comprehensive and detailed in your analysis.`;
+        return `You are a senior brand strategist who specializes in uncovering deep truths in culture, behavior, and content. Return only valid JSON matching the schema provided. Write each field in a clear, natural tone with strategic depth — aim for around 7 sentences per field. 6 is okay. Up to 10 is acceptable. Avoid bullet points, markdown, or explanation — just complete sentences that flow insightfully.`;
       } else {
-        return `You are a senior cultural strategist. Return valid JSON only. CRITICAL: Each truthAnalysis field must be MINIMUM 4 sentences, ideally ${sentenceRange} sentences. Be precise, insightful, and tie observations to cultural undercurrents. Always provide comprehensive multi-sentence analysis.`;
+        return `You are a senior cultural strategist who specializes in strategic cultural insights. Return only valid JSON matching the schema provided. Write each field in a clear, natural tone with strategic depth — aim for around 4-5 sentences per field. Avoid bullet points, markdown, or explanation — just complete sentences that flow insightfully.`;
       }
     }
     // Fallback to current system
-    return `You are an expert content strategist. Return only valid JSON matching the schema I'll provide. CRITICAL: Every truthAnalysis field must be MINIMUM 3 sentences, ideally ${sentenceRange} sentences long. Write in a natural, conversational tone.`;
+    return `You are an expert content strategist. Return only valid JSON matching the schema provided. Write each field in a natural, conversational tone — aim for around ${sentenceRange} sentences per field. Avoid bullet points or explanation — just complete sentences that flow naturally.`;
   }
 
   async analyzeContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', analysisMode: 'quick' | 'deep' = 'quick'): Promise<EnhancedAnalysisResult> {
@@ -92,7 +90,7 @@ CRITICAL: Each truthAnalysis field must contain EXACTLY 7 sentences. Be comprehe
 
   private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     // Create stable cache key base with version for prompt changes
-    const cacheKeyBase = content.substring(0, 1000) + title + 'v23-simplified-prompts';
+    const cacheKeyBase = content.substring(0, 1000) + title + 'v24-natural-flow-prompts';
     
     // Step 1: Check if we have the exact analysis mode cached
     const targetCacheKey = createCacheKey(cacheKeyBase + analysisMode, 'analysis');
@@ -164,9 +162,7 @@ CRITICAL: Each truthAnalysis field must contain EXACTLY 7 sentences. Be comprehe
     const userPrompt = `Schema:
 ${JSON.stringify(schema, null, 2)}
 
-CRITICAL REQUIREMENT: Each truthAnalysis field (fact, observation, insight, humanTruth, culturalMoment) must contain MINIMUM 3 sentences. Single sentences are not acceptable.
-
-Analyze this content:
+Analyze the following content for strategic depth and culture. Return only JSON:
 Title: ${title}
 Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
 
@@ -174,8 +170,9 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
 
     const response = await openai.chat.completions.create({
       model: model,
-      temperature: 0.6, // Slightly lower for more focused responses
-      max_tokens: model === 'gpt-4o' ? 12000 : 4000, // Increased for 7-sentence responses
+      temperature: 0.7, // Better for expressive, natural analysis
+      top_p: 1,
+      max_tokens: model === 'gpt-4o' ? 1400 : 800, // Optimized for natural 6-10 sentence range
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
@@ -275,17 +272,18 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
 
       return convertedAnalysis;
     } else {
-      // Convert Quick → Deep: Expand to EXACTLY 7 sentences per field
-      const conversionPrompt = `Expand this analysis into comprehensive deep intelligence with EXACTLY 7 detailed sentences per field. Be thorough and strategic in your expansion.`;
+      // Convert Quick → Deep: Expand with natural strategic depth
+      const conversionPrompt = `Expand this analysis into comprehensive deep strategic intelligence with natural depth — aim for around 7 sentences per field (6-10 is fine). Write with strategic insight and cultural intelligence that flows naturally.`;
       
       const response = await openai.chat.completions.create({
         model: "gpt-4o", // Use Deep mode model for consistency
         temperature: 0.7,
-        max_tokens: 8000,
+        top_p: 1,
+        max_tokens: 1400,
         messages: [
           { 
             role: "system", 
-            content: "You are a senior cultural strategist. Expand analysis with deep strategic insights. CRITICAL: Each truthAnalysis field must contain EXACTLY 7 sentences. Return only valid JSON." 
+            content: "You are a senior brand strategist who specializes in uncovering deep truths in culture and behavior. Return only valid JSON. Write with natural strategic depth that flows insightfully." 
           },
           { 
             role: "user", 
