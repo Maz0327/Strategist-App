@@ -211,13 +211,13 @@ export default function PerformanceMonitor() {
               {performance.slowRequests > 0 && (
                 <div className="flex items-center gap-2 text-orange-600">
                   <AlertCircle className="h-4 w-4" />
-                  <span>{performance.slowRequests} slow requests detected (>5s)</span>
+                  <span>{performance.slowRequests} slow requests detected (&gt;5s)</span>
                 </div>
               )}
               {performance.criticalRequests > 0 && (
                 <div className="flex items-center gap-2 text-red-600">
                   <AlertCircle className="h-4 w-4" />
-                  <span>{performance.criticalRequests} critical requests detected (>10s)</span>
+                  <span>{performance.criticalRequests} critical requests detected (&gt;10s)</span>
                 </div>
               )}
             </div>

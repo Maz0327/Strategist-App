@@ -51,7 +51,10 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
   };
 
   // Navigation handlers
-  const handleNavigateToExplore = () => setActiveTab("explore");
+  const handleNavigateToExplore = () => {
+    setActiveTab("explore");
+    setActiveSubTab("trending");
+  };
   const handleNavigateToCapture = () => setActiveTab("capture");
   const handleNavigateToBrief = () => setActiveTab("brief");
   const handleNavigateToManage = () => setActiveTab("manage");
@@ -67,34 +70,32 @@ export default function Dashboard({ user, onLogout, onPageChange }: DashboardPro
     staleTime: 5 * 60 * 1000 // Cache for 5 minutes
   });
   
-  const isAdmin = currentUser?.role === 'admin';
+  const isAdmin = (currentUser as any)?.role === 'admin';
 
   // Sidebar navigation items
   const navigationItems = [
-    // TEMPORARILY HIDDEN - Today's Briefing until other issues are resolved
-    // {
-    //   id: "briefing",
-    //   label: "Today's Briefing",
-    //   icon: Home,
-    //   subItems: []
-    // },
+    {
+      id: "briefing",
+      label: "Today's Briefing",
+      icon: Home,
+      subItems: []
+    },
     {
       id: "capture",
       label: "Signal Capture",
       icon: Plus,
       subItems: []
     },
-    // TEMPORARILY HIDDEN - Feeds functionality needs further development
-    // {
-    //   id: "feeds",
-    //   label: "Feeds",
-    //   icon: Brain,
-    //   subItems: [
-    //     { id: "client-feeds", label: "Client Channels" },
-    //     { id: "custom-feeds", label: "Custom Feeds" },
-    //     { id: "project-feeds", label: "Project Intelligence" }
-    //   ]
-    // },
+    {
+      id: "feeds",
+      label: "Feeds",
+      icon: Brain,
+      subItems: [
+        { id: "client-feeds", label: "Client Channels" },
+        { id: "custom-feeds", label: "Custom Feeds" },
+        { id: "project-feeds", label: "Project Intelligence" }
+      ]
+    },
     {
       id: "explore",
       label: "Explore Signals",
