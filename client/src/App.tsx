@@ -15,13 +15,10 @@ import { TutorialOverlay } from './components/tutorial-overlay';
 import { useTutorial } from './hooks/use-tutorial';
 import { ErrorBoundary, setupGlobalErrorHandlers } from './components/error-boundary';
 
-export default function App() {
+function AppContent() {
   const [user, setUser] = useState<{ id: number; email: string } | null>(null);
   const [initialized, setInitialized] = useState(false);
   const { isEnabled: tutorialEnabled, toggleTutorial } = useTutorial();
-
-  // global JS error handlers
-  useEffect(setupGlobalErrorHandlers, []);
 
   // auth check
   const { data, isLoading } = useQuery({
@@ -120,15 +117,27 @@ export default function App() {
   );
 
   return (
+    <TooltipProvider>
+      <Toaster />
+      {element}
+      <TutorialOverlay isEnabled={tutorialEnabled} onToggle={toggleTutorial} />
+      <DebugPanel />
+    </TooltipProvider>
+  );
+}
+
+export default function App() {
+  // global JS error handlers
+  useEffect(setupGlobalErrorHandlers, []);
+
+  return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          {element}
-          <TutorialOverlay isEnabled={tutorialEnabled} onToggle={toggleTutorial} />
-          <DebugPanel />
-        </TooltipProvider>
+        <AppContent />
       </QueryClientProvider>
+    </ErrorBoundary>
+  );
+}
     </ErrorBoundary>
   );
 }
