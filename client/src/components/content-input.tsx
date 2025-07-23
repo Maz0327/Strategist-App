@@ -70,8 +70,8 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
     try {
       const requestData = { ...data, userNotes, analysisMode };
       
-      // Use the same endpoint for both quick and deep modes
-      const endpoint = data.url ? '/api/analyze' : '/api/analyze/text';
+      // Use streaming endpoint for real-time progress updates
+      const endpoint = '/api/analyze/stream';
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -86,25 +86,50 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
         throw new Error(errorData.message || 'Failed to analyze content');
       }
 
-      // Handle regular JSON response (not streaming)
-      const result = await response.json();
+      // Handle Server-Sent Events streaming response
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let result: any = null;
+
+      if (reader) {
+        let buffer = '';
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) break;
+          
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const eventData = JSON.parse(line.slice(6));
+                
+                if (eventData.type === 'progress') {
+                  setAnalysisProgress({ stage: eventData.stage, progress: eventData.progress });
+                  onAnalysisProgress?.({ stage: eventData.stage, progress: eventData.progress });
+                } else if (eventData.type === 'complete') {
+                  result = eventData.data;
+                } else if (eventData.type === 'error') {
+                  throw new Error(eventData.error);
+                }
+              } catch (parseError) {
+                console.warn('Failed to parse SSE data:', line);
+              }
+            }
+          }
+        }
+      }
       
-      // Simulate progress updates for user experience
-      setAnalysisProgress({ stage: 'Processing content...', progress: 30 });
-      onAnalysisProgress?.({ stage: 'Processing content...', progress: 30 });
-      
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setAnalysisProgress({ stage: 'Analyzing insights...', progress: 70 });
-      onAnalysisProgress?.({ stage: 'Analyzing insights...', progress: 70 });
-      
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      setAnalysisProgress({ stage: 'Complete!', progress: 100 });
-      onAnalysisProgress?.({ stage: 'Complete!', progress: 100 });
+      if (!result) {
+        throw new Error('No analysis result received from streaming endpoint');
+      }
       
       // Extract analysis from result
-      const analysis = result.data?.analysis || result.analysis;
+      const analysis = result.analysis;
       onAnalysisComplete?.(analysis, data);
       
       toast({

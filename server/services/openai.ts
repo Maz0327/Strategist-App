@@ -57,12 +57,12 @@ export class OpenAIService {
 
   private getSystemPrompt(model: string, sentenceRange: string): string {
     if (model === 'gpt-4o-mini') {
-      return `You are a brand strategist. Output valid JSON only. Each field must be ${sentenceRange} sentences. Use conversational but analytical tone. Prioritize usefulness over flair.`;
+      return `You are a brand strategist. Output valid JSON only. CRITICAL: Each truthAnalysis field must be MINIMUM 3 sentences, ideally ${sentenceRange} sentences. Use conversational but analytical tone. Prioritize usefulness over flair. DO NOT write single sentences - always write at least 3 complete sentences per field.`;
     } else if (model === 'gpt-4o') {
-      return `You are a senior cultural strategist. Return valid JSON only. Each field must be ${sentenceRange} sentences. Be precise, insightful, and tie observations to cultural undercurrents.`;
+      return `You are a senior cultural strategist. Return valid JSON only. CRITICAL: Each truthAnalysis field must be MINIMUM 4 sentences, ideally ${sentenceRange} sentences. Be precise, insightful, and tie observations to cultural undercurrents. Always provide comprehensive multi-sentence analysis.`;
     }
     // Fallback to current system
-    return `You are an expert content strategist. Return only valid JSON matching the schema I'll provide. Every text field must be exactly ${sentenceRange} sentences long. Write in a natural, conversational tone.`;
+    return `You are an expert content strategist. Return only valid JSON matching the schema I'll provide. CRITICAL: Every truthAnalysis field must be MINIMUM 3 sentences, ideally ${sentenceRange} sentences long. Write in a natural, conversational tone.`;
   }
 
   async analyzeContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', analysisMode: 'quick' | 'deep' = 'quick'): Promise<EnhancedAnalysisResult> {
@@ -86,7 +86,7 @@ export class OpenAIService {
 
   private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     // Create stable cache key base with version for prompt changes
-    const cacheKeyBase = content.substring(0, 1000) + title + 'v19-bidirectional-cache';
+    const cacheKeyBase = content.substring(0, 1000) + title + 'v20-min-sentence-enforcement';
     
     // Step 1: Check if we have the exact analysis mode cached
     const targetCacheKey = createCacheKey(cacheKeyBase + analysisMode, 'analysis');
@@ -127,7 +127,7 @@ export class OpenAIService {
       sentenceRange = "4-7"; // Flexible range for natural depth
     } else {
       model = "gpt-4o-mini"; // Quick mode: brand strategist for practical analysis
-      sentenceRange = "2-4"; // Flexible range for efficiency
+      sentenceRange = "3-4"; // Minimum 3 sentences for adequate analysis
     }
     
     const systemPrompt = this.getSystemPrompt(model, sentenceRange);
@@ -157,6 +157,8 @@ export class OpenAIService {
 
     const userPrompt = `Schema:
 ${JSON.stringify(schema, null, 2)}
+
+CRITICAL REQUIREMENT: Each truthAnalysis field (fact, observation, insight, humanTruth, culturalMoment) must contain MINIMUM 3 sentences. Single sentences are not acceptable.
 
 Analyze this content:
 Title: ${title}
@@ -228,8 +230,8 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
     debugLogger.info(`Converting analysis to ${targetMode} mode`);
     
     if (targetMode === 'quick') {
-      // Convert Deep → Quick: Condense to 2-4 sentences per field
-      const conversionPrompt = `Convert this comprehensive analysis to a quick format with 2-4 sentences per field. Maintain the key strategic insights but make it concise and actionable. Return only the JSON object with each field condensed to 2-4 sentences.`;
+      // Convert Deep → Quick: Condense to 3-4 sentences per field (MINIMUM 3)
+      const conversionPrompt = `Convert this comprehensive analysis to a quick format with 3-4 sentences per field. CRITICAL: Each truthAnalysis field must contain MINIMUM 3 sentences. Maintain the key strategic insights but make it concise and actionable. Return only the JSON object with each field condensed to exactly 3-4 sentences.`;
       
       const response = await openai.chat.completions.create({
         model: "gpt-4o-mini", // Use Quick mode model for consistency
@@ -238,7 +240,7 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
         messages: [
           { 
             role: "system", 
-            content: "You are an expert brand strategist. Convert comprehensive analysis to concise, actionable insights. Return only valid JSON with 2-4 sentences per field." 
+            content: "You are an expert brand strategist. Convert comprehensive analysis to concise, actionable insights. CRITICAL: Each truthAnalysis field must be MINIMUM 3 sentences. Return only valid JSON with 3-4 sentences per field." 
           },
           { 
             role: "user", 

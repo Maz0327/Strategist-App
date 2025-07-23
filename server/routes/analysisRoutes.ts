@@ -21,8 +21,8 @@ const analyzeUrlSchema = z.object({
         return false;
       }
     }, 'Local URLs are not allowed for security reasons'),
-  mode: z.enum(['speed', 'quick', 'deep'], { 
-    errorMap: () => ({ message: 'Analysis mode must be "speed", "quick", or "deep"' })
+  mode: z.enum(['quick', 'deep'], { 
+    errorMap: () => ({ message: 'Analysis mode must be "quick" or "deep"' })
   }).default('quick'),
   lengthPreference: z.enum(['short', 'medium', 'long'], {
     errorMap: () => ({ message: 'Length preference must be "short", "medium", or "long"' })
@@ -36,7 +36,7 @@ const analyzeTextSchema = z.object({
     .min(10, 'Content must be at least 10 characters')
     .max(50000, 'Content too long (max 50,000 characters)'),
   title: z.string().min(1, 'Title is required').max(200, 'Title too long'),
-  mode: z.enum(['quick', 'deep']).default('quick'),
+  analysisMode: z.enum(['quick', 'deep']).default('quick'),
   lengthPreference: z.enum(['short', 'medium', 'long']).default('medium'),
   userNotes: z.string().max(1000, 'User notes cannot exceed 1000 characters').optional().default(''),
   author: z.string().max(100, 'Author name too long').optional(),
@@ -121,11 +121,11 @@ router.post("/", requireAuth, async (req, res) => {
       });
     }
 
-    // Perform Truth Analysis with new three-tier system
+    // Perform Truth Analysis with two-tier system
     const analysis = await analyzeContentWithOpenAI(
       extractedContent.content,
       lengthPreference,
-      mode // This now supports 'speed', 'quick', 'deep'
+      mode // This now supports 'quick', 'deep'
     );
 
     // Create signal with source traceability
@@ -209,21 +209,21 @@ router.post("/text", requireAuth, async (req, res) => {
       });
     }
 
-    const { content, title, mode, lengthPreference, userNotes } = result.data;
+    const { content, title, analysisMode, lengthPreference, userNotes } = result.data;
     
     debugLogger.info('Starting text analysis', { 
       title, 
       contentLength: content.length,
-      mode, 
+      analysisMode, 
       lengthPreference, 
       userId: req.session.userId 
     }, req);
 
-    // Perform Truth Analysis with three-tier system
+    // Perform Truth Analysis with two-tier system
     const analysis = await analyzeContentWithOpenAI(
       content,
       lengthPreference,
-      mode // This now supports 'speed', 'quick', 'deep'
+      analysisMode // This now supports 'quick', 'deep'
     );
 
     // Create signal
@@ -242,7 +242,7 @@ router.post("/text", requireAuth, async (req, res) => {
     debugLogger.info('Text analysis completed successfully', { 
       signalId: signal.id,
       userId: req.session.userId,
-      analysisMode: mode
+      analysisMode: analysisMode
     }, req);
 
     res.json({ 
@@ -338,6 +338,116 @@ router.post("/extract-url", requireAuth, async (req, res) => {
       error: "URL extraction failed",
       message: error.message,
       code: 'URL_EXTRACTION_FAILED'
+    });
+  }
+});
+
+// Streaming Analysis Route - Server-Sent Events for real-time progress
+router.post("/stream", requireAuth, async (req, res) => {
+  try {
+    const result = analyzeTextSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Validation failed',
+        details: result.error.errors,
+        code: 'VALIDATION_ERROR'
+      });
+    }
+
+    const { content, title, analysisMode, lengthPreference, userNotes } = result.data;
+    
+    debugLogger.info('Starting streaming analysis', { 
+      title, 
+      contentLength: content.length,
+      analysisMode, 
+      lengthPreference, 
+      userId: req.session.userId 
+    }, req);
+
+    // Set up Server-Sent Events
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Cache-Control'
+    });
+
+    // Send progress updates
+    const sendProgress = (stage: string, progress: number) => {
+      res.write(`data: ${JSON.stringify({ type: 'progress', stage, progress })}\n\n`);
+    };
+
+    try {
+      // Stage 1: Initialize
+      sendProgress('Starting analysis...', 10);
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Stage 2: Processing content
+      sendProgress('Processing content...', 30);
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      // Stage 3: AI Analysis
+      sendProgress(`Generating ${analysisMode === 'deep' ? 'comprehensive strategic' : 'quick strategic'} insights...`, 50);
+      
+      // Perform actual analysis
+      const analysis = await analyzeContentWithOpenAI(
+        content,
+        lengthPreference,
+        analysisMode
+      );
+
+      sendProgress('Finalizing results...', 80);
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Create signal
+      const signalData = {
+        userId: req.session.userId!,
+        title: title,
+        content: content,
+        url: '',
+        userNotes: userNotes || '',
+        status: 'capture' as const,
+        truthAnalysis: analysis
+      };
+
+      const signal = await storage.createSignal(signalData);
+
+      sendProgress('Complete!', 100);
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Send final result
+      res.write(`data: ${JSON.stringify({ 
+        type: 'complete', 
+        data: { 
+          signal,
+          analysis
+        }
+      })}\n\n`);
+
+      debugLogger.info('Streaming analysis completed successfully', { 
+        signalId: signal.id,
+        userId: req.session.userId,
+        analysisMode: analysisMode
+      }, req);
+
+    } catch (analysisError: any) {
+      debugLogger.error('Streaming analysis failed', analysisError, req);
+      res.write(`data: ${JSON.stringify({ 
+        type: 'error', 
+        error: analysisError.message || 'Analysis failed'
+      })}\n\n`);
+    }
+
+    res.end();
+  } catch (error: any) {
+    debugLogger.error('Streaming setup failed', error, req);
+    res.status(500).json({ 
+      success: false, 
+      error: "Streaming analysis failed",
+      message: error.message,
+      code: 'STREAMING_FAILED'
     });
   }
 });
