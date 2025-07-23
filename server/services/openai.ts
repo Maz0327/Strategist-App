@@ -8,8 +8,8 @@ import { performanceMonitor } from "./monitoring";
 // Using gpt-4o-mini for cost-efficient testing phase, can upgrade to gpt-4o later
 export const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || process.env.API_KEY,
-  timeout: 15 * 1000, // 15 second timeout for faster response
-  maxRetries: 1, // Reduce retries for speed
+  timeout: 45 * 1000, // 45 second timeout for comprehensive deep analysis
+  maxRetries: 2, // Allow retries for deep analysis
 });
 
 export interface AnalysisResult {
@@ -62,16 +62,16 @@ export class OpenAIService {
       if (analysisMode === 'deep') {
         return `You are a senior cultural strategist providing comprehensive deep analysis. Return valid JSON only. 
 
-CRITICAL REQUIREMENT: Each truthAnalysis field must contain EXACTLY 7 detailed, comprehensive sentences. This is non-negotiable.
+CRITICAL REQUIREMENT: Each truthAnalysis field must contain EXACTLY 7 detailed sentences. This is mandatory.
 
-FIELD DEFINITIONS FOR COMPREHENSIVE ANALYSIS:
-- fact: What objectively happened in this content. Include specific details, numbers, names, actions taken. Describe the concrete elements, timeline, and measurable components. Context should be clear and factual without interpretation.
-- observation: What patterns, behaviors, or trends you notice from analyzing this content. Look for recurring themes, audience reactions, engagement patterns, stylistic choices, and structural elements. Connect dots between different aspects of the content.
-- insight: Why these patterns exist and what deeper meaning they reveal about the situation, market, or audience psychology. Explain the underlying mechanisms, motivations, and systemic factors driving what you observed.
-- humanTruth: The fundamental human psychological, emotional, or behavioral driver that makes this content resonate. Dig into universal human needs, fears, desires, social dynamics, and emotional triggers that create connection.
-- culturalMoment: The broader cultural, societal, or generational shift this content represents or capitalizes on. Connect to zeitgeist, social movements, technological changes, and evolving cultural values or behaviors.
+ANALYSIS FRAMEWORK:
+- fact: What objectively happened (7 sentences covering specific details, context, timeline)
+- observation: What patterns you notice (7 sentences covering themes, behaviors, engagement)  
+- insight: Why these patterns matter strategically (7 sentences covering mechanisms, psychology)
+- humanTruth: Core human driver behind resonance (7 sentences covering needs, emotions, triggers)
+- culturalMoment: Broader cultural shift represented (7 sentences covering zeitgeist, movements, values)
 
-Each field requires EXACTLY 7 comprehensive, detailed sentences that thoroughly explore every aspect of that category.`;
+Write exactly 7 comprehensive sentences per field with strategic depth and cultural intelligence.`;
       } else {
         return `You are a senior cultural strategist. Return valid JSON only. CRITICAL: Each truthAnalysis field must be MINIMUM 4 sentences, ideally ${sentenceRange} sentences. Be precise, insightful, and tie observations to cultural undercurrents. Always provide comprehensive multi-sentence analysis.`;
       }
@@ -183,8 +183,8 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
 
     const response = await openai.chat.completions.create({
       model: model,
-      temperature: 0.7,
-      max_tokens: model === 'gpt-4o' ? 8000 : 4000,
+      temperature: 0.6, // Slightly lower for more focused responses
+      max_tokens: model === 'gpt-4o' ? 12000 : 4000, // Increased for 7-sentence responses
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
@@ -287,14 +287,14 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
       // Convert Quick → Deep: Expand to EXACTLY 7 sentences per field
       const conversionPrompt = `Expand this quick analysis into comprehensive deep strategic intelligence with EXACTLY 7 detailed sentences per field. 
 
-FIELD DEFINITIONS FOR COMPREHENSIVE EXPANSION:
-- fact: What objectively happened in this content. Include specific details, numbers, names, actions taken. Describe the concrete elements, timeline, and measurable components. Context should be clear and factual without interpretation.
-- observation: What patterns, behaviors, or trends you notice from analyzing this content. Look for recurring themes, audience reactions, engagement patterns, stylistic choices, and structural elements. Connect dots between different aspects of the content.
-- insight: Why these patterns exist and what deeper meaning they reveal about the situation, market, or audience psychology. Explain the underlying mechanisms, motivations, and systemic factors driving what you observed.
-- humanTruth: The fundamental human psychological, emotional, or behavioral driver that makes this content resonate. Dig into universal human needs, fears, desires, social dynamics, and emotional triggers that create connection.
-- culturalMoment: The broader cultural, societal, or generational shift this content represents or capitalizes on. Connect to zeitgeist, social movements, technological changes, and evolving cultural values or behaviors.
+EXPANSION FRAMEWORK:
+- fact: What happened (7 sentences with specific details, context, timeline)
+- observation: Patterns noticed (7 sentences covering themes, behaviors, engagement)
+- insight: Strategic meaning (7 sentences covering mechanisms, psychology, implications)
+- humanTruth: Core human driver (7 sentences covering needs, emotions, motivations)
+- culturalMoment: Cultural shift (7 sentences covering zeitgeist, movements, societal changes)
 
-CRITICAL: Each field must contain EXACTLY 7 comprehensive, detailed sentences. Return only the JSON object with each field expanded to exactly 7 sentences with rich detail and cultural intelligence.`;
+CRITICAL: Each field must have EXACTLY 7 detailed sentences. Expand with strategic depth and cultural intelligence.`;
       
       const response = await openai.chat.completions.create({
         model: "gpt-4o", // Use Deep mode model for consistency
