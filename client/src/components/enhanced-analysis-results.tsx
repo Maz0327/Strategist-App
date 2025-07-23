@@ -214,7 +214,13 @@ export function EnhancedAnalysisResults({
       
       const responseData = await response.json();
       console.log('Insights API response:', responseData);
-      setInsightsResults(responseData.insights || []);
+      
+      if (responseData.success && responseData.insights) {
+        setInsightsResults(responseData.insights);
+      } else {
+        console.error('Insights API returned error:', responseData);
+        throw new Error(responseData.error || 'No insights generated');
+      }
       toast({
         title: "Success",
         description: "Strategic insights completed",
@@ -621,7 +627,13 @@ export function EnhancedAnalysisResults({
   const handleSaveAnalysis = async () => {
     setIsSaving(true);
     try {
-      // Create a new signal with the analysis data
+      // Create a new signal with the analysis data  
+      console.log('Saving analysis data:', {
+        title: originalContent?.title || data.summary || 'Analysis Capture',
+        content: originalContent?.content || data.summary,
+        status: 'capture'
+      });
+      
       const response = await apiRequest('POST', '/api/signals', {
         title: originalContent?.title || data.summary || 'Analysis Capture',
         content: originalContent?.content || data.summary,
@@ -672,6 +684,12 @@ export function EnhancedAnalysisResults({
       // Check if we have a valid signal ID or create temporary flag
       if (!analysis.signalId || isNaN(Number(analysis.signalId))) {
         // Use API to create potential signal flag if no existing signal ID
+        console.log('Flagging analysis data:', {
+          title: originalContent?.title || 'Flagged Analysis',
+          content: originalContent?.content || data.summary,
+          status: 'potential_signal'
+        });
+        
         const response = await apiRequest('POST', '/api/signals', {
           title: originalContent?.title || 'Flagged Analysis',
           content: originalContent?.content || data.summary,

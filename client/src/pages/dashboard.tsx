@@ -27,11 +27,11 @@ interface DashboardProps {
 
 export default function Dashboard({ user, onLogout, onPageChange, currentPage }: DashboardProps) {
   const [location] = useLocation();
-  const [activeTab, setActiveTab] = useState(currentPage || "dashboard");
+  const [activeTab, setActiveTab] = useState(currentPage || "capture");
   
   // Update active tab when route changes
   React.useEffect(() => {
-    const pathToTab = {
+    const pathToTab: Record<string, string> = {
       '/dashboard': 'briefing',
       '/capture': 'capture',
       '/explore': 'explore',
@@ -40,7 +40,7 @@ export default function Dashboard({ user, onLogout, onPageChange, currentPage }:
       '/admin': 'admin'
     };
     
-    const newTab = pathToTab[location] || currentPage || 'briefing';
+    const newTab = pathToTab[location] || currentPage || 'capture';
     setActiveTab(newTab);
   }, [location, currentPage]);
   const [activeSubTab, setActiveSubTab] = useState("");
@@ -93,12 +93,12 @@ export default function Dashboard({ user, onLogout, onPageChange, currentPage }:
 
   // Sidebar navigation items
   const navigationItems = [
-    {
-      id: "briefing",
-      label: "Today's Briefing",
-      icon: Home,
-      subItems: []
-    },
+    // {
+    //   id: "briefing",
+    //   label: "Today's Briefing",
+    //   icon: Home,
+    //   subItems: []
+    // },
     {
       id: "capture",
       label: "Signal Capture",
@@ -332,6 +332,7 @@ export default function Dashboard({ user, onLogout, onPageChange, currentPage }:
         {/* Main Content */}
         <div className="flex-1 flex overflow-hidden min-w-0">
           <main className="flex-1 overflow-y-auto p-4 sm:p-6 min-w-0">
+            {/* Today's Briefing temporarily commented out per user request
             {activeTab === "briefing" && (
               <TodaysBriefing 
                 activeSubTab=""
@@ -344,6 +345,7 @@ export default function Dashboard({ user, onLogout, onPageChange, currentPage }:
                 }}
               />
             )}
+            */}
             
             {activeTab === "feeds" && (
               <FeedsHub 
