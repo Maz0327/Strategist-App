@@ -86,7 +86,7 @@ export class OpenAIService {
 
   private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     // Create stable cache key base with version for prompt changes
-    const cacheKeyBase = content.substring(0, 1000) + title + 'v20-min-sentence-enforcement';
+    const cacheKeyBase = content.substring(0, 1000) + title + 'v21-performance-optimized';
     
     // Step 1: Check if we have the exact analysis mode cached
     const targetCacheKey = createCacheKey(cacheKeyBase + analysisMode, 'analysis');
@@ -170,6 +170,7 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
       model: model,
       temperature: 0.7,
       max_tokens: model === 'gpt-4o' ? 4000 : 2500,
+      timeout: 6000, // 6 second timeout for faster response
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
@@ -237,6 +238,7 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
         model: "gpt-4o-mini", // Use Quick mode model for consistency
         temperature: 0.1,
         max_tokens: 2500,
+        timeout: 5000, // 5 second timeout for quick conversions
         messages: [
           { 
             role: "system", 
@@ -276,6 +278,7 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
         model: "gpt-4o", // Use Deep mode model for consistency
         temperature: 0.7,
         max_tokens: 4000,
+        timeout: 6000, // 6 second timeout for deep conversions
         messages: [
           { 
             role: "system", 

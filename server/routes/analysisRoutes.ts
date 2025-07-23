@@ -380,28 +380,35 @@ router.post("/stream", requireAuth, async (req, res) => {
     };
 
     try {
-      // Stage 1: Initialize
-      sendProgress('Starting analysis...', 10);
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Stage 2: Processing content
-      sendProgress('Processing content...', 30);
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      // Stage 3: AI Analysis
-      sendProgress(`Generating ${analysisMode === 'deep' ? 'comprehensive strategic' : 'quick strategic'} insights...`, 50);
+      // Stage 1: Initialize - immediate response
+      sendProgress('Starting analysis...', 15);
       
-      // Perform actual analysis
-      const analysis = await analyzeContentWithOpenAI(
-        content,
-        lengthPreference,
-        analysisMode
-      );
+      // Stage 2: Processing content - quick feedback
+      await new Promise(resolve => setTimeout(resolve, 200));
+      sendProgress('Processing content...', 25);
+      
+      // Stage 3: Begin AI analysis
+      await new Promise(resolve => setTimeout(resolve, 300));
+      sendProgress(`Generating ${analysisMode === 'deep' ? 'comprehensive strategic' : 'quick strategic'} insights...`, 40);
+      
+      // Perform actual analysis with progress updates during AI call
+      const analysisPromise = analyzeContentWithOpenAI(content, lengthPreference, analysisMode);
+      
+      // Send periodic progress updates while waiting for AI
+      let progressValue = 45;
+      const progressInterval = setInterval(() => {
+        if (progressValue < 75) {
+          progressValue += 5;
+          sendProgress(analysisMode === 'deep' ? 'Analyzing cultural intelligence...' : 'Processing strategic insights...', progressValue);
+        }
+      }, 800);
+      
+      const analysis = await analysisPromise;
+      clearInterval(progressInterval);
 
-      sendProgress('Finalizing results...', 80);
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Create signal
+      sendProgress('Finalizing results...', 85);
+      
+      // Create signal quickly
       const signalData = {
         userId: req.session.userId!,
         title: title,
@@ -415,7 +422,6 @@ router.post("/stream", requireAuth, async (req, res) => {
       const signal = await storage.createSignal(signalData);
 
       sendProgress('Complete!', 100);
-      await new Promise(resolve => setTimeout(resolve, 300));
 
       // Send final result
       res.write(`data: ${JSON.stringify({ 
