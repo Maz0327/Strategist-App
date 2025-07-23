@@ -55,17 +55,12 @@ export class OpenAIService {
     }
   }
 
-  private getSystemPrompt(lengthPreference: string, isDeepAnalysis: boolean): string {
-    return `You are an expert content and creative strategist and analyst. You specialize in finding culturally relevant creative and strategic insights. Analyze the provided content and return strategic insights in JSON format.
-
-Focus on:
-- Strategic business implications
-- Cultural and social context
-- Human behavior and motivations
-- Competitive landscape insights
-- Attention and engagement potential
-
-Analyze this content for strategic insights. Focus on actionable intelligence and cultural context.`;
+  private getSystemPrompt(sentenceCount: number): string {
+    return `You are an expert content strategist.
+When asked to analyze, return only valid JSON matching the schema I'll provide.
+Every text field must be exactly ${sentenceCount} sentences long—no more, no fewer.
+Write in a natural, conversational tone.
+Do not include any extra keys, commentary, or markdown.`;
   }
 
   async analyzeContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', analysisMode: 'speed' | 'quick' | 'deep' = 'quick'): Promise<EnhancedAnalysisResult> {
@@ -89,7 +84,7 @@ Analyze this content for strategic insights. Focus on actionable intelligence an
 
   private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'speed' | 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     // Create stable cache key base with version for prompt changes
-    const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v16-sentence-count-prompts';
+    const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v17-clean-prompts';
     
     // Step 1: Check if we have the requested length preference cached
     const targetCacheKey = createCacheKey(cacheKeyBase + lengthPreference, 'analysis');
@@ -135,6 +130,9 @@ Analyze this content for strategic insights. Focus on actionable intelligence an
   }
 
   private async createMediumAnalysis(content: string, title: string, analysisMode: 'speed' | 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
+    // Define sentence count based on analysis mode
+    const sentenceCount = analysisMode === 'speed' ? 2 : analysisMode === 'deep' ? 7 : 4;
+    
     // Three-tier AI model selection
     let model: string;
     if (analysisMode === 'speed') {
@@ -145,98 +143,60 @@ Analyze this content for strategic insights. Focus on actionable intelligence an
       model = "gpt-4o-mini"; // Quick mode: balanced default
     }
     
-    const isDeepAnalysis = analysisMode === 'deep';
-    const isSpeedAnalysis = analysisMode === 'speed';
+    const systemPrompt = this.getSystemPrompt(sentenceCount);
     
-    const systemPrompt = this.getSystemPrompt('medium', isDeepAnalysis);
-    
-    const userPrompt = `Analyze this content for strategic insights. 
+    // Clean schema definition
+    const schema = {
+      summary: "string",            // Strategic overview
+      sentiment: "positive|neutral|negative",
+      tone: "professional|casual|urgent|analytical|conversational|authoritative",
+      keywords: ["string"],         // 3–20 items
+      confidence: "85%",
+      truthAnalysis: {
+        fact: "string",             // sentenceCount sentences
+        observation: "string",      // sentenceCount sentences
+        insight: "string",          // sentenceCount sentences
+        humanTruth: "string",       // sentenceCount sentences
+        culturalMoment: "string",   // sentenceCount sentences
+        attentionValue: "high|medium|low",
+        platform: "string",
+        cohortOpportunities: ["string"]
+      },
+      cohortSuggestions: ["string"],
+      platformContext: "string",
+      viralPotential: "high|medium|low",
+      competitiveInsights: ["string"]
+    };
 
-Provide strategic analysis with 3-5 sentences in each truthAnalysis field.
+    const userPrompt = `Schema:
+${JSON.stringify(schema, null, 2)}
 
+Analyze this content:
 Title: ${title}
-Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}
+Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
 
-Return JSON with this structure:
-{
-  "summary": "Strategic overview",
-  "sentiment": "positive/negative/neutral", 
-  "tone": "professional/casual/urgent/analytical/conversational/authoritative",
-  "keywords": ["relevant", "strategic", "keywords"],
-  "confidence": "85%",
-  "truthAnalysis": {
-    "fact": "3-5 sentences stating what actually happened, who was involved, specific numbers/data mentioned, concrete examples given, and verifiable information",
-    "observation": "3-5 sentences analyzing patterns, connections, strategic observations, underlying dynamics, and what this reveals about the situation", 
-    "insight": "3-5 sentences on strategic implications, business intelligence, deeper strategic meaning, and actionable intelligence",
-    "humanTruth": "3-5 sentences analyzing human motivations, psychological drivers, emotional triggers, behavioral patterns, and what drives people",
-    "culturalMoment": "3-5 sentences on cultural context, societal trends, generational dynamics, broader cultural relevance, and cultural significance",
-    "attentionValue": "high/medium/low",
-    "platform": "relevant platform",
-    "cohortOpportunities": ["target audience segments"]
-  },
-  "cohortSuggestions": ["audience", "segments"], 
-  "platformContext": "Social media and platform insights",
-  "viralPotential": "high/medium/low",
-  "competitiveInsights": ["competitive implications"]
-}`;
-
-    debugLogger.info('Creating medium analysis', { model, mode: analysisMode });
+    debugLogger.info('Creating analysis with clean prompts', { model, mode: analysisMode, sentenceCount });
 
     const response = await openai.chat.completions.create({
       model: model,
+      temperature: 0.7,
+      max_tokens: sentenceCount === 2 ? 1500 : sentenceCount === 7 ? 4000 : 2500,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
       ],
-      functions: [
-        {
-          name: "analyze_content",
-          description: "Analyze content with specific length requirements for each field",
-          parameters: {
-            type: "object",
-            properties: {
-              summary: { type: "string", description: "Strategic overview" },
-              sentiment: { type: "string", enum: ["positive", "negative", "neutral"] },
-              tone: { type: "string", enum: ["professional", "casual", "urgent", "analytical", "conversational", "authoritative"] },
-              keywords: { type: "array", items: { type: "string" }, description: "Relevant strategic keywords" },
-              confidence: { type: "string", description: "Confidence percentage" },
-              truthAnalysis: {
-                type: "object",
-                properties: {
-                  fact: { type: "string", description: isSpeedAnalysis ? "2 sentences stating what happened and key facts" : isDeepAnalysis ? "7-9 sentences with comprehensive details, data, examples, and context" : "4-6 sentences stating what actually happened, who was involved, specific data/examples, verifiable information" },
-                  observation: { type: "string", description: isSpeedAnalysis ? "2 sentences analyzing main patterns and connections" : isDeepAnalysis ? "7-9 sentences with deep pattern analysis, strategic observations, and underlying dynamics" : "4-6 sentences analyzing patterns, connections, strategic observations, and underlying dynamics" },
-                  insight: { type: "string", description: isSpeedAnalysis ? "2 sentences on key strategic implications" : isDeepAnalysis ? "7-9 sentences on comprehensive strategic implications, business intelligence, and detailed actionable intelligence" : "4-6 sentences on strategic implications, business intelligence, and actionable intelligence" },
-                  humanTruth: { type: "string", description: isSpeedAnalysis ? "2 sentences on human motivations and behavior" : isDeepAnalysis ? "7-9 sentences with deep psychological analysis, motivations, and behavioral patterns" : "4-6 sentences analyzing human motivations, psychological drivers, and behavioral patterns" },
-                  culturalMoment: { type: "string", description: isSpeedAnalysis ? "2 sentences on cultural context and trends" : isDeepAnalysis ? "7-9 sentences with comprehensive cultural analysis, societal trends, and broader significance" : "4-6 sentences on cultural context, societal trends, and broader cultural significance" },
-                  attentionValue: { type: "string", enum: ["high", "medium", "low"] },
-                  platform: { type: "string" },
-                  cohortOpportunities: { type: "array", items: { type: "string" } }
-                },
-                required: ["fact", "observation", "insight", "humanTruth", "culturalMoment", "attentionValue", "platform", "cohortOpportunities"]
-              },
-              cohortSuggestions: { type: "array", items: { type: "string" } },
-              platformContext: { type: "string" },
-              viralPotential: { type: "string", enum: ["high", "medium", "low"] },
-              competitiveInsights: { type: "array", items: { type: "string" } }
-            },
-            required: ["summary", "sentiment", "tone", "keywords", "confidence", "truthAnalysis", "cohortSuggestions", "platformContext", "viralPotential", "competitiveInsights"]
-          }
-        }
-      ],
-      function_call: { name: "analyze_content" },
-      temperature: 0.1,
-      max_tokens: isSpeedAnalysis ? 1500 : isDeepAnalysis ? 4000 : 2500
+      response_format: { type: "json_object" }
     });
 
-    const functionCall = response.choices[0]?.message?.function_call;
-    if (!functionCall || !functionCall.arguments) {
-      throw new Error('No function call response from OpenAI');
+    const responseContent = response.choices[0]?.message?.content;
+    if (!responseContent) {
+      throw new Error('No response content from OpenAI');
     }
 
     let analysis;
     try {
-      analysis = JSON.parse(functionCall.arguments);
-      debugLogger.info('Successfully parsed function call analysis', { 
+      analysis = JSON.parse(responseContent);
+      debugLogger.info('Successfully parsed JSON analysis', { 
         hasSummary: !!analysis.summary,
         hasTruthAnalysis: !!analysis.truthAnalysis,
         hasKeywords: !!analysis.keywords,
@@ -248,8 +208,8 @@ Return JSON with this structure:
         culturalMomentLength: analysis.truthAnalysis?.culturalMoment?.length || 0
       });
     } catch (parseError) {
-      debugLogger.error('Function call JSON parsing failed', { arguments: functionCall.arguments, error: parseError });
-      throw new Error('Invalid JSON response from OpenAI function call');
+      debugLogger.error('JSON parsing failed', { content: responseContent, error: parseError });
+      throw new Error('Invalid JSON response from OpenAI');
     }
 
     const result: EnhancedAnalysisResult = {
@@ -313,29 +273,24 @@ Return JSON with this structure:
       insight: mediumAnalysis.truthAnalysis.insight?.length || 0
     });
     
-    const adjustmentPrompt = lengthPreference === 'short' 
-      ? `Summarize this analysis down to 2 sentences while communicating the same context:
+    const targetSentenceCount = lengthPreference === 'short' ? 2 : 7;
+    const adjustmentPrompt = `Adjust each field to exactly ${targetSentenceCount} sentences:
 
 ${JSON.stringify(mediumAnalysis.truthAnalysis, null, 2)}
 
-Return only the JSON object with each field condensed to exactly 2 sentences.`
-      : `Elaborate on this analysis with more detail and context and give me between 6 and 7 sentences for each field you expand on:
-
-${JSON.stringify(mediumAnalysis.truthAnalysis, null, 2)}
-
-Return only the JSON object with each field expanded to 6-7 sentences with rich detail.`;
+Return JSON with each field adjusted to ${targetSentenceCount} sentences.`;
     
     debugLogger.info('Sending adjustment prompt:', adjustmentPrompt.substring(0, 500) + '...');
 
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo", // Always use GPT-3.5-turbo for adjustments
       messages: [
-        { role: "system", content: "You are a strategic content analyst. Adjust the analysis length while maintaining the same insights and quality." },
+        { role: "system", content: `You are a content editor. Adjust text length while keeping the same insights. Each field must be exactly ${targetSentenceCount} sentences.` },
         { role: "user", content: adjustmentPrompt }
       ],
       response_format: { type: "json_object" },
       temperature: 0.1,
-      max_tokens: lengthPreference === 'short' ? 1200 : lengthPreference === 'long' ? 3000 : 1800
+      max_tokens: targetSentenceCount === 2 ? 1200 : 3000
     });
 
     const responseContent = response.choices[0]?.message?.content;
