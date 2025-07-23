@@ -89,6 +89,7 @@ export function EnhancedAnalysisResults({
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   const [analysisMode, setAnalysisMode] = useState<'quick' | 'deep'>(currentAnalysisMode);
   const [isFlagging, setIsFlagging] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [currentAnalysis, setCurrentAnalysis] = useState(data);
   const [analysisCache, setAnalysisCache] = useState<Record<string, any>>({
     [currentAnalysisMode]: data // Cache the initial analysis with current mode
@@ -617,6 +618,54 @@ export function EnhancedAnalysisResults({
     }
   };
 
+  const handleSaveAnalysis = async () => {
+    setIsSaving(true);
+    try {
+      // Create a new signal with the analysis data
+      const response = await apiRequest('POST', '/api/signals', {
+        title: originalContent?.title || data.summary || 'Analysis Capture',
+        content: originalContent?.content || data.summary,
+        url: originalContent?.url || null,
+        status: 'capture',
+        userNotes: 'Analysis saved from results - contains valuable insights',
+        // Include all the analysis data
+        truthFact: currentAnalysis.truthAnalysis?.fact || '',
+        truthObservation: currentAnalysis.truthAnalysis?.observation || '',
+        truthInsight: currentAnalysis.truthAnalysis?.insight || '',
+        humanTruth: currentAnalysis.truthAnalysis?.humanTruth || '',
+        culturalMoment: currentAnalysis.truthAnalysis?.culturalMoment || '',
+        attentionValue: currentAnalysis.truthAnalysis?.attentionValue || 'medium',
+        platformContext: currentAnalysis.truthAnalysis?.platform || '',
+        viralPotential: currentAnalysis.viralPotential || 'medium',
+        summary: data.summary,
+        sentiment: data.sentiment,
+        tone: data.tone,
+        keywords: data.keywords,
+        confidence: data.confidence
+      });
+      
+      const responseData = await response.json();
+      if (!response.ok) {
+        throw new Error(responseData.message || 'Failed to save analysis');
+      }
+      
+      toast({
+        title: "Analysis Saved",
+        description: "This analysis has been saved to your dashboard as a capture.",
+        duration: 2000
+      });
+      
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save analysis. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleFlagAsPotentialSignal = async () => {
     setIsFlagging(true);
     try {
@@ -781,12 +830,14 @@ export function EnhancedAnalysisResults({
               size="sm" 
               variant="outline" 
               className="flex items-center gap-2 w-full sm:w-auto"
-              onClick={() => toast({
-                title: "Analysis Saved",
-                description: "This analysis has been saved to your dashboard as a capture.",
-              })}
+              onClick={handleSaveAnalysis}
+              disabled={isSaving}
             >
-              <Save size={14} />
+              {isSaving ? (
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600"></div>
+              ) : (
+                <Save size={14} />
+              )}
               <span className="hidden sm:inline">Save Analysis</span>
               <span className="sm:hidden">Save</span>
             </Button>

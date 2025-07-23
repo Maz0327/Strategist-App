@@ -169,7 +169,7 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
     const response = await openai.chat.completions.create({
       model: model,
       temperature: 0.7,
-      max_tokens: model === 'gpt-4o' ? 4000 : 2500,
+      max_tokens: model === 'gpt-4o' ? 8000 : 4000,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
@@ -275,7 +275,7 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
       const response = await openai.chat.completions.create({
         model: "gpt-4o", // Use Deep mode model for consistency
         temperature: 0.7,
-        max_tokens: 4000,
+        max_tokens: 8000,
         messages: [
           { 
             role: "system", 
