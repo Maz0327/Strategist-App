@@ -195,7 +195,7 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
       model: model,
       temperature: 0.7, // Better for expressive, natural analysis
       top_p: 1,
-      max_tokens: model === 'gpt-4o' ? 1600 : 800, // Increased for breathing room
+      max_tokens: model === 'gpt-4o' ? 2000 : 800, // Further increased for comprehensive responses
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
@@ -210,6 +210,13 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
 
     let analysis;
     try {
+      // Log the raw response for debugging
+      debugLogger.info('Raw OpenAI response', { 
+        responseLength: responseContent.length,
+        responsePreview: responseContent.substring(0, 200) + '...',
+        responseEnd: responseContent.substring(responseContent.length - 200)
+      });
+      
       analysis = JSON.parse(responseContent);
       debugLogger.info('Successfully parsed JSON analysis', { 
         hasSummary: !!analysis.summary,
@@ -223,8 +230,30 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
         culturalMomentLength: analysis.truthAnalysis?.culturalMoment?.length || 0
       });
     } catch (parseError) {
-      debugLogger.error('JSON parsing failed', { content: responseContent, error: parseError });
-      throw new Error('Invalid JSON response from OpenAI');
+      debugLogger.error('JSON parsing failed', { 
+        content: responseContent,
+        contentLength: responseContent.length,
+        parseError: (parseError as Error).message,
+        responsePreview: responseContent.substring(0, 500)
+      });
+      
+      // Try to clean and retry parsing
+      try {
+        const cleanedContent = responseContent
+          .replace(/```json\s*/g, '')
+          .replace(/```\s*/g, '')
+          .replace(/^\s*/, '')
+          .replace(/\s*$/, '');
+        
+        analysis = JSON.parse(cleanedContent);
+        debugLogger.info('Successfully parsed cleaned JSON');
+      } catch (secondParseError) {
+        debugLogger.error('Second JSON parse attempt failed', { 
+          cleanedContent,
+          error: (secondParseError as Error).message 
+        });
+        throw new Error('Invalid JSON response from OpenAI');
+      }
     }
 
     const result: EnhancedAnalysisResult = {
@@ -302,7 +331,7 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
         model: "gpt-4o", // Use Deep mode model for consistency
         temperature: 0.7,
         top_p: 1,
-        max_tokens: 1600,
+        max_tokens: 2000,
         messages: [
           { 
             role: "system", 
