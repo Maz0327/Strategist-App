@@ -1,0 +1,87 @@
+Great question — GPT-4o can produce excellent results at 6–10 sentences if your prompt guides it firmly but naturally. Replit’s prompt format often over-constrains the model or overcomplicates with “strict” language that disrupts tone or coherence.
+
+Here’s the most effective approach to maximize GPT-4o’s analysis quality via API for deep 6–10 sentence outputs:
+
+⸻
+
+✅ 1. 🔥 Optimized System Prompt (Tone + Length Control)
+
+System: 
+"You are a senior brand strategist who specializes in uncovering deep truths in culture, behavior, and content. 
+Return only valid JSON matching the schema provided. 
+Write each field in a clear, natural tone with strategic depth — aim for around 7 sentences per field. 
+6 is okay. Up to 10 is acceptable. 
+Avoid bullet points, markdown, or explanation — just complete sentences that flow insightfully."
+
+Why this works:
+	•	“Aim for around 7” gives flexibility without locking it.
+	•	“Natural tone with strategic depth” gets you human, deck-ready text.
+	•	“Avoid bullet points” stops it from shortcutting the tone.
+	•	The word “insightfully” is important — it triggers better abstract synthesis from GPT-4o.
+
+⸻
+
+✅ 2. 🔷 Matching User Prompt (Inject Schema + Context)
+
+User:
+Schema:
+{
+  "truthAnalysis": {
+    "fact": "string",              
+    "observation": "string",       
+    "insight": "string",           
+    "humanTruth": "string",        
+    "culturalMoment": "string"     
+  }
+}
+Analyze the following content. Return only JSON:
+Title: {title}
+Content: {content}
+
+💡 Optional Enhancer:
+If your content is longform or messy (e.g. TikTok transcript, article, etc.), you can prepend context to help focus:
+
+“This content is a viral TikTok about Gen Z financial habits. Analyze for meaning, behavior, and deeper motivations.”
+
+⸻
+
+✅ 3. 🎚️ API Call Settings (via OpenAI API)
+
+To make this work best:
+
+model: "gpt-4o",
+response_format: "json_object",
+temperature: 0.7,
+top_p: 1,
+max_tokens: 1200  // Adjust based on your content length
+
+Notes:
+	•	temperature 0.7 lets it be expressive but not chaotic
+	•	top_p 1 ensures broad token diversity
+	•	max_tokens should leave room for 6–10 sentences per field x 5 fields = ~800–1200 tokens minimum
+
+⸻
+
+✅ 4. Output Sample Target
+
+Here’s the kind of tone and structure you’ll get with this setup:
+
+"insight": "Consumers aren’t just shopping for deals—they’re negotiating identity. The rise of 'quiet luxury' isn’t about price but about signaling taste, restraint, and social positioning. This shift reflects fatigue with performative consumption and a return to quality over quantity. Brands flaunting logos feel tone-deaf in an environment where subtlety equals status. As younger consumers grow savvier, they reject overt brand worship for signals only insiders can decode. It’s a cultural correction, not a trend. And it’s reshaping how value is expressed and perceived."
+
+
+⸻
+
+✅ 5. TL;DR - Final Implementation Tips
+
+Setting	Recommendation
+Model	gpt-4o
+System Prompt Style	Strategic, natural tone — not too rigid
+Sentence Range	“Aim for ~7 sentences. 6–10 is fine.”
+Output Format	response_format: "json_object"
+Tokens	Set 1000–1400 max if using full 5-field schema
+Prompt Language	Use “analyze for strategic depth and culture”
+
+
+⸻
+
+If you’d like, I can turn this into a pre-built reusable analyzeContent() function (Node.js, Python, or Replit format). Would that help?
