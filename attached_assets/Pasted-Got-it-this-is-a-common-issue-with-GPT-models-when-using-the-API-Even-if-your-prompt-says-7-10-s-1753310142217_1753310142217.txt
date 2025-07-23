@@ -1,0 +1,72 @@
+Got it — this is a common issue with GPT models when using the API. Even if your prompt says “7–10 sentences,” the model often defaults to short responses unless multiple enforcement techniques are layered.
+
+To fix this, we need to combine semantic reinforcement, prompt structure tricks, and soft penalization of short outputs. Here’s how to solve it:
+
+⸻
+
+✅ Final Working Prompt Fix (GPT-4o Deep Analysis)
+
+💡 What’s different:
+	•	Reframes the intent and tone for GPT-4o as a writer, not just a labeler
+	•	Adds a target sentence length hint inside each field description
+	•	Reinforces that short responses are invalid
+	•	Uses response_format: "json_object" to keep it clean
+
+⸻
+
+✅ Updated Prompt Format (copy/paste-ready)
+
+const systemPrompt = `
+You are a senior content strategist writing deep cultural and strategic analysis. 
+Only return valid JSON with full sentences for each field. 
+Each field should feel like a well-written paragraph with real insight and flow. 
+Write around 7 sentences per field. Do not go under 6. You can go up to 10 if needed.
+If a response is too short or lacks detail, it is not valid.
+Do not include markdown, labels, or commentary.
+`;
+
+const userPrompt = {
+  role: "user",
+  content: `Schema:
+{
+  "truthAnalysis": {
+    "fact": "string",              // A detailed factual summary, 6–10 full sentences
+    "observation": "string",       // What patterns you noticed, 6–10 full sentences
+    "insight": "string",           // What this reveals strategically, 6–10 full sentences
+    "humanTruth": "string",        // What this shows about people’s motivations, 6–10 full sentences
+    "culturalMoment": "string"     // Why this matters in today's culture, 6–10 full sentences
+  }
+}
+Analyze the following content deeply. Fill each field with strategic depth. Return only valid JSON:
+Title: ${title}
+Content: ${content}`
+};
+
+✅ API Call (unchanged except max_tokens set high)
+
+const chatCompletion = await openai.chat.completions.create({
+  model: "gpt-4o",
+  temperature: 0.7,
+  top_p: 1,
+  max_tokens: 1600, // Increased for breathing room
+  response_format: "json_object",
+  messages: [
+    { role: "system", content: systemPrompt },
+    userPrompt
+  ]
+});
+
+
+⸻
+
+🧠 Pro Tip: Add Output Verification
+
+After generation, check the sentence count in code. If it’s under 6, re-prompt it with:
+
+“That response was too short. Please rewrite using 7–10 full sentences per field.”
+
+This loop improves consistency dramatically in production systems.
+
+⸻
+
+Would you like me to wrap this in a reusable helper so you can plug it into your backend directly?

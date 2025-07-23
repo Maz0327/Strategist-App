@@ -60,7 +60,7 @@ export class OpenAIService {
       return `You are a brand strategist who specializes in practical strategic insights. Return only valid JSON matching the schema provided. Write each field in a clear, conversational tone with useful depth — aim for around 3-4 sentences per field. Avoid bullet points, markdown, or explanation — just complete sentences that flow naturally.`;
     } else if (model === 'gpt-4o') {
       if (analysisMode === 'deep') {
-        return `You are a senior brand strategist who specializes in uncovering deep truths in culture, behavior, and content. Return only valid JSON matching the schema provided. Write each field with comprehensive strategic depth — aim for around 7 sentences per field that flow naturally. Each field should be substantial and detailed. 6-10 sentences is the target range. Avoid bullet points, markdown, or explanation — just complete sentences that provide thorough strategic insight.`;
+        return `You are a senior content strategist writing deep cultural and strategic analysis. Only return valid JSON with full sentences for each field. Each field should feel like a well-written paragraph with real insight and flow. Write around 7 sentences per field. Do not go under 6. You can go up to 10 if needed. If a response is too short or lacks detail, it is not valid. Do not include markdown, labels, or commentary.`;
       } else {
         return `You are a senior cultural strategist who specializes in strategic cultural insights. Return only valid JSON matching the schema provided. Write each field in a clear, natural tone with strategic depth — aim for around 4-5 sentences per field. Avoid bullet points, markdown, or explanation — just complete sentences that flow insightfully.`;
       }
@@ -90,7 +90,7 @@ export class OpenAIService {
 
   private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     // Create stable cache key base with version for prompt changes
-    const cacheKeyBase = content.substring(0, 1000) + title + 'v25-comprehensive-depth-prompts';
+    const cacheKeyBase = content.substring(0, 1000) + title + 'v26-enforced-length-prompts';
     
     // Step 1: Check if we have the exact analysis mode cached
     const targetCacheKey = createCacheKey(cacheKeyBase + analysisMode, 'analysis');
@@ -139,22 +139,22 @@ export class OpenAIService {
     // Enhanced schema definition with specific field guidance
     const schema = {
       summary: "Strategic overview",
-      sentiment: "positive|neutral|negative",
+      sentiment: "positive|neutral|negative", 
       tone: "professional|casual|urgent|analytical|conversational|authoritative",
       keywords: ["string"],         // 3–20 items
       confidence: "85%",
       truthAnalysis: {
-        fact: "What happened exactly",
-        observation: "Notable patterns/behavior", 
-        insight: "Why it matters strategically",
-        humanTruth: "Deeper human drive behind the pattern",
-        culturalMoment: "What macro societal trend or event it fits into",
+        fact: "string",              // A detailed factual summary, 6–10 full sentences
+        observation: "string",       // What patterns you noticed, 6–10 full sentences
+        insight: "string",           // What this reveals strategically, 6–10 full sentences
+        humanTruth: "string",        // What this shows about people's motivations, 6–10 full sentences
+        culturalMoment: "string",    // Why this matters in today's culture, 6–10 full sentences
         attentionValue: "high|medium|low",
         platform: "string",
         cohortOpportunities: ["string"]
       },
       cohortSuggestions: ["string"],
-      platformContext: "string",
+      platformContext: "string", 
       viralPotential: "high|medium|low",
       competitiveInsights: ["string"]
     };
@@ -162,7 +162,7 @@ export class OpenAIService {
     const userPrompt = `Schema:
 ${JSON.stringify(schema, null, 2)}
 
-Analyze the following content for strategic depth and culture. Return only JSON:
+Analyze the following content deeply. Fill each field with strategic depth. Return only valid JSON:
 Title: ${title}
 Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
 
@@ -172,7 +172,7 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
       model: model,
       temperature: 0.7, // Better for expressive, natural analysis
       top_p: 1,
-      max_tokens: model === 'gpt-4o' ? 1400 : 800, // Optimized for natural 6-10 sentence range
+      max_tokens: model === 'gpt-4o' ? 1600 : 800, // Increased for breathing room
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
@@ -272,18 +272,18 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
 
       return convertedAnalysis;
     } else {
-      // Convert Quick → Deep: Expand with comprehensive strategic depth
-      const conversionPrompt = `Expand this analysis into comprehensive deep strategic intelligence. Each field should be substantially detailed with around 7 sentences (6-10 sentences is the target). Write with thorough strategic insight and cultural intelligence that provides comprehensive depth.`;
+      // Convert Quick → Deep: Expand with comprehensive strategic depth  
+      const conversionPrompt = `Expand this analysis into comprehensive deep strategic intelligence. Each field should be a well-written paragraph with around 7 sentences. Do not go under 6 sentences per field. You can go up to 10 if needed. If a response is too short or lacks detail, it is not valid.`;
       
       const response = await openai.chat.completions.create({
         model: "gpt-4o", // Use Deep mode model for consistency
         temperature: 0.7,
         top_p: 1,
-        max_tokens: 1400,
+        max_tokens: 1600,
         messages: [
           { 
             role: "system", 
-            content: "You are a senior brand strategist who specializes in uncovering deep truths in culture and behavior. Return only valid JSON. Write with comprehensive strategic depth — each field should be substantial and detailed with thorough analysis." 
+            content: "You are a senior content strategist writing deep cultural and strategic analysis. Only return valid JSON with full sentences. Each field should feel like a well-written paragraph with real insight and flow. Write around 7 sentences per field. Do not go under 6. If a response is too short or lacks detail, it is not valid." 
           },
           { 
             role: "user", 
