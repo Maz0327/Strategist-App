@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Route, Switch, useLocation } from "wouter";
+import { useRoutes } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -73,74 +73,30 @@ function AppContent() {
     );
   }
 
-  // Create a routing component that uses location
-  const RoutingComponent = () => {
-    const [location] = useLocation();
+  // Define routes using useRoutes hook
+  const routes = [
+    ['/admin-register', () => <AdminRegister />],
+    ['/auth', () => !user ? <AuthPage onAuthSuccess={handleAuthSuccess} /> : <Dashboard user={user} onLogout={handleLogout} />],
+    ['/dashboard', () => user ? <Dashboard user={user} onLogout={handleLogout} currentPage="briefing" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />],
+    ['/capture', () => user ? <Dashboard user={user} onLogout={handleLogout} currentPage="capture" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />],
+    ['/signals', () => user ? <Dashboard user={user} onLogout={handleLogout} currentPage="signals" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />],
+    ['/briefing', () => user ? <Dashboard user={user} onLogout={handleLogout} currentPage="briefing" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />],
+    ['/explore', () => user ? <Dashboard user={user} onLogout={handleLogout} currentPage="explore" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />],
+    ['/brief', () => user ? <Dashboard user={user} onLogout={handleLogout} currentPage="brief" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />],
+    ['/manage', () => user ? <Dashboard user={user} onLogout={handleLogout} currentPage="manage" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />],
+    ['/admin', () => user ? <Dashboard user={user} onLogout={handleLogout} currentPage="admin" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />],
+    ['/', () => user ? <Dashboard user={user} onLogout={handleLogout} currentPage="briefing" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />],
+    // Catch-all route for 404
+    ['*', () => <NotFound />]
+  ];
 
-    // Enhanced catch-all routing logic
-    const renderRoute = () => {
-      try {
-        // Handle exact route matches first
-        switch (location) {
-          case '/admin-register':
-            return <AdminRegister />;
-          case '/auth':
-            return !user ? <AuthPage onAuthSuccess={handleAuthSuccess} /> : <Dashboard user={user} onLogout={handleLogout} />;
-          case '/dashboard':
-            return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="briefing" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
-          case '/capture':
-            return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="capture" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
-          case '/signals':
-            return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="signals" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
-          case '/briefing':
-            return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="briefing" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
-          case '/explore':
-            return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="explore" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
-          case '/brief':
-            return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="brief" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
-          case '/manage':
-            return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="manage" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
-          case '/admin':
-            return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="admin" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
-          case '/':
-            return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="briefing" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
-          default:
-            // Catch-all: Check if it starts with known paths
-            if (location.startsWith('/dashboard')) {
-              return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="briefing" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
-            }
-            if (location.startsWith('/capture')) {
-              return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="capture" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
-            }
-            if (location.startsWith('/explore')) {
-              return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="explore" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
-            }
-            if (location.startsWith('/brief')) {
-              return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="brief" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
-            }
-            if (location.startsWith('/manage')) {
-              return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="manage" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
-            }
-            if (location.startsWith('/admin')) {
-              return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="admin" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
-            }
-            // Fall back to 404
-            return <NotFound />;
-        }
-      } catch (error) {
-        console.error('Routing error:', error);
-        return <NotFound />;
-      }
-    };
-
-    return renderRoute();
-  };
+  const routeMatch = useRoutes(routes);
 
   return (
     <ErrorBoundary>
       <TooltipProvider>
         <Toaster />
-        <RoutingComponent />
+        {routeMatch}
         <TutorialOverlay 
           currentPage={currentPage}
           isEnabled={tutorialEnabled}
