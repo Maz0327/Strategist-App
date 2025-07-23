@@ -14,12 +14,18 @@ import NotFound from "./pages/not-found";
 import { DebugPanel } from "./components/debug-panel";
 import { TutorialOverlay } from "./components/tutorial-overlay";
 import { useTutorial } from "./hooks/use-tutorial";
+import { ErrorBoundary, setupGlobalErrorHandlers } from "./components/error-boundary";
 
 function AppContent() {
   const [user, setUser] = useState<{ id: number; email: string } | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [currentPage, setCurrentPage] = useState("briefing");
   const { isEnabled: tutorialEnabled, toggleTutorial } = useTutorial();
+
+  // Setup global error handlers
+  useEffect(() => {
+    setupGlobalErrorHandlers();
+  }, []);
 
   // Check for existing session on app load
   const { data: userData, isLoading: isCheckingAuth, error: authError } = useQuery({
@@ -67,80 +73,94 @@ function AppContent() {
     );
   }
 
+  // Create a routing component that uses location
+  const RoutingComponent = () => {
+    const [location] = useLocation();
+
+    // Enhanced catch-all routing logic
+    const renderRoute = () => {
+      try {
+        // Handle exact route matches first
+        switch (location) {
+          case '/admin-register':
+            return <AdminRegister />;
+          case '/auth':
+            return !user ? <AuthPage onAuthSuccess={handleAuthSuccess} /> : <Dashboard user={user} onLogout={handleLogout} />;
+          case '/dashboard':
+            return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="briefing" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
+          case '/capture':
+            return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="capture" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
+          case '/signals':
+            return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="signals" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
+          case '/briefing':
+            return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="briefing" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
+          case '/explore':
+            return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="explore" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
+          case '/brief':
+            return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="brief" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
+          case '/manage':
+            return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="manage" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
+          case '/admin':
+            return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="admin" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
+          case '/':
+            return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="briefing" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
+          default:
+            // Catch-all: Check if it starts with known paths
+            if (location.startsWith('/dashboard')) {
+              return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="briefing" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
+            }
+            if (location.startsWith('/capture')) {
+              return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="capture" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
+            }
+            if (location.startsWith('/explore')) {
+              return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="explore" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
+            }
+            if (location.startsWith('/brief')) {
+              return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="brief" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
+            }
+            if (location.startsWith('/manage')) {
+              return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="manage" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
+            }
+            if (location.startsWith('/admin')) {
+              return user ? <Dashboard user={user} onLogout={handleLogout} currentPage="admin" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
+            }
+            // Fall back to 404
+            return <NotFound />;
+        }
+      } catch (error) {
+        console.error('Routing error:', error);
+        return <NotFound />;
+      }
+    };
+
+    return renderRoute();
+  };
+
   return (
-    <TooltipProvider>
-      <Toaster />
-      <Router>
-        <Switch>
-          {/* Public routes */}
-          <Route path="/admin-register">
-            <AdminRegister />
-          </Route>
-          
-          {/* Auth routes */}
-          <Route path="/auth">
-            {!user ? <AuthPage onAuthSuccess={handleAuthSuccess} /> : <Dashboard user={user} onLogout={handleLogout} />}
-          </Route>
-          
-          {/* Protected routes */}
-          <Route path="/dashboard">
-            {user ? <Dashboard user={user} onLogout={handleLogout} currentPage="briefing" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
-          </Route>
-          
-          <Route path="/capture">
-            {user ? <Dashboard user={user} onLogout={handleLogout} currentPage="capture" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
-          </Route>
-          
-          <Route path="/signals">
-            {user ? <Dashboard user={user} onLogout={handleLogout} currentPage="signals" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
-          </Route>
-          
-          <Route path="/briefing">
-            {user ? <Dashboard user={user} onLogout={handleLogout} currentPage="briefing" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
-          </Route>
-          
-          <Route path="/explore">
-            {user ? <Dashboard user={user} onLogout={handleLogout} currentPage="explore" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
-          </Route>
-          
-          <Route path="/brief">
-            {user ? <Dashboard user={user} onLogout={handleLogout} currentPage="brief" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
-          </Route>
-          
-          <Route path="/manage">
-            {user ? <Dashboard user={user} onLogout={handleLogout} currentPage="manage" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
-          </Route>
-          
-          <Route path="/admin">
-            {user ? <Dashboard user={user} onLogout={handleLogout} currentPage="admin" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
-          </Route>
-          
-          {/* Root route */}
-          <Route path="/">
-            {user ? <Dashboard user={user} onLogout={handleLogout} currentPage="briefing" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
-          </Route>
-          
-          {/* 404 route */}
-          <Route>
-            <NotFound />
-          </Route>
-        </Switch>
-      </Router>
-      <TutorialOverlay 
-        currentPage={currentPage}
-        isEnabled={tutorialEnabled}
-        onToggle={toggleTutorial}
-      />
-      <DebugPanel />
-    </TooltipProvider>
+    <ErrorBoundary>
+      <TooltipProvider>
+        <Toaster />
+        <Router>
+          <RoutingComponent />
+        </Router>
+        <TutorialOverlay 
+          currentPage={currentPage}
+          isEnabled={tutorialEnabled}
+          onToggle={toggleTutorial}
+        />
+        <DebugPanel />
+      </TooltipProvider>
+    </ErrorBoundary>
   );
 }
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AppContent />
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AppContent />
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
