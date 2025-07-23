@@ -21,8 +21,8 @@ const analyzeUrlSchema = z.object({
         return false;
       }
     }, 'Local URLs are not allowed for security reasons'),
-  mode: z.enum(['quick', 'deep'], { 
-    errorMap: () => ({ message: 'Analysis mode must be either "quick" or "deep"' })
+  mode: z.enum(['speed', 'quick', 'deep'], { 
+    errorMap: () => ({ message: 'Analysis mode must be "speed", "quick", or "deep"' })
   }).default('quick'),
   lengthPreference: z.enum(['short', 'medium', 'long'], {
     errorMap: () => ({ message: 'Length preference must be "short", "medium", or "long"' })
@@ -36,7 +36,7 @@ const analyzeTextSchema = z.object({
     .min(10, 'Content must be at least 10 characters')
     .max(50000, 'Content too long (max 50,000 characters)'),
   title: z.string().min(1, 'Title is required').max(200, 'Title too long'),
-  mode: z.enum(['quick', 'deep']).default('quick'),
+  mode: z.enum(['speed', 'quick', 'deep']).default('quick'),
   lengthPreference: z.enum(['short', 'medium', 'long']).default('medium'),
   userNotes: z.string().max(1000, 'User notes cannot exceed 1000 characters').optional().default(''),
   author: z.string().max(100, 'Author name too long').optional(),
@@ -120,11 +120,11 @@ router.post("/analyze", requireAuth, async (req, res) => {
       });
     }
 
-    // Perform Truth Analysis
+    // Perform Truth Analysis with new three-tier system
     const analysis = await analyzeContentWithOpenAI(
       extractedContent.content,
-      mode,
-      lengthPreference
+      lengthPreference,
+      mode // This now supports 'speed', 'quick', 'deep'
     );
 
     // Create signal with source traceability
@@ -219,11 +219,11 @@ router.post("/analyze/text", requireAuth, async (req, res) => {
       userId: req.session.userId 
     }, req);
 
-    // Perform Truth Analysis
+    // Perform Truth Analysis with three-tier system
     const analysis = await analyzeContentWithOpenAI(
       content,
-      mode,
-      lengthPreference
+      lengthPreference,
+      mode // This now supports 'speed', 'quick', 'deep'
     );
 
     // Create signal

@@ -324,12 +324,13 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
             <div className="space-y-2">
               <Label htmlFor="analysis-mode" className="text-sm font-medium">Analysis Mode:</Label>
               <div className="flex items-center gap-2">
-                <InfoTooltip content="Quick: Fast analysis with focused insights. Deep: Comprehensive strategic analysis with richer context." />
+                <InfoTooltip content="Speed: 2-sentence rapid triage (600-800ms). Quick: 4-6 sentence balanced analysis (1.5-2s). Deep: 7-9 sentence enterprise intelligence (2.5-3s)." />
                 <Select value={analysisMode} onValueChange={(value: any) => setAnalysisMode(value)}>
                   <SelectTrigger className="w-full sm:w-40">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="speed">Speed</SelectItem>
                     <SelectItem value="quick">Quick</SelectItem>
                     <SelectItem value="deep">Deep</SelectItem>
                   </SelectContent>

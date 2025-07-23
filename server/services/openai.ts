@@ -48,7 +48,7 @@ export class OpenAIService {
 
   async getCachedAnalysis(cacheKey: string): Promise<EnhancedAnalysisResult | null> {
     try {
-      return await analysisCache.get(cacheKey);
+      return await analysisCache.get(cacheKey) as EnhancedAnalysisResult | null;
     } catch (error) {
       debugLogger.error('Cache retrieval error', { error: (error as Error).message, cacheKey });
       return null;
@@ -68,7 +68,7 @@ Focus on:
 Analyze this content for strategic insights. Focus on actionable intelligence and cultural context.`;
   }
 
-  async analyzeContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', analysisMode: 'quick' | 'deep' = 'quick'): Promise<EnhancedAnalysisResult> {
+  async analyzeContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', analysisMode: 'speed' | 'quick' | 'deep' = 'quick'): Promise<EnhancedAnalysisResult> {
     debugLogger.info('Starting OpenAI content analysis', { title: data.title, hasUrl: !!data.url, contentLength: data.content?.length, lengthPreference, analysisMode });
     
     const content = data.content || '';
@@ -87,7 +87,7 @@ Analyze this content for strategic insights. Focus on actionable intelligence an
     return result;
   }
 
-  private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
+  private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'speed' | 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     // Create stable cache key base with version for prompt changes
     const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v16-sentence-count-prompts';
     
@@ -134,11 +134,19 @@ Analyze this content for strategic insights. Focus on actionable intelligence an
     return adjustedAnalysis;
   }
 
-  private async createMediumAnalysis(content: string, title: string, analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
-    const isDeepAnalysis = analysisMode === 'deep';
+  private async createMediumAnalysis(content: string, title: string, analysisMode: 'speed' | 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
+    // Three-tier AI model selection
+    let model: string;
+    if (analysisMode === 'speed') {
+      model = "gpt-3.5-turbo"; // Speed mode: fast content triage
+    } else if (analysisMode === 'deep') {
+      model = "gpt-4o"; // Deep mode: enterprise strategic intelligence
+    } else {
+      model = "gpt-4o-mini"; // Quick mode: balanced default
+    }
     
-    // Model selection: GPT-4o-mini for quick, GPT-4o for deep
-    const model = isDeepAnalysis ? "gpt-4o" : "gpt-4o-mini";
+    const isDeepAnalysis = analysisMode === 'deep';
+    const isSpeedAnalysis = analysisMode === 'speed';
     
     const systemPrompt = this.getSystemPrompt('medium', isDeepAnalysis);
     
@@ -195,11 +203,11 @@ Return JSON with this structure:
               truthAnalysis: {
                 type: "object",
                 properties: {
-                  fact: { type: "string", description: "3-5 sentences stating what actually happened, who was involved, specific data/examples, verifiable information" },
-                  observation: { type: "string", description: "3-5 sentences analyzing patterns, connections, strategic observations, and underlying dynamics" },
-                  insight: { type: "string", description: "3-5 sentences on strategic implications, business intelligence, and actionable intelligence" },
-                  humanTruth: { type: "string", description: "3-5 sentences analyzing human motivations, psychological drivers, and behavioral patterns" },
-                  culturalMoment: { type: "string", description: "3-5 sentences on cultural context, societal trends, and broader cultural significance" },
+                  fact: { type: "string", description: isSpeedAnalysis ? "2 sentences stating what happened and key facts" : isDeepAnalysis ? "7-9 sentences with comprehensive details, data, examples, and context" : "4-6 sentences stating what actually happened, who was involved, specific data/examples, verifiable information" },
+                  observation: { type: "string", description: isSpeedAnalysis ? "2 sentences analyzing main patterns and connections" : isDeepAnalysis ? "7-9 sentences with deep pattern analysis, strategic observations, and underlying dynamics" : "4-6 sentences analyzing patterns, connections, strategic observations, and underlying dynamics" },
+                  insight: { type: "string", description: isSpeedAnalysis ? "2 sentences on key strategic implications" : isDeepAnalysis ? "7-9 sentences on comprehensive strategic implications, business intelligence, and detailed actionable intelligence" : "4-6 sentences on strategic implications, business intelligence, and actionable intelligence" },
+                  humanTruth: { type: "string", description: isSpeedAnalysis ? "2 sentences on human motivations and behavior" : isDeepAnalysis ? "7-9 sentences with deep psychological analysis, motivations, and behavioral patterns" : "4-6 sentences analyzing human motivations, psychological drivers, and behavioral patterns" },
+                  culturalMoment: { type: "string", description: isSpeedAnalysis ? "2 sentences on cultural context and trends" : isDeepAnalysis ? "7-9 sentences with comprehensive cultural analysis, societal trends, and broader significance" : "4-6 sentences on cultural context, societal trends, and broader cultural significance" },
                   attentionValue: { type: "string", enum: ["high", "medium", "low"] },
                   platform: { type: "string" },
                   cohortOpportunities: { type: "array", items: { type: "string" } }
@@ -217,7 +225,7 @@ Return JSON with this structure:
       ],
       function_call: { name: "analyze_content" },
       temperature: 0.1,
-      max_tokens: isDeepAnalysis ? 3000 : 2500
+      max_tokens: isSpeedAnalysis ? 1500 : isDeepAnalysis ? 4000 : 2500
     });
 
     const functionCall = response.choices[0]?.message?.function_call;
@@ -269,7 +277,7 @@ Return JSON with this structure:
     return result;
   }
 
-  private async adjustAnalysis(mediumAnalysis: EnhancedAnalysisResult, lengthPreference: 'short' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
+  private async adjustAnalysis(mediumAnalysis: EnhancedAnalysisResult, lengthPreference: 'short' | 'long' | 'bulletpoints', analysisMode: 'speed' | 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     // Use smart text manipulation for bullet points (instant)
     if (lengthPreference === 'bulletpoints') {
       debugLogger.info('Fast text adjustment to bulletpoints');
