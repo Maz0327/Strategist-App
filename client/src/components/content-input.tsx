@@ -32,7 +32,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
   const [userNotes, setUserNotes] = useState("");
   const [analysisProgress, setAnalysisProgress] = useState({ stage: '', progress: 0 });
   const [useStreaming, setUseStreaming] = useState(true);
-  const [analysisMode, setAnalysisMode] = useState<'speed' | 'quick' | 'deep'>('quick');
+  const [analysisMode, setAnalysisMode] = useState<'quick' | 'deep'>('quick');
   
 
   
@@ -307,15 +307,14 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
             <div className="space-y-2">
               <Label htmlFor="analysis-mode" className="text-sm font-medium">Analysis Mode:</Label>
               <div className="flex items-center gap-2">
-                <InfoTooltip content="Speed: 2-sentence rapid triage (600-800ms). Quick: 4-6 sentence balanced analysis (1.5-2s). Deep: 7-9 sentence enterprise intelligence (2.5-3s)." />
+                <InfoTooltip content="Quick: GPT-4o-mini brand strategist with 2-4 sentence practical analysis (1.5-2s). Deep: GPT-4o senior cultural strategist with 4-7 sentence strategic intelligence (2.5-3s)." />
                 <Select value={analysisMode} onValueChange={(value: any) => setAnalysisMode(value)}>
                   <SelectTrigger className="w-full sm:w-40">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="speed">Speed</SelectItem>
-                    <SelectItem value="quick">Quick</SelectItem>
-                    <SelectItem value="deep">Deep</SelectItem>
+                    <SelectItem value="quick">Quick (GPT-4o-mini)</SelectItem>
+                    <SelectItem value="deep">Deep (GPT-4o)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -379,7 +378,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
                       <Search className="h-4 w-4 text-purple-600" />
                     )}
                     <span className="text-sm font-medium">
-                      {analysisMode === 'quick' ? 'Quick Analysis' : 'Deep Analysis'}
+                      {analysisMode === 'quick' ? 'Quick Analysis (GPT-4o-mini)' : 'Deep Analysis (GPT-4o)'}
                     </span>
                   </div>
                   <Button
@@ -398,7 +397,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
                   </Button>
                 </div>
                 <div className="text-xs text-gray-500">
-                  Est. {analysisMode === 'quick' ? '2-3 seconds' : '8-15 seconds'}
+                  {analysisMode === 'quick' ? 'Brand strategist • 2-4 sentences • 1.5-2s' : 'Cultural strategist • 4-7 sentences • 2.5-3s'}
                 </div>
               </div>
               <div className="space-y-2">
