@@ -70,19 +70,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
     try {
       const requestData = { ...data, lengthPreference, userNotes, analysisMode };
       
-      // For Deep Analysis, use regular endpoint without streaming
-      if (analysisMode === 'deep') {
-        const response = await apiRequest("POST", "/api/analyze/deep", requestData);
-        const result = await response.json();
-        onAnalysisComplete?.(result.analysis, data);
-        toast({
-          title: "Deep Analysis Complete", 
-          description: "Comprehensive strategic analysis completed with detailed insights.",
-        });
-        return;
-      }
-      
-      // For Quick Analysis, determine endpoint based on content type
+      // Use the same endpoint for both quick and deep modes
       const endpoint = data.url ? '/api/analyze' : '/api/analyze/text';
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -120,8 +108,8 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
       onAnalysisComplete?.(analysis, data);
       
       toast({
-        title: "Analysis Complete", 
-        description: "Content captured and analyzed successfully.",
+        title: analysisMode === 'deep' ? "Deep Analysis Complete" : "Quick Analysis Complete", 
+        description: analysisMode === 'deep' ? "Comprehensive strategic analysis completed with detailed insights." : "Content captured and analyzed successfully.",
       });
     } catch (error: any) {
       toast({
@@ -147,7 +135,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
         const requestData = { ...data, lengthPreference, userNotes, analysisMode };
         
         const result = await retryRequest(async () => {
-          const endpoint = analysisMode === 'deep' ? "/api/analyze/deep" : "/api/analyze";
+          const endpoint = "/api/analyze/text";
           const response = await apiRequest("POST", endpoint, requestData);
           
           if (!response.ok) {
@@ -303,38 +291,19 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
           <strong>Process:</strong> Analysis creates captures → Flag as potential signals → Validate to signals → Use in briefs
         </div>
         <div className="mt-4 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="analysis-mode" className="text-sm font-medium">Analysis Mode:</Label>
-              <div className="flex items-center gap-2">
-                <InfoTooltip content="Quick: GPT-4o-mini brand strategist with 2-4 sentence practical analysis (1.5-2s). Deep: GPT-4o senior cultural strategist with 4-7 sentence strategic intelligence (2.5-3s)." />
-                <Select value={analysisMode} onValueChange={(value: any) => setAnalysisMode(value)}>
-                  <SelectTrigger className="w-full sm:w-40">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="quick">Quick (GPT-4o-mini)</SelectItem>
-                    <SelectItem value="deep">Deep (GPT-4o)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="analysis-length" className="text-sm font-medium">Response Length:</Label>
-              <div className="flex items-center gap-2">
-                <InfoTooltip content="Choose how detailed you want the strategic insights to be. Short for quick overviews, Long for comprehensive analysis." />
-                <Select value={lengthPreference} onValueChange={(value: any) => setLengthPreference(value)}>
-                  <SelectTrigger className="w-full sm:w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="short">Short</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="long">Long</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          <div className="space-y-2">
+            <Label htmlFor="analysis-mode" className="text-sm font-medium">Analysis Mode:</Label>
+            <div className="flex items-center gap-2">
+              <InfoTooltip content="Quick: GPT-4o-mini brand strategist with 2-4 sentence practical analysis (1.5-2s). Deep: GPT-4o senior cultural strategist with 4-7 sentence strategic intelligence (2.5-3s)." />
+              <Select value={analysisMode} onValueChange={(value: any) => setAnalysisMode(value)}>
+                <SelectTrigger className="w-full sm:w-60">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="quick">Quick (GPT-4o-mini)</SelectItem>
+                  <SelectItem value="deep">Deep (GPT-4o)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>

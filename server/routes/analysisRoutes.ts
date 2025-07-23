@@ -36,7 +36,7 @@ const analyzeTextSchema = z.object({
     .min(10, 'Content must be at least 10 characters')
     .max(50000, 'Content too long (max 50,000 characters)'),
   title: z.string().min(1, 'Title is required').max(200, 'Title too long'),
-  mode: z.enum(['speed', 'quick', 'deep']).default('quick'),
+  mode: z.enum(['quick', 'deep']).default('quick'),
   lengthPreference: z.enum(['short', 'medium', 'long']).default('medium'),
   userNotes: z.string().max(1000, 'User notes cannot exceed 1000 characters').optional().default(''),
   author: z.string().max(100, 'Author name too long').optional(),

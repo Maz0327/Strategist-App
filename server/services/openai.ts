@@ -65,7 +65,7 @@ export class OpenAIService {
     return `You are an expert content strategist. Return only valid JSON matching the schema I'll provide. Every text field must be exactly ${sentenceRange} sentences long. Write in a natural, conversational tone.`;
   }
 
-  async analyzeContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', analysisMode: 'speed' | 'quick' | 'deep' = 'quick'): Promise<EnhancedAnalysisResult> {
+  async analyzeContent(data: AnalyzeContentData, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints' = 'medium', analysisMode: 'quick' | 'deep' = 'quick'): Promise<EnhancedAnalysisResult> {
     debugLogger.info('Starting OpenAI content analysis', { title: data.title, hasUrl: !!data.url, contentLength: data.content?.length, lengthPreference, analysisMode });
     
     const content = data.content || '';
@@ -84,7 +84,7 @@ export class OpenAIService {
     return result;
   }
 
-  private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'speed' | 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
+  private async progressiveAnalysis(content: string, title: string, lengthPreference: 'short' | 'medium' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     // Create stable cache key base with version for prompt changes
     const cacheKeyBase = content.substring(0, 1000) + title + analysisMode + 'v18-model-specific-prompts';
     
@@ -131,7 +131,7 @@ export class OpenAIService {
     return adjustedAnalysis;
   }
 
-  private async createMediumAnalysis(content: string, title: string, analysisMode: 'speed' | 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
+  private async createMediumAnalysis(content: string, title: string, analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     // Two-tier AI model selection (eliminating speed/GPT-3.5 as requested)
     let model: string;
     let sentenceRange: string;
@@ -140,7 +140,7 @@ export class OpenAIService {
       model = "gpt-4o"; // Deep mode: enterprise strategic intelligence
       sentenceRange = "4-7"; // Flexible range for natural depth
     } else {
-      model = "gpt-4o-mini"; // Quick mode: balanced default (covers both 'speed' and 'quick')
+      model = "gpt-4o-mini"; // Quick mode: brand strategist for practical analysis
       sentenceRange = "2-4"; // Flexible range for efficiency
     }
     
@@ -238,7 +238,7 @@ Content: ${content.substring(0, 3000)}${content.length > 3000 ? '...' : ''}`;
     return result;
   }
 
-  private async adjustAnalysis(mediumAnalysis: EnhancedAnalysisResult, lengthPreference: 'short' | 'long' | 'bulletpoints', analysisMode: 'speed' | 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
+  private async adjustAnalysis(mediumAnalysis: EnhancedAnalysisResult, lengthPreference: 'short' | 'long' | 'bulletpoints', analysisMode: 'quick' | 'deep'): Promise<EnhancedAnalysisResult> {
     // Use smart text manipulation for bullet points (instant)
     if (lengthPreference === 'bulletpoints') {
       debugLogger.info('Fast text adjustment to bulletpoints');
