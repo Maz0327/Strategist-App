@@ -12,18 +12,22 @@ if (REDIS_ENABLED) {
       host: process.env.REDIS_HOST || 'localhost',
       port: parseInt(process.env.REDIS_PORT || '6379'),
       password: process.env.REDIS_PASSWORD,
-      retryDelayOnFailure: 3000,
       maxRetriesPerRequest: 1,
       lazyConnect: true,
       enableOfflineQueue: false
     });
     
     // Handle connection errors gracefully
-    redis.on('error', (err) => {
-      debugLogger.warn('Redis connection error, falling back to memory cache', { error: err.message });
+    redis.on('error', (err: any) => {
+      if (err?.code === 'ECONNREFUSED' || err?.message?.includes('ECONNREFUSED')) {
+        // Silently handle Redis unavailable - this is expected in development
+        debugLogger.debug('Redis unavailable—using memory cache');
+      } else {
+        debugLogger.warn('Redis connection error, falling back to memory cache', { error: String(err) });
+      }
     });
-  } catch (error) {
-    debugLogger.warn('Redis initialization failed, using memory cache only', { error: error.message });
+  } catch (error: any) {
+    debugLogger.warn('Redis initialization failed, using memory cache only', { error: String(error) });
     redis = null;
   }
 }
@@ -55,9 +59,9 @@ class DistributedCache<T> {
       await redis.ping();
       this.redisAvailable = true;
       debugLogger.info('Redis connection established');
-    } catch (error) {
+    } catch (error: any) {
       this.redisAvailable = false;
-      debugLogger.warn('Redis unavailable, falling back to memory cache', { error: error.message });
+      debugLogger.warn('Redis unavailable, falling back to memory cache', { error: String(error) });
     }
   }
 
@@ -69,8 +73,8 @@ class DistributedCache<T> {
         await redis.setex(key, ttlSeconds, JSON.stringify(data));
         debugLogger.info('Data cached in Redis', { key, ttl: ttlSeconds });
         return;
-      } catch (error) {
-        debugLogger.warn('Redis set failed, falling back to memory', { key, error: error.message });
+      } catch (error: any) {
+        debugLogger.warn('Redis set failed, falling back to memory', { key, error: String(error) });
         this.redisAvailable = false;
       }
     }
@@ -95,8 +99,8 @@ class DistributedCache<T> {
           debugLogger.info('Cache hit in Redis', { key });
           return JSON.parse(cached);
         }
-      } catch (error) {
-        debugLogger.warn('Redis get failed, falling back to memory', { key, error: error.message });
+      } catch (error: any) {
+        debugLogger.warn('Redis get failed, falling back to memory', { key, error: String(error) });
         this.redisAvailable = false;
       }
     }
@@ -128,8 +132,8 @@ class DistributedCache<T> {
     if (this.redisAvailable && redis) {
       try {
         await redis.del(key);
-      } catch (error) {
-        debugLogger.warn('Redis delete failed', { key, error: error.message });
+      } catch (error: any) {
+        debugLogger.warn('Redis delete failed', { key, error: String(error) });
       }
     }
     
@@ -140,8 +144,8 @@ class DistributedCache<T> {
     if (this.redisAvailable && redis) {
       try {
         await redis.flushall();
-      } catch (error) {
-        debugLogger.warn('Redis clear failed', { error: error.message });
+      } catch (error: any) {
+        debugLogger.warn('Redis clear failed', { error: String(error) });
       }
     }
     
@@ -150,7 +154,8 @@ class DistributedCache<T> {
 
   private cleanup(): void {
     const now = Date.now();
-    for (const [key, entry] of this.memoryCache.entries()) {
+    const entries = Array.from(this.memoryCache.entries());
+    for (const [key, entry] of entries) {
       if (now - entry.timestamp > entry.ttl) {
         this.memoryCache.delete(key);
       }

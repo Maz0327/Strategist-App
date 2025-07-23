@@ -324,10 +324,13 @@ export function SignalsDashboard() {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px]" aria-describedby="edit-signal-desc">
           <DialogHeader>
             <DialogTitle>Edit Signal</DialogTitle>
           </DialogHeader>
+          <div id="edit-signal-desc" className="sr-only">
+            Edit signal details including title, status, and tags to better organize your strategic intelligence.
+          </div>
           {selectedSignal && (
             <EditSignalForm
               signal={selectedSignal}

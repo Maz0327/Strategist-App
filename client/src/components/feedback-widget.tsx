@@ -110,13 +110,16 @@ export function FeedbackWidget() {
               <MessageSquare className="h-5 w-5" />
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md" aria-describedby="feedback-dialog-desc">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <MessageSquare className="h-5 w-5" />
                 Send Feedback
               </DialogTitle>
             </DialogHeader>
+            <div id="feedback-dialog-desc" className="sr-only">
+              Submit feedback about your experience with the platform, including bug reports, feature requests, and ratings.
+            </div>
             
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Feedback Type Selection */}

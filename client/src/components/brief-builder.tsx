@@ -606,10 +606,13 @@ ${new Date().toLocaleString()}`;
 
       {/* Preview Dialog */}
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-        <DialogContent className="sm:max-w-[800px] max-h-[600px]">
+        <DialogContent className="sm:max-w-[800px] max-h-[600px]" aria-describedby="brief-preview-desc">
           <DialogHeader>
             <DialogTitle>Brief Preview</DialogTitle>
           </DialogHeader>
+          <div id="brief-preview-desc" className="sr-only">
+            Preview your generated strategic brief before saving or exporting. The brief contains analysis from your selected signals.
+          </div>
           <div className="overflow-auto">
             <div className="prose prose-sm max-w-none">
               <pre className="whitespace-pre-wrap text-sm">{briefContent}</pre>

@@ -138,6 +138,3 @@ export default function App() {
     </ErrorBoundary>
   );
 }
-    </ErrorBoundary>
-  );
-}
