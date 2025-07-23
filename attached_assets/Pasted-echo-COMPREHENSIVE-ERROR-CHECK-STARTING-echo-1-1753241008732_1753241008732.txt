@@ -1,0 +1,58 @@
+echo "🔍 COMPREHENSIVE ERROR CHECK STARTING..."
+echo "========================================"
+
+# 1. TypeScript Errors
+echo -e "\n1️⃣ TYPESCRIPT COMPILATION ERRORS:"
+npx tsc --noEmit 2>&1 | grep -E "error TS" | wc -l
+npx tsc --noEmit 2>&1 | grep -E "error TS[0-9]+:" -A 2 | head -20
+
+# 2. Missing Dependencies
+echo -e "\n2️⃣ MISSING DEPENDENCIES:"
+npm ls 2>&1 | grep -E "UNMET|missing|extraneous" | head -15
+
+# 3. Environment Variables
+echo -e "\n3️⃣ MISSING ENVIRONMENT VARIABLES:"
+grep -r "process\.env\." --include="*.ts" --include="*.tsx" . 2>/dev/null | \
+  grep -oE "process\.env\.[A-Z_]+" | sort -u | \
+  while read -r env; do 
+    var=${env#process.env.}
+    [ -z "${!var}" ] && echo "❌ Missing: $var"
+  done
+
+# 4. Duplicate Routes
+echo -e "\n4️⃣ DUPLICATE API ROUTES:"
+grep -rh "app\.\(get\|post\|put\|delete\).*['\"]\/api\/" --include="*.ts" . 2>/dev/null | \
+  grep -oE "['\"]\/api\/[^'\"]+['\"]" | sort | uniq -d
+
+# 5. Broken Imports
+echo -e "\n5️⃣ POTENTIALLY BROKEN IMPORTS:"
+grep -r "Cannot find module\|Module not found" --include="*.ts" --include="*.tsx" . 2>/dev/null | head -10
+
+# 6. Console.logs (Production Issue)
+echo -e "\n6️⃣ CONSOLE.LOG COUNT:"
+grep -r "console\.log" --include="*.ts" --include="*.tsx" --exclude-dir=node_modules . 2>/dev/null | wc -l
+
+# 7. Security Issues
+echo -e "\n7️⃣ HARDCODED SECRETS/KEYS:"
+grep -r -E "(api_key|apikey|secret|password|token)\s*=\s*['\"][^'\"]+['\"]" \
+  --include="*.ts" --include="*.tsx" . 2>/dev/null | \
+  grep -v "process.env" | head -10
+
+# 8. Python Errors
+echo -e "\n8️⃣ PYTHON SYNTAX ERRORS:"
+find . -name "*.py" -not -path "./node_modules/*" | \
+  xargs -I {} python -m py_compile {} 2>&1 | \
+  grep -E "SyntaxError|ImportError" | head -10
+
+# 9. TODO/FIXME Comments
+echo -e "\n9️⃣ TODO/FIXME COUNT:"
+grep -r "TODO\|FIXME\|XXX\|HACK" --include="*.ts" --include="*.tsx" . 2>/dev/null | wc -l
+
+# 10. Summary
+echo -e "\n📊 QUICK SUMMARY:"
+echo "TypeScript Errors: $(npx tsc --noEmit 2>&1 | grep -c "error TS" || echo 0)"
+echo "Missing NPM Deps: $(npm ls 2>&1 | grep -c "UNMET" || echo 0)"
+echo "Console.logs: $(grep -r "console\.log" --include="*.ts" --include="*.tsx" . 2>/dev/null | wc -l)"
+echo "TODOs: $(grep -r "TODO\|FIXME" --include="*.ts" --include="*.tsx" . 2>/dev/null | wc -l)"
+
+echo -e "\n✅ Check complete! Fix critical issues first."

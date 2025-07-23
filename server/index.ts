@@ -8,6 +8,7 @@ import analysisRoutes from './routes/analysisRoutes';
 import adminRoutes from './routes/adminRoutes';
 import userRoutes from './routes/userRoutes';
 import traceabilityRoutes from './routes/traceabilityRoutes';
+import trendingRoutes from './routes/trendingRoutes';
 import { systemMonitor } from './services/system-monitor';
 import { setupVite, serveStatic, log } from "./vite";
 import { debugLogger, errorHandler } from "./services/debug-logger";
@@ -142,9 +143,12 @@ app.use((req, res, next) => {
   app.use('/api/admin', adminRoutes);
   app.use('/api/user', userRoutes);
   app.use('/api/traceability', traceabilityRoutes);
+  app.use('/api/trending', trendingRoutes);
+  
+
   
   debugLogger.info('All modular routes registered successfully', {
-    routes: ['auth', 'signals', 'analyze', 'admin', 'user', 'traceability']
+    routes: ['auth', 'signals', 'analyze', 'admin', 'user', 'traceability', 'trending']
   });
   
   const http = await import("http");

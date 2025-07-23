@@ -68,7 +68,9 @@ const visualAnalysisSchema = z.object({
 });
 
 // Analysis routes
-router.post("/analyze", requireAuth, async (req, res) => {
+
+
+router.post("/", requireAuth, async (req, res) => {
   try {
     const result = analyzeUrlSchema.safeParse(req.body);
     if (!result.success) {
@@ -135,7 +137,7 @@ router.post("/analyze", requireAuth, async (req, res) => {
       status: 'capture' as const,
       truthAnalysis: analysis,
       author: extractedContent.author,
-      publishDate: extractedContent.publishDate || null
+      publishDate: (extractedContent as any).publishDate || null
     };
 
     const signal = await storage.createSignal(signalData);
@@ -194,7 +196,7 @@ router.post("/analyze", requireAuth, async (req, res) => {
   }
 });
 
-router.post("/analyze/text", requireAuth, async (req, res) => {
+router.post("/text", requireAuth, async (req, res) => {
   try {
     const result = analyzeTextSchema.safeParse(req.body);
     if (!result.success) {
@@ -290,8 +292,8 @@ router.post("/extract-url", requireAuth, async (req, res) => {
           author: extractedContent.author
         };
         // Add video section if not already present
-        if (!extractedContent.sections) {
-          extractedContent.sections = [{
+        if (!(extractedContent as any).sections) {
+          (extractedContent as any).sections = [{
             type: 'video',
             title: 'Video Transcript',
             content: extractedContent.content || ''
@@ -381,7 +383,7 @@ router.post("/analyze/visual", requireAuth, async (req, res) => {
     const visualAnalysis = await visualAnalysisService.analyzeVisualAssets(
       visualAssets,
       contentContext,
-      signal?.url
+      signal?.url || undefined
     );
 
     // Format response to match frontend expectations

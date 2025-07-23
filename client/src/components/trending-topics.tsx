@@ -26,6 +26,7 @@ interface Topic {
 export function TrendingTopics() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [analyzingTopics, setAnalyzingTopics] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const { data: trendingData, isLoading, refetch, error } = useQuery<{ 
@@ -141,8 +142,6 @@ export function TrendingTopics() {
       setIsRefreshing(false);
     }
   };
-
-  const [analyzingTopics, setAnalyzingTopics] = useState<Set<string>>(new Set());
 
   const handleAnalyzeTopic = async (topic: Topic) => {
     setAnalyzingTopics(prev => new Set(prev).add(topic.id));
