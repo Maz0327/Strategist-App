@@ -32,7 +32,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
   const [userNotes, setUserNotes] = useState("");
   const [analysisProgress, setAnalysisProgress] = useState({ stage: '', progress: 0 });
   const [useStreaming, setUseStreaming] = useState(true);
-  const [analysisMode, setAnalysisMode] = useState<'quick' | 'deep'>('quick');
+  const [analysisMode, setAnalysisMode] = useState<'speed' | 'quick' | 'deep'>('quick');
   
 
   

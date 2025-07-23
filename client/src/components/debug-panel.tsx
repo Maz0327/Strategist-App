@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { 
   Bug, 
   Activity, 
@@ -293,7 +294,12 @@ export function DebugPanel() {
 
             <ScrollArea className="h-96">
               <div className="space-y-2">
-                {logsData?.logs?.map((log, index) => (
+                {isLoadingLogs ? (
+                  <div className="flex items-center justify-center p-4">
+                    <LoadingSpinner />
+                    <span className="ml-2">Loading logs...</span>
+                  </div>
+                ) : (logsData?.logs && logsData.logs.length > 0) ? logsData.logs.map((log, index) => (
                   <Card key={index} className="p-3">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center space-x-2">
@@ -339,11 +345,9 @@ export function DebugPanel() {
                       </details>
                     )}
                   </Card>
-                ))}
-                
-                {isLoadingLogs && (
-                  <div className="text-center py-4">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                )) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">No logs found</p>
                   </div>
                 )}
               </div>
