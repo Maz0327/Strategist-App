@@ -67,100 +67,64 @@ function AppContent() {
     );
   }
 
-  // Check if we should show admin registration
-  const currentPath = window.location.pathname;
-  if (currentPath === "/admin-register") {
-    return (
-      <TooltipProvider>
-        <Toaster />
-        <AdminRegister />
-      </TooltipProvider>
-    );
-  }
-
-  // Define the router component
-  const AppRouter = () => {
-    const [location] = useLocation();
-    
-    // Check if user is authenticated for protected routes
-    const isProtectedRoute = (path: string) => {
-      const protectedPaths = ['/dashboard', '/capture', '/signals', '/briefing', '/admin'];
-      return protectedPaths.some(protectedPath => path.startsWith(protectedPath));
-    };
-
-    // If user is not authenticated and trying to access protected route, redirect to auth
-    if (!user && isProtectedRoute(location)) {
-      return <AuthPage onAuthSuccess={handleAuthSuccess} />;
-    }
-
-    // If user is authenticated and on root or auth page, redirect to dashboard
-    if (user && (location === '/' || location === '/auth')) {
-      window.history.replaceState({}, '', '/dashboard');
-    }
-
-    return (
-      <Switch>
-        {/* Public routes */}
-        <Route path="/admin-register">
-          <AdminRegister />
-        </Route>
-        
-        {/* Auth routes */}
-        <Route path="/auth">
-          {!user ? <AuthPage onAuthSuccess={handleAuthSuccess} /> : <Dashboard user={user} onLogout={handleLogout} />}
-        </Route>
-        
-        {/* Protected routes */}
-        <Route path="/dashboard">
-          {user ? <Dashboard user={user} onLogout={handleLogout} currentPage="briefing" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
-        </Route>
-        
-        <Route path="/capture">
-          {user ? <Dashboard user={user} onLogout={handleLogout} currentPage="capture" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
-        </Route>
-        
-        <Route path="/signals">
-          {user ? <Dashboard user={user} onLogout={handleLogout} currentPage="signals" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
-        </Route>
-        
-        <Route path="/briefing">
-          {user ? <Dashboard user={user} onLogout={handleLogout} currentPage="briefing" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
-        </Route>
-        
-        <Route path="/explore">
-          {user ? <Dashboard user={user} onLogout={handleLogout} currentPage="explore" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
-        </Route>
-        
-        <Route path="/brief">
-          {user ? <Dashboard user={user} onLogout={handleLogout} currentPage="brief" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
-        </Route>
-        
-        <Route path="/manage">
-          {user ? <Dashboard user={user} onLogout={handleLogout} currentPage="manage" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
-        </Route>
-        
-        <Route path="/admin">
-          {user ? <Dashboard user={user} onLogout={handleLogout} currentPage="admin" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
-        </Route>
-        
-        {/* Root route */}
-        <Route path="/">
-          {user ? <Dashboard user={user} onLogout={handleLogout} /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
-        </Route>
-        
-        {/* 404 route */}
-        <Route>
-          <NotFound />
-        </Route>
-      </Switch>
-    );
-  };
-
   return (
     <TooltipProvider>
       <Toaster />
       <Router>
-        <AppRouter />
+        <Switch>
+          {/* Public routes */}
+          <Route path="/admin-register">
+            <AdminRegister />
+          </Route>
+          
+          {/* Auth routes */}
+          <Route path="/auth">
+            {!user ? <AuthPage onAuthSuccess={handleAuthSuccess} /> : <Dashboard user={user} onLogout={handleLogout} />}
+          </Route>
+          
+          {/* Protected routes */}
+          <Route path="/dashboard">
+            {user ? <Dashboard user={user} onLogout={handleLogout} currentPage="briefing" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
+          </Route>
+          
+          <Route path="/capture">
+            {user ? <Dashboard user={user} onLogout={handleLogout} currentPage="capture" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
+          </Route>
+          
+          <Route path="/signals">
+            {user ? <Dashboard user={user} onLogout={handleLogout} currentPage="signals" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
+          </Route>
+          
+          <Route path="/briefing">
+            {user ? <Dashboard user={user} onLogout={handleLogout} currentPage="briefing" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
+          </Route>
+          
+          <Route path="/explore">
+            {user ? <Dashboard user={user} onLogout={handleLogout} currentPage="explore" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
+          </Route>
+          
+          <Route path="/brief">
+            {user ? <Dashboard user={user} onLogout={handleLogout} currentPage="brief" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
+          </Route>
+          
+          <Route path="/manage">
+            {user ? <Dashboard user={user} onLogout={handleLogout} currentPage="manage" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
+          </Route>
+          
+          <Route path="/admin">
+            {user ? <Dashboard user={user} onLogout={handleLogout} currentPage="admin" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
+          </Route>
+          
+          {/* Root route */}
+          <Route path="/">
+            {user ? <Dashboard user={user} onLogout={handleLogout} currentPage="briefing" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
+          </Route>
+          
+          {/* 404 route */}
+          <Route>
+            <NotFound />
+          </Route>
+        </Switch>
       </Router>
       <TutorialOverlay 
         currentPage={currentPage}
