@@ -13,6 +13,7 @@ import { loginSchema, registerSchema, type LoginData, type RegisterData } from "
 import { Brain } from "lucide-react";
 import { useErrorHandling } from "@/hooks/use-error-handling";
 import { ErrorDisplay } from "@/components/ui/error-display";
+import { useLocation } from "wouter";
 
 interface AuthFormProps {
   onAuthSuccess: (user: { id: number; email: string }) => void;
@@ -24,6 +25,7 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
   const [registerError, setRegisterError] = useState<string | null>(null);
   const { toast } = useToast();
   const { handleApiError } = useErrorHandling();
+  const [, setLocation] = useLocation();
 
   const loginForm = useForm<LoginData>({
     resolver: zodResolver(loginSchema),
@@ -52,6 +54,8 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
         title: "Success",
         description: "Logged in successfully",
       });
+      // Redirect to dashboard after successful login
+      setLocation("/dashboard");
     } catch (error: any) {
       const errorMessage = handleApiError(error);
       setLoginError(`${errorMessage.title}: ${errorMessage.message}${errorMessage.solution ? '. ' + errorMessage.solution : ''}`);
@@ -70,6 +74,8 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
         title: "Success",
         description: "Account created successfully",
       });
+      // Redirect to dashboard after successful registration
+      setLocation("/dashboard");
     } catch (error: any) {
       const errorMessage = handleApiError(error);
       setRegisterError(`${errorMessage.title}: ${errorMessage.message}${errorMessage.solution ? '. ' + errorMessage.solution : ''}`);

@@ -52,62 +52,62 @@ function AppContent() {
       </Route>
       <Route path="/auth">
         {!user 
-          ? <AuthPage onAuthSuccess={d => setUser(d.user)} />
+          ? <AuthPage onAuthSuccess={setUser} />
           : <Dashboard user={user} onLogout={() => setUser(null)} currentPage="briefing" />
         }
       </Route>
       <Route path="/dashboard">
         {user
           ? <Dashboard user={user} onLogout={() => setUser(null)} currentPage="briefing" />
-          : <AuthPage onAuthSuccess={d => setUser(d.user)} />
+          : <AuthPage onAuthSuccess={setUser} />
         }
       </Route>
       <Route path="/capture">
         {user
           ? <Dashboard user={user} onLogout={() => setUser(null)} currentPage="capture" />
-          : <AuthPage onAuthSuccess={d => setUser(d.user)} />
+          : <AuthPage onAuthSuccess={setUser} />
         }
       </Route>
       <Route path="/signals">
         {user
           ? <Dashboard user={user} onLogout={() => setUser(null)} currentPage="signals" />
-          : <AuthPage onAuthSuccess={d => setUser(d.user)} />
+          : <AuthPage onAuthSuccess={setUser} />
         }
       </Route>
       <Route path="/briefing">
         {user
           ? <Dashboard user={user} onLogout={() => setUser(null)} currentPage="briefing" />
-          : <AuthPage onAuthSuccess={d => setUser(d.user)} />
+          : <AuthPage onAuthSuccess={setUser} />
         }
       </Route>
       <Route path="/explore">
         {user
           ? <Dashboard user={user} onLogout={() => setUser(null)} currentPage="explore" />
-          : <AuthPage onAuthSuccess={d => setUser(d.user)} />
+          : <AuthPage onAuthSuccess={setUser} />
         }
       </Route>
       <Route path="/brief">
         {user
           ? <Dashboard user={user} onLogout={() => setUser(null)} currentPage="brief" />
-          : <AuthPage onAuthSuccess={d => setUser(d.user)} />
+          : <AuthPage onAuthSuccess={setUser} />
         }
       </Route>
       <Route path="/manage">
         {user
           ? <Dashboard user={user} onLogout={() => setUser(null)} currentPage="manage" />
-          : <AuthPage onAuthSuccess={d => setUser(d.user)} />
+          : <AuthPage onAuthSuccess={setUser} />
         }
       </Route>
       <Route path="/admin">
         {user
           ? <Dashboard user={user} onLogout={() => setUser(null)} currentPage="admin" />
-          : <AuthPage onAuthSuccess={d => setUser(d.user)} />
+          : <AuthPage onAuthSuccess={setUser} />
         }
       </Route>
       <Route path="/">
         {user
           ? <Dashboard user={user} onLogout={() => setUser(null)} currentPage="briefing" />
-          : <AuthPage onAuthSuccess={d => setUser(d.user)} />
+          : <AuthPage onAuthSuccess={setUser} />
         }
       </Route>
       <Route>
@@ -120,7 +120,7 @@ function AppContent() {
     <TooltipProvider>
       <Toaster />
       {element}
-      <TutorialOverlay isEnabled={tutorialEnabled} onToggle={toggleTutorial} />
+      <TutorialOverlay isEnabled={tutorialEnabled} onToggle={toggleTutorial} currentPage="briefing" />
       <DebugPanel />
     </TooltipProvider>
   );
