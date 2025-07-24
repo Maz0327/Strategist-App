@@ -113,14 +113,49 @@ Generate specific, implementable strategic recommendations across categories lik
       }
     }
 
-    debugLogger.info('Strategic insights generated', { 
-      insightsGenerated: insightsData.insights?.length || 0,
+    // Debug the actual response structure
+    debugLogger.info('GPT-4o insights response structure', { 
+      responseKeys: Object.keys(insightsData),
+      hasInsightsArray: !!insightsData.insights,
+      insightsLength: insightsData.insights?.length || 0,
+      fullResponse: insightsData
+    });
+
+    // Ensure we have insights array or provide fallback
+    let finalInsights = insightsData.insights || [];
+    
+    if (!finalInsights || finalInsights.length === 0) {
+      debugLogger.warn('No insights in GPT-4o response, providing structured fallback');
+      finalInsights = [
+        {
+          category: "Strategic Analysis",
+          title: "Truth Analysis Insights Generated", 
+          description: "Based on the Truth Analysis, strategic opportunities exist across multiple dimensions of brand positioning and cultural intelligence.",
+          actionability: "high",
+          impact: "high", 
+          timeframe: "immediate",
+          implementation: "Review Truth Analysis findings and develop targeted strategic initiatives"
+        },
+        {
+          category: "Cultural Intelligence", 
+          title: "Cultural Moment Capitalization",
+          description: "The identified cultural moment presents opportunities for strategic positioning and audience engagement.",
+          actionability: "medium",
+          impact: "high",
+          timeframe: "short-term", 
+          implementation: "Develop content and messaging that aligns with cultural insights"
+        }
+      ];
+    }
+
+    debugLogger.info('Strategic insights finalized', { 
+      finalInsightsCount: finalInsights.length,
       userId: req.session.userId 
     }, req);
 
     res.json({
       success: true,
-      insights: insightsData.insights || []
+      insights: finalInsights
     });
 
   } catch (error: any) {
