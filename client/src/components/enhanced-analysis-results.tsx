@@ -16,6 +16,7 @@ import LazyCompetitiveInsights from "./LazyCompetitiveInsights";
 import LazyCohortBuilder from "./LazyCohortBuilder";
 import LazyStrategicInsights from "./LazyStrategicInsights";
 import LazyStrategicActions from "./LazyStrategicActions";
+import { StandaloneVisualIntelligence } from "./standalone-visual-intelligence";
 
 // Lazy load Strategic Recommendations component
 const LazyStrategicRecommendations = lazy(() => import('./LazyStrategicRecommendations'));
@@ -1826,19 +1827,8 @@ export function EnhancedAnalysisResults({
                   )}
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <Eye className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h4 className="font-medium text-gray-900 mb-2">No Images Available</h4>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Visual Intelligence requires content with images. Try analyzing:
-                  </p>
-                  <div className="text-sm text-gray-500 space-y-1">
-                    <p>• Social media posts with images</p>
-                    <p>• Blog articles with visuals</p>
-                    <p>• Product pages</p>
-                    <p>• Marketing content</p>
-                  </div>
-                </div>
+                // Show standalone Visual Intelligence when no extracted images are available
+                <StandaloneVisualIntelligence />
               )}
             </CardContent>
           </Card>

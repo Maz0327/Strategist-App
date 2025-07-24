@@ -601,4 +601,138 @@ router.post("/analyze/visual", requireAuth, async (req, res) => {
   }
 });
 
+// Standalone Visual Intelligence Route - Independent Analysis
+router.post("/visual-intelligence/analyze", requireAuth, async (req, res) => {
+  try {
+    const { images, context, analysisType } = req.body;
+    
+    if (!images || !Array.isArray(images) || images.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No images provided',
+        code: 'NO_IMAGES_PROVIDED'
+      });
+    }
+
+    debugLogger.info('Starting standalone visual intelligence analysis', { 
+      imageCount: images.length,
+      contextLength: context?.length || 0,
+      analysisType,
+      userId: req.session.userId
+    }, req);
+
+    if (!process.env.GEMINI_API_KEY) {
+      debugLogger.error('GEMINI_API_KEY not configured for standalone analysis', {}, req);
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Visual intelligence service unavailable',
+        message: 'Gemini API key not configured',
+        code: 'GEMINI_NOT_CONFIGURED'
+      });
+    }
+
+    // Validate image data and sizes
+    const validImages = images.filter((imageData: string) => {
+      if (typeof imageData !== 'string') return false;
+      if (imageData.length > 2000000) { // 2MB limit per image
+        debugLogger.warn('Image too large, skipping', { 
+          imageSize: imageData.length, 
+          userId: req.session.userId 
+        }, req);
+        return false;
+      }
+      return imageData.startsWith('data:image/');
+    });
+
+    if (validImages.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No valid images found - images may be too large or invalid format',
+        code: 'NO_VALID_IMAGES'
+      });
+    }
+
+    // Import Gemini visual analysis service
+    const { GeminiVisualAnalysisService } = await import('../services/visual-analysis-gemini');
+    const visualAnalysisService = new GeminiVisualAnalysisService();
+
+    // Convert image data to visual assets format
+    const visualAssets = validImages.map((imageData: string, index: number) => ({
+      type: 'image' as const,
+      url: imageData,
+      alt: `Uploaded image ${index + 1}`,
+      caption: ''
+    }));
+
+    const analysisContext = context || 'Strategic visual analysis of uploaded images for brand elements, cultural moments, and competitive positioning';
+
+    debugLogger.info('Processing standalone visual assets with Gemini 2.5 Pro', { 
+      assetCount: visualAssets.length,
+      contextLength: analysisContext.length
+    }, req);
+
+    // Perform visual analysis with Gemini 2.5 Pro
+    const visualAnalysis = await visualAnalysisService.analyzeVisualAssets(
+      visualAssets,
+      analysisContext
+    );
+
+    // Format response to match existing structure
+    const formattedResponse = {
+      brandElements: visualAnalysis.brandElements || [],
+      culturalMoments: visualAnalysis.culturalVisualMoments || [],
+      competitiveInsights: visualAnalysis.competitiveVisualInsights || [],
+      strategicRecommendations: visualAnalysis.strategicRecommendations || [],
+      confidenceScore: visualAnalysis.confidenceScore || 75
+    };
+
+    debugLogger.info('Standalone visual analysis completed with Gemini 2.5 Pro', { 
+      userId: req.session.userId,
+      analysisType,
+      confidenceScore: visualAnalysis.confidenceScore,
+      brandElementsCount: formattedResponse.brandElements.length,
+      culturalMomentsCount: formattedResponse.culturalMoments.length,
+      competitiveInsightsCount: formattedResponse.competitiveInsights.length
+    }, req);
+
+    res.json({ 
+      success: true, 
+      data: {
+        visualAnalysis: formattedResponse,
+        imageCount: validImages.length,
+        processedWith: 'Gemini 2.5 Pro',
+        confidenceScore: formattedResponse.confidenceScore,
+        analysisType: 'standalone'
+      }
+    });
+  } catch (error: any) {
+    debugLogger.error('Standalone visual analysis failed', error, req);
+    
+    // Provide specific error handling
+    let errorCode = 'VISUAL_ANALYSIS_FAILED';
+    let errorMessage = 'Visual analysis failed. Please try again.';
+    
+    if (error.message?.includes('No visual assets provided')) {
+      errorCode = 'NO_IMAGES_PROVIDED';
+      errorMessage = 'No images available for analysis';
+    } else if (error.message?.includes('Invalid base64')) {
+      errorCode = 'INVALID_IMAGE_FORMAT';
+      errorMessage = 'Invalid image format. Please try with different images.';
+    } else if (error.message?.includes('timeout')) {
+      errorCode = 'ANALYSIS_TIMEOUT';
+      errorMessage = 'Analysis timed out. Try with fewer or smaller images.';
+    } else if (error.message?.includes('API key')) {
+      errorCode = 'GEMINI_API_ERROR';
+      errorMessage = 'Visual analysis service unavailable';
+    }
+
+    res.status(500).json({ 
+      success: false, 
+      error: errorMessage,
+      message: error.message,
+      code: errorCode
+    });
+  }
+});
+
 export default router;
