@@ -915,9 +915,13 @@ export function EnhancedAnalysisResults({
       </Card>
 
       {/* Detailed Analysis Tabs */}
-      <Tabs defaultValue="truth" className="w-full">
+      <Tabs defaultValue="visual" className="w-full">
         <div className="overflow-x-auto">
           <TabsList className={`${isMobile ? 'flex w-max' : 'grid w-full grid-cols-4'}`}>
+            <TabsTrigger value="visual" className="text-xs sm:text-sm whitespace-nowrap">
+              <span className="hidden sm:inline">Visual Intelligence</span>
+              <span className="sm:hidden">Visual</span>
+            </TabsTrigger>
             <TabsTrigger value="truth" className="text-xs sm:text-sm whitespace-nowrap">
               <span className="hidden sm:inline">Truth Analysis</span>
               <span className="sm:hidden">Truth</span>
@@ -929,10 +933,6 @@ export function EnhancedAnalysisResults({
             <TabsTrigger value="insights" className="text-xs sm:text-sm whitespace-nowrap">
               <span className="hidden sm:inline">Insights</span>
               <span className="sm:hidden">Insights</span>
-            </TabsTrigger>
-            <TabsTrigger value="visual" className="text-xs sm:text-sm whitespace-nowrap">
-              <span className="hidden sm:inline">Visual Intelligence</span>
-              <span className="sm:hidden">Visual</span>
             </TabsTrigger>
             {/* Hide Strategic Recommendations tab temporarily */}
             <TabsTrigger value="strategic-recommendations" className="text-xs sm:text-sm whitespace-nowrap hidden">
@@ -1761,7 +1761,7 @@ export function EnhancedAnalysisResults({
                           <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                             <div className="text-sm text-gray-700 leading-relaxed">
                               {Array.isArray(visualAnalysisResults.brandElements) 
-                                ? visualAnalysisResults.brandElements.map((element, i) => (
+                                ? visualAnalysisResults.brandElements.map((element: any, i: number) => (
                                     <p key={i} className="mb-2 last:mb-0">{element}</p>
                                   ))
                                 : typeof visualAnalysisResults.brandElements === 'string'
@@ -1780,7 +1780,7 @@ export function EnhancedAnalysisResults({
                           <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
                             <div className="text-sm text-gray-700 leading-relaxed">
                               {Array.isArray(visualAnalysisResults.culturalMoments) 
-                                ? visualAnalysisResults.culturalMoments.map((moment, i) => (
+                                ? visualAnalysisResults.culturalMoments.map((moment: any, i: number) => (
                                     <p key={i} className="mb-2 last:mb-0">{moment}</p>
                                   ))
                                 : typeof visualAnalysisResults.culturalMoments === 'string'
@@ -1799,7 +1799,7 @@ export function EnhancedAnalysisResults({
                           <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                             <div className="text-sm text-gray-700 leading-relaxed">
                               {Array.isArray(visualAnalysisResults.competitiveInsights) 
-                                ? visualAnalysisResults.competitiveInsights.map((insight, i) => (
+                                ? visualAnalysisResults.competitiveInsights.map((insight: any, i: number) => (
                                     <p key={i} className="mb-2 last:mb-0">{insight}</p>
                                   ))
                                 : typeof visualAnalysisResults.competitiveInsights === 'string'
