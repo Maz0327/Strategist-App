@@ -33,36 +33,80 @@ router.post('/api/strategic-insights', requireAuth, async (req, res) => {
     
     debugLogger.info('Generating strategic insights with GPT-4o', { title, userId: req.session.userId }, req);
 
-    const systemPrompt = `You are a senior strategic intelligence analyst. Transform Truth Analysis into actionable strategic recommendations for brands and businesses.
+    const systemPrompt = `You are a senior strategic consultant who transforms cultural intelligence into high-value business actions. Focus on specific, implementable strategies that drive real business outcomes.`;
 
-Return a JSON object with this structure:
+    const userPrompt = `Transform this Truth Analysis into exactly 6 strategic business insights. Each insight must be highly specific and immediately actionable.
+
+CONTENT: "${title}"
+${content.substring(0, 1500)}
+
+TRUTH ANALYSIS:
+Fact: ${truthAnalysis.fact}
+Observation: ${truthAnalysis.observation}  
+Insight: ${truthAnalysis.insight}
+Human Truth: ${truthAnalysis.humanTruth}
+Cultural Moment: ${truthAnalysis.culturalMoment}
+
+Create 6 strategic insights following this format. Each description should be 2-3 sentences with concrete next steps:
+
 {
   "insights": [
     {
-      "category": "string",
-      "title": "string", 
-      "description": "string",
-      "actionability": "high/medium/low",
-      "impact": "high/medium/low",
-      "timeframe": "immediate/short-term/long-term",
-      "implementation": "string"
+      "category": "Brand Positioning", 
+      "title": "[Specific positioning strategy]",
+      "description": "[2-3 sentences explaining exactly what to do and why it works]",
+      "actionability": "high",
+      "impact": "high", 
+      "timeframe": "immediate",
+      "implementation": "[Specific first steps to take within 30 days]"
+    },
+    {
+      "category": "Content Strategy",
+      "title": "[Specific content approach]", 
+      "description": "[2-3 sentences with concrete content tactics]",
+      "actionability": "high",
+      "impact": "medium",
+      "timeframe": "short-term", 
+      "implementation": "[Specific content actions to take]"
+    },
+    {
+      "category": "Cultural Intelligence",
+      "title": "[How to leverage the cultural moment]",
+      "description": "[2-3 sentences on timing and cultural positioning]", 
+      "actionability": "medium",
+      "impact": "high",
+      "timeframe": "immediate", 
+      "implementation": "[Specific cultural positioning moves]"
+    },
+    {
+      "category": "Audience Engagement", 
+      "title": "[Specific engagement strategy based on human truth]",
+      "description": "[2-3 sentences on connecting with audience motivations]",
+      "actionability": "high", 
+      "impact": "high",
+      "timeframe": "short-term",
+      "implementation": "[Specific engagement tactics to implement]"
+    },
+    {
+      "category": "Competitive Advantage",
+      "title": "[Specific competitive move]",
+      "description": "[2-3 sentences on market differentiation opportunities]", 
+      "actionability": "medium",
+      "impact": "high", 
+      "timeframe": "long-term",
+      "implementation": "[Specific competitive positioning steps]"
+    },
+    {
+      "category": "Business Development",
+      "title": "[Revenue or growth opportunity]", 
+      "description": "[2-3 sentences on monetization or expansion potential]",
+      "actionability": "medium",
+      "impact": "high",
+      "timeframe": "long-term", 
+      "implementation": "[Specific business development actions]"
     }
   ]
 }`;
-
-    const userPrompt = `Transform this Truth Analysis into 5-7 strategic business insights:
-
-Title: ${title}
-Content: ${content.substring(0, 2000)}
-
-Truth Analysis:
-- Fact: ${truthAnalysis.fact}
-- Observation: ${truthAnalysis.observation}
-- Insight: ${truthAnalysis.insight}
-- Human Truth: ${truthAnalysis.humanTruth}
-- Cultural Moment: ${truthAnalysis.culturalMoment}
-
-Generate specific, implementable strategic recommendations across categories like Brand Strategy, Content Strategy, Market Opportunity, Cultural Intelligence, and Competitive Advantage.`;
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
