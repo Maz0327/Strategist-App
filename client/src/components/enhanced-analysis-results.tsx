@@ -280,9 +280,9 @@ export function EnhancedAnalysisResults({
         )
       ]);
       
-      const strategicData = strategicResponse;
-      const competitiveData = competitiveResponse;
-      const actionsData = actionsResponse;
+      const strategicData = await strategicResponse.json();
+      const competitiveData = await competitiveResponse.json();
+      const actionsData = await actionsResponse.json();
       
       console.log('Strategic Data:', strategicData);
       console.log('Competitive Data:', competitiveData);
