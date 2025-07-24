@@ -202,7 +202,7 @@ export function EnhancedAnalysisResults({
     setLoadingStates(prev => ({ ...prev, insights: true }));
     
     try {
-      const response = await apiRequest(
+      const responseData = await apiRequest(
         'POST',
         '/api/strategic-insights',
         {
@@ -211,8 +211,6 @@ export function EnhancedAnalysisResults({
           truthAnalysis: currentAnalysis.truthAnalysis
         }
       );
-      
-      const responseData = await response.json();
       console.log('Insights API response:', responseData);
       
       if (responseData.success && responseData.insights) {
@@ -282,9 +280,9 @@ export function EnhancedAnalysisResults({
         )
       ]);
       
-      const strategicData = await strategicResponse.json();
-      const competitiveData = await competitiveResponse.json();
-      const actionsData = await actionsResponse.json();
+      const strategicData = strategicResponse;
+      const competitiveData = competitiveResponse;
+      const actionsData = actionsResponse;
       
       console.log('Strategic Data:', strategicData);
       console.log('Competitive Data:', competitiveData);
