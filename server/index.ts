@@ -28,8 +28,9 @@ declare module "express-session" {
 // TWITTER_BEARER_TOKEN
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+// Increase payload limits for visual analysis with base64 images
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
 // Session configuration
 const MemoryStoreSession = MemoryStore(session);

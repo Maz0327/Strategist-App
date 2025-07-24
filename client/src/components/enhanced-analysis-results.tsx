@@ -575,10 +575,10 @@ export function EnhancedAnalysisResults({
 
   // Visual Intelligence handler
   const handleVisualAnalysis = async () => {
-    if (!originalContent?.url || !extractedImages || extractedImages.length === 0) {
+    if (!extractedImages || extractedImages.length === 0) {
       toast({
         title: "No Images Available",
-        description: "No images found for visual analysis. Try analyzing a URL with visual content.",
+        description: "No images found for visual analysis. Upload images or analyze content with visual elements.",
         variant: "destructive"
       });
       return;
@@ -587,6 +587,11 @@ export function EnhancedAnalysisResults({
     setLoadingStates(prev => ({ ...prev, visualAnalysis: true }));
     
     try {
+      console.log('Starting visual analysis with images:', extractedImages.map(img => ({ 
+        url: img.url.substring(0, 50) + '...', 
+        size: img.url.length 
+      })));
+
       const response = await Promise.race([
         apiRequest(
           'POST',
@@ -598,24 +603,58 @@ export function EnhancedAnalysisResults({
           }
         ),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Visual analysis timeout - please try again')), 25000) // Optimized for Gemini
+          setTimeout(() => reject(new Error('Visual analysis timeout - Gemini processing taking longer than expected')), 35000)
         )
       ]);
       
       const responseData = await (response as Response).json();
       console.log('Visual Analysis API response:', responseData);
-      setVisualAnalysisResults(responseData.visualAnalysis || responseData);
+      
+      if (!responseData.success) {
+        throw new Error(responseData.message || responseData.error || 'Visual analysis failed');
+      }
+      
+      const visualData = responseData.data?.visualAnalysis || responseData.visualAnalysis || responseData;
+      
+      // Validate we have actual analysis results
+      if (!visualData || (
+        (!visualData.brandElements || visualData.brandElements.length === 0) &&
+        (!visualData.culturalMoments || visualData.culturalMoments.length === 0) &&
+        (!visualData.competitiveInsights || visualData.competitiveInsights.length === 0)
+      )) {
+        console.warn('Empty visual analysis results received:', visualData);
+        throw new Error('Visual analysis returned empty results. Please try with different images.');
+      }
+      
+      setVisualAnalysisResults(visualData);
       toast({
-        title: "Success",
-        description: "Visual analysis completed successfully",
-        duration: 2000
+        title: "Visual Analysis Complete",
+        description: `Successfully analyzed ${extractedImages.length} image${extractedImages.length > 1 ? 's' : ''} with Gemini 2.5 Pro`,
+        duration: 3000
       });
+      
     } catch (error: any) {
       console.error('Visual analysis failed:', error);
+      
+      // Provide specific error messages based on error type
+      let errorMessage = "Visual analysis failed. Please try again.";
+      if (error.message?.includes('timeout')) {
+        errorMessage = "Analysis timed out. Try with fewer or smaller images.";
+      } else if (error.message?.includes('payload')) {
+        errorMessage = "Images too large. Try smaller images or fewer images.";
+      } else if (error.message?.includes('empty results')) {
+        errorMessage = error.message;
+      } else if (error.message?.includes('GEMINI_API_KEY')) {
+        errorMessage = "Visual analysis service unavailable. Please contact support.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
-        title: "Error",
-        description: error.message || "Visual analysis failed. Please try again.",
-        variant: "destructive"
+        title: "Visual Analysis Failed",
+        description: errorMessage,
+        variant: "destructive",
+        duration: 5000
       });
     } finally {
       setLoadingStates(prev => ({ ...prev, visualAnalysis: false }));
@@ -1720,11 +1759,15 @@ export function EnhancedAnalysisResults({
                             <h4 className="font-semibold text-blue-900">Brand Visual Elements</h4>
                           </div>
                           <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                            <p className="text-sm text-gray-700 leading-relaxed">
-                              {typeof visualAnalysisResults.brandElements === 'string' 
-                                ? visualAnalysisResults.brandElements
-                                : (visualAnalysisResults.brandElements || 'No brand elements detected in the visual content.')}
-                            </p>
+                            <div className="text-sm text-gray-700 leading-relaxed">
+                              {Array.isArray(visualAnalysisResults.brandElements) 
+                                ? visualAnalysisResults.brandElements.map((element, i) => (
+                                    <p key={i} className="mb-2 last:mb-0">{element}</p>
+                                  ))
+                                : typeof visualAnalysisResults.brandElements === 'string'
+                                ? <p>{visualAnalysisResults.brandElements}</p>
+                                : <p className="text-gray-500 italic">No brand elements detected in the visual content.</p>}
+                            </div>
                           </div>
                         </div>
 
@@ -1735,11 +1778,15 @@ export function EnhancedAnalysisResults({
                             <h4 className="font-semibold text-purple-900">Cultural Visual Moments</h4>
                           </div>
                           <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                            <p className="text-sm text-gray-700 leading-relaxed">
-                              {typeof visualAnalysisResults.culturalMoments === 'string'
-                                ? visualAnalysisResults.culturalMoments
-                                : (visualAnalysisResults.culturalMoments || 'No significant cultural visual moments identified.')}
-                            </p>
+                            <div className="text-sm text-gray-700 leading-relaxed">
+                              {Array.isArray(visualAnalysisResults.culturalMoments) 
+                                ? visualAnalysisResults.culturalMoments.map((moment, i) => (
+                                    <p key={i} className="mb-2 last:mb-0">{moment}</p>
+                                  ))
+                                : typeof visualAnalysisResults.culturalMoments === 'string'
+                                ? <p>{visualAnalysisResults.culturalMoments}</p>
+                                : <p className="text-gray-500 italic">No significant cultural visual moments identified.</p>}
+                            </div>
                           </div>
                         </div>
 
@@ -1750,11 +1797,15 @@ export function EnhancedAnalysisResults({
                             <h4 className="font-semibold text-green-900">Competitive Visual Positioning</h4>
                           </div>
                           <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                            <p className="text-sm text-gray-700 leading-relaxed">
-                              {typeof visualAnalysisResults.competitiveInsights === 'string'
-                                ? visualAnalysisResults.competitiveInsights
-                                : (visualAnalysisResults.competitiveInsights || 'No competitive visual insights available.')}
-                            </p>
+                            <div className="text-sm text-gray-700 leading-relaxed">
+                              {Array.isArray(visualAnalysisResults.competitiveInsights) 
+                                ? visualAnalysisResults.competitiveInsights.map((insight, i) => (
+                                    <p key={i} className="mb-2 last:mb-0">{insight}</p>
+                                  ))
+                                : typeof visualAnalysisResults.competitiveInsights === 'string'
+                                ? <p>{visualAnalysisResults.competitiveInsights}</p>
+                                : <p className="text-gray-500 italic">No competitive visual insights available.</p>}
+                            </div>
                           </div>
                         </div>
 
