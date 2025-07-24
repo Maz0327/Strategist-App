@@ -249,52 +249,57 @@ export function EnhancedAnalysisResults({
     setLoadingStates(prev => ({ ...prev, insights: true, competitive: true, actions: true }));
     
     try {
-      // Only call the working strategic insights endpoint
-      const strategicResponse = await apiRequest(
-        'POST',
-        '/api/strategic-insights',
-        {
-          content: originalContent?.content || data.summary || '',
-          title: originalContent?.title || 'Content Analysis',
-          truthAnalysis: currentAnalysis.truthAnalysis
-        }
-      );
+      // Call all three endpoints in parallel with the new working endpoints
+      const [strategicResponse, competitiveResponse, actionsResponse] = await Promise.all([
+        apiRequest(
+          'POST',
+          '/api/strategic-insights',
+          {
+            content: originalContent?.content || data.summary || '',
+            title: originalContent?.title || 'Content Analysis',
+            truthAnalysis: currentAnalysis.truthAnalysis
+          }
+        ),
+        apiRequest(
+          'POST',
+          '/api/competitive-intelligence',
+          {
+            content: originalContent?.content || data.summary || '',
+            title: originalContent?.title || 'Content Analysis',
+            truthAnalysis: currentAnalysis.truthAnalysis
+          }
+        ),
+        apiRequest(
+          'POST',
+          '/api/strategic-actions',
+          {
+            content: originalContent?.content || data.summary || '',
+            title: originalContent?.title || 'Content Analysis',
+            truthAnalysis: currentAnalysis.truthAnalysis
+          }
+        )
+      ]);
       
       const strategicData = await strategicResponse.json();
+      const competitiveData = await competitiveResponse.json();
+      const actionsData = await actionsResponse.json();
       
       console.log('Strategic Data:', strategicData);
+      console.log('Competitive Data:', competitiveData);
+      console.log('Actions Data:', actionsData);
       
-      // Force state updates with validation
+      // Set results from API calls
       const newInsights = strategicData.insights || [];
+      const newCompetitive = competitiveData.competitive || [];
+      const newActions = actionsData.actions || [];
       
       console.log('Setting insights:', newInsights.length);
+      console.log('Setting competitive:', newCompetitive.length);
+      console.log('Setting actions:', newActions.length);
       
       setInsightsResults(newInsights);
-      
-      // Provide fallback data for competitive and actions until those endpoints are implemented
-      setCompetitiveResults([
-        {
-          category: "Competitive Analysis",
-          title: "Market Position Assessment",
-          description: "Based on the strategic analysis, competitive opportunities exist in positioning and differentiation strategies.",
-          actionability: "high",
-          impact: "medium",
-          timeframe: "short-term",
-          implementation: "Analyze competitive landscape and develop positioning strategy"
-        }
-      ]);
-      
-      setActionsResults([
-        {
-          category: "Strategic Implementation", 
-          title: "Immediate Action Plan",
-          description: "Execute strategic initiatives based on the Truth Analysis insights and cultural moment identification.",
-          actionability: "high",
-          impact: "high",
-          timeframe: "immediate",
-          implementation: "Develop and implement strategic action items from insights"
-        }
-      ]);
+      setCompetitiveResults(newCompetitive);
+      setActionsResults(newActions);
       
       // Show advanced insights button after initial insights are generated
       if (newInsights.length > 0) {
