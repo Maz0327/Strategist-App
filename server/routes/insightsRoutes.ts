@@ -33,77 +33,35 @@ router.post('/api/strategic-insights', requireAuth, async (req, res) => {
     
     debugLogger.info('Generating strategic insights with GPT-4o', { title, userId: req.session.userId }, req);
 
-    const systemPrompt = `You are a senior strategic consultant who transforms cultural intelligence into high-value business actions. Focus on specific, implementable strategies that drive real business outcomes.`;
+    const systemPrompt = `You are a senior strategic consultant who transforms cultural intelligence into actionable business strategies. Write strategic insights that flow naturally with deep strategic depth. Only return valid JSON with complete sentences for each field. Each description should feel like a well-written strategic analysis with real insight and flow.`;
 
-    const userPrompt = `Transform this Truth Analysis into exactly 6 strategic business insights. Each insight must be highly specific and immediately actionable.
+    const userPrompt = `Transform this Truth Analysis into 6 strategic business insights. Each insight should be strategic, specific, and actionable.
 
-CONTENT: "${title}"
+Content: "${title}"
 ${content.substring(0, 1500)}
 
-TRUTH ANALYSIS:
+Truth Analysis:
 Fact: ${truthAnalysis.fact}
 Observation: ${truthAnalysis.observation}  
 Insight: ${truthAnalysis.insight}
 Human Truth: ${truthAnalysis.humanTruth}
 Cultural Moment: ${truthAnalysis.culturalMoment}
 
-Create 6 strategic insights following this format. Each description should be 2-3 sentences with concrete next steps:
+Create strategic insights across these categories: Brand Positioning, Content Strategy, Cultural Intelligence, Audience Engagement, Competitive Advantage, and Business Development.
 
+For each insight, write around 6-8 sentences for the description that flow naturally with strategic depth. The implementation should be 3-4 sentences with specific next steps.
+
+Return this JSON structure:
 {
   "insights": [
     {
-      "category": "Brand Positioning", 
-      "title": "[Specific positioning strategy]",
-      "description": "[2-3 sentences explaining exactly what to do and why it works]",
+      "category": "Brand Positioning",
+      "title": "specific positioning strategy title",
+      "description": "6-8 sentences explaining the strategic opportunity, why it works, market context, and expected outcomes",
       "actionability": "high",
-      "impact": "high", 
-      "timeframe": "immediate",
-      "implementation": "[Specific first steps to take within 30 days]"
-    },
-    {
-      "category": "Content Strategy",
-      "title": "[Specific content approach]", 
-      "description": "[2-3 sentences with concrete content tactics]",
-      "actionability": "high",
-      "impact": "medium",
-      "timeframe": "short-term", 
-      "implementation": "[Specific content actions to take]"
-    },
-    {
-      "category": "Cultural Intelligence",
-      "title": "[How to leverage the cultural moment]",
-      "description": "[2-3 sentences on timing and cultural positioning]", 
-      "actionability": "medium",
       "impact": "high",
       "timeframe": "immediate", 
-      "implementation": "[Specific cultural positioning moves]"
-    },
-    {
-      "category": "Audience Engagement", 
-      "title": "[Specific engagement strategy based on human truth]",
-      "description": "[2-3 sentences on connecting with audience motivations]",
-      "actionability": "high", 
-      "impact": "high",
-      "timeframe": "short-term",
-      "implementation": "[Specific engagement tactics to implement]"
-    },
-    {
-      "category": "Competitive Advantage",
-      "title": "[Specific competitive move]",
-      "description": "[2-3 sentences on market differentiation opportunities]", 
-      "actionability": "medium",
-      "impact": "high", 
-      "timeframe": "long-term",
-      "implementation": "[Specific competitive positioning steps]"
-    },
-    {
-      "category": "Business Development",
-      "title": "[Revenue or growth opportunity]", 
-      "description": "[2-3 sentences on monetization or expansion potential]",
-      "actionability": "medium",
-      "impact": "high",
-      "timeframe": "long-term", 
-      "implementation": "[Specific business development actions]"
+      "implementation": "3-4 sentences with specific first steps and tactics"
     }
   ]
 }`;
@@ -111,7 +69,7 @@ Create 6 strategic insights following this format. Each description should be 2-
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       temperature: 0.7,
-      max_tokens: 2000,
+      max_tokens: 4000,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
