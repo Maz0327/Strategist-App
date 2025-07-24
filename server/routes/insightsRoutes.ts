@@ -33,9 +33,9 @@ router.post('/api/strategic-insights', requireAuth, async (req, res) => {
     
     debugLogger.info('Generating strategic insights with GPT-4o', { title, userId: req.session.userId }, req);
 
-    const systemPrompt = `You are a senior strategic consultant who transforms cultural intelligence into actionable business strategies. Write strategic insights that flow naturally with deep strategic depth. Only return valid JSON with complete sentences for each field. Each description should feel like a well-written strategic analysis with real insight and flow.`;
+    const systemPrompt = `You are a senior strategic consultant writing a strategic intelligence report. Each insight should be a focused, standalone strategic recommendation. Write with strategic depth and natural flow, but keep each insight distinct and actionable. Only return valid JSON.`;
 
-    const userPrompt = `Transform this Truth Analysis into 6 strategic business insights. Each insight should be strategic, specific, and actionable.
+    const userPrompt = `Based on this Truth Analysis, create 6-8 strategic business insights. Each insight should be a distinct strategic recommendation that a business could implement.
 
 Content: "${title}"
 ${content.substring(0, 1500)}
@@ -47,21 +47,24 @@ Insight: ${truthAnalysis.insight}
 Human Truth: ${truthAnalysis.humanTruth}
 Cultural Moment: ${truthAnalysis.culturalMoment}
 
-Create strategic insights across these categories: Brand Positioning, Content Strategy, Cultural Intelligence, Audience Engagement, Competitive Advantage, and Business Development.
+Generate 6-8 strategic insights covering different business opportunities. For each insight:
+- Title should be specific and compelling
+- Description should be 4-6 sentences explaining the strategic rationale and expected impact
+- Implementation should be 2-3 sentences with concrete first steps
 
-For each insight, write around 6-8 sentences for the description that flow naturally with strategic depth. The implementation should be 3-4 sentences with specific next steps.
+Focus on diverse strategic opportunities like positioning moves, content strategies, audience engagement tactics, competitive advantages, cultural timing, and business development.
 
 Return this JSON structure:
 {
   "insights": [
     {
-      "category": "Brand Positioning",
-      "title": "specific positioning strategy title",
-      "description": "6-8 sentences explaining the strategic opportunity, why it works, market context, and expected outcomes",
-      "actionability": "high",
-      "impact": "high",
-      "timeframe": "immediate", 
-      "implementation": "3-4 sentences with specific first steps and tactics"
+      "category": "strategic category name",
+      "title": "specific strategic recommendation title",
+      "description": "4-6 sentences explaining why this strategy works, the market opportunity, and expected business impact",
+      "actionability": "high/medium/low",
+      "impact": "high/medium/low",
+      "timeframe": "immediate/short-term/long-term",
+      "implementation": "2-3 sentences with specific next steps and tactics to execute this strategy"
     }
   ]
 }`;
