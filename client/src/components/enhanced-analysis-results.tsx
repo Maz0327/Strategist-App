@@ -35,7 +35,8 @@ import {
   Flag,
   Hash,
   Palette,
-  Sparkles
+  Sparkles,
+  Upload
 } from "lucide-react";
 
 // Enhanced Loading Component with animated progress bar
@@ -202,7 +203,7 @@ export function EnhancedAnalysisResults({
     setLoadingStates(prev => ({ ...prev, insights: true }));
     
     try {
-      const responseData = await apiRequest(
+      const response = await apiRequest(
         'POST',
         '/api/strategic-insights',
         {
@@ -211,6 +212,7 @@ export function EnhancedAnalysisResults({
           truthAnalysis: currentAnalysis.truthAnalysis
         }
       );
+      const responseData = await response.json();
       console.log('Insights API response:', responseData);
       
       if (responseData.success && responseData.insights) {
@@ -902,6 +904,34 @@ export function EnhancedAnalysisResults({
         </div>
 
         <TabsContent value="insights" className="space-y-4">
+          {/* Build Strategic Insights Button - Moved to Top */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Button 
+                  onClick={handleBuildAllInsights}
+                  disabled={loadingStates.insights || loadingStates.actions || loadingStates.competitive || !currentAnalysis.truthAnalysis}
+                  className="flex items-center gap-2"
+                >
+                  {(loadingStates.insights || loadingStates.actions || loadingStates.competitive) ? (
+                    <>
+                      <LoadingSpinner size="sm" />
+                      Building Strategic Insights...
+                    </>
+                  ) : (
+                    <>
+                      <Lightbulb className="h-4 w-4" />
+                      Build Strategic Insights
+                    </>
+                  )}
+                </Button>
+              </CardTitle>
+              <p className="text-sm text-gray-600 text-center mt-4">
+                This button generates all 3 strategic sections below. Advanced Strategic Analysis is in the separate Strategic Recommendations tab.
+              </p>
+            </CardHeader>
+          </Card>
+
           <Card>
             <CardHeader>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -909,7 +939,8 @@ export function EnhancedAnalysisResults({
                   <Lightbulb className="h-5 w-5" />
                   Strategic Insights
                 </CardTitle>
-                <div className="flex items-center gap-2">
+                {/* Advanced Analysis Button - Commented Out */}
+                {/* <div className="flex items-center gap-2">
                   {showAdvancedInsightsButton && (
                     <Button 
                       onClick={handleAdvancedInsights}
@@ -931,6 +962,8 @@ export function EnhancedAnalysisResults({
                       )}
                     </Button>
                   )}
+                </div> */}
+                <div className="flex items-center gap-2">{/* Keep gap-2 for other elements */}
                   {advancedInsightsResults.length > 0 && (
                     <div className="flex items-center gap-2">
                       <Label htmlFor="insight-view-mode" className="text-sm">View:</Label>
@@ -1075,7 +1108,8 @@ export function EnhancedAnalysisResults({
                   <Target className="h-5 w-5" />
                   Competitive Intelligence
                 </CardTitle>
-                <div className="flex items-center gap-2">
+                {/* Advanced Analysis Button - Commented Out */}
+                {/* <div className="flex items-center gap-2">
                   {competitiveResults.length > 0 && (
                     <Button 
                       onClick={handleAdvancedCompetitive}
@@ -1097,7 +1131,7 @@ export function EnhancedAnalysisResults({
                       )}
                     </Button>
                   )}
-                </div>
+                </div> */}
               </div>
               <p className="text-sm text-gray-600">
                 How competitors are positioning in this space
@@ -1201,7 +1235,8 @@ export function EnhancedAnalysisResults({
                   <CheckCircle className="h-5 w-5" />
                   Strategic Actions
                 </CardTitle>
-                <div className="flex items-center gap-2">
+                {/* Advanced Analysis Button - Commented Out */}
+                {/* <div className="flex items-center gap-2">
                   {actionsResults.length > 0 && (
                     <Button 
                       onClick={handleAdvancedActions}
@@ -1223,7 +1258,7 @@ export function EnhancedAnalysisResults({
                       )}
                     </Button>
                   )}
-                </div>
+                </div> */}
               </div>
               <p className="text-sm text-gray-600">
                 Actionable recommendations based on insights
@@ -1396,33 +1431,7 @@ export function EnhancedAnalysisResults({
             </CardContent>
           </Card>
 
-          {/* Build Strategic Insights Button */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Button 
-                  onClick={handleBuildAllInsights}
-                  disabled={loadingStates.insights || loadingStates.actions || loadingStates.competitive || !currentAnalysis.truthAnalysis}
-                  className="flex items-center gap-2"
-                >
-                  {(loadingStates.insights || loadingStates.actions || loadingStates.competitive) ? (
-                    <>
-                      <LoadingSpinner size="sm" />
-                      Building Strategic Insights...
-                    </>
-                  ) : (
-                    <>
-                      <Lightbulb className="h-4 w-4" />
-                      Build Strategic Insights
-                    </>
-                  )}
-                </Button>
-              </CardTitle>
-              <p className="text-sm text-gray-600 text-center mt-4">
-                This button generates all 4 subsections above. Advanced Strategic Analysis is in the separate Strategic Recommendations tab.
-              </p>
-            </CardHeader>
-          </Card>
+
         </TabsContent>
 
         <TabsContent value="truth" className="space-y-4">
@@ -1614,6 +1623,42 @@ export function EnhancedAnalysisResults({
               </p>
             </CardHeader>
             <CardContent>
+              {/* Upload Image Section */}
+              <div className="mb-6 p-4 border-2 border-dashed border-gray-300 rounded-lg">
+                <div className="text-center">
+                  <div className="mb-4">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      id="image-upload"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (e) => {
+                            const imageUrl = e.target?.result as string;
+                            // Add to extracted images for analysis
+                            setExtractedImages(prev => [...(prev || []), { url: imageUrl, alt: file.name }]);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                    <label
+                      htmlFor="image-upload"
+                      className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      <Upload className="h-4 w-4" />
+                      Upload Image for Analysis
+                    </label>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Upload images (JPG, PNG, GIF) to analyze brand elements, cultural moments, and competitive positioning
+                  </p>
+                </div>
+              </div>
+
               {/* Display extracted images if available */}
               {extractedImages && extractedImages.length > 0 ? (
                 <div className="space-y-4">

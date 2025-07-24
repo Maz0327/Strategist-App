@@ -62,6 +62,9 @@ export function SystemSuggestions() {
     },
   });
 
+  // Extract suggestions from API response or use mock data
+  const suggestions = suggestionsData?.suggestions || mockSuggestions;
+
   // Mock suggestions for fallback
   const mockSuggestions: SystemSuggestion[] = [
     {
