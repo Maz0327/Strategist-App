@@ -225,6 +225,15 @@ export default function Dashboard({ user, onLogout, onPageChange, currentPage }:
                 Capture
               </Button>
               <Button
+                variant={activeTab === "projects" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveTab("projects")}
+                className="whitespace-nowrap flex-shrink-0"
+              >
+                <FolderOpen className="w-4 h-4 mr-1" />
+                Projects
+              </Button>
+              <Button
                 variant={activeTab === "brief" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setActiveTab("brief")}
