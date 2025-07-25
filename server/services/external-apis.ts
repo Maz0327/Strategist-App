@@ -618,8 +618,7 @@ export class ExternalAPIsService {
       const { brightDataService } = await import('./bright-data-service');
       
       if (!(await brightDataService.isAvailable())) {
-        console.log('⚠️ Bright Data not available, skipping social intelligence');
-        return [];
+        throw new Error('🔥 BRIGHT DATA REQUIRED - Social Intelligence Unavailable Without Credentials');
       }
       
       // All 4 major social platforms via Bright Data enhanced scraping

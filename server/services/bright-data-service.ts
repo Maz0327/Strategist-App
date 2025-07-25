@@ -71,7 +71,7 @@ export class BrightDataService {
 
   async makeProxyRequest(url: string, options: AxiosRequestConfig = {}): Promise<any> {
     if (!this.isConfigured) {
-      throw new Error('Bright Data credentials not configured');
+      throw new Error('BRIGHT DATA CREDENTIALS REQUIRED - NO FALLBACK AVAILABLE');
     }
 
     const proxyConfig = {
