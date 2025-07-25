@@ -99,7 +99,7 @@ export function StandaloneVisualIntelligence() {
         })
       );
 
-      const response = await apiRequest('POST', '/api/visual-intelligence/analyze', {
+      const response = await apiRequest('POST', '/api/analyze/visual-intelligence/analyze', {
         images: imageData,
         context: contextInput || 'Strategic visual analysis of uploaded images',
         analysisType: 'comprehensive'
