@@ -70,14 +70,13 @@ export class RedditService {
       const allPosts: TrendingTopic[] = [];
 
       for (const subreddit of subreddits) {
-        const posts = await this.getSubredditPosts(subreddit, 'hot', 5);
+        const posts = await this.getSubredditPosts(subreddit, 'hot', 25); // 5x increase per subreddit
         allPosts.push(...posts);
       }
 
-      // Sort by score and return top 10
+      // Sort by score and return ALL - no artificial limits
       return allPosts
-        .sort((a, b) => (b.score || 0) - (a.score || 0))
-        .slice(0, 10);
+        .sort((a, b) => (b.score || 0) - (a.score || 0));
     } catch (error) {
       console.error('Error fetching Reddit trending posts:', error);
       return [];

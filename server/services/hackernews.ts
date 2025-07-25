@@ -18,7 +18,7 @@ export interface HackerNewsItem {
 export class HackerNewsService {
   private readonly baseUrl = 'https://hacker-news.firebaseio.com/v0';
 
-  async getTrendingStories(limit: number = 10): Promise<TrendingTopic[]> {
+  async getTrendingStories(limit: number = 50): Promise<TrendingTopic[]> {
     try {
       // Get top stories
       const topStoriesResponse = await axios.get(`${this.baseUrl}/topstories.json`);
@@ -53,7 +53,7 @@ export class HackerNewsService {
     }
   }
 
-  async getNewStories(limit: number = 10): Promise<TrendingTopic[]> {
+  async getNewStories(limit: number = 30): Promise<TrendingTopic[]> {
     try {
       const newStoriesResponse = await axios.get(`${this.baseUrl}/newstories.json`);
       const newStoryIds: number[] = newStoriesResponse.data.slice(0, limit);

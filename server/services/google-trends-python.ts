@@ -39,7 +39,7 @@ export class GoogleTrendsPythonService {
     }
   }
 
-  async getTrendingSearches(country: string = 'US', limit: number = 10): Promise<TrendingTopic[]> {
+  async getTrendingSearches(country: string = 'US', limit: number = 50): Promise<TrendingTopic[]> {
     return this.executePythonScript('trending', [country, limit.toString()]);
   }
 

@@ -194,24 +194,10 @@ export class ExternalAPIsService {
           .slice(0, 20);
       }
 
-      // For "All Platforms" view - show top 3 from each platform
-      // Group by platform to ensure fair representation
-      const platformGroups = results.reduce((acc, topic) => {
-        if (!acc[topic.platform]) acc[topic.platform] = [];
-        acc[topic.platform].push(topic);
-        return acc;
-      }, {} as Record<string, TrendingTopic[]>);
-      
-      // Take top 3 from each platform for balanced view
-      const balancedResults: TrendingTopic[] = [];
-      Object.entries(platformGroups).forEach(([platform, topics]) => {
-        const topFromPlatform = topics
-          .sort((a, b) => (b.score || 0) - (a.score || 0))
-          .slice(0, 3);
-        balancedResults.push(...topFromPlatform);
-      });
-      
-      return balancedResults.sort((a, b) => (b.score || 0) - (a.score || 0));
+      // UNLIMITED FLOW - Return ALL trending data from all platforms
+      return results
+        .sort((a, b) => (b.score || 0) - (a.score || 0))
+        .slice(0, 200); // Massive increase: up to 200 total trending items
     } catch (error) {
       return [];
     }
@@ -388,7 +374,7 @@ export class ExternalAPIsService {
       if (!this.lastfmService) {
         return this.getFallbackMusicData('lastfm');
       }
-      const trends = await this.lastfmService.getTrendingTracks(8);
+      const trends = await this.lastfmService.getTrendingTracks(30);
       return trends;
     } catch (error) {
       return this.getFallbackMusicData('lastfm');
@@ -404,7 +390,7 @@ export class ExternalAPIsService {
       
       const allTrends = [...trending, ...popular];
       
-      return allTrends.slice(0, 8).map(item => ({
+      return allTrends.slice(0, 25).map(item => ({
         id: item.id,
         platform: 'Genius',
         title: item.title,
@@ -433,7 +419,7 @@ export class ExternalAPIsService {
       
       const allTrends = [...movies, ...tvShows, ...popular];
       
-      return allTrends.slice(0, 8).map(item => ({
+      return allTrends.slice(0, 25).map(item => ({
         id: item.id,
         platform: 'TMDB',
         title: item.title,
@@ -453,7 +439,7 @@ export class ExternalAPIsService {
 
   async getTVMazeTrends(): Promise<TrendingTopic[]> {
     try {
-      const trends = await tvMazeService.getTrendingShows(8);
+      const trends = await tvMazeService.getTrendingShows(25);
       return trends;
     } catch (error) {
       return this.getFallbackEntertainmentData('tvmaze');
@@ -466,7 +452,7 @@ export class ExternalAPIsService {
       if (!this.gnewsService) {
         return this.getFallbackNewsData('gnews');
       }
-      const trends = await this.gnewsService.getTrendingNews('business', 8);
+      const trends = await this.gnewsService.getTrendingNews('business', 30);
       return trends;
     } catch (error) {
       return this.getFallbackNewsData('gnews');
@@ -478,7 +464,7 @@ export class ExternalAPIsService {
       if (!this.nytimesService) {
         return this.getFallbackNewsData('nytimes');
       }
-      const trends = await this.nytimesService.getTopStories('business', 8);
+      const trends = await this.nytimesService.getTopStories('business', 30);
       return trends;
     } catch (error) {
       return this.getFallbackNewsData('nytimes');
@@ -490,7 +476,7 @@ export class ExternalAPIsService {
       if (!this.currentsService) {
         return this.getFallbackNewsData('currents');
       }
-      const trends = await this.currentsService.getLatestNews('business', 'US', 8);
+      const trends = await this.currentsService.getLatestNews('business', 'US', 30);
       return trends;
     } catch (error) {
       return this.getFallbackNewsData('currents');
@@ -502,7 +488,7 @@ export class ExternalAPIsService {
       if (!this.mediastackService) {
         return this.getFallbackNewsData('mediastack');
       }
-      const trends = await this.mediastackService.getLiveNews(['business', 'technology'], ['us'], 8);
+      const trends = await this.mediastackService.getLiveNews(['business', 'technology'], ['us'], 30);
       return trends;
     } catch (error) {
       return this.getFallbackNewsData('mediastack');
@@ -511,7 +497,7 @@ export class ExternalAPIsService {
 
   async getGlaspTrends(): Promise<TrendingTopic[]> {
     try {
-      const trends = await glaspService.getTrendingHighlights(8);
+      const trends = await glaspService.getTrendingHighlights(30);
       return trends;
     } catch (error) {
       return this.getFallbackKnowledgeData();
@@ -522,13 +508,13 @@ export class ExternalAPIsService {
   async getKnowYourMemeTrends(): Promise<TrendingTopic[]> {
     try {
       const [trending, popular, deadpools] = await Promise.all([
-        knowYourMemeService.getTrendingMemes(8),
-        knowYourMemeService.getPopularMemes(8),
-        knowYourMemeService.getDeadpoolMemes(4)
+        knowYourMemeService.getTrendingMemes(25),
+        knowYourMemeService.getPopularMemes(25),
+        knowYourMemeService.getDeadpoolMemes(15)
       ]);
       
       const allTrends = [...trending, ...popular, ...deadpools];
-      return allTrends.slice(0, 10);
+      return allTrends.slice(0, 50);
     } catch (error) {
       debugLogger.warn('Know Your Meme blocked - using fallback data');
       return [];
@@ -538,14 +524,14 @@ export class ExternalAPIsService {
   async getUrbanDictionaryTrends(): Promise<TrendingTopic[]> {
     try {
       const [trending, popular, recent, wordOfDay] = await Promise.all([
-        urbanDictionaryService.getTrendingWords(8),
-        urbanDictionaryService.getPopularWords(8),
-        urbanDictionaryService.getRecentWords(4),
+        urbanDictionaryService.getTrendingWords(25),
+        urbanDictionaryService.getPopularWords(25),
+        urbanDictionaryService.getRecentWords(15),
         urbanDictionaryService.getWordOfTheDay()
       ]);
       
       const allTrends = [...trending, ...popular, ...recent, ...wordOfDay];
-      return allTrends.slice(0, 10);
+      return allTrends.slice(0, 50);
     } catch (error) {
       return [];
     }
@@ -554,14 +540,14 @@ export class ExternalAPIsService {
   async getYouTubeTrendingTrends(): Promise<TrendingTopic[]> {
     try {
       const [general, music, gaming, news] = await Promise.all([
-        youtubeTrendingService.getTrendingVideos(8),
-        youtubeTrendingService.getMusicTrending(6),
-        youtubeTrendingService.getGamingTrending(6),
-        youtubeTrendingService.getNewsTrending(4)
+        youtubeTrendingService.getTrendingVideos(25),
+        youtubeTrendingService.getMusicTrending(20),
+        youtubeTrendingService.getGamingTrending(20),
+        youtubeTrendingService.getNewsTrending(15)
       ]);
       
       const allTrends = [...general, ...music, ...gaming, ...news];
-      return allTrends.slice(0, 12);
+      return allTrends.slice(0, 60);
     } catch (error) {
       return [];
     }
@@ -570,14 +556,14 @@ export class ExternalAPIsService {
   async getRedditCulturalTrends(): Promise<TrendingTopic[]> {
     try {
       const [cultural, viral, generational, trending] = await Promise.all([
-        redditCulturalService.getCulturalTrends(8),
-        redditCulturalService.getViralContent(6),
-        redditCulturalService.getGenerationalTrends(6),
-        redditCulturalService.getTrendingSubreddits(4)
+        redditCulturalService.getCulturalTrends(30),
+        redditCulturalService.getViralContent(25),
+        redditCulturalService.getGenerationalTrends(25),
+        redditCulturalService.getTrendingSubreddits(20)
       ]);
       
       const allTrends = [...cultural, ...viral, ...generational, ...trending];
-      return allTrends.slice(0, 12);
+      return allTrends.slice(0, 75);
     } catch (error) {
       return [];
     }
@@ -586,13 +572,13 @@ export class ExternalAPIsService {
   async getTikTokTrends(): Promise<TrendingTopic[]> {
     try {
       const [hashtags, discover, music] = await Promise.all([
-        tikTokTrendsService.getTrendingHashtags(10),
-        tikTokTrendsService.getDiscoverTrends(8),
-        tikTokTrendsService.getMusicTrends(6)
+        tikTokTrendsService.getTrendingHashtags(40),
+        tikTokTrendsService.getDiscoverTrends(30),
+        tikTokTrendsService.getMusicTrends(25)
       ]);
       
       const allTrends = [...hashtags, ...discover, ...music];
-      return allTrends.slice(0, 12);
+      return allTrends.slice(0, 75);
     } catch (error) {
       return [];
     }
@@ -601,14 +587,14 @@ export class ExternalAPIsService {
   async getInstagramTrends(): Promise<TrendingTopic[]> {
     try {
       const [trending, popular, lifestyle, business] = await Promise.all([
-        instagramTrendsService.getTrendingHashtags(8),
-        instagramTrendsService.getPopularHashtags(['fashion', 'food', 'travel', 'fitness'], 6),
-        instagramTrendsService.getLifestyleTrends(6),
-        instagramTrendsService.getBusinessTrends(4)
+        instagramTrendsService.getTrendingHashtags(40),
+        instagramTrendsService.getPopularHashtags(['fashion', 'food', 'travel', 'fitness'], 30),
+        instagramTrendsService.getLifestyleTrends(30),
+        instagramTrendsService.getBusinessTrends(25)
       ]);
       
       const allTrends = [...trending, ...popular, ...lifestyle, ...business];
-      return allTrends.slice(0, 12);
+      return allTrends.slice(0, 100);
     } catch (error) {
       return [];
     }
@@ -669,7 +655,7 @@ export class ExternalAPIsService {
       // Include Bright Data enhanced scraping if available
       const brightDataTrends = await this.getBrightDataTrends();
       
-      return [...twitterTrends, ...linkedinIntel, ...instagramTrends, ...tiktokTrends, ...brightDataTrends].slice(0, 100);
+      return [...twitterTrends, ...linkedinIntel, ...instagramTrends, ...tiktokTrends, ...brightDataTrends]; // NO LIMITS - Full social intelligence flow
     } catch (error) {
       console.error('Social media intelligence error:', error);
       return [];
@@ -687,7 +673,7 @@ export class ExternalAPIsService {
         hashtagResult.success ? hashtagResult.data?.posts || [] : []
       );
       
-      return allPosts.slice(0, 20).map((post: any, index: number) => ({
+      return allPosts.slice(0, 50).map((post: any, index: number) => ({
         id: `instagram-${Date.now()}-${index}`,
         platform: 'Social Media' as any,
         title: post.text?.substring(0, 80) + (post.text?.length > 80 ? '...' : '') || 'Instagram Trend',
@@ -710,7 +696,7 @@ export class ExternalAPIsService {
       const result = await socialMediaIntelligence.scrapeTwitterTrends('worldwide');
       if (!result.success || !result.data?.posts) return [];
       
-      return result.data.posts.slice(0, 25).map((post: any, index: number) => ({
+      return result.data.posts.slice(0, 50).map((post: any, index: number) => ({
         id: `twitter-${Date.now()}-${index}`,
         platform: 'Social Media' as any,
         title: post.text.substring(0, 80) + (post.text.length > 80 ? '...' : ''),
@@ -738,7 +724,7 @@ export class ExternalAPIsService {
         try {
           const result = await socialMediaIntelligence.scrapeLinkedInCompany(company);
           if (result.success && result.data?.posts) {
-            companyResults.push(...result.data.posts.slice(0, 15));
+            companyResults.push(...result.data.posts.slice(0, 40));
           }
         } catch (error) {
           continue; // Skip failed companies
@@ -774,7 +760,7 @@ export class ExternalAPIsService {
       
       const allPosts = result.data.posts || [];
       
-      return allPosts.slice(0, 15).map((post: any, index: number) => ({
+      return allPosts.slice(0, 50).map((post: any, index: number) => ({
         id: `tiktok-${Date.now()}-${index}`,
         platform: 'Social Media' as any,
         title: post.title?.substring(0, 80) + (post.title?.length > 80 ? '...' : '') || 'TikTok Trend',

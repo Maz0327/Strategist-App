@@ -48,10 +48,10 @@ router.get('/all', requireAuth, async (req, res) => {
       });
     });
 
-    // Structure data with platform groupings
+    // Structure data with platform groupings - REMOVE ARTIFICIAL LIMITS
     Object.keys(platformGroups).forEach(platform => {
       liveData.platforms[platform] = {
-        data: platformGroups[platform].slice(0, 10) // Limit to 10 per platform
+        data: platformGroups[platform] // NO LIMITS - Full data flow
       };
     });
 

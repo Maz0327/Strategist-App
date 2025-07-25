@@ -38,7 +38,7 @@ export class NewsService {
       const params: any = {
         apiKey: this.apiKey,
         country: 'us',
-        pageSize: 10,
+        pageSize: 50, // 5x increase for news coverage
         sortBy: 'popularity'
       };
 
