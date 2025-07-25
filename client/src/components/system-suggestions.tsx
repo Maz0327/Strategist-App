@@ -40,27 +40,66 @@ export function SystemSuggestions() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Enhanced suggestions with loading state
+  // Enhanced suggestions with live data from signal mining - PIPELINE STAGE 4
   const { data: suggestionsData, isLoading } = useQuery({
-    queryKey: ["/api/system-suggestions"],
+    queryKey: ["/api/trending/all", "suggestions"],
     staleTime: 10 * 60 * 1000,
     retry: 1,
     refetchOnWindowFocus: false,
     queryFn: async () => {
       try {
-        const response = await fetch('/api/system-suggestions', {
+        // Get live trending data and convert to smart prompts
+        const response = await fetch('/api/trending/all', {
           credentials: 'include'
         });
         if (!response.ok) {
-          throw new Error("Failed to fetch suggestions");
+          throw new Error("Failed to fetch trending data for suggestions");
         }
-        return response.json();
+        const trendingData = await response.json();
+        
+        // Convert trending topics to system suggestions
+        const suggestions = convertTrendingToSuggestions(trendingData);
+        return { suggestions };
       } catch (error) {
         console.warn('System suggestions unavailable:', error);
         return { suggestions: mockSuggestions };
       }
     },
   });
+
+  // Convert live trending data to smart suggestions - PIPELINE FINAL STAGE
+  const convertTrendingToSuggestions = (trendingData: any): SystemSuggestion[] => {
+    if (!trendingData?.platforms) return mockSuggestions;
+    
+    const suggestions: SystemSuggestion[] = [];
+    let id = 1;
+    
+    Object.values(trendingData.platforms).forEach((platform: any) => {
+      if (platform?.data) {
+        platform.data
+          .filter((item: any) => item.engagement >= 200) // High engagement only
+          .slice(0, 3) // Top 3 per platform
+          .forEach((item: any) => {
+            suggestions.push({
+              capture: {
+                id: id++,
+                title: item.title,
+                content: item.summary || item.title,
+                summary: item.summary || `Trending content from ${item.platform}`,
+                sentiment: item.engagement >= 500 ? 'positive' : 'neutral',
+                keywords: [],
+                createdAt: item.fetchedAt || new Date().toISOString()
+              },
+              reason: `High engagement (${item.engagement}) on ${item.platform}. Strategic opportunity for cultural moment capture.`,
+              priority: item.engagement >= 500 ? 'high' : 'medium',
+              suggestedAction: 'Flag as potential signal for strategic brief inclusion'
+            });
+          });
+      }
+    });
+    
+    return suggestions.length > 0 ? suggestions.slice(0, 5) : mockSuggestions;
+  };
 
   // Mock suggestions for fallback
   const mockSuggestions: SystemSuggestion[] = [

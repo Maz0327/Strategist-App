@@ -77,7 +77,7 @@ export function SignalMiningDashboard() {
     refetchOnWindowFocus: false,
     queryFn: async () => {
       try {
-        const response = await fetch('/api/topics', {
+        const response = await fetch('/api/trending/all', {
           credentials: 'include'
         });
         if (!response.ok) {
@@ -86,7 +86,7 @@ export function SignalMiningDashboard() {
         return response.json();
       } catch (error) {
         console.warn('Failed to fetch trending topics:', error);
-        return { topics: [] };
+        return { platforms: {}, totalItems: 0 };
       }
     },
   });
@@ -212,11 +212,33 @@ export function SignalMiningDashboard() {
       });
   };
 
-  // Process trending data when it loads
+  // Process live trending data when it loads - PIPELINE STAGE 2
   useEffect(() => {
-    if (trendingData?.topics) {
-      const processedSignals = convertTopicsToSignals(trendingData.topics);
-      const processedCulturalMoments = generateCulturalMoments(trendingData.topics);
+    if (trendingData?.platforms) {
+      // Extract all topics from platform groups for signal mining
+      const allTopics: TrendingTopic[] = [];
+      Object.values(trendingData.platforms).forEach((platform: any) => {
+        if (platform?.data) {
+          platform.data.forEach((item: any) => {
+            allTopics.push({
+              id: item.id || `topic-${allTopics.length}`,
+              title: item.title,
+              platform: item.platform,
+              category: item.platform, // Use platform as category
+              description: item.summary || '',
+              url: item.url,
+              engagement: item.engagement || 0,
+              score: item.engagement || 50, // Use engagement as score
+              keywords: [],
+              summary: item.summary || '',
+              timestamp: item.fetchedAt || new Date().toISOString()
+            });
+          });
+        }
+      });
+      
+      const processedSignals = convertTopicsToSignals(allTopics);
+      const processedCulturalMoments = generateCulturalMoments(allTopics);
       
       setSignals(processedSignals);
       setCulturalMoments(processedCulturalMoments);
