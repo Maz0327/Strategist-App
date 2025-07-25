@@ -82,6 +82,31 @@ export const briefTemplates = pgTable("brief_templates", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const briefs = pgTable("briefs", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull().references(() => projects.id),
+  title: text("title").notNull(),
+  templateType: text("template_type").default("jimmy-johns"),
+  description: text("description"),
+  status: text("status").default("draft"), // draft, complete, exported
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const briefSections = pgTable("brief_sections", {
+  id: serial("id").primaryKey(),
+  briefId: integer("brief_id").notNull().references(() => briefs.id),
+  sectionId: text("section_id").notNull(), // performance, cultural-signals, etc.
+  name: text("name").notNull(),
+  description: text("description"),
+  content: text("content"),
+  contentTypes: text("content_types").array().default([]),
+  mappedFields: text("mapped_fields").array().default([]),
+  order: integer("order").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const generatedBriefs = pgTable("generated_briefs", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").notNull().references(() => projects.id),
@@ -169,6 +194,24 @@ export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
 });
+
+// Zod schemas for briefs
+export const insertBriefSchema = createInsertSchema(briefs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertBriefSectionSchema = createInsertSchema(briefSections).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertBrief = z.infer<typeof insertBriefSchema>;
+export type InsertBriefSection = z.infer<typeof insertBriefSectionSchema>;
+export type SelectBrief = typeof briefs.$inferSelect;
+export type SelectBriefSection = typeof briefSections.$inferSelect;
 
 export const insertSignalSchema = createInsertSchema(signals).omit({
   id: true,

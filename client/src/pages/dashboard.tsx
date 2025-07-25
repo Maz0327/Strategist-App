@@ -13,6 +13,7 @@ import { AdminDashboard } from "@/components/admin-dashboard";
 import { FeedbackWidget } from "@/components/feedback-widget";
 import { FeedsHub } from "@/components/feeds-hub";
 import { ProjectGallery } from "@/components/project-gallery";
+import { BriefTemplateEngine } from "@/components/brief-template-engine";
 import { authService } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -381,7 +382,11 @@ export default function Dashboard({ user, onLogout, onPageChange, currentPage }:
               <BriefBuilder />
             )}
             
-            {activeTab === "brief" && activeSubTab !== "builder" && (
+            {activeTab === "brief" && activeSubTab === "template" && (
+              <BriefTemplateEngine />
+            )}
+            
+            {activeTab === "brief" && activeSubTab !== "builder" && activeSubTab !== "template" && (
               <StrategicBriefLab 
                 activeSubTab={activeSubTab}
               />

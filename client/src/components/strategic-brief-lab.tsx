@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BriefBuilder } from "@/components/brief-builder";
+import { BriefTemplateEngine } from "@/components/brief-template-engine";
 import { GetToByBrief } from "@/components/get-to-by-brief";
 import { Button } from "@/components/ui/button";
 import { FileText, Target, Settings, ArrowRight } from "lucide-react";
@@ -35,14 +36,18 @@ export function StrategicBriefLab({ activeSubTab }: StrategicBriefLabProps) {
 
       {/* Brief Lab Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2" data-tutorial="brief-framework">
+        <TabsList className="grid w-full grid-cols-3" data-tutorial="brief-framework">
           <TabsTrigger value="builder" className="flex items-center space-x-2">
             <FileText className="h-4 w-4" />
             <span>Brief Builder</span>
           </TabsTrigger>
+          <TabsTrigger value="template" className="flex items-center space-x-2">
+            <Target className="h-4 w-4" />
+            <span>Template Engine</span>
+          </TabsTrigger>
           <TabsTrigger value="framework" className="flex items-center space-x-2">
             <Target className="h-4 w-4" />
-            <span>Define → Shift → Deliver Framework</span>
+            <span>Define → Shift → Deliver</span>
           </TabsTrigger>
         </TabsList>
 
@@ -60,6 +65,10 @@ export function StrategicBriefLab({ activeSubTab }: StrategicBriefLabProps) {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="template" className="space-y-4">
+          <BriefTemplateEngine />
         </TabsContent>
 
         <TabsContent value="framework" className="space-y-4">
