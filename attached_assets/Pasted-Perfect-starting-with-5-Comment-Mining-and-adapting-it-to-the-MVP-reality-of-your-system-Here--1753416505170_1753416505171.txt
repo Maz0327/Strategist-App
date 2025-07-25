@@ -1,0 +1,118 @@
+Perfect — starting with #5: Comment Mining, and adapting it to the MVP reality of your system. Here’s a lean, realistic plan that avoids scraping but still builds strategic value from user-captured content:
+
+⸻
+
+🧩 Problem
+
+You want insights from comment sections (which are rich in cultural signals, humor, human truth, etc.), but:
+	•	Scraping is too unstable for MVP
+	•	Not every capture will include comment data
+	•	You still want to get strategic value from the kinds of things users are seeing
+
+⸻
+
+✅ Lean MVP Strategy (No Scraping)
+
+🔸 Step 1: Let Users Capture Comments Manually (Visually or Text)
+
+In the Chrome extension, add this option when a user saves a post:
+
+“Include Comments?”
+	•	✅ If yes, allow two input types:
+	•	Screenshot (of visible comments)
+	•	Text box to paste top 1–3 comments manually
+
+This keeps it simple — if they think comments matter, they’ll save them.
+
+⸻
+
+🔸 Step 2: Introduce a Tag Type for Comments
+
+In both:
+	•	Chrome extension UI
+	•	Captured Content section in dashboard
+
+Add tag options like:
+	•	comment-insight
+	•	comment-trend
+	•	comment-emotion
+	•	audience-voice
+	•	funny-comment
+	•	toxic-comment
+	•	ask-to-analyze-comment
+
+Each tag helps the system understand:
+	•	The role of the comment (insight, trend, humor)
+	•	Where it might fit in the brief (Human Truth, Cultural Moment, Viral Trigger, etc.)
+
+⸻
+
+🔸 Step 3: Automatically Route to Truth Analysis
+
+In backend logic:
+	•	If content (or a comment screenshot/paste) is tagged as comment-related,
+	•	Trigger GPT/Gemini analysis to:
+	•	Detect patterns (e.g. repetition of sentiment, joke formats)
+	•	Assign it to the correct section (e.g. Human Truth or Cultural Moment)
+	•	Score it for “Virality”, “Tension”, or “Trend Spark”
+
+If you’re using Gemini for visual OCR:
+	•	You can feed comment screenshots into Gemini to extract actual text
+	•	Then route that text to GPT-4o for deeper Truth Analysis
+
+⸻
+
+🔸 Step 4: Let User Add Summary Note (Optional)
+
+Give users a field to summarize what they think the comments are saying. You can then:
+	•	Feed that into GPT analysis for clarity
+	•	Train the system over time to trust well-tagged and noted comments
+
+⸻
+
+🔸 Step 5: Store Comments as Sub-Captures
+
+In DB:
+	•	Treat comments as attached content to a parent capture
+	•	Useful for future logic (e.g. AI “remembers” this capture got big engagement)
+
+⸻
+
+✏️ Chrome Extension UI Mock (Simplified)
+
+✅ Save this post
+📌 Add to Project: [dropdown]
+
+📝 Notes: _________________________
+
+🗂️ Tags:
+[x] Cultural Moment
+[ ] Competitive Insight
+[ ] Audience POV
+[ ] Comment Insight
+
+💬 Add Comments?
+[ ] Screenshot upload
+[ ] Paste top 1–3 comments here:
+
+
+⸻
+
+💡 Benefits of This MVP Strategy
+
+Benefit	Why It Works
+No scraping	Avoids TOS/legal/API issues for TikTok, IG, YT
+Leverages user judgment	Strategist curates what’s worth saving
+Makes comment data analyzable	Tagging + Gemini + GPT loop
+Fits existing flow	Just adds 1–2 extra fields to extension & dashboard
+Sets foundation for automation	Later you can auto-tag patterns once enough data is collected
+
+
+⸻
+
+Let me know if you want me to help you:
+	1.	Design the database schema for “attached comments”
+	2.	Write the prompt for analyzing comment text
+	3.	Design the tag system UI (extension and dashboard)
+
+Or if you’re ready, we can move to the next workflow item in your list.

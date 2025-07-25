@@ -1,0 +1,98 @@
+Yes — using tags as guidance signals before batch analysis is one of the smartest ways to streamline the workflow without overcomplicating the system.
+
+Let’s break this down:
+
+⸻
+
+✅ Why Pre-Batch Tags Make Total Sense
+	•	🧠 Humans are better at fast judgment — the user already knows if something is a competitor post, a meme, or a cultural trend.
+	•	🤖 AI needs signal to organize better — user tags help avoid generic analysis by framing the content’s role or importance.
+	•	🛠️ Simple to implement — tagging is light UX and works across the browser extension + dashboard.
+
+⸻
+
+🔄 Where Tags Fit in the Workflow
+
+Let’s visualize the updated workflow with tagging baked in:
+
+1. 🧭 Session or Project Initiation
+	•	User creates or opens a project/session
+	•	Sets an optional project goal or focus (e.g. “What Gen Z thinks about wellness”)
+
+⸻
+
+2. 🔍 Capture via Chrome Extension
+
+Each capture (screenshot, link, snippet, etc) has:
+	•	✅ Optional manual tag(s) from dropdown (see Tag Types below)
+	•	📝 User note field (optional but encouraged)
+	•	📂 Attached to project/session ID
+
+⸻
+
+3. 🗂️ Tags Guide Sorting Before Batch Analysis
+
+Before AI runs batch analysis:
+	•	System groups content by tag clusters
+	•	Each group is routed through tailored analysis prompts (e.g. “cultural moment” vs “competitor move”)
+
+⸻
+
+4. 🧠 AI Batch Analysis Runs
+	•	GPT-4o → Truth Analysis (customized per tag group)
+	•	Gemini → OCR + image context + potential sentiment or emotion detection
+	•	Tags influence both priority and angle of analysis
+
+⸻
+
+5. 🧱 Brief Builder Draft is Created
+	•	Sections are auto-populated based on tag clusters (e.g. “Cultural Edge” pulls from culturalMoment-tagged captures)
+	•	Each AI paragraph links back to the original capture + tag for context
+	•	All content is fully editable and rearrangeable
+
+⸻
+
+6. 🚨 Optional: Re-analysis Loop
+	•	If user deletes a section or adjusts the focus, they can flag a reanalysis, optionally selecting a subset of tags to reprocess.
+
+⸻
+
+🏷️ Suggested Tag System (Simple, Powerful)
+
+Here’s a lightweight list that guides strategic thinking and maps well to your brief sections:
+
+Tag	Used For
+Cultural Moment	Trend, meme, emerging behavior
+Human Truth	Raw emotion, confession, behavior reveal
+Competitor	Brand post, ad, positioning move
+Platform Behavior	Format trends, language style
+Viral Signal	Explosive or sticky content
+Audience POV	Post that shows how the audience thinks or feels
+Wildcard	Weird, surprising, don’t-know-why-it-works stuff
+Visual Reference	Image-driven inspiration, screenshot-heavy
+Insight Candidate	Feels strategic, needs exploration
+FYI / Save For Later	Might be useful, not ready to analyze
+
+You could keep this open and let users create custom tags, but pre-defining 8–10 tags like these helps shape the AI’s effectiveness.
+
+⸻
+
+🧪 Bonus: Smart Suggestions
+
+Once you have this tag system:
+	•	Gemini can suggest tags during capture (e.g., “This post looks like a competitor ad — tag it?”)
+	•	System can show tag heatmaps per project: “You’ve got 12 Cultural tags, but only 2 Human Truth — want to rebalance?”
+
+⸻
+
+Final Take
+
+Adding structured tags pre-analysis is a low-cost, high-impact move.
+It gives the user more control, the AI more context, and the final brief way more relevance.
+
+If you like this, I can help you:
+	•	Map tag types → AI prompt adjustments
+	•	Design the tag selection UI in Chrome
+	•	Create the logic that assigns tags to brief sections
+
+Let’s build it smart.

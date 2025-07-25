@@ -1,0 +1,85 @@
+Great — here’s a comprehensive Tagging System based on your existing terminology and strategic framework. The goal is to let users quickly tag captured content in the Chrome extension or dashboard so the system can accurately route it to the right Truth Analysis category and eventually organize it in the final brief.
+
+⸻
+
+🏷️ Strategic Tagging System for Capture Classification
+
+Each tag corresponds to one or more Truth Analysis categories or brief sections. Grouped below by intent:
+
+⸻
+
+🧠 Core Truth Analysis Tags
+
+Tag	Routes To	Use For
+factual-info	Fact	News items, platform updates, clear objective info
+strategic-pattern	Observation	Trends, competitor moves, usage patterns, behavioral observations
+insight-cue	Insight	User-defined signals that feel strategically important
+human-behavior	Human Truth	Emotional reactions, comment patterns, human motivation cues
+cultural-context	Cultural Moment	Content related to news, memes, events, subculture, or cultural movements
+
+
+⸻
+
+🧭 Brief Structure Tags (Define → Shift → Deliver)
+
+Tag	Maps To	Use For
+audience-profile	Define	Anything showing who the content is for (demographics, lifestyle, tone)
+emerging-need	Shift	Pain points, cultural tension, emotional desires
+creative-leap	Deliver	Visual or messaging example of how to resolve the tension
+
+
+⸻
+
+📡 Signal Intelligence Tags
+
+Tag	Maps To	Use For
+rival-content	Rival Landscape	Competitor posts, ads, or strategy cues
+platform-behavior	Channel Vibes	Platform-native formats or tones
+local-trend	Local Pulse	Content relevant to specific city, region, or geo-culture
+cultural-spark	Cultural Edge	Weird, meme-worthy, or viral-adjacent content
+real-life-data	Raw Behavior	User-generated reviews, behavior posts, usage-based content
+industry-norm	Market Moves	Category-wide ads, behavior patterns, or creative codes
+mindset-mirror	Life Lens	POVs that reflect a lifestage, aspiration, or internal state
+
+
+⸻
+
+🎯 Intent & Opportunity Tags
+
+Tag	Helps With	Use For
+trend-signal	Opportunity detection	Rising topic with momentum
+comment-signal	Human Truth detection	Comment screenshots or summaries
+visual-hook	Creative inspiration	Screenshots with scroll-stopping power
+text-snippet	Text-based signal	Screenshots of copy, tone, comment, or CTA examples
+humor-cue	Tone mapping	Sarcasm, memes, funny user reactions
+emotional-response	Audience sentiment	Touching stories, angry rants, joyful outbursts
+
+
+⸻
+
+🧪 System Tags for Analysis Mode (Optional)
+
+Tag	System Action	Use For
+batch-analyze	Triggers batch AI analysis	Prepares this item for Truth Analysis pipeline
+manual-priority	Flags for human editing	Alerts the system this needs human review before AI routing
+skip-analysis	Ignores for analysis	User wants to store it but not include in brief
+
+
+⸻
+
+🔗 Tagging UX Tip
+
+Tags should be:
+	•	Available in the Chrome Extension at capture time
+	•	Editable in the dashboard under each capture
+	•	Suggestive (use AI to recommend common tags based on content type)
+	•	Optional but encouraged (increases routing precision)
+
+⸻
+
+Would you like help mapping this into:
+	1.	JSON schema or database structure for captures
+	2.	Tag suggestion logic using content heuristics
+	3.	UI design for how tagging should appear in the extension/dashboard
+
+Or should we move on to implementing tagging logic in the backend pipeline next?
