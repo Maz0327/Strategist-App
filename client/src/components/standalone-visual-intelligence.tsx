@@ -107,11 +107,19 @@ export function StandaloneVisualIntelligence() {
 
       // Parse JSON from response
       const responseData = await response.json();
+      console.log('Full API response:', responseData);
       
       // Extract the visual analysis data from the response
       if (responseData.success && responseData.data && responseData.data.visualAnalysis) {
+        console.log('Visual analysis data:', responseData.data.visualAnalysis);
         setAnalysisResults(responseData.data.visualAnalysis);
       } else {
+        console.log('Response structure issue:', { 
+          success: responseData.success, 
+          hasData: !!responseData.data,
+          hasVisualAnalysis: responseData.data?.visualAnalysis,
+          error: responseData.error 
+        });
         throw new Error(responseData.error || 'Invalid response format from visual analysis service');
       }
     } catch (error: any) {
