@@ -65,6 +65,39 @@
                 </select>
             </div>
 
+            <!-- Strategic Tags Section -->
+            <div class="form-group">
+                <label>🏷️ Strategic Tags:</label>
+                <div class="tags-container">
+                    <div class="tag-options">
+                        <label class="tag-option">
+                            <input type="checkbox" value="cultural-moment" class="tag-checkbox">
+                            <span class="tag-label">Cultural Moment</span>
+                        </label>
+                        <label class="tag-option">
+                            <input type="checkbox" value="human-behavior" class="tag-checkbox">
+                            <span class="tag-label">Human Behavior</span>
+                        </label>
+                        <label class="tag-option">
+                            <input type="checkbox" value="rival-content" class="tag-checkbox">
+                            <span class="tag-label">Rival Content</span>
+                        </label>
+                        <label class="tag-option">
+                            <input type="checkbox" value="visual-hook" class="tag-checkbox">
+                            <span class="tag-label">Visual Hook</span>
+                        </label>
+                        <label class="tag-option">
+                            <input type="checkbox" value="insight-cue" class="tag-checkbox">
+                            <span class="tag-label">Insight Cue</span>
+                        </label>
+                    </div>
+                    <div class="auto-tags" id="autoTagsDisplay" style="display: none;">
+                        <span class="auto-tags-label">Auto-detected:</span>
+                        <div id="autoTagsList"></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- User Notes -->
             <div class="form-group">
                 <label for="userNotes">Your Notes:</label>

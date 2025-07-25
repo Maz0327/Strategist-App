@@ -51,17 +51,18 @@ export const signals = pgTable("signals", {
   // Audio intelligence fields (MVP: Basic transcription support only)
   transcription: text("transcription"), // Basic transcription for video content
   // Deferred audio fields: audioDuration, audioFormat, audioLanguage, transcriptionConfidence
-  // Brief automation fields (MVP: Deferred to Phase 2)
-  // projectId: integer("project_id").references(() => projects.id),
-  // templateSection: text("template_section"),
-  // captureSessionId: text("capture_session_id"),
-  // engagementData: jsonb("engagement_data"),
-  // qualScore: text("qual_score"),
+  // Brief automation fields (now activated for batch processing)
+  projectId: integer("project_id").references(() => projects.id),
+  templateSection: text("template_section"),
+  captureSessionId: text("capture_session_id"),
+  engagementData: jsonb("engagement_data"),
+  qualScore: text("qual_score"),
+  // Tagging system for batch processing (tags field already exists at line 23)
+  autoTags: text("auto_tags").array().default([]),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// MVP: Brief automation tables deferred to Phase 2
-/*
+// Brief automation tables (activated for batch processing workflow)
 export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
@@ -92,7 +93,6 @@ export const generatedBriefs = pgTable("generated_briefs", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
-*/
 
 export const sources = pgTable("sources", {
   id: serial("id").primaryKey(),
@@ -323,8 +323,7 @@ export const insertAbTestResultsSchema = createInsertSchema(abTestResults).omit(
   timestamp: true,
 });
 
-// Brief automation schemas (MVP: Deferred to Phase 2)
-/*
+// Brief automation schemas (MVP: Active for Chrome Extension)
 export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,
   createdAt: true,
@@ -340,7 +339,6 @@ export const insertGeneratedBriefSchema = createInsertSchema(generatedBriefs).om
   createdAt: true,
   updatedAt: true,
 });
-*/
 
 // RSS Feed schemas for Phase 5
 export const insertRssFeedSchema = createInsertSchema(rssFeeds).omit({
@@ -405,15 +403,13 @@ export type InsertSignal = z.infer<typeof insertSignalSchema>;
 export type Signal = typeof signals.$inferSelect;
 export type InsertSource = z.infer<typeof insertSourceSchema>;
 export type Source = typeof sources.$inferSelect;
-// MVP: Project and brief types deferred to Phase 2
-/*
+// MVP: Project and brief types (Active for Chrome Extension)
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type Project = typeof projects.$inferSelect;
 export type InsertBriefTemplate = z.infer<typeof insertBriefTemplateSchema>;
 export type BriefTemplate = typeof briefTemplates.$inferSelect;
 export type InsertGeneratedBrief = z.infer<typeof insertGeneratedBriefSchema>;
 export type GeneratedBrief = typeof generatedBriefs.$inferSelect;
-*/
 export type InsertSignalSource = z.infer<typeof insertSignalSourceSchema>;
 export type SignalSource = typeof signalSources.$inferSelect;
 export type InsertUserFeedSource = z.infer<typeof insertUserFeedSourceSchema>;

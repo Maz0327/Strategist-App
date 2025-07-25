@@ -37,6 +37,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentProjects = [];
     let currentScreenshot = null;
     let selectedProject = null;
+    let selectedTags = [];
+    let autoDetectedTags = [];
+
+    // Core strategic tags for the tagging system
+    const CORE_TAGS = {
+        'cultural-moment': 'Cultural Moment',
+        'human-behavior': 'Human Behavior', 
+        'rival-content': 'Rival Content',
+        'visual-hook': 'Visual Hook',
+        'insight-cue': 'Insight Cue'
+    };
 
     // Initialize popup
     await initializePopup();
@@ -65,6 +76,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     projectSelect?.addEventListener('change', handleProjectChange);
     createProjectBtn?.addEventListener('click', handleCreateProject);
     
+    // Tag system listeners
+    const tagCheckboxes = document.querySelectorAll('.tag-checkbox');
+    tagCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', handleTagChange);
+    });
+    
     // Screenshot listeners
     elementScreenshotBtn?.addEventListener('click', () => handleScreenshotMode('element'));
     regionScreenshotBtn?.addEventListener('click', () => handleScreenshotMode('region'));
@@ -90,6 +107,87 @@ document.addEventListener('DOMContentLoaded', async () => {
     let mediaRecorder = null;
     let audioChunks = [];
     let isRecording = false;
+
+    async function loadProjects() {
+        try {
+            const response = await fetch(`${currentConfig.backendUrl}${currentConfig.apiPrefix}/projects`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const projects = await response.json();
+                
+                // Clear existing options
+                projectSelect.innerHTML = '<option value="">Select project (optional)</option>';
+                
+                // Add project options
+                projects.forEach(project => {
+                    const option = document.createElement('option');
+                    option.value = project.id;
+                    option.textContent = project.name;
+                    projectSelect.appendChild(option);
+                });
+                
+                console.log('Projects loaded:', projects.length);
+            } else {
+                console.warn('Failed to load projects:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Error loading projects:', error);
+        }
+    }
+
+    // Project change handler
+    function handleProjectChange(event) {
+        const projectId = event.target.value;
+        chrome.storage.local.set({selectedProject: projectId});
+        updateAutoTags(); // Update tags based on project context
+    }
+    
+    // Create new project handler
+    async function handleCreateProject() {
+        const projectName = prompt('Enter project name:');
+        if (projectName) {
+            try {
+                const response = await fetch(`${currentConfig.backendUrl}${currentConfig.apiPrefix}/projects`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: projectName,
+                        description: `Chrome extension project: ${projectName}`
+                    })
+                });
+                
+                if (response.ok) {
+                    const newProject = await response.json();
+                    
+                    // Add to project select
+                    const option = document.createElement('option');
+                    option.value = newProject.id;
+                    option.textContent = newProject.name;
+                    projectSelect.appendChild(option);
+                    
+                    // Select the new project
+                    projectSelect.value = newProject.id;
+                    handleProjectChange({target: {value: newProject.id}});
+                    
+                    showStatus(`Project "${projectName}" created successfully!`, 'success');
+                } else {
+                    showStatus('Failed to create project. Please try again.', 'error');
+                }
+            } catch (error) {
+                console.error('Error creating project:', error);
+                showStatus('Error creating project. Please check your connection.', 'error');
+            }
+        }
+    }
 
     async function initializePopup() {
         try {
@@ -268,6 +366,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Generate AI suggestions
             await generateAutoSuggestions();
+            
+            // Generate and display auto-tags
+            autoDetectedTags = generateAutoTags(currentPageInfo);
+            displayAutoTags(autoDetectedTags);
 
             // Show content insights
             showContentInsights();
@@ -724,6 +826,129 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // Auto-tagging system functions
+    function generateAutoTags(pageInfo) {
+        const autoTags = [];
+        
+        if (!pageInfo) return autoTags;
+        
+        // Domain-based tagging
+        const domain = pageInfo.domain?.toLowerCase() || '';
+        if (domain.includes('instagram.com') || domain.includes('tiktok.com') || domain.includes('youtube.com')) {
+            autoTags.push('visual-hook');
+        }
+        if (domain.includes('reddit.com') || domain.includes('twitter.com') || domain.includes('x.com')) {
+            autoTags.push('human-behavior');
+        }
+        
+        // Content-based tagging
+        const content = (pageInfo.content || pageInfo.title || '').toLowerCase();
+        if (content.includes('trend') || content.includes('viral') || content.includes('moment')) {
+            autoTags.push('cultural-moment');
+        }
+        if (content.includes('competitor') || content.includes('brand') || content.includes('vs ')) {
+            autoTags.push('rival-content');
+        }
+        if (content.includes('insight') || content.includes('key') || content.includes('important')) {
+            autoTags.push('insight-cue');
+        }
+        
+        // Platform-specific tagging
+        if (pageInfo.contentType === 'video' || pageInfo.contentType === 'image') {
+            autoTags.push('visual-hook');
+        }
+        if (pageInfo.contentType === 'comments' || pageInfo.contentType === 'discussion') {
+            autoTags.push('human-behavior');
+        }
+        
+        return [...new Set(autoTags)]; // Remove duplicates
+    }
+    
+    function displayAutoTags(tags) {
+        const autoTagsDisplay = document.getElementById('autoTagsDisplay');
+        const autoTagsList = document.getElementById('autoTagsList');
+        
+        if (!autoTagsDisplay || !autoTagsList || tags.length === 0) {
+            if (autoTagsDisplay) autoTagsDisplay.style.display = 'none';
+            return;
+        }
+        
+        autoTagsList.innerHTML = '';
+        tags.forEach(tag => {
+            const tagElement = document.createElement('span');
+            tagElement.className = 'auto-tag';
+            tagElement.textContent = CORE_TAGS[tag] || tag;
+            autoTagsList.appendChild(tagElement);
+        });
+        
+        autoTagsDisplay.style.display = 'block';
+    }
+    
+    function handleTagChange(event) {
+        const tagValue = event.target.value;
+        const isChecked = event.target.checked;
+        
+        if (isChecked) {
+            if (!selectedTags.includes(tagValue)) {
+                selectedTags.push(tagValue);
+            }
+        } else {
+            selectedTags = selectedTags.filter(tag => tag !== tagValue);
+        }
+        
+        console.log('Selected tags:', selectedTags);
+    }
+    
+    function handleProjectChange(event) {
+        const projectId = event.target.value;
+        selectedProject = projectId ? parseInt(projectId) : null;
+        
+        // Show/hide template section based on project selection
+        const templateSectionSelect = document.getElementById('templateSectionSelect');
+        if (templateSectionSelect) {
+            templateSectionSelect.style.display = projectId ? 'block' : 'none';
+        }
+        
+        console.log('Selected project:', selectedProject);
+    }
+    
+    async function handleCreateProject() {
+        const projectName = prompt('Enter project name:');
+        if (!projectName || projectName.trim() === '') return;
+        
+        try {
+            const response = await fetch(`${currentConfig.backendUrl}${currentConfig.apiPrefix}/projects`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    name: projectName.trim(),
+                    description: `Project created from Chrome extension`
+                })
+            });
+            
+            if (response.ok) {
+                const newProject = await response.json();
+                // Add to projects list and select it
+                const option = document.createElement('option');
+                option.value = newProject.id;
+                option.textContent = newProject.name;
+                projectSelect.appendChild(option);
+                projectSelect.value = newProject.id;
+                selectedProject = newProject.id;
+                
+                showStatus(`Project "${projectName}" created successfully!`, 'success');
+            } else {
+                showStatus('Failed to create project', 'error');
+            }
+        } catch (error) {
+            console.error('Error creating project:', error);
+            showStatus('Error creating project', 'error');
+        }
+    }
+
     async function handleSave() {
         try {
             // Disable button and show loading
@@ -739,7 +964,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Get selected text from storage
             const storage = await chrome.storage.local.get(['selectedText', 'selectionContext']);
             
-            // Prepare enhanced capture data
+            // Get selected template section
+            const sectionSelect = document.getElementById('sectionSelect');
+            const templateSection = sectionSelect?.value || null;
+            
+            // Combine manual tags with auto-detected tags
+            const allTags = [...new Set([...selectedTags, ...autoDetectedTags])];
+            
+            // Prepare enhanced capture data with project and tagging support
             const captureData = {
                 title: currentPageInfo?.title || tab.title,
                 url: tab.url,
@@ -747,6 +979,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 user_notes: userNotes.value.trim(),
                 is_draft: true,
                 captured_at: new Date().toISOString(),
+                project_id: selectedProject,
+                template_section: templateSection,
+                auto_tags: allTags,
                 browser_context: {
                     domain: currentPageInfo?.domain || new URL(tab.url).hostname,
                     metaDescription: currentPageInfo?.metaDescription || '',
@@ -755,7 +990,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     author: currentPageInfo?.author || null,
                     publishDate: currentPageInfo?.publishDate || null,
                     keywords: currentPageInfo?.keywords || [],
-                    selectionContext: storage.selectionContext || null
+                    selectionContext: storage.selectionContext || null,
+                    manualTags: selectedTags,
+                    autoDetectedTags: autoDetectedTags,
+                    captureSessionId: Date.now().toString() // Simple session ID
                 }
             };
 

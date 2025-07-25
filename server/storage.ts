@@ -1,4 +1,4 @@
-import { users, signals, sources, signalSources, userFeedSources, userTopicProfiles, feedItems, rssFeeds, rssArticles, type User, type InsertUser, type Signal, type InsertSignal, type Source, type InsertSource, type SignalSource, type InsertSignalSource, type UserFeedSource, type InsertUserFeedSource, type UserTopicProfile, type InsertUserTopicProfile, type FeedItem, type InsertFeedItem, type RssFeed, type InsertRssFeed, type RssArticle, type InsertRssArticle } from "@shared/schema";
+import { users, signals, sources, signalSources, userFeedSources, userTopicProfiles, feedItems, rssFeeds, rssArticles, projects, briefTemplates, generatedBriefs, type User, type InsertUser, type Signal, type InsertSignal, type Source, type InsertSource, type SignalSource, type InsertSignalSource, type UserFeedSource, type InsertUserFeedSource, type UserTopicProfile, type InsertUserTopicProfile, type FeedItem, type InsertFeedItem, type RssFeed, type InsertRssFeed, type RssArticle, type InsertRssArticle } from "@shared/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -241,6 +241,13 @@ export class DbStorage implements IStorage {
       visualAssets: signals.visualAssets,
       // Audio intelligence fields (MVP: Basic transcription support only)
       transcription: signals.transcription,
+      // Brief automation fields (batch processing)
+      projectId: signals.projectId,
+      templateSection: signals.templateSection,
+      captureSessionId: signals.captureSessionId,
+      engagementData: signals.engagementData,
+      qualScore: signals.qualScore,
+      autoTags: signals.autoTags,
     })
     .from(signals)
     .innerJoin(signalSources, eq(signalSources.signalId, signals.id))

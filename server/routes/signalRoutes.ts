@@ -202,6 +202,89 @@ router.put("/:id", requireAuth, async (req, res) => {
   }
 });
 
+// Draft endpoint for Chrome extension
+const draftSignalSchema = z.object({
+  title: z.string().optional(),
+  content: z.string(),
+  url: z.string().url().optional().or(z.literal('')).or(z.null()),
+  user_notes: z.string().optional(),
+  project_id: z.number().optional().or(z.null()),
+  template_section: z.string().optional().or(z.null()),
+  auto_tags: z.array(z.string()).optional(),
+  captured_at: z.string().optional(),
+  browser_context: z.object({
+    domain: z.string().optional(),
+    metaDescription: z.string().optional(),
+    contentType: z.string().optional(),
+    readingTime: z.number().optional(),
+    author: z.string().optional().or(z.null()),
+    publishDate: z.string().optional().or(z.null()),
+    keywords: z.array(z.string()).optional(),
+    selectionContext: z.string().optional().or(z.null()),
+    manualTags: z.array(z.string()).optional(),
+    autoDetectedTags: z.array(z.string()).optional(),
+    captureSessionId: z.string().optional()
+  }).optional()
+});
+
+router.post("/draft", requireAuth, async (req, res) => {
+  try {
+    const result = draftSignalSchema.safeParse(req.body);
+    if (!result.success) {
+      debugLogger.error('Draft validation failed', result.error, req);
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Validation failed',
+        details: result.error.errors,
+        code: 'VALIDATION_ERROR'
+      });
+    }
+
+    const { 
+      title, content, url, user_notes, project_id, template_section, 
+      auto_tags, captured_at, browser_context 
+    } = result.data;
+    
+    const signalData = {
+      userId: req.session.userId!,
+      title: title || "Untitled Capture",
+      content: content || "",
+      url: url || null,
+      userNotes: user_notes || "",
+      status: "capture" as const,
+      isDraft: true,
+      capturedAt: captured_at ? new Date(captured_at) : new Date(),
+      browserContext: browser_context || null,
+      projectId: project_id || null,
+      templateSection: template_section || null,
+      autoTags: auto_tags || [],
+      captureSessionId: browser_context?.captureSessionId || null
+    };
+    
+    const signal = await storage.createSignal(signalData);
+    
+    debugLogger.info('Draft signal created successfully', { 
+      signalId: signal.id, 
+      userId: req.session.userId,
+      projectId: project_id,
+      tags: auto_tags
+    }, req);
+    
+    res.json({ 
+      success: true, 
+      signalId: signal.id,
+      message: "Content captured successfully" 
+    });
+  } catch (error: any) {
+    debugLogger.error("Draft capture error", error, req);
+    res.status(500).json({ 
+      success: false,
+      error: error.message || "Failed to capture content",
+      code: 'DRAFT_CAPTURE_FAILED'
+    });
+  }
+});
+
 router.delete("/:id", requireAuth, async (req, res) => {
   try {
     const paramResult = signalIdSchema.safeParse(req.params);
