@@ -202,7 +202,7 @@ router.put("/:id", requireAuth, async (req, res) => {
   }
 });
 
-// Draft endpoint for Chrome extension
+// Draft endpoint for Chrome extension with project integration
 const draftSignalSchema = z.object({
   title: z.string().optional(),
   content: z.string(),

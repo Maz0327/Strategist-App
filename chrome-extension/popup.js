@@ -826,42 +826,122 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Auto-tagging system functions
+    // Enhanced Auto-tagging system with strategic intelligence
     function generateAutoTags(pageInfo) {
         const autoTags = [];
         
         if (!pageInfo) return autoTags;
         
-        // Domain-based tagging
         const domain = pageInfo.domain?.toLowerCase() || '';
-        if (domain.includes('instagram.com') || domain.includes('tiktok.com') || domain.includes('youtube.com')) {
-            autoTags.push('visual-hook');
-        }
-        if (domain.includes('reddit.com') || domain.includes('twitter.com') || domain.includes('x.com')) {
-            autoTags.push('human-behavior');
+        const title = pageInfo.title?.toLowerCase() || '';
+        const content = pageInfo.content?.toLowerCase() || '';
+        const contentText = `${title} ${content}`;
+        
+        // Platform-specific strategic tagging
+        const platformTags = {
+            'tiktok.com': ['cultural-moment', 'visual-hook'],
+            'instagram.com': ['cultural-moment', 'visual-hook'],
+            'twitter.com': ['cultural-moment', 'human-behavior'],
+            'x.com': ['cultural-moment', 'human-behavior'],
+            'linkedin.com': ['human-behavior', 'insight-cue'],
+            'medium.com': ['insight-cue', 'human-behavior'],
+            'youtube.com': ['visual-hook', 'cultural-moment'],
+            'reddit.com': ['human-behavior', 'cultural-moment'],
+            'pinterest.com': ['visual-hook', 'cultural-moment'],
+            'behance.net': ['visual-hook', 'insight-cue'],
+            'dribbble.com': ['visual-hook', 'insight-cue']
+        };
+        
+        // Apply platform-specific tags
+        Object.entries(platformTags).forEach(([platform, platformTagList]) => {
+            if (domain.includes(platform)) {
+                platformTagList.forEach(tag => {
+                    if (!autoTags.includes(tag)) autoTags.push(tag);
+                });
+            }
+        });
+        
+        // Enhanced content-based strategic tagging
+        const keywordPatterns = {
+            'cultural-moment': [
+                'viral', 'trending', 'culture', 'zeitgeist', 'meme', 'cultural',
+                'gen z', 'millennial', 'social media', 'influencer', 'phenomenon',
+                'movement', 'shift', 'moment', 'buzz', 'attention'
+            ],
+            'human-behavior': [
+                'behavior', 'psychology', 'user', 'customer', 'audience', 'motivation',
+                'habit', 'decision', 'preference', 'choice', 'emotion', 'experience',
+                'journey', 'persona', 'segment', 'demographic', 'psychographic'
+            ],
+            'rival-content': [
+                'competitor', 'competition', 'benchmark', 'vs', 'comparison', 'versus',
+                'rival', 'alternative', 'competitive', 'market share', 'positioning',
+                'differentiation', 'advantage', 'threat', 'analysis'
+            ],
+            'visual-hook': [
+                'design', 'visual', 'image', 'video', 'creative', 'aesthetic',
+                'branding', 'logo', 'color', 'typography', 'layout', 'composition',
+                'style', 'art', 'graphics', 'ui', 'ux', 'interface'
+            ],
+            'insight-cue': [
+                'insight', 'analysis', 'research', 'data', 'study', 'finding',
+                'report', 'strategy', 'intelligence', 'trend', 'pattern',
+                'discovery', 'revelation', 'learning', 'conclusion', 'implication'
+            ]
+        };
+        
+        // Analyze content for strategic keywords
+        Object.entries(keywordPatterns).forEach(([tag, keywords]) => {
+            const matches = keywords.filter(keyword => contentText.includes(keyword)).length;
+            if (matches > 0 && !autoTags.includes(tag)) {
+                autoTags.push(tag);
+            }
+        });
+        
+        // Content type and context-based tagging
+        if (pageInfo.contentType) {
+            if (pageInfo.contentType.includes('video') && !autoTags.includes('visual-hook')) {
+                autoTags.push('visual-hook');
+            }
+            if (pageInfo.contentType.includes('image') && !autoTags.includes('visual-hook')) {
+                autoTags.push('visual-hook');
+            }
         }
         
-        // Content-based tagging
-        const content = (pageInfo.content || pageInfo.title || '').toLowerCase();
-        if (content.includes('trend') || content.includes('viral') || content.includes('moment')) {
-            autoTags.push('cultural-moment');
-        }
-        if (content.includes('competitor') || content.includes('brand') || content.includes('vs ')) {
-            autoTags.push('rival-content');
-        }
-        if (content.includes('insight') || content.includes('key') || content.includes('important')) {
-            autoTags.push('insight-cue');
+        // Reading time-based intelligence
+        if (pageInfo.readingTime) {
+            if (pageInfo.readingTime > 10 && !autoTags.includes('insight-cue')) {
+                autoTags.push('insight-cue');
+            }
+            if (pageInfo.readingTime < 3 && !autoTags.includes('cultural-moment')) {
+                autoTags.push('cultural-moment');
+            }
         }
         
-        // Platform-specific tagging
-        if (pageInfo.contentType === 'video' || pageInfo.contentType === 'image') {
-            autoTags.push('visual-hook');
-        }
-        if (pageInfo.contentType === 'comments' || pageInfo.contentType === 'discussion') {
-            autoTags.push('human-behavior');
+        // Author-based context tagging
+        if (pageInfo.author) {
+            const author = pageInfo.author.toLowerCase();
+            if ((author.includes('researcher') || author.includes('analyst')) && !autoTags.includes('insight-cue')) {
+                autoTags.push('insight-cue');
+            }
+            if ((author.includes('designer') || author.includes('creative')) && !autoTags.includes('visual-hook')) {
+                autoTags.push('visual-hook');
+            }
         }
         
-        return [...new Set(autoTags)]; // Remove duplicates
+        // Ensure at least one tag for strategic value
+        if (autoTags.length === 0) {
+            if (contentText.includes('brand') || contentText.includes('marketing')) {
+                autoTags.push('insight-cue');
+            } else if (contentText.includes('social') || contentText.includes('trend')) {
+                autoTags.push('cultural-moment');
+            } else {
+                autoTags.push('human-behavior'); // Most universal strategic tag
+            }
+        }
+        
+        // Limit to maximum 3 tags for focus
+        return autoTags.slice(0, 3);
     }
     
     function displayAutoTags(tags) {

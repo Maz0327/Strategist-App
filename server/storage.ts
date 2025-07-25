@@ -1,4 +1,4 @@
-import { users, signals, sources, signalSources, userFeedSources, userTopicProfiles, feedItems, rssFeeds, rssArticles, projects, briefTemplates, generatedBriefs, type User, type InsertUser, type Signal, type InsertSignal, type Source, type InsertSource, type SignalSource, type InsertSignalSource, type UserFeedSource, type InsertUserFeedSource, type UserTopicProfile, type InsertUserTopicProfile, type FeedItem, type InsertFeedItem, type RssFeed, type InsertRssFeed, type RssArticle, type InsertRssArticle } from "@shared/schema";
+import { users, signals, sources, signalSources, userFeedSources, userTopicProfiles, feedItems, rssFeeds, rssArticles, projects, briefTemplates, generatedBriefs, type User, type InsertUser, type Signal, type InsertSignal, type Source, type InsertSource, type SignalSource, type InsertSignalSource, type UserFeedSource, type InsertUserFeedSource, type UserTopicProfile, type InsertUserTopicProfile, type FeedItem, type InsertFeedItem, type RssFeed, type InsertRssFeed, type RssArticle, type InsertRssArticle, type Project, type InsertProject, type BriefTemplate, type InsertBriefTemplate, type GeneratedBrief, type InsertGeneratedBrief } from "@shared/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -66,6 +66,28 @@ export interface IStorage {
   createRssArticle(article: InsertRssArticle): Promise<RssArticle>;
   updateFeedItem(id: number, updates: Partial<InsertFeedItem>): Promise<FeedItem | undefined>;
   deleteFeedItem(id: number): Promise<void>;
+
+  // Project Management - Phase 1 Implementation
+  getProject(id: number): Promise<Project | undefined>;
+  getProjectsByUserId(userId: number): Promise<Project[]>;
+  createProject(project: InsertProject): Promise<Project>;
+  updateProject(id: number, updates: Partial<InsertProject>): Promise<Project | undefined>;
+  deleteProject(id: number): Promise<void>;
+
+  // Brief Templates - Phase 4 Implementation
+  getBriefTemplate(id: string): Promise<BriefTemplate | undefined>;
+  getBriefTemplates(): Promise<BriefTemplate[]>;
+  createBriefTemplate(template: InsertBriefTemplate): Promise<BriefTemplate>;
+  updateBriefTemplate(id: string, updates: Partial<InsertBriefTemplate>): Promise<BriefTemplate | undefined>;
+  deleteBriefTemplate(id: string): Promise<void>;
+
+  // Generated Briefs - Phase 4 Implementation
+  getGeneratedBrief(id: number): Promise<GeneratedBrief | undefined>;
+  getGeneratedBriefsByProjectId(projectId: number): Promise<GeneratedBrief[]>;
+  getGeneratedBriefsByUserId(userId: number): Promise<GeneratedBrief[]>;
+  createGeneratedBrief(brief: InsertGeneratedBrief): Promise<GeneratedBrief>;
+  updateGeneratedBrief(id: number, updates: Partial<InsertGeneratedBrief>): Promise<GeneratedBrief | undefined>;
+  deleteGeneratedBrief(id: number): Promise<void>;
 }
 
 export class DbStorage implements IStorage {
@@ -397,6 +419,97 @@ export class DbStorage implements IStorage {
   async createRssArticle(article: InsertRssArticle): Promise<RssArticle> {
     const result = await db.insert(rssArticles).values(article).returning();
     return result[0];
+  }
+
+  // Project Management Implementation - Phase 1
+  async getProject(id: number): Promise<Project | undefined> {
+    const result = await db.select().from(projects).where(eq(projects.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getProjectsByUserId(userId: number): Promise<Project[]> {
+    return await db.select().from(projects)
+      .where(eq(projects.userId, userId))
+      .orderBy(desc(projects.createdAt));
+  }
+
+  async createProject(project: InsertProject): Promise<Project> {
+    const result = await db.insert(projects).values(project).returning();
+    return result[0];
+  }
+
+  async updateProject(id: number, updates: Partial<InsertProject>): Promise<Project | undefined> {
+    const result = await db.update(projects)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(projects.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteProject(id: number): Promise<void> {
+    await db.delete(projects).where(eq(projects.id, id));
+  }
+
+  // Brief Templates Implementation - Phase 4
+  async getBriefTemplate(id: string): Promise<BriefTemplate | undefined> {
+    const result = await db.select().from(briefTemplates).where(eq(briefTemplates.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getBriefTemplates(): Promise<BriefTemplate[]> {
+    return await db.select().from(briefTemplates).orderBy(desc(briefTemplates.createdAt));
+  }
+
+  async createBriefTemplate(template: InsertBriefTemplate): Promise<BriefTemplate> {
+    const result = await db.insert(briefTemplates).values(template).returning();
+    return result[0];
+  }
+
+  async updateBriefTemplate(id: string, updates: Partial<InsertBriefTemplate>): Promise<BriefTemplate | undefined> {
+    const result = await db.update(briefTemplates)
+      .set(updates)
+      .where(eq(briefTemplates.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteBriefTemplate(id: string): Promise<void> {
+    await db.delete(briefTemplates).where(eq(briefTemplates.id, id));
+  }
+
+  // Generated Briefs Implementation - Phase 4
+  async getGeneratedBrief(id: number): Promise<GeneratedBrief | undefined> {
+    const result = await db.select().from(generatedBriefs).where(eq(generatedBriefs.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getGeneratedBriefsByProjectId(projectId: number): Promise<GeneratedBrief[]> {
+    return await db.select().from(generatedBriefs)
+      .where(eq(generatedBriefs.projectId, projectId))
+      .orderBy(desc(generatedBriefs.createdAt));
+  }
+
+  async getGeneratedBriefsByUserId(userId: number): Promise<GeneratedBrief[]> {
+    return await db.select().from(generatedBriefs)
+      .where(eq(generatedBriefs.userId, userId))
+      .orderBy(desc(generatedBriefs.createdAt));
+  }
+
+  async createGeneratedBrief(brief: InsertGeneratedBrief): Promise<GeneratedBrief> {
+    const result = await db.insert(generatedBriefs).values(brief).returning();
+    return result[0];
+  }
+
+  async updateGeneratedBrief(id: number, updates: Partial<InsertGeneratedBrief>): Promise<GeneratedBrief | undefined> {
+    const result = await db.update(generatedBriefs)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(generatedBriefs.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteGeneratedBrief(id: number): Promise<void> {
+    await db.delete(generatedBriefs).where(eq(generatedBriefs.id, id));
   }
 }
 
