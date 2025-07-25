@@ -4,7 +4,7 @@
  */
 
 import { debugLogger } from './debug-logger';
-import { browserAPIService } from './browser-api-service';
+import { browserApiService } from './browser-api-service';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 

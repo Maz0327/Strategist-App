@@ -68,9 +68,9 @@ export function SignalMiningDashboard() {
   const [selectedUrgency, setSelectedUrgency] = useState<string>('all');
   const [refreshing, setRefreshing] = useState(false);
 
-  // Fetch trending topics from API - OPTIMIZED FOR SPEED
+  // Fetch LIVE trending topics from real APIs - OPTIMIZED FOR SPEED
   const { data: trendingData, isLoading, refetch } = useQuery({
-    queryKey: ["/api/topics", "mining"],
+    queryKey: ["/api/trending/all", "mining"],
     staleTime: 15 * 60 * 1000, // 15 minutes - longer cache
     gcTime: 30 * 60 * 1000, // 30 minutes retention
     retry: 1, // Single retry only

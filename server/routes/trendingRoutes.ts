@@ -11,21 +11,27 @@ router.get('/all', requireAuth, async (req, res) => {
   try {
     debugLogger.info('Fetching LIVE trending data from real APIs', { userId: req.session.userId }, req);
     
-    // Get real trending data from all configured APIs
-    const liveTopics = await externalAPIs.getAllTrendingTopics();
+    // Get real trending data from all configured APIs + Bright Data social intelligence
+    const [liveTopics, socialIntelligence] = await Promise.all([
+      externalAPIs.getAllTrendingTopics(),
+      externalAPIs.getBrightDataTrends() // Add Bright Data social media intelligence
+    ]);
+    
+    // Combine traditional APIs with Bright Data social intelligence
+    const allLiveTopics = [...liveTopics, ...socialIntelligence];
     
     // Transform live data to match frontend expectations
     const liveData = {
       success: true,
       platforms: {},
-      totalItems: liveTopics.length,
+      totalItems: allLiveTopics.length,
       collectedAt: new Date().toISOString()
     };
 
     // Group topics by platform for frontend compatibility
     const platformGroups: { [key: string]: any[] } = {};
     
-    liveTopics.forEach(topic => {
+    allLiveTopics.forEach(topic => {
       const platform = topic.platform || topic.source || 'other';
       if (!platformGroups[platform]) {
         platformGroups[platform] = [];
@@ -49,10 +55,12 @@ router.get('/all', requireAuth, async (req, res) => {
       };
     });
 
-    debugLogger.info('LIVE trending data returned successfully', { 
+    debugLogger.info('LIVE trending data with Bright Data social intelligence returned successfully', { 
       userId: req.session.userId,
       totalItems: liveData.totalItems,
-      platforms: Object.keys(liveData.platforms)
+      platforms: Object.keys(liveData.platforms),
+      traditionalAPIs: liveTopics.length,
+      brightDataSocial: socialIntelligence.length
     }, req);
 
     res.json(liveData);

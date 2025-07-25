@@ -54,14 +54,14 @@ export function ReactiveContentBuilder() {
   const [selectedPlatform, setSelectedPlatform] = useState<string>('');
   const [reactiveOpportunities, setReactiveOpportunities] = useState<ReactiveOpportunity[]>([]);
 
-  // Fetch trending topics from API
+  // Fetch LIVE trending topics from real APIs for reactive content
   const { data: trendingData, isLoading } = useQuery({
-    queryKey: ["/api/topics"],
+    queryKey: ["/api/trending/all", "reactive"],
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: false,
     queryFn: async () => {
       try {
-        const response = await fetch('/api/topics', {
+        const response = await fetch('/api/trending/all', {
           credentials: 'include'
         });
         if (!response.ok) {
@@ -70,19 +70,29 @@ export function ReactiveContentBuilder() {
         return response.json();
       } catch (error) {
         console.warn('Failed to fetch trending topics:', error);
-        return { topics: [] };
+        return { platforms: {}, totalItems: 0 };
       }
     },
   });
 
-  // Convert trending topics to reactive opportunities
-  const convertTopicsToOpportunities = (topics: any[]): ReactiveOpportunity[] => {
-    return topics
-      .filter(topic => topic.score >= 60) // Only high-scoring topics
+  // Convert live trending data to reactive opportunities
+  const convertTopicsToOpportunities = (trendingData: any): ReactiveOpportunity[] => {
+    if (!trendingData?.platforms) return [];
+    
+    // Extract all topics from platform groups
+    const allTopics: any[] = [];
+    Object.values(trendingData.platforms).forEach((platform: any) => {
+      if (platform?.data) {
+        allTopics.push(...platform.data);
+      }
+    });
+    
+    return allTopics
+      .filter(topic => topic.engagement >= 100) // Only high-engagement topics
       .slice(0, 8) // Limit to top 8 opportunities
       .map((topic, index) => {
-        const urgency = topic.score >= 85 ? 'critical' : 
-                       topic.score >= 70 ? 'high' : 'medium';
+        const urgency = topic.engagement >= 800 ? 'critical' : 
+                       topic.engagement >= 400 ? 'high' : 'medium';
         const timeWindow = urgency === 'critical' ? 2 : 
                           urgency === 'high' ? 6 : 12;
         
@@ -92,14 +102,14 @@ export function ReactiveContentBuilder() {
           platform: topic.platform,
           urgency: urgency as 'critical' | 'high' | 'medium',
           timeWindow,
-          engagement: topic.engagement || Math.floor(Math.random() * 15) + 5,
-          audienceSize: topic.engagement ? topic.engagement * 100 : Math.floor(Math.random() * 50000) + 10000,
+          engagement: topic.engagement || 100,
+          audienceSize: topic.engagement ? topic.engagement * 100 : 10000,
           competitorResponse: Math.random() > 0.7 ? 'strong' : Math.random() > 0.4 ? 'weak' : 'none',
-          culturalMoment: generateCulturalMoment(topic.category),
-          suggestedAngle: generateSuggestedAngle(topic.category, topic.title),
-          hashtagSuggestions: generateHashtags(topic.keywords, topic.category),
-          toneRecommendation: generateToneRecommendation(topic.category),
-          bridgePotential: Math.min(10, Math.max(1, Math.floor(topic.score / 10)))
+          culturalMoment: generateCulturalMoment(topic.platform),
+          suggestedAngle: generateSuggestedAngle(topic.platform, topic.title),
+          hashtagSuggestions: generateHashtags([], topic.platform),
+          toneRecommendation: generateToneRecommendation(topic.platform),
+          bridgePotential: Math.min(10, Math.max(1, Math.floor(topic.engagement / 100)))
         };
       });
   };
@@ -176,10 +186,10 @@ export function ReactiveContentBuilder() {
     return tones[category as keyof typeof tones] as any || 'informative';
   };
 
-  // Process trending data when it loads
+  // Process live trending data when it loads
   useEffect(() => {
-    if (trendingData?.topics) {
-      const opportunities = convertTopicsToOpportunities(trendingData.topics);
+    if (trendingData?.platforms) {
+      const opportunities = convertTopicsToOpportunities(trendingData);
       setReactiveOpportunities(opportunities);
     }
   }, [trendingData]);
