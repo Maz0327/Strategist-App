@@ -12,10 +12,11 @@ import { ManageHub } from "@/components/manage-hub";
 import { AdminDashboard } from "@/components/admin-dashboard";
 import { FeedbackWidget } from "@/components/feedback-widget";
 import { FeedsHub } from "@/components/feeds-hub";
+import { ProjectGallery } from "@/components/project-gallery";
 import { authService } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Brain, Bell, User, Home, Search, Plus, Target, Settings, ChevronRight, BarChart3, ChevronLeft, Menu, X } from "lucide-react";
+import { Brain, Bell, User, Home, Search, Plus, Target, Settings, ChevronRight, BarChart3, ChevronLeft, Menu, X, FolderOpen } from "lucide-react";
 import { Link, useLocation } from "wouter";
 
 interface DashboardProps {
@@ -34,6 +35,7 @@ export default function Dashboard({ user, onLogout, onPageChange, currentPage }:
     const pathToTab: Record<string, string> = {
       '/dashboard': 'briefing',
       '/capture': 'capture',
+      '/projects': 'projects',
       '/explore': 'explore',
       '/brief': 'brief',
       '/manage': 'manage',
@@ -103,6 +105,12 @@ export default function Dashboard({ user, onLogout, onPageChange, currentPage }:
       id: "capture",
       label: "Signal Capture",
       icon: Plus,
+      subItems: []
+    },
+    {
+      id: "projects",
+      label: "Project Gallery",
+      icon: FolderOpen,
       subItems: []
     },
     {
@@ -363,6 +371,10 @@ export default function Dashboard({ user, onLogout, onPageChange, currentPage }:
             
             {activeTab === "capture" && (
               <NewSignalCapture />
+            )}
+            
+            {activeTab === "projects" && (
+              <ProjectGallery />
             )}
             
             {activeTab === "brief" && activeSubTab === "builder" && (
