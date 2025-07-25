@@ -3,11 +3,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ContentInput } from "@/components/content-input";
 import { Button } from "@/components/ui/button";
-import { Plus, FileText, Link, Target, ArrowRight } from "lucide-react";
+import { Plus, FileText, Link, Target, ArrowRight, Eye } from "lucide-react";
 import { AnalysisSkeleton } from "@/components/ui/analysis-skeleton";
 import EnhancedAnalysisResults from "@/components/enhanced-analysis-results";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
 import { ProgressBreadcrumb } from "@/components/ui/progress-breadcrumb";
+import { StandaloneVisualIntelligence } from "@/components/standalone-visual-intelligence";
 
 interface NewSignalCaptureProps {
   activeSubTab?: string;
@@ -165,10 +166,14 @@ export function NewSignalCapture({ activeSubTab, onNavigateToExplore, onNavigate
 
       {/* Capture Interface */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="capture" className="flex items-center space-x-2">
             <Plus className="h-4 w-4" />
             <span>Content Analysis</span>
+          </TabsTrigger>
+          <TabsTrigger value="visual" className="flex items-center space-x-2">
+            <Eye className="h-4 w-4" />
+            <span>Visual Intelligence</span>
           </TabsTrigger>
           <TabsTrigger value="batch" className="flex items-center space-x-2">
             <FileText className="h-4 w-4" />
@@ -194,6 +199,10 @@ export function NewSignalCapture({ activeSubTab, onNavigateToExplore, onNavigate
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="visual" className="space-y-4">
+          <StandaloneVisualIntelligence />
         </TabsContent>
 
         <TabsContent value="batch" className="space-y-4">

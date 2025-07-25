@@ -80,7 +80,7 @@ export function StrategicBriefLab({ activeSubTab }: StrategicBriefLabProps) {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <GetToByBrief />
+              <GetToByBrief selectedSignals={[]} />
             </CardContent>
           </Card>
         </TabsContent>

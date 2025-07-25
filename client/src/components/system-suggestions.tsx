@@ -62,9 +62,6 @@ export function SystemSuggestions() {
     },
   });
 
-  // Extract suggestions from API response or use mock data
-  const suggestions = suggestionsData?.suggestions || mockSuggestions;
-
   // Mock suggestions for fallback
   const mockSuggestions: SystemSuggestion[] = [
     {
@@ -97,15 +94,17 @@ export function SystemSuggestions() {
     }
   ];
 
+  // Extract suggestions from API response or use mock data
+  const suggestions = suggestionsData?.suggestions || mockSuggestions;
+
   const acceptSuggestionMutation = useMutation({
     mutationFn: async ({ id, reason }: { id: number; reason: string }) => {
-      const response = await apiRequest("PUT", `/api/signals/${id}`, {
+      return await apiRequest(`/api/signals/${id}`, "PUT", {
         status: 'potential_signal',
         promotionReason: reason,
         systemSuggestionReason: reason,
         userNotes: 'Promoted based on system suggestion'
       });
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/signals"] });
@@ -192,7 +191,7 @@ export function SystemSuggestions() {
               <div>
                 <p className="text-sm font-medium text-gray-600">High Priority</p>
                 <p className="text-2xl font-bold text-red-600">
-                  {suggestions.filter(s => s.priority === 'high').length}
+                  {suggestions.filter((s: SystemSuggestion) => s.priority === 'high').length}
                 </p>
               </div>
               <AlertTriangle className="h-8 w-8 text-red-600" />
@@ -206,7 +205,7 @@ export function SystemSuggestions() {
               <div>
                 <p className="text-sm font-medium text-gray-600">Medium Priority</p>
                 <p className="text-2xl font-bold text-yellow-600">
-                  {suggestions.filter(s => s.priority === 'medium').length}
+                  {suggestions.filter((s: SystemSuggestion) => s.priority === 'medium').length}
                 </p>
               </div>
               <Target className="h-8 w-8 text-yellow-600" />
@@ -220,7 +219,7 @@ export function SystemSuggestions() {
               <div>
                 <p className="text-sm font-medium text-gray-600">Low Priority</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {suggestions.filter(s => s.priority === 'low').length}
+                  {suggestions.filter((s: SystemSuggestion) => s.priority === 'low').length}
                 </p>
               </div>
               <Lightbulb className="h-8 w-8 text-green-600" />
@@ -247,11 +246,11 @@ export function SystemSuggestions() {
           </Card>
         ) : (
           suggestions
-            .sort((a, b) => {
-              const priorityOrder = { high: 3, medium: 2, low: 1 };
+            .sort((a: SystemSuggestion, b: SystemSuggestion) => {
+              const priorityOrder: { [key: string]: number } = { high: 3, medium: 2, low: 1 };
               return priorityOrder[b.priority] - priorityOrder[a.priority];
             })
-            .map((suggestion) => (
+            .map((suggestion: SystemSuggestion) => (
               <Card key={suggestion.capture.id} className="hover:shadow-md transition-shadow">
                 <CardHeader>
                   <div className="flex items-start justify-between">
@@ -291,7 +290,7 @@ export function SystemSuggestions() {
                   <div>
                     <h4 className="text-sm font-medium text-gray-900 mb-2">Keywords</h4>
                     <div className="flex flex-wrap gap-1">
-                      {suggestion.capture.keywords.map((keyword, index) => (
+                      {suggestion.capture.keywords.map((keyword: string, index: number) => (
                         <Badge key={index} variant="outline" className="text-xs">
                           {keyword}
                         </Badge>

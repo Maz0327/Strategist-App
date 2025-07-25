@@ -12,10 +12,10 @@ import { FileText, Download, Target, Users, Zap } from "lucide-react";
 import type { Signal } from "@shared/schema";
 
 interface GetToByBriefProps {
-  selectedSignals: Signal[];
+  selectedSignals?: Signal[];
 }
 
-export function GetToByBrief({ selectedSignals }: GetToByBriefProps) {
+export function GetToByBrief({ selectedSignals = [] }: GetToByBriefProps) {
   const [briefTitle, setBriefTitle] = useState("");
   const [defineStatement, setDefineStatement] = useState("");
   const [shiftStatement, setShiftStatement] = useState("");

@@ -99,21 +99,14 @@ export function StandaloneVisualIntelligence() {
         })
       );
 
-      const response = await apiRequest({
-        url: '/api/visual-intelligence/analyze',
-        method: 'POST',
-        data: {
-          images: imageData,
-          context: contextInput || 'Strategic visual analysis of uploaded images',
-          analysisType: 'comprehensive'
-        }
+      const response = await apiRequest('/api/analyze/visual', 'POST', {
+        images: imageData,
+        context: contextInput || 'Strategic visual analysis of uploaded images',
+        analysisType: 'comprehensive'
       });
 
-      if (response.success) {
-        setAnalysisResults(response.data.visualAnalysis);
-      } else {
-        throw new Error(response.error || 'Analysis failed');
-      }
+      // apiRequest returns already parsed JSON
+      setAnalysisResults(response);
     } catch (error: any) {
       console.error('Visual analysis error:', error);
       setError(error.message || 'Failed to analyze images. Please try again.');
