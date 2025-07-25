@@ -532,7 +532,7 @@ export function EnhancedAnalysisResults({
     // If not cached and we have original content, re-analyze
     if (originalContent) {
       try {
-        const response = await apiRequest("POST", "/api/analyze/text", {
+        const response = await apiRequest("/api/analyze/text", "POST", {
           content: originalContent.content,
           title: originalContent.title,
           url: originalContent.url,

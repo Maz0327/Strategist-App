@@ -11,7 +11,7 @@ export interface AuthResponse {
 
 export class AuthService {
   async login(data: LoginData): Promise<AuthResponse> {
-    const response = await apiRequest("POST", "/api/auth/login", data);
+    const response = await apiRequest("/api/auth/login", "POST", data);
     const result = await response.json();
     if (!result.success) {
       throw new Error(result.error || 'Login failed');
@@ -20,16 +20,16 @@ export class AuthService {
   }
 
   async register(data: RegisterData): Promise<AuthResponse> {
-    const response = await apiRequest("POST", "/api/auth/register", data);
+    const response = await apiRequest("/api/auth/register", "POST", data);
     return response.json();
   }
 
   async logout(): Promise<void> {
-    await apiRequest("POST", "/api/auth/logout");
+    await apiRequest("/api/auth/logout", "POST");
   }
 
   async getCurrentUser(): Promise<{ user: { id: number; email: string } }> {
-    const response = await apiRequest("GET", "/api/auth/me");
+    const response = await apiRequest("/api/auth/me", "GET");
     const result = await response.json();
     if (!result.success) {
       throw new Error(result.error || 'Not authenticated');

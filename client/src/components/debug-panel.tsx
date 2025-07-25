@@ -63,7 +63,7 @@ export function DebugPanel() {
     queryFn: async () => {
       try {
         const level = selectedLevel === 'all' ? '' : selectedLevel;
-        const response = await apiRequest("GET", `/api/debug/logs?limit=100${level ? `&level=${level}` : ''}`);
+        const response = await apiRequest(`/api/debug/logs?limit=100${level ? `&level=${level}` : ''}`, "GET");
         const result = await response.json();
         // Handle new API response format with success/data structure
         if (result.success && result.data) {
@@ -84,7 +84,7 @@ export function DebugPanel() {
     queryKey: ["/api/debug/errors"],
     queryFn: async () => {
       try {
-        const response = await apiRequest("GET", "/api/debug/errors");
+        const response = await apiRequest("/api/debug/errors", "GET");
         const result = await response.json();
         // Handle new API response format with success/data structure
         if (result.success && result.data) {
@@ -105,7 +105,7 @@ export function DebugPanel() {
     queryKey: ["/api/debug/performance"],
     queryFn: async () => {
       try {
-        const response = await apiRequest("GET", "/api/debug/performance");
+        const response = await apiRequest("/api/debug/performance", "GET");
         const result = await response.json();
         // Handle new API response format with success/data structure
         if (result.success && result.data) {
@@ -124,7 +124,7 @@ export function DebugPanel() {
 
   const clearLogsMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/debug/clear-logs");
+      const response = await apiRequest("/api/debug/clear-logs", "POST");
       return response.json();
     },
     onSuccess: () => {

@@ -161,7 +161,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
         
         const result = await retryRequest(async () => {
           const endpoint = "/api/analyze/text";
-          const response = await apiRequest("POST", endpoint, requestData);
+          const response = await apiRequest(endpoint, "POST", requestData);
           
           if (!response.ok) {
             const errorData = await response.json();
@@ -199,7 +199,7 @@ export function ContentInput({ onAnalysisComplete, onAnalysisStart, onAnalysisPr
 
     setIsLoading(true);
     try {
-      const response = await apiRequest("POST", "/api/analyze/extract-url", { url });
+      const response = await apiRequest("/api/analyze/extract-url", "POST", { url });
       const result = await response.json();
       
       // Extract data from the correct response structure
