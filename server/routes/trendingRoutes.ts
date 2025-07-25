@@ -9,40 +9,48 @@ router.get('/all', requireAuth, async (req, res) => {
   try {
     debugLogger.info('Fetching trending data', { userId: req.session.userId }, req);
     
-    // Mock trending data for now - you can integrate real APIs later
+    // Mock trending data with structure that matches frontend expectations
     const mockData = {
       success: true,
       platforms: {
         reddit: {
-          trends: [
+          data: [
             {
-              id: '1',
-              platform: 'reddit',
               title: 'AI Revolution in Content Creation',
-              summary: 'Discussion about AI tools transforming how content is created',
+              content: 'Discussion about AI tools transforming how content is created and how brands can leverage these emerging technologies for competitive advantage',
               url: 'https://reddit.com/r/technology/post1',
-              score: 95,
-              fetchedAt: new Date().toISOString(),
-              engagement: 1200
+              engagement: 1200,
+              timestamp: new Date().toISOString()
+            },
+            {
+              title: 'Cultural Shift in Remote Work',
+              content: 'Analysis of changing work culture and what it means for brand communication strategies in the post-pandemic era',
+              url: 'https://reddit.com/r/remotework/post2',
+              engagement: 950,
+              timestamp: new Date().toISOString()
             }
           ]
         },
         google: {
-          trends: [
+          data: [
             {
-              id: '2', 
-              platform: 'google',
               title: 'Strategic Content Planning',
-              summary: 'Rising search trend for strategic content planning tools',
+              content: 'Rising search trend for strategic content planning tools and methodologies as brands seek data-driven approaches',
               url: 'https://trends.google.com/trends/explore?q=strategic+content',
-              score: 88,
-              fetchedAt: new Date().toISOString(),
-              engagement: 850
+              engagement: 850,
+              timestamp: new Date().toISOString()
+            },
+            {
+              title: 'Visual Storytelling Trends',
+              content: 'Emerging trends in visual storytelling and how brands are adapting their creative strategies for maximum impact',
+              url: 'https://trends.google.com/trends/explore?q=visual+storytelling',
+              engagement: 720,
+              timestamp: new Date().toISOString()
             }
           ]
         }
       },
-      totalItems: 2,
+      totalItems: 4,
       collectedAt: new Date().toISOString()
     };
 

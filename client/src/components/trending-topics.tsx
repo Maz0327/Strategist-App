@@ -147,11 +147,11 @@ export function TrendingTopics() {
     setAnalyzingTopics(prev => new Set(prev).add(topic.id));
     
     try {
-      const response = await apiRequest("POST", "/api/analyze", {
+      const response = await apiRequest("/api/analyze", "POST", {
         content: topic.summary || topic.title,
         title: `Topic Analysis: ${topic.title}`,
         url: topic.url,
-        lengthPreference: 'medium', // Default to medium for trending topics
+        analysisMode: 'deep', // Default to deep analysis for trending topics
       });
       
       if (!response.ok) {
