@@ -322,25 +322,22 @@ export function SignalMiningDashboard() {
                 <SelectValue placeholder="Filter by platform" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Platforms</SelectItem>
-                {/* Core Social Media Platforms */}
-                <SelectItem value="TikTok">TikTok</SelectItem>
-                <SelectItem value="Twitter">Twitter</SelectItem>
-                <SelectItem value="Instagram">Instagram</SelectItem>
-                <SelectItem value="LinkedIn">LinkedIn</SelectItem>
-                {/* Content Intelligence Platforms */}
-                <SelectItem value="Medium">Medium</SelectItem>
-                <SelectItem value="Substack">Substack</SelectItem>
-                <SelectItem value="Product Hunt">Product Hunt</SelectItem>
-                {/* Business Intelligence Platforms */}
-                <SelectItem value="Glassdoor">Glassdoor</SelectItem>
-                <SelectItem value="Trustpilot">Trustpilot</SelectItem>
-                <SelectItem value="G2">G2</SelectItem>
-                <SelectItem value="Capterra">Capterra</SelectItem>
-                {/* Alternative Social Platforms */}
-                <SelectItem value="SoundCloud">SoundCloud</SelectItem>
-                <SelectItem value="Mastodon">Mastodon</SelectItem>
-                <SelectItem value="Nextdoor">Nextdoor</SelectItem>
+                <SelectItem value="all">🔥 All Platforms (Block-Resistant)</SelectItem>
+                
+                {/* 🔥 BRIGHT DATA SOCIAL INTELLIGENCE */}
+                <SelectItem value="Instagram">📷 Instagram (Enhanced)</SelectItem>
+                <SelectItem value="Twitter">🐦 Twitter/X (Enhanced)</SelectItem>
+                <SelectItem value="TikTok">🎵 TikTok (Enhanced)</SelectItem>
+                <SelectItem value="LinkedIn">💼 LinkedIn (Enhanced)</SelectItem>
+                
+                {/* 🔥 BRIGHT DATA WEB SCRAPING */}
+                <SelectItem value="Google Trends">🔍 Google Trends (Bypass)</SelectItem>
+                <SelectItem value="YouTube">📹 YouTube (Bypass)</SelectItem>
+                <SelectItem value="Reddit">💬 Reddit (Bypass)</SelectItem>
+                <SelectItem value="News">📰 News Sources (Bypass)</SelectItem>
+                
+                {/* ✅ VERIFIED API SOURCES */}
+                <SelectItem value="hackernews">🔶 Hacker News (API)</SelectItem>
               </SelectContent>
             </Select>
 

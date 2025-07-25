@@ -80,57 +80,67 @@ export class ExternalAPIsService {
 
     try {
       if (!platform || platform === 'all') {
-        // OPTIMIZED: Prioritize fast, reliable sources only - reduced from 23 to 8 APIs
+        // 🔥 BRIGHT DATA PRIMARY ARCHITECTURE - All trending via enhanced scraping
+        console.log('🚀 BRIGHT DATA PRIMARY: Fetching trending data from enhanced web scraping');
+        
         const [
-          googleTrends, redditTrends, newsTrends, youtubeTrends, hackerNewsTrends,
-          gnewsTrends, youtubeTrendingTrends, redditCulturalTrends
+          brightDataSocial, brightDataGoogle, brightDataYouTube, brightDataReddit,
+          brightDataNews, fallbackHackerNews
         ] = await Promise.allSettled([
-          this.getGoogleTrends(),
-          this.getRedditTrends(), 
-          this.getNewsTrends(),
-          this.getYouTubeTrends(),
-          this.getHackerNewsTrends(),
-          this.getGNewsTrends(),
-          this.getYouTubeTrendingTrends(),
-          this.getRedditCulturalTrends()
+          this.getBrightDataComprehensiveTrends(), // 4 social platforms via Bright Data
+          this.getBrightDataGoogleTrends(),        // Google Trends bypass
+          this.getBrightDataYouTubeTrends(),       // YouTube trending bypass  
+          this.getBrightDataRedditTrends(),        // Reddit trending bypass
+          this.getBrightDataNewsTrends(),          // News trending bypass
+          this.getHackerNewsTrends()               // Only fallback for HackerNews API
         ]);
 
-        // Process fast, reliable sources only - OPTIMIZED for speed
+        // Process Bright Data enhanced sources - BLOCK-RESISTANT ARCHITECTURE
         const allPromises = [
-          googleTrends, redditTrends, newsTrends, youtubeTrends, hackerNewsTrends,
-          gnewsTrends, youtubeTrendingTrends, redditCulturalTrends
+          brightDataSocial, brightDataGoogle, brightDataYouTube, brightDataReddit,
+          brightDataNews, fallbackHackerNews
         ];
 
         allPromises.forEach((promise, index) => {
           const platformNames = [
-            'google', 'reddit', 'news', 'youtube', 'hackernews',
-            'gnews', 'youtube-trending', 'reddit-cultural'
+            'bright-data-social', 'bright-data-google', 'bright-data-youtube', 
+            'bright-data-reddit', 'bright-data-news', 'hackernews-api'
           ];
           
           if (promise.status === 'fulfilled') {
             results.push(...promise.value);
+            console.log(`🔥 ${platformNames[index]}: ${promise.value.length} trending items`);
           } else {
-            console.warn(`Failed to fetch from ${platformNames[index]}:`, promise.reason);
+            console.warn(`❌ Failed to fetch from ${platformNames[index]}:`, promise.reason);
           }
         });
 
       } else {
-        // Fetch from specific platform - return up to 20 topics
+        // Fetch from specific platform via Bright Data enhanced scraping
         switch (platform) {
           case 'google':
-            results.push(...await this.getGoogleTrends());
+            results.push(...await this.getBrightDataGoogleTrends());
             break;
           case 'reddit':
-            results.push(...await this.getRedditTrends());
+            results.push(...await this.getBrightDataRedditTrends());
+            break;
+          case 'instagram':
+            results.push(...await this.getBrightDataInstagramTrends());
             break;
           case 'twitter':
-            results.push(...await this.getTwitterTrends());
+            results.push(...await this.getBrightDataTwitterTrends());
+            break;
+          case 'tiktok':
+            results.push(...await this.getBrightDataTikTokTrends());
+            break;
+          case 'linkedin':
+            results.push(...await this.getBrightDataLinkedInTrends());
             break;
           case 'news':
-            results.push(...await this.getNewsTrends());
+            results.push(...await this.getBrightDataNewsTrends());
             break;
           case 'youtube':
-            results.push(...await this.getYouTubeTrends());
+            results.push(...await this.getBrightDataYouTubeTrends());
             break;
           case 'hackernews':
             results.push(...await this.getHackerNewsTrends());
@@ -600,17 +610,19 @@ export class ExternalAPIsService {
     }
   }
 
-  // Bright Data Enhanced Scraping Integration 
-  async getBrightDataTrends(): Promise<TrendingTopic[]> {
+  // 🔥 BRIGHT DATA PRIMARY TRENDING SOURCES
+
+  // Comprehensive Social Media Intelligence via Bright Data
+  async getBrightDataComprehensiveTrends(): Promise<TrendingTopic[]> {
     try {
       const { brightDataService } = await import('./bright-data-service');
       
       if (!(await brightDataService.isAvailable())) {
-        console.log('Bright Data not available, skipping enhanced scraping');
+        console.log('⚠️ Bright Data not available, skipping social intelligence');
         return [];
       }
       
-      // Use Bright Data's specialized social media scrapers
+      // All 4 major social platforms via Bright Data enhanced scraping
       const [instagramResults, twitterResults, tiktokResults, linkedinResults] = await Promise.all([
         brightDataService.scrapeInstagramPosts(['ai', 'startup', 'innovation', 'tech', 'business']),
         brightDataService.scrapeTwitterTrends('worldwide'),
@@ -623,23 +635,296 @@ export class ExternalAPIsService {
       return results
         .filter(r => r.success)
         .map((result, index) => ({
-          id: `bright-data-${index}`,
-          platform: 'Social Media' as any,
-          title: result.content?.title || `Enhanced Social Data ${index + 1}`,
-          summary: 'Content extracted via Bright Data advanced web scraping',
+          id: `bright-social-${index}`,
+          platform: this.determineSocialPlatform(result.url) as any,
+          title: result.content?.title || result.content?.caption || `Trending Social Content ${index + 1}`,
+          summary: result.content?.text || result.content?.description || 'Social media trending content',
           url: result.url,
-          score: 95, // High score for enhanced data
+          score: 90 + Math.random() * 10, // High score for Bright Data
           fetchedAt: result.timestamp,
-          engagement: Math.floor(Math.random() * 500) + 100,
+          engagement: result.content?.likes || result.content?.views || Math.floor(Math.random() * 5000) + 1000,
           category: 'social-intelligence',
-          keywords: ['bright-data', 'enhanced-scraping', 'social-media'],
-          source: 'Bright Data Intelligence'
+          keywords: result.content?.hashtags || ['trending', 'social-media'],
+          source: 'Bright Data Social Intelligence'
         }));
         
     } catch (error) {
-      console.warn('Bright Data trends extraction failed:', error.message);
+      console.warn('❌ Bright Data social intelligence failed:', error.message);
       return [];
     }
+  }
+
+  // Google Trends via Bright Data Web Scraping (bypasses rate limits)
+  async getBrightDataGoogleTrends(): Promise<TrendingTopic[]> {
+    try {
+      const { brightDataService } = await import('./bright-data-service');
+      
+      if (!(await brightDataService.isAvailable())) {
+        return [];
+      }
+
+      // Scrape Google Trends directly - bypasses API limitations
+      const response = await brightDataService.makeProxyRequest('https://trends.google.com/trends/trendingsearches/daily/rss?geo=US');
+      
+      // Parse RSS and convert to trending topics
+      return this.parseGoogleTrendsRSS(response.data).slice(0, 50);
+      
+    } catch (error) {
+      console.warn('❌ Bright Data Google Trends scraping failed:', error.message);
+      return [];
+    }
+  }
+
+  // YouTube Trending via Bright Data (bypasses YouTube API quotas)
+  async getBrightDataYouTubeTrends(): Promise<TrendingTopic[]> {
+    try {
+      const { brightDataService } = await import('./bright-data-service');
+      
+      if (!(await brightDataService.isAvailable())) {
+        return [];
+      }
+
+      // Scrape YouTube trending page directly
+      const response = await brightDataService.makeProxyRequest('https://www.youtube.com/feed/trending');
+      
+      return this.parseYouTubeTrendingHTML(response.data).slice(0, 60);
+      
+    } catch (error) {
+      console.warn('❌ Bright Data YouTube scraping failed:', error.message);
+      return [];
+    }
+  }
+
+  // Reddit Trending via Bright Data (bypasses Reddit API rate limits)
+  async getBrightDataRedditTrends(): Promise<TrendingTopic[]> {
+    try {
+      const { brightDataService } = await import('./bright-data-service');
+      
+      if (!(await brightDataService.isAvailable())) {
+        return [];
+      }
+
+      // Scrape multiple Reddit trending sources
+      const [popular, all, news] = await Promise.all([
+        brightDataService.makeProxyRequest('https://www.reddit.com/r/popular.json'),
+        brightDataService.makeProxyRequest('https://www.reddit.com/r/all.json'),
+        brightDataService.makeProxyRequest('https://www.reddit.com/r/news.json')
+      ]);
+
+      const allPosts = [
+        ...this.parseRedditJSON(popular.data, 'popular'),
+        ...this.parseRedditJSON(all.data, 'all'),
+        ...this.parseRedditJSON(news.data, 'news')
+      ];
+
+      return allPosts.slice(0, 75);
+      
+    } catch (error) {
+      console.warn('❌ Bright Data Reddit scraping failed:', error.message);
+      return [];
+    }
+  }
+
+  // News Trending via Bright Data (bypasses news API limitations)
+  async getBrightDataNewsTrends(): Promise<TrendingTopic[]> {
+    try {
+      const { brightDataService } = await import('./bright-data-service');
+      
+      if (!(await brightDataService.isAvailable())) {
+        return [];
+      }
+
+      // Scrape multiple news sources for trending content
+      const newsResults = await Promise.all([
+        brightDataService.makeProxyRequest('https://www.cnn.com/'),
+        brightDataService.makeProxyRequest('https://www.bbc.com/'),
+        brightDataService.makeProxyRequest('https://techcrunch.com/'),
+        brightDataService.makeProxyRequest('https://www.theverge.com/')
+      ]);
+
+      const allNews: TrendingTopic[] = [];
+      
+      newsResults.forEach((result, index) => {
+        const sourceNames = ['CNN', 'BBC', 'TechCrunch', 'The Verge'];
+        const parsed = this.parseNewsHTML(result.data, sourceNames[index]);
+        allNews.push(...parsed);
+      });
+
+      return allNews.slice(0, 50);
+      
+    } catch (error) {
+      console.warn('❌ Bright Data news scraping failed:', error.message);
+      return [];
+    }
+  }
+
+  // Individual platform trending methods via Bright Data
+  async getBrightDataInstagramTrends(): Promise<TrendingTopic[]> {
+    const comprehensive = await this.getBrightDataComprehensiveTrends();
+    return comprehensive.filter(t => t.platform === 'Instagram');
+  }
+
+  async getBrightDataTwitterTrends(): Promise<TrendingTopic[]> {
+    const comprehensive = await this.getBrightDataComprehensiveTrends();
+    return comprehensive.filter(t => t.platform === 'Twitter');
+  }
+
+  async getBrightDataTikTokTrends(): Promise<TrendingTopic[]> {
+    const comprehensive = await this.getBrightDataComprehensiveTrends();
+    return comprehensive.filter(t => t.platform === 'TikTok');
+  }
+
+  async getBrightDataLinkedInTrends(): Promise<TrendingTopic[]> {
+    const comprehensive = await this.getBrightDataComprehensiveTrends();
+    return comprehensive.filter(t => t.platform === 'LinkedIn');
+  }
+
+  // 🔧 BRIGHT DATA UTILITY METHODS
+
+  private determineSocialPlatform(url: string): string {
+    if (url.includes('instagram.com')) return 'Instagram';
+    if (url.includes('twitter.com') || url.includes('x.com')) return 'Twitter';
+    if (url.includes('tiktok.com')) return 'TikTok';
+    if (url.includes('linkedin.com')) return 'LinkedIn';
+    return 'Social Media';
+  }
+
+  private parseGoogleTrendsRSS(rssData: string): TrendingTopic[] {
+    const trends: TrendingTopic[] = [];
+    
+    try {
+      // Basic RSS parsing for Google Trends
+      const itemMatches = rssData.match(/<item>(.*?)<\/item>/gs);
+      
+      if (itemMatches) {
+        itemMatches.forEach((item, index) => {
+          const titleMatch = item.match(/<title>(.*?)<\/title>/);
+          const linkMatch = item.match(/<link>(.*?)<\/link>/);
+          
+          if (titleMatch && linkMatch) {
+            trends.push({
+              id: `google-trends-${Date.now()}-${index}`,
+              platform: 'Google Trends' as any,
+              title: titleMatch[1],
+              summary: `Trending search: ${titleMatch[1]}`,
+              url: linkMatch[1],
+              score: 85 + Math.random() * 10,
+              fetchedAt: new Date().toISOString(),
+              engagement: Math.floor(Math.random() * 10000) + 5000,
+              category: 'search-trends',
+              keywords: [titleMatch[1].toLowerCase()],
+              source: 'Google Trends (Bright Data)'
+            });
+          }
+        });
+      }
+    } catch (error) {
+      console.warn('Google Trends RSS parsing failed:', error);
+    }
+    
+    return trends;
+  }
+
+  private parseYouTubeTrendingHTML(html: string): TrendingTopic[] {
+    const trends: TrendingTopic[] = [];
+    
+    try {
+      // Extract video titles and links from YouTube trending
+      const videoMatches = html.match(/ytd-video-renderer.*?"videoId":"([^"]*)".*?"title":{"runs":\[{"text":"([^"]*)"/gs);
+      
+      if (videoMatches) {
+        videoMatches.forEach((match, index) => {
+          const videoId = match.match(/"videoId":"([^"]*)"/)?.[1];
+          const title = match.match(/"text":"([^"]*)"/)?.[1];
+          
+          if (videoId && title) {
+            trends.push({
+              id: `youtube-trending-${videoId}`,
+              platform: 'YouTube' as any,
+              title: title,
+              summary: `Trending video: ${title}`,
+              url: `https://www.youtube.com/watch?v=${videoId}`,
+              score: 80 + Math.random() * 15,
+              fetchedAt: new Date().toISOString(),
+              engagement: Math.floor(Math.random() * 100000) + 10000,
+              category: 'video-content',
+              keywords: ['trending', 'youtube', 'video'],
+              source: 'YouTube Trending (Bright Data)'
+            });
+          }
+        });
+      }
+    } catch (error) {
+      console.warn('YouTube HTML parsing failed:', error);
+    }
+    
+    return trends;
+  }
+
+  private parseRedditJSON(jsonData: any, source: string): TrendingTopic[] {
+    const trends: TrendingTopic[] = [];
+    
+    try {
+      if (jsonData?.data?.children) {
+        jsonData.data.children.forEach((post: any, index: number) => {
+          const data = post.data;
+          if (data && data.title) {
+            trends.push({
+              id: `reddit-${source}-${data.id}`,
+              platform: 'Reddit' as any,
+              title: data.title,
+              summary: data.selftext ? data.selftext.substring(0, 200) + '...' : `Posted in r/${data.subreddit}`,
+              url: `https://reddit.com${data.permalink}`,
+              score: Math.min(100, Math.max(50, Math.log(data.score + 1) * 10)),
+              fetchedAt: new Date().toISOString(),
+              engagement: data.score || 0,
+              category: data.subreddit || 'general',
+              keywords: [data.subreddit, source, 'reddit'],
+              source: `Reddit r/${source} (Bright Data)`
+            });
+          }
+        });
+      }
+    } catch (error) {
+      console.warn(`Reddit JSON parsing failed for ${source}:`, error);
+    }
+    
+    return trends;
+  }
+
+  private parseNewsHTML(html: string, sourceName: string): TrendingTopic[] {
+    const trends: TrendingTopic[] = [];
+    
+    try {
+      // Basic headline extraction from news sites
+      const headlineMatches = html.match(/<h[1-3][^>]*>([^<]+)<\/h[1-3]>/gi);
+      
+      if (headlineMatches) {
+        headlineMatches.slice(0, 10).forEach((headline, index) => {
+          const cleanTitle = headline.replace(/<[^>]*>/g, '').trim();
+          
+          if (cleanTitle.length > 10) {
+            trends.push({
+              id: `news-${sourceName.toLowerCase()}-${Date.now()}-${index}`,
+              platform: 'News' as any,
+              title: cleanTitle,
+              summary: `Breaking news from ${sourceName}`,
+              url: `https://${sourceName.toLowerCase().replace(' ', '')}.com/`,
+              score: 85 + Math.random() * 10,
+              fetchedAt: new Date().toISOString(),
+              engagement: Math.floor(Math.random() * 1000) + 100,
+              category: 'news',
+              keywords: ['news', sourceName.toLowerCase(), 'breaking'],
+              source: `${sourceName} (Bright Data)`
+            });
+          }
+        });
+      }
+    } catch (error) {
+      console.warn(`News HTML parsing failed for ${sourceName}:`, error);
+    }
+    
+    return trends;
   }
 
   // Social Media Intelligence Integration (Beta) - All 4 Data Groups

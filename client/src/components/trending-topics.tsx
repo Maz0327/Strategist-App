@@ -365,29 +365,22 @@ export function TrendingTopics() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Platforms</SelectItem>
-            <SelectItem value="google">🔍 Google Trends</SelectItem>
-            <SelectItem value="reddit">💬 Reddit</SelectItem>
-            <SelectItem value="twitter">🐦 Twitter</SelectItem>
-            <SelectItem value="youtube">📹 YouTube</SelectItem>
-            <SelectItem value="news">📰 NewsAPI</SelectItem>
-            <SelectItem value="hackernews">🔶 Hacker News</SelectItem>
-            <SelectItem value="spotify">🎵 Spotify</SelectItem>
-            <SelectItem value="lastfm">🎧 Last.fm</SelectItem>
-            <SelectItem value="genius">🎤 Genius</SelectItem>
-            <SelectItem value="tmdb">🎬 TMDb</SelectItem>
-            <SelectItem value="tvmaze">📺 TVMaze</SelectItem>
-            <SelectItem value="gnews">📰 GNews</SelectItem>
-            <SelectItem value="nytimes">🗞️ NY Times</SelectItem>
-            <SelectItem value="currents">📊 Currents</SelectItem>
-            <SelectItem value="mediastack">📡 MediaStack</SelectItem>
-            <SelectItem value="glasp">💡 Glasp</SelectItem>
-            <SelectItem value="knowyourmeme">🔥 Know Your Meme</SelectItem>
-            <SelectItem value="urbandictionary">📖 Urban Dictionary</SelectItem>
-            <SelectItem value="youtube-trending">🔥 YouTube Trending</SelectItem>
-            <SelectItem value="reddit-cultural">🎭 Reddit Cultural</SelectItem>
-            <SelectItem value="tiktok-trends">🎵 TikTok Trends</SelectItem>
-            <SelectItem value="instagram-trends">📸 Instagram Trends</SelectItem>
+            <SelectItem value="all">🔥 All Platforms (Bright Data Primary)</SelectItem>
+            
+            {/* 🔥 BRIGHT DATA SOCIAL INTELLIGENCE */}
+            <SelectItem value="instagram">📷 Instagram (Bright Data)</SelectItem>
+            <SelectItem value="twitter">🐦 Twitter/X (Bright Data)</SelectItem>
+            <SelectItem value="tiktok">🎵 TikTok (Bright Data)</SelectItem>
+            <SelectItem value="linkedin">💼 LinkedIn (Bright Data)</SelectItem>
+            
+            {/* 🔥 BRIGHT DATA WEB SCRAPING */}
+            <SelectItem value="google">🔍 Google Trends (Bright Data)</SelectItem>
+            <SelectItem value="youtube">📹 YouTube Trending (Bright Data)</SelectItem>
+            <SelectItem value="reddit">💬 Reddit (Bright Data)</SelectItem>
+            <SelectItem value="news">📰 News Sources (Bright Data)</SelectItem>
+            
+            {/* ✅ WORKING APIs (Verified) */}
+            <SelectItem value="hackernews">🔶 Hacker News (API)</SelectItem>
           </SelectContent>
         </Select>
       </div>
