@@ -323,9 +323,102 @@ export function WorkspaceDetail() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+    <div className="max-w-7xl mx-auto p-4 sm:p-6">
+      {/* Mobile Header */}
+      <div className="sm:hidden mb-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Link href="/workspaces">
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              Back
+            </Button>
+          </Link>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg font-bold text-gray-900 truncate">{projectData.name}</h1>
+            {projectData.description && (
+              <p className="text-sm text-gray-600 truncate">{projectData.description}</p>
+            )}
+          </div>
+        </div>
+        
+        {/* Mobile Action Buttons */}
+        <div className="flex gap-2 mb-4">
+          <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+            <DialogTrigger asChild>
+              <Button className="flex-1">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Content
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Add Content to Workspace</DialogTitle>
+                <DialogDescription>
+                  Upload content directly from your mobile device or add text manually
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium">Title</label>
+                  <Input
+                    value={uploadTitle}
+                    onChange={(e) => setUploadTitle(e.target.value)}
+                    placeholder="Content title"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Content</label>
+                  <Textarea
+                    value={uploadContent}
+                    onChange={(e) => setUploadContent(e.target.value)}
+                    placeholder="Paste content, URL, or describe what you found..."
+                    rows={4}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Your Notes</label>
+                  <Textarea
+                    value={uploadNotes}
+                    onChange={(e) => setUploadNotes(e.target.value)}
+                    placeholder="Why is this interesting? What caught your attention?"
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">File Upload (Optional)</label>
+                  <Input
+                    type="file"
+                    accept="image/*,text/*,.pdf"
+                    onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleUpload} 
+                    disabled={uploadMutation.isPending}
+                    className="flex-1"
+                  >
+                    {uploadMutation.isPending ? 'Uploading...' : 'Add to Workspace'}
+                  </Button>
+                  <Button variant="outline" onClick={() => setIsUploadOpen(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+          
+          {selectedCaptures.size > 0 && (
+            <Button variant="outline" size="sm">
+              <Brain className="w-4 h-4 mr-1" />
+              Analyze ({selectedCaptures.size})
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Desktop Header */}
+      <div className="hidden sm:flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <Link href="/workspaces">
             <Button variant="outline" size="sm">
@@ -366,13 +459,12 @@ export function WorkspaceDetail() {
             </Button>
           )}
 
-          {/* Mobile Upload Button */}
+          {/* Desktop Upload Button */}
           <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
             <DialogTrigger asChild>
               <Button className="flex items-center gap-2">
                 <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">Add Content</span>
-                <Upload className="w-4 h-4 sm:hidden" />
+                Add Content
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
@@ -573,15 +665,19 @@ export function WorkspaceDetail() {
                   }
                 </p>
                 {signals.length === 0 && (
-                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                    <Button onClick={() => setIsUploadOpen(true)} className="flex items-center gap-2">
-                      <Plus className="w-4 h-4" />
+                  <div className="flex flex-col gap-3 justify-center">
+                    <Button 
+                      onClick={() => setIsUploadOpen(true)} 
+                      size="lg"
+                      className="flex items-center gap-2 mx-auto px-8 py-3"
+                    >
+                      <Plus className="w-5 h-5" />
                       Add First Content
                     </Button>
-                    <Button variant="outline" asChild>
+                    <Button variant="outline" asChild className="mx-auto">
                       <a href="/chrome-extension" target="_blank">
                         <Camera className="w-4 h-4 mr-2" />
-                        Get Extension
+                        Get Chrome Extension
                       </a>
                     </Button>
                   </div>
