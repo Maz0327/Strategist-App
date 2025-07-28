@@ -3,6 +3,9 @@ import { storage } from "../storage";
 import { requireAuth } from "../middleware/require-auth";
 import multer from 'multer';
 import { z } from "zod";
+import { analyzeScreenshotWithGemini } from '../gemini-ocr';
+import * as fs from 'fs';
+import * as path from 'path';
 
 interface MulterRequest extends Request {
   file?: Express.Multer.File;
@@ -107,6 +110,154 @@ router.post("/", requireAuth, upload.single('file'), async (req: MulterRequest, 
     res.status(500).json({ 
       success: false,
       error: "Failed to upload content",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+});
+
+// Batch screenshot upload endpoint with Gemini OCR
+const batchUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB per file
+    files: 20 // Max 20 files at once
+  },
+  fileFilter: (req: any, file: any, cb: any) => {
+    // Only allow image files for batch upload
+    const allowedImageTypes = [
+      'image/jpeg',
+      'image/jpg', 
+      'image/png',
+      'image/gif',
+      'image/webp'
+    ];
+    
+    if (allowedImageTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed for batch upload'));
+    }
+  }
+});
+
+router.post("/batch-upload", requireAuth, batchUpload.array('files', 20), async (req: any, res) => {
+  try {
+    console.log('🔥 Batch upload request:', req.body);
+    console.log('📸 Files received:', req.files?.length || 0);
+
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'No files provided'
+      });
+    }
+
+    const projectId = parseInt(req.body.projectId);
+    if (!projectId || projectId <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Valid project ID required'
+      });
+    }
+
+    const userId = req.session.userId!;
+    const uploadedSignals = [];
+    
+    // Process each file
+    for (const file of req.files) {
+      console.log(`📋 Processing: ${file.originalname} (${file.mimetype})`);
+      
+      try {
+        // Create temporary file for Gemini analysis
+        const tempDir = path.join(process.cwd(), 'temp');
+        if (!fs.existsSync(tempDir)) {
+          fs.mkdirSync(tempDir, { recursive: true });
+        }
+        
+        const tempFilePath = path.join(tempDir, `${Date.now()}-${file.originalname}`);
+        fs.writeFileSync(tempFilePath, file.buffer);
+        
+        console.log(`🤖 Analyzing with Gemini: ${file.originalname}`);
+        
+        // Analyze with Gemini 2.5 Pro
+        const ocrResult = await analyzeScreenshotWithGemini(tempFilePath);
+        
+        console.log(`✅ OCR Complete for ${file.originalname}:`, {
+          textLength: ocrResult.extractedText.length,
+          contentType: ocrResult.contentType,
+          isTextHeavy: ocrResult.isTextHeavy,
+          confidence: ocrResult.confidence
+        });
+        
+        // Create signal with extracted data
+        const signalData = {
+          userId,
+          projectId,
+          title: `Screenshot: ${file.originalname}`,
+          content: ocrResult.summary || `Screenshot analysis from ${file.originalname}`,
+          userNotes: null,
+          status: 'capture' as const,
+          isDraft: true,
+          url: null,
+          capturedAt: new Date(),
+          browserContext: {
+            domain: 'batch-screenshot-upload',
+            metadata: {
+              filename: file.originalname,
+              mimetype: file.mimetype,
+              size: file.size,
+              // Store OCR results in metadata
+              ocrData: {
+                extractedText: ocrResult.extractedText,
+                isTextHeavy: ocrResult.isTextHeavy,
+                isCommentScreenshot: ocrResult.isCommentScreenshot,
+                contentType: ocrResult.contentType,
+                summary: ocrResult.summary,
+                confidence: ocrResult.confidence
+              }
+            }
+          }
+        };
+
+        const newSignal = await storage.createSignal(signalData);
+        uploadedSignals.push({
+          signal: newSignal,
+          ocrResult: ocrResult
+        });
+        
+        // Clean up temp file
+        fs.unlinkSync(tempFilePath);
+        
+      } catch (fileError: any) {
+        console.error(`❌ Error processing ${file.originalname}:`, fileError);
+        // Continue with other files even if one fails
+        uploadedSignals.push({
+          error: `Failed to process ${file.originalname}: ${fileError?.message || 'Unknown error'}`,
+          fileName: file.originalname
+        });
+      }
+    }
+    
+    const successCount = uploadedSignals.filter(s => !s.error).length;
+    const errorCount = uploadedSignals.filter(s => s.error).length;
+    
+    console.log(`🎯 Batch upload complete: ${successCount} success, ${errorCount} errors`);
+    
+    res.status(201).json({
+      success: true,
+      data: {
+        uploadedCount: successCount,
+        errorCount: errorCount,
+        signals: uploadedSignals,
+        summary: `Successfully processed ${successCount} screenshots with Gemini OCR analysis`
+      }
+    });
+    
+  } catch (error) {
+    console.error("❌ Batch upload error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to process batch upload",
       message: error instanceof Error ? error.message : "Unknown error"
     });
   }

@@ -669,6 +669,145 @@ export function WorkspaceDetail() {
               </div>
             </DialogContent>
           </Dialog>
+
+          {/* Batch Screenshot Upload Dialog */}
+          <Dialog open={isBatchUploadOpen} onOpenChange={setIsBatchUploadOpen}>
+            <DialogContent className="max-w-2xl max-h-[90vh]">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Images className="w-5 h-5" />
+                  Batch Screenshot Upload with OCR
+                </DialogTitle>
+                <DialogDescription>
+                  Upload multiple screenshots at once. Gemini 2.5 Pro will automatically extract text and analyze content.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                {/* File Selection */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">Select Screenshots</label>
+                  <Input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleBatchFileSelect}
+                    className="cursor-pointer"
+                  />
+                  {selectedFiles.length > 0 && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      {selectedFiles.length} file(s) selected
+                    </p>
+                  )}
+                </div>
+
+                {/* Selected Files Preview */}
+                {selectedFiles.length > 0 && (
+                  <div className="space-y-3 max-h-48 overflow-y-auto">
+                    <h4 className="font-medium">Selected Files:</h4>
+                    {selectedFiles.map((file, index) => {
+                      const fileId = `${file.name}-${Date.now()}`;
+                      const progress = uploadProgress[fileId] || 0;
+                      const status = processingStatus[fileId];
+                      const extractedInfo = extractedData[fileId];
+
+                      return (
+                        <div key={index} className="border rounded-lg p-3 space-y-2">
+                          {/* File Info */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Image className="w-4 h-4" />
+                              <span className="text-sm font-medium truncate">{file.name}</span>
+                              <Badge variant="outline" className="text-xs">
+                                {Math.round(file.size / 1024)}KB
+                              </Badge>
+                            </div>
+                            {status === 'complete' && (
+                              <CheckCircle className="w-4 h-4 text-green-500" />
+                            )}
+                            {status === 'error' && (
+                              <AlertCircle className="w-4 h-4 text-red-500" />
+                            )}
+                          </div>
+
+                          {/* Progress Bar */}
+                          {status && status !== 'complete' && (
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-xs">
+                                <span className="capitalize">{status}...</span>
+                                <span>{progress}%</span>
+                              </div>
+                              <Progress value={progress} className="h-2" />
+                            </div>
+                          )}
+
+                          {/* Extracted Text Preview */}
+                          {extractedInfo && (
+                            <div className="bg-gray-50 p-2 rounded text-xs space-y-1">
+                              <div className="flex items-center gap-1">
+                                <FileText className="w-3 h-3" />
+                                <span className="font-medium">
+                                  Extracted Text {extractedInfo.isTextHeavy && "(Text-Heavy)"}:
+                                </span>
+                              </div>
+                              <p className="text-gray-700 line-clamp-3">
+                                {extractedInfo.text.slice(0, 150)}
+                                {extractedInfo.text.length > 150 && "..."}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Upload Actions */}
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleBatchUpload} 
+                    disabled={batchUploadMutation.isPending || selectedFiles.length === 0}
+                    className="flex-1"
+                  >
+                    {batchUploadMutation.isPending ? (
+                      <>Processing {selectedFiles.length} files...</>
+                    ) : (
+                      <>
+                        <Images className="w-4 h-4 mr-2" />
+                        Upload & Analyze with Gemini
+                      </>
+                    )}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setIsBatchUploadOpen(false);
+                      setSelectedFiles([]);
+                      setUploadProgress({});
+                      setProcessingStatus({});
+                      setExtractedData({});
+                    }}
+                    disabled={batchUploadMutation.isPending}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+
+                {/* Processing Summary */}
+                {batchUploadMutation.isPending && (
+                  <div className="bg-blue-50 p-3 rounded-lg">
+                    <div className="flex items-center gap-2 text-blue-700">
+                      <Brain className="w-4 h-4" />
+                      <span className="font-medium">Gemini 2.5 Pro Processing</span>
+                    </div>
+                    <p className="text-sm text-blue-600 mt-1">
+                      Analyzing screenshots for text extraction, content classification, and strategic insights.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -813,14 +952,25 @@ export function WorkspaceDetail() {
                 </p>
                 {signals.length === 0 && (
                   <div className="space-y-4">
-                    <Button 
-                      onClick={() => setIsUploadOpen(true)} 
-                      size="lg"
-                      className="w-full h-16 text-xl font-bold bg-blue-600 hover:bg-blue-700 shadow-lg"
-                    >
-                      <Plus className="w-6 h-6 mr-3" />
-                      Add Your First Content
-                    </Button>
+                    <div className="flex flex-col sm:flex-row gap-4 w-full">
+                      <Button 
+                        onClick={() => setIsUploadOpen(true)} 
+                        size="lg"
+                        className="flex-1 h-16 text-xl font-bold bg-blue-600 hover:bg-blue-700 shadow-lg"
+                      >
+                        <Plus className="w-6 h-6 mr-3" />
+                        Add Content
+                      </Button>
+                      <Button 
+                        onClick={() => setIsBatchUploadOpen(true)} 
+                        size="lg"
+                        variant="outline"
+                        className="flex-1 h-16 text-xl font-bold border-blue-200 hover:bg-blue-50 hover:border-blue-300"
+                      >
+                        <Images className="w-6 h-6 mr-3" />
+                        Upload Screenshots
+                      </Button>
+                    </div>
                     <div className="flex items-center gap-4 text-sm text-gray-500">
                       <div className="flex-1 border-t border-gray-300"></div>
                       <span className="bg-white px-3 py-1 rounded-full text-xs font-medium">or</span>
