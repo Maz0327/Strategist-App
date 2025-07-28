@@ -69,14 +69,11 @@ export default function LazyStrategicRecommendations({
         competitiveInsights
       };
       
-      const response = await apiRequest('/api/strategic-recommendations', {
-        method: 'POST',
-        body: JSON.stringify({ 
-          content, 
-          title, 
-          truthAnalysis,
-          componentResults 
-        }),
+      const response = await apiRequest('/api/strategic-recommendations', 'POST', { 
+        content, 
+        title, 
+        truthAnalysis,
+        componentResults 
       });
       
       if (response.ok) {

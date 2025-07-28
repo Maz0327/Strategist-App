@@ -64,9 +64,9 @@ export function ContentSelectionForBrief({
     .sort((a, b) => {
       switch (sortBy) {
         case "recent":
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
         case "oldest":
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
         case "title":
           return (a.title || "").localeCompare(b.title || "");
         default:
@@ -241,7 +241,7 @@ export function ContentSelectionForBrief({
                       {signal.title || "Untitled Content"}
                     </h3>
                   </div>
-                  {getStatusBadge(signal.status)}
+                  {getStatusBadge(signal.status || "capture")}
                 </div>
               </div>
             </CardHeader>
@@ -265,7 +265,7 @@ export function ContentSelectionForBrief({
                 
                 <div className="flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
-                  <span>{formatDistanceToNow(new Date(signal.createdAt))} ago</span>
+                  <span>{formatDistanceToNow(new Date(signal.createdAt || new Date()))} ago</span>
                 </div>
 
                 {signal.projectId && (
