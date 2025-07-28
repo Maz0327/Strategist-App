@@ -270,6 +270,7 @@ router.get('/working-test', async (req, res) => {
       totalItems: result.totalItems,
       platforms: {
         hackerNews: result.data.filter(item => item.platform === 'hacker_news').length,
+        instagram: result.data.filter(item => item.platform === 'instagram').length,
         reddit: result.data.filter(item => item.platform === 'reddit').length,
         productHunt: result.data.filter(item => item.platform === 'product_hunt').length,
         googleTrends: result.data.filter(item => item.platform === 'google_trends').length
