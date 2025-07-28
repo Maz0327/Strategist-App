@@ -80,30 +80,45 @@ export class ExternalAPIsService {
 
     try {
       if (!platform || platform === 'all') {
-        // 🔥 OPTIMIZED FAST TRENDING - Parallel with 10s timeout per platform
-        console.log('🚀 FAST TRENDING: Fetching data from top 5 fastest platforms');
+        // 🔄 SEQUENTIAL SCRAPING - Prevent resource conflicts, get multiple platforms
+        console.log('🚀 SEQUENTIAL SCRAPING: Fetching 6 priority platforms with extended timeouts');
         
-        // Focus on 6 priority platforms with 15 topics each (90 total items)
-        const fastPromises = [
-          this.withTimeout(this.getBrightDataGoogleTrends(), 25000, 'Google Trends'),
-          this.withTimeout(this.getBrightDataRedditTrends(), 25000, 'Reddit'),
-          this.withTimeout(this.getBrightDataYouTubeTrending(), 25000, 'YouTube'),
-          this.withTimeout(this.getBrightDataLinkedInTrends(), 25000, 'LinkedIn'),
-          this.withTimeout(this.getBrightDataTikTokTrends(), 25000, 'TikTok'),
-          this.withTimeout(this.getBrightDataInstagramTrends(), 25000, 'Instagram')
+        // Sequential scraping with 35s timeout per platform for quality results
+        const platformConfigs = [
+          { name: 'YouTube', fn: () => this.getBrightDataYouTubeTrending(), timeout: 35000 },
+          { name: 'TikTok', fn: () => this.getBrightDataTikTokTrends(), timeout: 35000 },
+          { name: 'Google Trends', fn: () => this.getBrightDataGoogleTrends(), timeout: 35000 },
+          { name: 'LinkedIn', fn: () => this.getBrightDataLinkedInTrends(), timeout: 35000 },
+          { name: 'Reddit', fn: () => this.getBrightDataRedditTrends(), timeout: 35000 },
+          { name: 'Instagram', fn: () => this.getBrightDataInstagramTrends(), timeout: 35000 }
         ];
 
-        const results_settled = await Promise.allSettled(fastPromises);
-        const platformNames = ['google-trends', 'reddit', 'youtube', 'linkedin', 'tiktok', 'instagram'];
+        let successfulPlatforms = 0;
+        const maxPlatforms = 3; // Limit to first 3 successful platforms for speed
 
-        results_settled.forEach((promise, index) => {
-          if (promise.status === 'fulfilled') {
-            results.push(...promise.value);
-            console.log(`⚡ ${platformNames[index]}: ${promise.value.length} items (${promise.value.length > 0 ? 'LIVE' : 'empty'})`);
-          } else {
-            console.warn(`⏱️ ${platformNames[index]} timeout: ${promise.reason}`);
+        for (const platform of platformConfigs) {
+          if (successfulPlatforms >= maxPlatforms) break;
+          
+          try {
+            console.log(`🔄 Scraping ${platform.name}...`);
+            const platformData = await this.withTimeout(platform.fn(), platform.timeout, platform.name);
+            
+            if (platformData && platformData.length > 0) {
+              results.push(...platformData.slice(0, 15)); // Limit to 15 items per platform
+              successfulPlatforms++;
+              console.log(`✅ ${platform.name}: ${platformData.length} items (LIVE)`);
+            } else {
+              console.log(`⚡ ${platform.name}: 0 items (empty)`);
+            }
+          } catch (error) {
+            console.warn(`⏱️ ${platform.name} timeout: ${error}`);
           }
-        });
+          
+          // Small delay between platforms to prevent resource conflicts
+          if (successfulPlatforms < maxPlatforms) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
 
       } else {
         // Fetch from specific platform via Bright Data enhanced scraping

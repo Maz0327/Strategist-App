@@ -117,20 +117,6 @@ router.get('/all', async (req, res) => {
     };
     
     return res.json(fallbackData);
-    Object.keys(platformGroups).forEach(platform => {
-      liveData.platforms[platform] = {
-        data: platformGroups[platform]
-      };
-    });
-
-    debugLogger.info('LIVE trending data returned successfully', { 
-      userId: req.session?.userId || 'anonymous',
-      totalItems: liveData.totalItems,
-      platforms: Object.keys(liveData.platforms),
-      liveDataSources: liveTopics.length
-    }, req);
-
-    res.json(liveData);
   } catch (error: any) {
     debugLogger.error('Failed to fetch live trending data', error, req);
     
