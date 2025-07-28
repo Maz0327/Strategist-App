@@ -64,11 +64,11 @@ class FastTrendingCache {
       
       console.log('📡 REFRESH: Fetching live data from top platforms');
       
-      // Use only the fastest, most reliable sources with short timeouts
+      // Use Bright Data scraping with realistic timeouts for quality data
       const promises = await Promise.allSettled([
-        this.withTimeout(this.getHackerNewsQuick(), 8000),
-        this.withTimeout(this.getYouTubeQuick(), 8000),
-        this.withTimeout(this.getMediumQuick(), 8000)
+        this.withTimeout(this.getHackerNewsQuick(), 35000),
+        this.withTimeout(this.getYouTubeQuick(), 35000),
+        this.withTimeout(this.getMediumQuick(), 35000)
       ]);
 
       const allData: TrendingTopic[] = [];

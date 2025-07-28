@@ -21,39 +21,10 @@ const refreshTrendingData = async (forceRefresh = false) => {
   console.log('🔄 MANUAL REFRESH: User navigated to Explore Signals - fetching fresh data');
   
   try {
-    // Force parallel execution of BOTH Bright Data AND working APIs
-    console.log('🚀 MULTI-PLATFORM: Fetching from both Bright Data scraping AND working APIs simultaneously');
+    // Get fresh data from Bright Data automation ONLY (no fallbacks)
+    console.log('🚀 BRIGHT DATA ONLY: Fetching live data with extended timeouts');
     
-    const [brightDataTopics, workingAPITopics] = await Promise.allSettled([
-      Promise.race([
-        externalAPIs.getAllTrendingTopics(),
-        new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Bright Data timeout')), 15000)
-        )
-      ]),
-      externalAPIs.getWorkingAPIsData() // Always call working APIs
-    ]);
-    
-    const allTopics: any[] = [];
-    
-    // Add Bright Data results (timeout-resistant)
-    if (brightDataTopics.status === 'fulfilled' && brightDataTopics.value) {
-      console.log(`✅ Bright Data: ${brightDataTopics.value.length} topics`);
-      allTopics.push(...brightDataTopics.value);
-    } else {
-      console.log(`❌ Bright Data failed: ${brightDataTopics.status === 'rejected' ? brightDataTopics.reason?.message || 'No data' : 'No data'}`);
-    }
-    
-    // Add working API results (always called)
-    if (workingAPITopics.status === 'fulfilled' && workingAPITopics.value) {
-      console.log(`✅ Working APIs: ${workingAPITopics.value.length} topics`);
-      allTopics.push(...workingAPITopics.value);
-    } else {
-      console.log(`❌ Working APIs failed: ${workingAPITopics.status === 'rejected' ? workingAPITopics.reason?.message || 'No data' : 'No data'}`);
-    }
-    
-    console.log(`🎯 TOTAL TOPICS: ${allTopics.length} from multiple platforms`);
-    const liveTopics = allTopics;
+    const liveTopics = await externalAPIs.getAllTrendingTopics();
 
     if (liveTopics.length > 0) {
       const platformGroups: { [key: string]: any[] } = {};

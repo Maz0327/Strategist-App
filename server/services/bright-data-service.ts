@@ -69,7 +69,7 @@ export class BrightDataService {
       });
       
       const page = await browser.newPage();
-      await page.goto('https://httpbin.org/ip', { waitUntil: 'networkidle2', timeout: 10000 });
+      await page.goto('https://httpbin.org/ip', { waitUntil: 'networkidle2', timeout: 30000 });
       await page.close();
       await browser.disconnect();
       
@@ -96,7 +96,7 @@ export class BrightDataService {
           password: this.config.password
         }
       },
-      timeout: 15000,
+      timeout: 30000,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -134,11 +134,11 @@ export class BrightDataService {
         try {
           await page.goto(`https://www.instagram.com/explore/tags/${hashtag}/`, { 
             waitUntil: 'networkidle2', 
-            timeout: 15000 
+            timeout: 30000 
           });
 
           // Wait for posts to load
-          await page.waitForSelector('article', { timeout: 10000 }).catch(() => {});
+          await page.waitForSelector('article', { timeout: 30000 }).catch(() => {});
           
           // Extract post data using JavaScript execution
           const posts = await page.evaluate(() => {
@@ -250,11 +250,11 @@ export class BrightDataService {
       try {
         await page.goto('https://twitter.com/explore/tabs/trending', { 
           waitUntil: 'networkidle2', 
-          timeout: 15000 
+          timeout: 30000 
         });
 
         // Wait for trending topics to load
-        await page.waitForSelector('[data-testid="trend"]', { timeout: 10000 }).catch(() => {});
+        await page.waitForSelector('[data-testid="trend"]', { timeout: 30000 }).catch(() => {});
         
         // Extract trending topics using JavaScript execution
         const trends = await page.evaluate(() => {
@@ -324,11 +324,11 @@ export class BrightDataService {
       try {
         await page.goto('https://www.tiktok.com/trending', { 
           waitUntil: 'networkidle2', 
-          timeout: 15000 
+          timeout: 30000 
         });
 
         // Wait for content to load
-        await page.waitForSelector('div[data-e2e="recommend-list-item"]', { timeout: 10000 }).catch(() => {});
+        await page.waitForSelector('div[data-e2e="recommend-list-item"]', { timeout: 30000 }).catch(() => {});
         
         // Extract trending videos using JavaScript execution
         const trends = await page.evaluate(() => {
@@ -398,11 +398,11 @@ export class BrightDataService {
       try {
         await page.goto(`https://trends.google.com/trends/trendingsearches/daily?geo=${geo}`, { 
           waitUntil: 'networkidle2', 
-          timeout: 15000 
+          timeout: 30000 
         });
 
         // Wait for trending searches to load
-        await page.waitForSelector('.trending-searches-list', { timeout: 10000 }).catch(() => {});
+        await page.waitForSelector('.trending-searches-list', { timeout: 30000 }).catch(() => {});
         
         // Extract trending searches using JavaScript execution
         const trends = await page.evaluate(() => {
@@ -478,11 +478,11 @@ export class BrightDataService {
           
           await page.goto(`https://www.reddit.com/r/${subreddit}/hot/`, { 
             waitUntil: 'networkidle2', 
-            timeout: 15000 
+            timeout: 30000 
           });
 
           // Wait for posts to load
-          await page.waitForSelector('[data-testid="post-container"]', { timeout: 10000 }).catch(() => {});
+          await page.waitForSelector('[data-testid="post-container"]', { timeout: 30000 }).catch(() => {});
           
           // Extract Reddit posts using JavaScript execution
           const posts = await page.evaluate(() => {
@@ -558,11 +558,11 @@ export class BrightDataService {
       try {
         await page.goto(`https://www.youtube.com/feed/trending?gl=${region}`, { 
           waitUntil: 'networkidle2', 
-          timeout: 15000 
+          timeout: 30000 
         });
 
         // Wait for videos to load
-        await page.waitForSelector('ytd-video-renderer', { timeout: 10000 }).catch(() => {});
+        await page.waitForSelector('ytd-video-renderer', { timeout: 30000 }).catch(() => {});
         
         // Extract trending videos using JavaScript execution
         const videos = await page.evaluate(() => {
@@ -635,11 +635,11 @@ export class BrightDataService {
       try {
         await page.goto('https://www.producthunt.com/', { 
           waitUntil: 'networkidle2', 
-          timeout: 15000 
+          timeout: 30000 
         });
 
         // Wait for products to load
-        await page.waitForSelector('[data-test="homepage-section-content"]', { timeout: 10000 }).catch(() => {});
+        await page.waitForSelector('[data-test="homepage-section-content"]', { timeout: 30000 }).catch(() => {});
         
         // Extract Product Hunt launches
         const products = await page.evaluate(() => {
@@ -711,11 +711,11 @@ export class BrightDataService {
       try {
         await page.goto('https://news.ycombinator.com/', { 
           waitUntil: 'networkidle2', 
-          timeout: 15000 
+          timeout: 30000 
         });
 
         // Wait for stories to load
-        await page.waitForSelector('.athing', { timeout: 10000 }).catch(() => {});
+        await page.waitForSelector('.athing', { timeout: 30000 }).catch(() => {});
         
         // Extract Hacker News stories
         const stories = await page.evaluate(() => {
@@ -786,11 +786,11 @@ export class BrightDataService {
       try {
         await page.goto('https://medium.com/tag/technology', { 
           waitUntil: 'networkidle2', 
-          timeout: 15000 
+          timeout: 30000 
         });
 
         // Wait for articles to load
-        await page.waitForSelector('article', { timeout: 10000 }).catch(() => {});
+        await page.waitForSelector('article', { timeout: 30000 }).catch(() => {});
         
         // Extract Medium articles
         const articles = await page.evaluate(() => {
@@ -862,11 +862,11 @@ export class BrightDataService {
       try {
         await page.goto('https://glasp.co/community', { 
           waitUntil: 'networkidle2', 
-          timeout: 15000 
+          timeout: 30000 
         });
 
         // Wait for highlights to load
-        await page.waitForSelector('.highlight-card, .community-highlight', { timeout: 10000 }).catch(() => {});
+        await page.waitForSelector('.highlight-card, .community-highlight', { timeout: 30000 }).catch(() => {});
         
         // Extract Glasp highlights
         const highlights = await page.evaluate(() => {
@@ -940,11 +940,11 @@ export class BrightDataService {
           
           await page.goto(`https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent(keyword)}`, { 
             waitUntil: 'networkidle2', 
-            timeout: 15000 
+            timeout: 30000 
           });
 
           // Wait for content to load
-          await page.waitForSelector('.feed-shared-update-v2', { timeout: 10000 }).catch(() => {});
+          await page.waitForSelector('.feed-shared-update-v2', { timeout: 30000 }).catch(() => {});
           
           // Extract LinkedIn posts using JavaScript execution
           const posts = await page.evaluate(() => {

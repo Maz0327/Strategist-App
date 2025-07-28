@@ -83,13 +83,13 @@ export class ExternalAPIsService {
         // 🔥 OPTIMIZED FAST TRENDING - Parallel with 10s timeout per platform
         console.log('🚀 FAST TRENDING: Fetching data from top 5 fastest platforms');
         
-        // Use Promise.allSettled with individual timeouts for speed
+        // Use Promise.allSettled with realistic timeouts for quality data
         const fastPromises = [
-          this.withTimeout(this.getBrightDataHackerNews(), 10000, 'Hacker News'),
-          this.withTimeout(this.getBrightDataYouTubeTrending(), 10000, 'YouTube'),
-          this.withTimeout(this.getBrightDataMediumTrending(), 10000, 'Medium'),
-          this.withTimeout(this.getBrightDataGoogleTrends(), 8000, 'Google Trends'),
-          this.withTimeout(this.getBrightDataComprehensiveTrends(), 12000, 'Social Media')
+          this.withTimeout(this.getBrightDataHackerNews(), 30000, 'Hacker News'),
+          this.withTimeout(this.getBrightDataYouTubeTrending(), 30000, 'YouTube'),
+          this.withTimeout(this.getBrightDataMediumTrending(), 30000, 'Medium'),
+          this.withTimeout(this.getBrightDataGoogleTrends(), 25000, 'Google Trends'),
+          this.withTimeout(this.getBrightDataComprehensiveTrends(), 35000, 'Social Media')
         ];
 
         const results_settled = await Promise.allSettled(fastPromises);
@@ -203,35 +203,7 @@ export class ExternalAPIsService {
     }
   }
 
-  // Get data from working APIs (backup when Bright Data timeouts)
-  async getWorkingAPIsData(): Promise<TrendingTopic[]> {
-    console.log('🔧 WORKING APIS: Fetching from 7 working API endpoints');
-    
-    const workingAPIResults = await Promise.allSettled([
-      this.withTimeout(this.getHackerNewsTrends(), 5000, 'Hacker News API'),
-      this.withTimeout(this.getRedditTrends(), 8000, 'Reddit API'),
-      this.withTimeout(this.getGoogleTrends(), 6000, 'Google Trends API'),
-      this.withTimeout(this.getYouTubeTrends(), 8000, 'YouTube API'),
-      this.withTimeout(this.getNewsTrends(), 5000, 'News API'),
-      this.withTimeout(this.getCurrentsTrends(), 5000, 'Currents API'),
-      this.withTimeout(this.getGNewsTrends(), 5000, 'GNews API')
-    ]);
-
-    const allResults: TrendingTopic[] = [];
-    const apiNames = ['Hacker News', 'Reddit', 'Google Trends', 'YouTube', 'NewsAPI', 'Currents', 'GNews'];
-
-    workingAPIResults.forEach((result, index) => {
-      if (result.status === 'fulfilled' && result.value && result.value.length > 0) {
-        allResults.push(...result.value);
-        console.log(`✅ ${apiNames[index]}: ${result.value.length} items (API working)`);
-      } else {
-        console.log(`❌ ${apiNames[index]}: Failed or empty - ${result.status === 'rejected' ? result.reason?.message || 'Unknown error' : 'No data'}`);
-      }
-    });
-
-    console.log(`🎯 WORKING APIS TOTAL: ${allResults.length} topics from working APIs`);
-    return allResults;
-  }
+  // REMOVED: No fallback APIs - fixing Bright Data root cause instead
 
   // Utility method to add timeout to any promise
   private async withTimeout<T>(promise: Promise<T>, timeoutMs: number, name: string): Promise<T> {
