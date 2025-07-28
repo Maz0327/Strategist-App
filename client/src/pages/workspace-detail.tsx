@@ -652,15 +652,17 @@ export function WorkspaceDetail() {
               ))}
             </div>
           ) : filteredSignals.length === 0 ? (
-            <Card className="p-16 min-h-[400px] flex items-center justify-center">
+            <Card className="p-8 sm:p-16 min-h-[400px] flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-dashed border-blue-200">
               <div className="text-center max-w-md mx-auto">
-                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-6" />
-                <h3 className="text-xl font-medium text-gray-900 mb-3">
-                  {signals.length === 0 ? 'No content yet' : 'No matching content'}
+                <div className="bg-blue-100 rounded-full p-4 w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+                  <Plus className="w-10 h-10 text-blue-600" />
+                </div>
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">
+                  {signals.length === 0 ? 'Ready to Start?' : 'No matching content'}
                 </h3>
                 <p className="text-gray-600 mb-8 text-base">
                   {signals.length === 0 
-                    ? 'Start building your strategic intelligence by adding your first piece of content'
+                    ? 'Add your first piece of content to begin building strategic intelligence'
                     : 'Try adjusting your filters or search terms'
                   }
                 </p>
@@ -669,20 +671,20 @@ export function WorkspaceDetail() {
                     <Button 
                       onClick={() => setIsUploadOpen(true)} 
                       size="lg"
-                      className="w-full h-14 text-lg font-semibold"
+                      className="w-full h-16 text-xl font-bold bg-blue-600 hover:bg-blue-700 shadow-lg"
                     >
                       <Plus className="w-6 h-6 mr-3" />
                       Add Your First Content
                     </Button>
                     <div className="flex items-center gap-4 text-sm text-gray-500">
-                      <div className="flex-1 border-t border-gray-200"></div>
-                      <span>or</span>
-                      <div className="flex-1 border-t border-gray-200"></div>
+                      <div className="flex-1 border-t border-gray-300"></div>
+                      <span className="bg-white px-3 py-1 rounded-full text-xs font-medium">or</span>
+                      <div className="flex-1 border-t border-gray-300"></div>
                     </div>
-                    <Button variant="outline" asChild className="w-full h-12">
+                    <Button variant="outline" asChild className="w-full h-12 border-blue-200 hover:bg-blue-50">
                       <a href="/chrome-extension" target="_blank">
                         <Camera className="w-5 h-5 mr-2" />
-                        Get Chrome Extension for Easy Capture
+                        Get Chrome Extension
                       </a>
                     </Button>
                   </div>
