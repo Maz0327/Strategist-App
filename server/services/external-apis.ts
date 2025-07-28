@@ -83,17 +83,18 @@ export class ExternalAPIsService {
         // 🔥 OPTIMIZED FAST TRENDING - Parallel with 10s timeout per platform
         console.log('🚀 FAST TRENDING: Fetching data from top 5 fastest platforms');
         
-        // Use Promise.allSettled with extended timeouts to capture ALL working platforms
+        // Focus on 6 priority platforms with 15 topics each (90 total items)
         const fastPromises = [
-          this.withTimeout(this.getBrightDataHackerNews(), 35000, 'Hacker News'),
-          this.withTimeout(this.getBrightDataYouTubeTrending(), 35000, 'YouTube'),
-          this.withTimeout(this.getBrightDataMediumTrending(), 50000, 'Medium'),
-          this.withTimeout(this.getBrightDataGoogleTrends(), 50000, 'Google Trends'),
-          this.withTimeout(this.getBrightDataComprehensiveTrends(), 50000, 'Social Media')
+          this.withTimeout(this.getBrightDataGoogleTrends(), 25000, 'Google Trends'),
+          this.withTimeout(this.getBrightDataRedditTrends(), 25000, 'Reddit'),
+          this.withTimeout(this.getBrightDataYouTubeTrending(), 25000, 'YouTube'),
+          this.withTimeout(this.getBrightDataLinkedInTrends(), 25000, 'LinkedIn'),
+          this.withTimeout(this.getBrightDataTikTokTrends(), 25000, 'TikTok'),
+          this.withTimeout(this.getBrightDataInstagramTrends(), 25000, 'Instagram')
         ];
 
         const results_settled = await Promise.allSettled(fastPromises);
-        const platformNames = ['hacker-news', 'youtube', 'medium', 'google-trends', 'social-media'];
+        const platformNames = ['google-trends', 'reddit', 'youtube', 'linkedin', 'tiktok', 'instagram'];
 
         results_settled.forEach((promise, index) => {
           if (promise.status === 'fulfilled') {
@@ -196,7 +197,7 @@ export class ExternalAPIsService {
       // FAST FLOW - Return top trending data optimized for speed
       return results
         .sort((a, b) => (b.score || 0) - (a.score || 0))
-        .slice(0, 100); // Optimized: up to 100 trending items for faster loading
+        .slice(0, 90); // 15 topics per platform x 6 platforms = 90 total items
     } catch (error) {
       console.warn('Fast trending fallback due to error:', error);
       return [];
@@ -696,7 +697,7 @@ export class ExternalAPIsService {
           keywords: ['trending', 'google', 'search'],
           source: 'Google Trends Live'
         }))
-        .slice(0, 20);
+        .slice(0, 15);
       
     } catch (error) {
       console.warn('❌ Bright Data Google Trends scraping failed:', error.message);
@@ -733,7 +734,7 @@ export class ExternalAPIsService {
           keywords: ['reddit', 'discussion', 'community'],
           source: 'Reddit Live'
         }))
-        .slice(0, 25);
+        .slice(0, 15);
       
     } catch (error) {
       console.warn('❌ Bright Data Reddit scraping failed:', error.message);
@@ -770,7 +771,7 @@ export class ExternalAPIsService {
           keywords: ['youtube', 'video', 'trending'],
           source: 'YouTube Trending Live'
         }))
-        .slice(0, 30);
+        .slice(0, 15);
       
     } catch (error) {
       console.warn('❌ Bright Data YouTube scraping failed:', error.message);
@@ -964,7 +965,7 @@ export class ExternalAPIsService {
         ...this.parseRedditJSON(news.data, 'news')
       ];
 
-      return allPosts.slice(0, 75);
+      return allPosts.slice(0, 15);
       
     } catch (error) {
       console.warn('❌ Bright Data Reddit scraping failed:', error.message);
