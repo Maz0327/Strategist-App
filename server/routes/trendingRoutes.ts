@@ -197,6 +197,65 @@ export const clearUserSession = (userId: string, ip: string) => {
   console.log(`🔐 LOGOUT: Cleared trending data session for user ${userId}`);
 };
 
+// **USER-FRIENDLY WORKING SOLUTION ENDPOINT**
+router.get('/working-now', requireAuth, async (req, res) => {
+  try {
+    console.log('🎯 USER REQUESTED: Working solution for trending data');
+    
+    const result = await workingBrightData.fetchWorkingPlatforms();
+    
+    if (result.success && result.data.length > 0) {
+      // Transform to match expected frontend format
+      const platformGroups: { [key: string]: any[] } = {};
+      
+      result.data.forEach(item => {
+        const platform = item.platform;
+        if (!platformGroups[platform]) {
+          platformGroups[platform] = [];
+        }
+        
+        platformGroups[platform].push({
+          title: item.title,
+          content: item.description || `${platform} trending content`,
+          url: item.url || '#',
+          engagement: item.score || item.votes || item.searches || 'High engagement',
+          timestamp: item.timestamp,
+          platform: platform,
+          source: platform
+        });
+      });
+      
+      const response = {
+        success: true,
+        platforms: platformGroups,
+        totalItems: result.totalItems,
+        collectedAt: new Date().toISOString(),
+        notice: `Live data from ${Object.keys(platformGroups).length} working platforms`
+      };
+      
+      console.log(`🎯 WORKING SUCCESS: Delivered ${result.totalItems} items to user`);
+      res.json(response);
+      
+    } else {
+      res.status(503).json({
+        success: false,
+        message: 'Working platforms temporarily unavailable',
+        platforms: {},
+        totalItems: 0
+      });
+    }
+    
+  } catch (error) {
+    console.error('Working solution failed:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch working data',
+      platforms: {},
+      totalItems: 0
+    });
+  }
+});
+
 // **WORKING SOLUTION TEST ENDPOINT**
 router.get('/working-test', async (req, res) => {
   try {
@@ -211,6 +270,7 @@ router.get('/working-test', async (req, res) => {
       totalItems: result.totalItems,
       platforms: {
         hackerNews: result.data.filter(item => item.platform === 'hacker_news').length,
+        reddit: result.data.filter(item => item.platform === 'reddit').length,
         productHunt: result.data.filter(item => item.platform === 'product_hunt').length,
         googleTrends: result.data.filter(item => item.platform === 'google_trends').length
       }
