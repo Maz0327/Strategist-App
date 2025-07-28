@@ -73,42 +73,38 @@ router.get('/all', async (req, res) => {
     const userId = req.session?.userId || 'anonymous';
     const sessionKey = `${userId}_${req.ip}`;
     
-    // **IMMEDIATE RESPONSE: Always serve instant data first**
-    const instantData = {
-      success: true,
+    // **LIVE FEED ONLY: Get real data from Bright Data platforms**
+    debugLogger.info('🔄 LIVE FEED: Fetching real trending data from Bright Data', { userId }, req);
+    
+    // Get fresh live data every time (no caching)
+    const liveData = await refreshTrendingData(true);
+    
+    if (liveData && liveData.totalItems > 0) {
+      debugLogger.info(`✅ LIVE SUCCESS: ${liveData.totalItems} items from ${Object.keys(liveData.platforms).length} platforms`, { userId }, req);
+      return res.json(liveData);
+    }
+    
+    // Only use fallback if Bright Data completely fails
+    debugLogger.warn('⚠️ LIVE FAILED: Bright Data unavailable, providing status update', { userId }, req);
+    const statusData = {
+      success: false,
       platforms: {
-        'hacker-news': [
-          { id: 'hn1', title: 'AI breakthrough in quantum computing applications', url: 'https://news.ycombinator.com', engagement: 487, timestamp: new Date().toISOString(), platform: 'hacker-news', source: 'Live' },
-          { id: 'hn2', title: 'Open source LLM models surpass GPT-4 benchmarks', url: 'https://news.ycombinator.com', engagement: 356, timestamp: new Date().toISOString(), platform: 'hacker-news', source: 'Live' },
-          { id: 'hn3', title: 'Cryptocurrency adoption in emerging markets accelerates', url: 'https://news.ycombinator.com', engagement: 298, timestamp: new Date().toISOString(), platform: 'hacker-news', source: 'Live' }
-        ],
-        'youtube': [
-          { id: 'yt1', title: 'Tech startup funding trends 2025', url: 'https://youtube.com', engagement: 12500, timestamp: new Date().toISOString(), platform: 'youtube', source: 'Live' },
-          { id: 'yt2', title: 'AI coding assistant revolution', url: 'https://youtube.com', engagement: 8900, timestamp: new Date().toISOString(), platform: 'youtube', source: 'Live' },
-          { id: 'yt3', title: 'Remote work culture transformation', url: 'https://youtube.com', engagement: 7200, timestamp: new Date().toISOString(), platform: 'youtube', source: 'Live' }
-        ],
-        'reddit': [
-          { id: 'rd1', title: 'Discussion: Best programming languages for 2025', url: 'https://reddit.com', engagement: 1250, timestamp: new Date().toISOString(), platform: 'reddit', source: 'Live' },
-          { id: 'rd2', title: 'Career advice: Transitioning to tech industry', url: 'https://reddit.com', engagement: 890, timestamp: new Date().toISOString(), platform: 'reddit', source: 'Live' },
-          { id: 'rd3', title: 'Web3 development opportunities and challenges', url: 'https://reddit.com', engagement: 675, timestamp: new Date().toISOString(), platform: 'reddit', source: 'Live' }
-        ]
+        'status': [{
+          title: 'Live Data Temporarily Unavailable',
+          content: 'Bright Data scraping services are being restored - CSS selectors may need updates',
+          url: '#',
+          engagement: 0,
+          timestamp: new Date().toISOString(),
+          platform: 'status',
+          source: 'System'
+        }]
       },
-      totalItems: 9,
+      totalItems: 1,
       collectedAt: new Date().toISOString(),
-      notice: 'Live data sources loading in background - enhanced selectors being tested'
+      notice: 'Refresh page to retry live data connection'
     };
     
-    // **Return instant data immediately**
-    res.json(instantData);
-    
-    // **Background testing: Continue CSS selector validation without blocking user**
-    if (!userSessions.has(sessionKey)) {
-      userSessions.add(sessionKey);
-      // Test enhanced selectors in background
-      refreshTrendingData(true).catch(error => {
-        debugLogger.warn('Background CSS selector testing failed', { error: error.message });
-      });
-    }
+    res.json(statusData);
   } catch (error: any) {
     debugLogger.error('Failed to fetch live trending data', error, req);
     
