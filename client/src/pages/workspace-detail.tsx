@@ -302,7 +302,7 @@ export function WorkspaceDetail() {
     );
   }
 
-  if (!projectData) {
+  if (!project) {
     return (
       <div className="max-w-6xl mx-auto p-6">
         <div className="text-center">
@@ -330,8 +330,8 @@ export function WorkspaceDetail() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{projectData.name}</h1>
-            <p className="text-gray-600">{projectData.description}</p>
+            <h1 className="text-2xl font-bold text-gray-900">{project.name}</h1>
+            <p className="text-gray-600">{project.description}</p>
           </div>
         </div>
 
