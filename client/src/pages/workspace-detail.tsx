@@ -631,6 +631,15 @@ export function WorkspaceDetail() {
 
         {/* Main Content Area */}
         <div className="flex-1">
+          {/* DEBUG INFO */}
+          <div className="mb-4 p-4 bg-yellow-100 border border-yellow-300 rounded">
+            <p><strong>Debug Info:</strong></p>
+            <p>signalsLoading: {signalsLoading ? 'true' : 'false'}</p>
+            <p>signals.length: {signals.length}</p>
+            <p>filteredSignals.length: {filteredSignals.length}</p>
+            <p>Should show empty state: {!signalsLoading && filteredSignals.length === 0 ? 'YES' : 'NO'}</p>
+          </div>
+          
           {signalsLoading ? (
             <div className={viewMode === 'grid' 
               ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" 
