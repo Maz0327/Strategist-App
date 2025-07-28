@@ -1,0 +1,182 @@
+Let’s design the **most seamless, low-friction UI experience** for strategists and solo creators. The key: maintain *focus and flow* while handling tons of raw content, notes, and insights. Below is a breakdown of how to structure the UX and UI per screen with visual logic, smart automation, and intuitive interaction.
+
+---
+
+## 🎯 UX GOAL
+
+> **Let users go from scattered captures to a strategic brief without feeling like they’re managing a giant dashboard.**
+> Capture → Organize → Analyze → Build → Export, all without breaking flow.
+
+---
+
+# 🧠 CORE UX PRINCIPLES
+
+| Principle                     | Implementation Example                                                                      |
+| ----------------------------- | ------------------------------------------------------------------------------------------- |
+| 🧩 **Progressive disclosure** | Don’t show everything at once. Let deeper options appear when needed.                       |
+| ⚡ **Speed-to-organize**       | One-click tagging, AI-powered suggestions, drag-to-sort.                                    |
+| 🔁 **Live linkage**           | Every piece of content (image/text/note) remains visually tethered to its origin + project. |
+| ✍️ **Inline edit everywhere** | Don’t make users open modals. Let them type/edit directly in cards, fields, and lists.      |
+| 📥 **Default smartness**      | Pre-suggest tags, analysis, and sections — users just review/approve instead of rebuilding. |
+
+---
+
+# 🔧 UI STRUCTURE BY PAGE
+
+---
+
+## 1. **📸 Chrome Extension Mini UI**
+
+> ✅ Goal: One-click capture with tagging, notes, and project selection
+
+**Popup Layout:**
+
+```
+┌────────────────────────────┐
+│ [+] Screenshot taken!      │
+├────────────────────────────┤
+│ 🏷️ Tag: [Dropdown - Smart Suggested Tag]    │
+│ 🗂️ Project: [Dropdown - Active Project]     │
+│ 📝 Note: [Text field]                       │
+│ [ ] Send for Truth Analysis now            │
+│ [Capture] [Cancel]                         │
+└────────────────────────────┘
+```
+
+✨ *Tag prediction auto-fills based on domain/URL and text analysis.*
+
+---
+
+## 2. **🗂️ Capture Workspace (Project Page)**
+
+> ✅ Goal: Let users view and clean up their captured data before moving to brief
+
+### Layout:
+
+```
+──────────────────────────────────────────────
+Header: 📁 [Project Name] | 🔄 Refresh | 🔍 Search
+──────────────────────────────────────────────
+[+ Add New Capture]  |  [Batch Analyze]  | [Export to Brief]
+
+Grid of Cards:
+┌─────────────┬────────────────────────────┐
+│  Screenshot │  Notes / Tags / Meta       │
+│  [image]    │  🏷️ Tags: Define, Insight   │
+│             │  📝 Notes: User input...    │
+│             │  AI Suggestions: [•••]     │
+│             │  [Analyze] [Pin to Brief]  │
+└─────────────┴────────────────────────────┘
+(repeat...)
+```
+
+**Smart Features:**
+
+* **Drag-to-section:** drag card into brief section directly from here
+* **Inline edit tags + notes**
+* **Quick filters:** Show only "Analyzed" / "Favorited" / "Tagged as \[x]"
+
+---
+
+## 3. **📊 Truth Analysis Sidebar / Modal**
+
+> ✅ For users who want to trigger analysis inline without disrupting layout
+
+**Modal UI:**
+
+```
+──────── Truth Analysis ────────
+📸 Image Preview (optional)
+📄 Text Content Pulled
+✍️ User Note Included
+
+🧠 Tags: [Insight, Define]
+────────────────────────────
+🧾 AI Analysis Result:
+• Fact: ...
+• Observation: ...
+• Insight: ...
+• Human Truth: ...
+• Cultural Moment: ...
+────────────────────────────
+[✔ Add to Brief]   [Close]
+```
+
+---
+
+## 4. **📄 Brief Builder Interface**
+
+> ✅ Where it all comes together — simple, strategic structure
+
+**Layout with Define → Shift → Deliver:**
+
+```
+📁 Project: Jimmy John's PAC Drop
+
+👤 Define (Who are we targeting?)
+[ + Add Card ]
+[ Drag capture or analysis here ]
+
+🌀 Shift (What change do we want?)
+[ + Add Cultural Insight / Moment ]
+
+🎯 Deliver (How do we show up?)
+[ + Add Creative Hook / Idea ]
+───────────────────────────────
+🖼️ Visual Section:
+Drag screenshots here for export
+───────────────────────────────
+[ Export as Google Slides ]
+```
+
+**Smart Add:**
+
+* Search or filter workspace for relevant captures
+* Cards auto-suggest which section to go into
+* All content remains **editable in place** before export
+
+---
+
+## 5. **📤 Export to Google Slides Flow**
+
+> ✅ One click, pre-templated, beautiful layout
+
+* User selects “Export to Slide Deck”
+* Choose from template (e.g. Strategy Kickoff, Trend Drop, Brief Snapshot)
+* System:
+
+  * Builds slides from brief structure
+  * Auto-inserts screenshots
+  * Formats analysis text with hierarchy
+
+Preview shows:
+
+* Slide order
+* Images
+* Text (all editable in Google)
+
+---
+
+# 💡 Additional Ideas to Keep It Seamless
+
+| Feature                     | Description                                                           |
+| --------------------------- | --------------------------------------------------------------------- |
+| 🔀 Smart Sort Order         | Auto-sort cards by relevance, engagement, recency                     |
+| 🧠 “AI Suggest for Brief”   | One-click that proposes a full brief draft using all captured content |
+| 📌 Quick Pin Shortcut       | Pin capture for inclusion by hitting `P` or clicking top-right icon   |
+| 📂 Folder Tags              | Let users organize by campaign, theme, or vertical                    |
+| 🖼️ Screenshot Scanner Mode | Gemini-powered classification tags content (meme, tweet, stats, etc)  |
+
+---
+
+## ✅ What To Build First
+
+1. **Chrome Extension v2**
+2. **Workspace UI + Card Layout**
+3. **Inline + Batch Truth Analysis**
+4. **Brief Builder Drafting Screen**
+5. **Slide Export MVP**
+
+---
+
+Would you like mockups for these flows or should we begin with the workspace layout wireframe?
