@@ -46,10 +46,15 @@
             <!-- Project Assignment Section -->
             <div class="form-group">
                 <label for="projectSelect">📋 Assign to Project:</label>
-                <select id="projectSelect" class="project-select">
-                    <option value="">Select a project...</option>
-                </select>
-                <button id="createProjectBtn" class="create-project-btn">+ New Project</button>
+                <div class="project-controls">
+                    <select id="projectSelect" class="project-select">
+                        <option value="">Select a project...</option>
+                    </select>
+                    <div>
+                        <button id="createProjectBtn" class="create-project-btn">+ New Project</button>  
+                        <button id="workspaceButton" class="workspace-btn" style="display: none;">🚀 Open Workspace</button>
+                    </div>
+                </div>
             </div>
 
             <!-- Template Section Assignment -->

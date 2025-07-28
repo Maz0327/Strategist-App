@@ -57,6 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const createProjectBtn = document.getElementById('createProjectBtn');
     const templateSectionSelect = document.getElementById('templateSectionSelect');
     const sectionSelect = document.getElementById('sectionSelect');
+    const workspaceButton = document.getElementById('workspaceButton');
 
     // Screenshot elements
     const elementScreenshotBtn = document.getElementById('elementScreenshotBtn');
@@ -75,6 +76,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Project management listeners
     projectSelect?.addEventListener('change', handleProjectChange);
     createProjectBtn?.addEventListener('click', handleCreateProject);
+    workspaceButton?.addEventListener('click', handleOpenWorkspace);
     
     // Tag system listeners
     const tagCheckboxes = document.querySelectorAll('.tag-checkbox');
@@ -144,8 +146,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Project change handler
     function handleProjectChange(event) {
         const projectId = event.target.value;
+        selectedProject = projectId;
         chrome.storage.local.set({selectedProject: projectId});
+        
+        // Show/hide workspace button based on project selection
+        const workspaceBtn = document.getElementById('workspaceButton');
+        if (projectId && workspaceBtn) {
+            workspaceBtn.style.display = 'inline-block';
+        } else if (workspaceBtn) {
+            workspaceBtn.style.display = 'none';
+        }
+        
+        // Show template section selection if project is selected
+        if (projectId && templateSectionSelect) {
+            templateSectionSelect.style.display = 'block';
+        } else if (templateSectionSelect) {
+            templateSectionSelect.style.display = 'none';
+        }
+        
         updateAutoTags(); // Update tags based on project context
+    }
+    
+    // Open workspace handler
+    function handleOpenWorkspace() {
+        if (selectedProject) {
+            const workspaceUrl = `${currentConfig.backendUrl}/projects/${selectedProject}/workspace`;
+            chrome.tabs.create({ url: workspaceUrl });
+            showStatus('Opening project workspace...', 'success');
+        } else {
+            showStatus('Please select a project first', 'error');
+        }
     }
     
     // Create new project handler
@@ -176,6 +206,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     
                     // Select the new project
                     projectSelect.value = newProject.id;
+                    selectedProject = newProject.id;
                     handleProjectChange({target: {value: newProject.id}});
                     
                     showStatus(`Project "${projectName}" created successfully!`, 'success');
