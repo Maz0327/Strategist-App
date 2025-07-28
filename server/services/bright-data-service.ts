@@ -112,21 +112,24 @@ export class BrightDataService {
     return await axios.get(url, proxyConfig);
   }
 
-  // Instagram Real-Time Scraping via Bright Data Browser
+  // Instagram Real-Time Scraping via Bright Data Browser - ISOLATED CONNECTION
   async scrapeInstagramPosts(hashtags: string[]): Promise<ScrapingResult[]> {
     if (!this.isConfigured) {
       throw new Error('BRIGHT DATA CREDENTIALS REQUIRED - NO FALLBACK AVAILABLE');
     }
 
-    try {
-      const results: ScrapingResult[] = [];
-      const browser = await puppeteer.connect({
-        browserWSEndpoint: this.browserEndpoint,
-        defaultViewport: null
-      });
-      
-      for (const hashtag of hashtags.slice(0, 3)) { // Cost control
-        debugLogger.info(`📸 Live Instagram scraping: #${hashtag}`);
+    const results: ScrapingResult[] = [];
+    
+    // **FIX: Each hashtag gets its own isolated browser connection**
+    for (const hashtag of hashtags.slice(0, 2)) { // Reduced for stability
+      try {
+        debugLogger.info(`📸 Live Instagram scraping: #${hashtag} (isolated connection)`);
+        
+        // **FIX: Fresh browser connection for each hashtag to prevent detached frame**
+        const browser = await puppeteer.connect({
+          browserWSEndpoint: this.browserEndpoint,
+          defaultViewport: null
+        });
         
         const page = await browser.newPage();
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
@@ -230,27 +233,24 @@ export class BrightDataService {
         } catch (error) {
           debugLogger.error(`Instagram hashtag ${hashtag} failed:`, (error as Error).message);
         } finally {
-          // **FIX: Enhanced connection stability to prevent "detached Frame" errors**
+          // **FIX: Complete connection cleanup to prevent detached frame errors**
           try {
-            if (!page.isClosed()) {
+            if (page && !page.isClosed()) {
               await page.close();
             }
+            await browser.disconnect();
           } catch (e) {
-            // Ignore close errors - page may already be closed or detached
-            debugLogger.warn(`Safe Instagram page closure: ${e.message}`);
+            debugLogger.warn(`Instagram connection cleanup: ${e.message}`);
           }
         }
         
-        await new Promise(resolve => setTimeout(resolve, 3000)); // Rate limiting
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Rate limiting
+      } catch (connectionError) {
+        debugLogger.error(`Instagram hashtag ${hashtag} connection failed:`, connectionError.message);
       }
-      
-      await browser.disconnect();
-      
-      return results;
-    } catch (error) {
-      debugLogger.error('Instagram scraping failed:', error.message);
-      return [];
     }
+    
+    return results;
   }
 
   // Transform Bright Data Instagram response to our format
@@ -1205,22 +1205,23 @@ export class BrightDataService {
       throw new Error('BRIGHT DATA CREDENTIALS REQUIRED - NO FALLBACK AVAILABLE');
     }
 
-    try {
-      debugLogger.info(`💼 Live LinkedIn content scraping`);
-      
-      const browser = await puppeteer.connect({
-        browserWSEndpoint: this.browserEndpoint,
-        defaultViewport: null
-      });
-      
-      const results: ScrapingResult[] = [];
-      
-      for (const keyword of keywords.slice(0, 2)) { // Cost control
+    const results: ScrapingResult[] = [];
+    
+    // **FIX: Each keyword gets its own isolated browser connection**
+    for (const keyword of keywords.slice(0, 2)) { // Cost control
+      try {
+        debugLogger.info(`💼 Scraping LinkedIn for: ${keyword} (isolated connection)`);
+        
+        // **FIX: Fresh browser connection for each keyword to prevent detached frame**
+        const browser = await puppeteer.connect({
+          browserWSEndpoint: this.browserEndpoint,
+          defaultViewport: null
+        });
+        
         const page = await browser.newPage();
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
         
         try {
-          debugLogger.info(`💼 Scraping LinkedIn for: ${keyword}`);
           
           // Enhanced LinkedIn navigation with 50s timeout for slow loading and navigation issues
           await page.goto(`https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent(keyword)}`, { 
@@ -1293,27 +1294,24 @@ export class BrightDataService {
         } catch (error) {
           debugLogger.error(`LinkedIn keyword ${keyword} failed:`, error.message);
         } finally {
-          // **FIX: Enhanced connection stability to prevent "detached Frame" errors**
+          // **FIX: Complete connection cleanup to prevent detached frame errors**
           try {
-            if (!page.isClosed()) {
+            if (page && !page.isClosed()) {
               await page.close();
             }
+            await browser.disconnect();
           } catch (e) {
-            // Ignore close errors - page may already be closed or detached
-            debugLogger.warn(`Safe page closure warning: ${e.message}`);
+            debugLogger.warn(`LinkedIn connection cleanup: ${e.message}`);
           }
         }
         
-        await new Promise(resolve => setTimeout(resolve, 3000)); // Rate limiting
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Rate limiting
+      } catch (connectionError) {
+        debugLogger.error(`LinkedIn keyword ${keyword} connection failed:`, connectionError.message);
       }
-      
-      await browser.disconnect();
-      return results;
-      
-    } catch (error) {
-      debugLogger.error('LinkedIn scraping failed:', error.message);
-      return [];
     }
+    
+    return results;
   }
 
   // Real Bright Data Web Scraper API integration
