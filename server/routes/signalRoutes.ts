@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { storage } from '../storage';
 import { debugLogger } from '../services/debug-logger';
 import { requireAuth } from '../middleware/require-auth';
+import signalsUploadRoutes from './signals-upload';
+import signalsUploadRoutes from './signals-upload';
 
 const router = Router();
 
@@ -492,5 +494,8 @@ router.post("/:id/demote", requireAuth, async (req, res) => {
     });
   }
 });
+
+// Mount upload routes
+router.use('/upload', signalsUploadRoutes);
 
 export default router;

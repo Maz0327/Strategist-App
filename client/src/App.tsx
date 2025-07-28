@@ -11,6 +11,7 @@ import Dashboard from './pages/dashboard';
 import AdminRegister from './components/admin-register';
 import NotFound from './pages/not-found';
 import Workspace from './pages/workspace';
+import { WorkspaceDetail } from './pages/workspace-detail';
 import { DebugPanel } from './components/debug-panel';
 import { TutorialOverlay } from './components/tutorial-overlay';
 import { useTutorial } from './hooks/use-tutorial';
@@ -114,6 +115,12 @@ function AppContent() {
       <Route path="/workspaces">
         {user
           ? <Dashboard user={user} onLogout={() => setUser(null)} currentPage="workspaces" />
+          : <AuthPage onAuthSuccess={setUser} />
+        }
+      </Route>
+      <Route path="/projects/:id/workspace">
+        {user
+          ? <WorkspaceDetail />
           : <AuthPage onAuthSuccess={setUser} />
         }
       </Route>
