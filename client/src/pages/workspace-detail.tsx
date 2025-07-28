@@ -64,9 +64,13 @@ import {
   Brain,
   Image,
   BookOpen,
-  Download
+  Download,
+  Images,
+  CheckCircle,
+  AlertCircle
 } from 'lucide-react';
 import { Link } from 'wouter';
+import { Progress } from '@/components/ui/progress';
 
 interface Signal {
   id: number;
@@ -103,6 +107,13 @@ export function WorkspaceDetail() {
   const [uploadContent, setUploadContent] = useState('');
   const [uploadNotes, setUploadNotes] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  
+  // Batch screenshot upload state
+  const [isBatchUploadOpen, setIsBatchUploadOpen] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<{[key: string]: number}>({});
+  const [processingStatus, setProcessingStatus] = useState<{[key: string]: 'uploading' | 'extracting' | 'complete' | 'error'}>({});
+  const [extractedData, setExtractedData] = useState<{[key: string]: {text: string, isTextHeavy: boolean}}>({});
 
   // Smart Capture Viewer state
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -221,6 +232,133 @@ export function WorkspaceDetail() {
       });
     }
   });
+
+  // Batch screenshot upload mutation
+  const batchUploadMutation = useMutation({
+    mutationFn: async (files: File[]) => {
+      const results = [];
+      
+      for (const file of files) {
+        const fileId = `${file.name}-${Date.now()}`;
+        setProcessingStatus(prev => ({ ...prev, [fileId]: 'uploading' }));
+        setUploadProgress(prev => ({ ...prev, [fileId]: 0 }));
+
+        try {
+          const formData = new FormData();
+          formData.append('files', file);
+          formData.append('projectId', projectId!);
+          formData.append('extractText', 'true');
+          formData.append('isDraft', 'true');
+          formData.append('status', 'capture');
+
+          setUploadProgress(prev => ({ ...prev, [fileId]: 50 }));
+          setProcessingStatus(prev => ({ ...prev, [fileId]: 'extracting' }));
+
+          const response = await fetch('/api/signals/batch-upload', {
+            method: 'POST',
+            credentials: 'include',
+            body: formData
+          });
+
+          const result = await response.json();
+          
+          if (result.success) {
+            setProcessingStatus(prev => ({ ...prev, [fileId]: 'complete' }));
+            setUploadProgress(prev => ({ ...prev, [fileId]: 100 }));
+            
+            // Store extracted text data
+            if (result.data?.extractedText) {
+              setExtractedData(prev => ({
+                ...prev,
+                [fileId]: {
+                  text: result.data.extractedText,
+                  isTextHeavy: result.data.isTextHeavy || false
+                }
+              }));
+            }
+            
+            results.push(result);
+          } else {
+            throw new Error(result.error || 'Upload failed');
+          }
+        } catch (error) {
+          setProcessingStatus(prev => ({ ...prev, [fileId]: 'error' }));
+          console.error(`Failed to upload ${file.name}:`, error);
+          results.push({ success: false, error: error.message, fileName: file.name });
+        }
+      }
+      
+      return results;
+    },
+    onSuccess: (results) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/signals', 'project', projectId] });
+      
+      const successCount = results.filter(r => r.success).length;
+      const errorCount = results.filter(r => !r.success).length;
+      
+      if (successCount > 0) {
+        toast({
+          title: `${successCount} screenshot(s) uploaded`,
+          description: errorCount > 0 ? `${errorCount} failed to upload` : "All screenshots processed successfully"
+        });
+      }
+      
+      if (errorCount === results.length) {
+        toast({
+          title: "Upload failed",
+          description: "All screenshots failed to upload",
+          variant: "destructive"
+        });
+      }
+      
+      // Reset state
+      setTimeout(() => {
+        setIsBatchUploadOpen(false);
+        setSelectedFiles([]);
+        setUploadProgress({});
+        setProcessingStatus({});
+        setExtractedData({});
+      }, 2000);
+    },
+    onError: (error) => {
+      toast({
+        title: "Batch upload failed",
+        description: "Please try again later",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Handle batch file selection
+  const handleBatchFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    if (imageFiles.length !== files.length) {
+      toast({
+        title: "Invalid files",
+        description: "Please select only image files",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setSelectedFiles(imageFiles);
+  };
+
+  // Start batch upload
+  const handleBatchUpload = () => {
+    if (selectedFiles.length === 0) {
+      toast({
+        title: "No files selected",
+        description: "Please select screenshots to upload",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    batchUploadMutation.mutate(selectedFiles);
+  };
 
   const signals: Signal[] = signalsData?.data?.signals || [];
   
