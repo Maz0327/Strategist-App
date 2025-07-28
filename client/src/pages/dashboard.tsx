@@ -115,17 +115,18 @@ export default function Dashboard({ user, onLogout, onPageChange, currentPage }:
       subItems: []
     },
 
-    {
-      id: "explore",
-      label: "Explore Signals",
-      icon: Search,
-      subItems: [
-        { id: "trending", label: "Trending Topics" },
-        { id: "mining", label: "Signal Mining" },
-        { id: "opportunities", label: "Reactive Opportunities" },
-        { id: "cultural", label: "Cultural Moments" }
-      ]
-    },
+    // TEMPORARILY HIDDEN - Explore Signals section (trending data needs work)
+    // {
+    //   id: "explore", 
+    //   label: "Explore Signals",
+    //   icon: Search,
+    //   subItems: [
+    //     { id: "trending", label: "Trending Topics" },
+    //     { id: "mining", label: "Signal Mining" },
+    //     { id: "opportunities", label: "Reactive Opportunities" },
+    //     { id: "cultural", label: "Cultural Moments" }
+    //   ]
+    // },
     {
       id: "brief",
       label: "Strategic Brief Lab",
