@@ -203,6 +203,36 @@ export class ExternalAPIsService {
     }
   }
 
+  // Get data from working APIs (backup when Bright Data timeouts)
+  async getWorkingAPIsData(): Promise<TrendingTopic[]> {
+    console.log('🔧 WORKING APIS: Fetching from 7 working API endpoints');
+    
+    const workingAPIResults = await Promise.allSettled([
+      this.withTimeout(this.getHackerNewsTrends(), 5000, 'Hacker News API'),
+      this.withTimeout(this.getRedditTrends(), 8000, 'Reddit API'),
+      this.withTimeout(this.getGoogleTrends(), 6000, 'Google Trends API'),
+      this.withTimeout(this.getYouTubeTrends(), 8000, 'YouTube API'),
+      this.withTimeout(this.getNewsTrends(), 5000, 'News API'),
+      this.withTimeout(this.getCurrentsTrends(), 5000, 'Currents API'),
+      this.withTimeout(this.getGNewsTrends(), 5000, 'GNews API')
+    ]);
+
+    const allResults: TrendingTopic[] = [];
+    const apiNames = ['Hacker News', 'Reddit', 'Google Trends', 'YouTube', 'NewsAPI', 'Currents', 'GNews'];
+
+    workingAPIResults.forEach((result, index) => {
+      if (result.status === 'fulfilled' && result.value && result.value.length > 0) {
+        allResults.push(...result.value);
+        console.log(`✅ ${apiNames[index]}: ${result.value.length} items (API working)`);
+      } else {
+        console.log(`❌ ${apiNames[index]}: Failed or empty - ${result.status === 'rejected' ? result.reason?.message || 'Unknown error' : 'No data'}`);
+      }
+    });
+
+    console.log(`🎯 WORKING APIS TOTAL: ${allResults.length} topics from working APIs`);
+    return allResults;
+  }
+
   // Utility method to add timeout to any promise
   private async withTimeout<T>(promise: Promise<T>, timeoutMs: number, name: string): Promise<T> {
     const timeoutPromise = new Promise<never>((_, reject) => {
@@ -297,6 +327,19 @@ export class ExternalAPIsService {
       return trends;
     } catch (error) {
       console.error('Failed to fetch news trends:', error);
+      return this.getFallbackNewsData();
+    }
+  }
+
+  async getCurrentsTrends(): Promise<TrendingTopic[]> {
+    try {
+      if (!this.currentsService) {
+        return this.getFallbackNewsData();
+      }
+      const trends = await this.currentsService.getLatestNews(['technology', 'business']);
+      return trends.slice(0, 10);
+    } catch (error) {
+      console.error('Failed to fetch Currents trends:', error);
       return this.getFallbackNewsData();
     }
   }

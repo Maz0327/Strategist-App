@@ -21,12 +21,39 @@ const refreshTrendingData = async (forceRefresh = false) => {
   console.log('🔄 MANUAL REFRESH: User navigated to Explore Signals - fetching fresh data');
   
   try {
-    const liveTopics = await Promise.race([
-      externalAPIs.getAllTrendingTopics(),
-      new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Manual refresh timeout')), 25000) // 25s for manual refresh
-      )
-    ]).catch(() => []);
+    // Force parallel execution of BOTH Bright Data AND working APIs
+    console.log('🚀 MULTI-PLATFORM: Fetching from both Bright Data scraping AND working APIs simultaneously');
+    
+    const [brightDataTopics, workingAPITopics] = await Promise.allSettled([
+      Promise.race([
+        externalAPIs.getAllTrendingTopics(),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Bright Data timeout')), 15000)
+        )
+      ]),
+      externalAPIs.getWorkingAPIsData() // Always call working APIs
+    ]);
+    
+    const allTopics: any[] = [];
+    
+    // Add Bright Data results (timeout-resistant)
+    if (brightDataTopics.status === 'fulfilled' && brightDataTopics.value) {
+      console.log(`✅ Bright Data: ${brightDataTopics.value.length} topics`);
+      allTopics.push(...brightDataTopics.value);
+    } else {
+      console.log(`❌ Bright Data failed: ${brightDataTopics.status === 'rejected' ? brightDataTopics.reason?.message || 'No data' : 'No data'}`);
+    }
+    
+    // Add working API results (always called)
+    if (workingAPITopics.status === 'fulfilled' && workingAPITopics.value) {
+      console.log(`✅ Working APIs: ${workingAPITopics.value.length} topics`);
+      allTopics.push(...workingAPITopics.value);
+    } else {
+      console.log(`❌ Working APIs failed: ${workingAPITopics.status === 'rejected' ? workingAPITopics.reason?.message || 'No data' : 'No data'}`);
+    }
+    
+    console.log(`🎯 TOTAL TOPICS: ${allTopics.length} from multiple platforms`);
+    const liveTopics = allTopics;
 
     if (liveTopics.length > 0) {
       const platformGroups: { [key: string]: any[] } = {};
