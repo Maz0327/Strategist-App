@@ -118,6 +118,16 @@ export function WorkspaceDetail() {
   // Fetch project details
   const { data: project, isLoading: projectLoading } = useQuery<Project>({
     queryKey: ['/api/projects', projectId],
+    queryFn: async () => {
+      const response = await fetch(`/api/projects/${projectId}`, {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch project');
+      }
+      const result = await response.json();
+      return result.data || result;
+    },
     enabled: !!projectId
   });
 
@@ -214,8 +224,7 @@ export function WorkspaceDetail() {
 
   const signals: Signal[] = signalsData?.data?.signals || [];
   
-  // Use project directly - no need for projectData
-  // const projectData removed - using 'project' variable directly
+  // Remove debug logs since the issue is identified
 
   // Available tags from all signals
   const availableTags = useMemo(() => {
