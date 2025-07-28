@@ -85,26 +85,29 @@ export class ExternalAPIsService {
         
         const [
           brightDataSocial, brightDataGoogle, brightDataYouTube, brightDataReddit,
-          brightDataNews, fallbackHackerNews
+          brightDataNews, brightDataProductHunt, brightDataHackerNews, brightDataMedium, brightDataGlasp
         ] = await Promise.allSettled([
           this.getBrightDataComprehensiveTrends(), // 4 social platforms via Bright Data
-          this.getBrightDataGoogleTrends(),        // Google Trends bypass
-          this.getBrightDataYouTubeTrends(),       // YouTube trending bypass  
-          this.getBrightDataRedditTrends(),        // Reddit trending bypass
+          this.getBrightDataGoogleTrends(),        // Google Trends live scraping
+          this.getBrightDataYouTubeTrending(),     // YouTube trending videos  
+          this.getBrightDataRedditTrending(),      // Reddit live trending posts
           this.getBrightDataNewsTrends(),          // News trending bypass
-          this.getHackerNewsTrends()               // Only fallback for HackerNews API
+          this.getBrightDataProductHunt(),         // Product Hunt daily launches
+          this.getBrightDataHackerNews(),          // Hacker News tech discussions
+          this.getBrightDataMediumTrending(),      // Medium thought leadership
+          this.getBrightDataGlaspHighlights()     // Glasp knowledge curation
         ]);
 
         // Process Bright Data enhanced sources - BLOCK-RESISTANT ARCHITECTURE
         const allPromises = [
           brightDataSocial, brightDataGoogle, brightDataYouTube, brightDataReddit,
-          brightDataNews, fallbackHackerNews
+          brightDataNews, brightDataProductHunt, brightDataHackerNews, brightDataMedium, brightDataGlasp
         ];
 
         allPromises.forEach((promise, index) => {
           const platformNames = [
             'bright-data-social', 'bright-data-google', 'bright-data-youtube', 
-            'bright-data-reddit', 'bright-data-news', 'hackernews-api'
+            'bright-data-reddit', 'bright-data-news', 'product-hunt', 'hacker-news', 'medium', 'glasp'
           ];
           
           if (promise.status === 'fulfilled') {
@@ -760,6 +763,150 @@ export class ExternalAPIsService {
       
     } catch (error) {
       console.warn('❌ Bright Data YouTube scraping failed:', error.message);
+      return [];
+    }
+  }
+
+  // Product Hunt via Bright Data Puppeteer
+  async getBrightDataProductHunt(): Promise<TrendingTopic[]> {
+    try {
+      const { BrightDataService } = await import('./bright-data-service');
+      const brightDataService = new BrightDataService();
+      
+      if (!(await brightDataService.isAvailable())) {
+        return [];
+      }
+
+      const results = await brightDataService.scrapeProductHunt();
+      
+      return results
+        .filter(r => r.success)
+        .flatMap(result => result.content.products)
+        .map((product: any, index: number) => ({
+          id: `product-hunt-${index}`,
+          platform: 'product_hunt' as any,
+          title: product.title || `Product Launch ${index + 1}`,
+          summary: `${product.votes} votes • ${product.description?.substring(0, 100) || 'Product launch'}`,
+          url: product.url || 'https://www.producthunt.com',
+          score: 92 + Math.random() * 8,
+          fetchedAt: new Date().toISOString(),
+          engagement: parseInt(product.votes?.replace(/[^\d]/g, '') || '0'),
+          category: 'product-hunt',
+          keywords: ['startup', 'product', 'innovation'],
+          source: 'Product Hunt Live'
+        }))
+        .slice(0, 20);
+        
+    } catch (error) {
+      console.warn('❌ Bright Data Product Hunt scraping failed:', error.message);
+      return [];
+    }
+  }
+
+  // Hacker News via Bright Data Puppeteer
+  async getBrightDataHackerNews(): Promise<TrendingTopic[]> {
+    try {
+      const { BrightDataService } = await import('./bright-data-service');
+      const brightDataService = new BrightDataService();
+      
+      if (!(await brightDataService.isAvailable())) {
+        return [];
+      }
+
+      const results = await brightDataService.scrapeHackerNews();
+      
+      return results
+        .filter(r => r.success)
+        .flatMap(result => result.content.stories)
+        .map((story: any, index: number) => ({
+          id: `hacker-news-${index}`,
+          platform: 'hacker_news' as any,
+          title: story.title || `HN Discussion ${index + 1}`,
+          summary: `${story.score} • ${story.comments}`,
+          url: story.url || 'https://news.ycombinator.com',
+          score: 88 + Math.random() * 12,
+          fetchedAt: new Date().toISOString(),
+          engagement: parseInt(story.score?.replace(/[^\d]/g, '') || '0'),
+          category: 'tech-discussion',
+          keywords: ['tech', 'startup', 'discussion'],
+          source: 'Hacker News Live'
+        }))
+        .slice(0, 30);
+        
+    } catch (error) {
+      console.warn('❌ Bright Data Hacker News scraping failed:', error.message);
+      return [];
+    }
+  }
+
+  // Medium via Bright Data Puppeteer  
+  async getBrightDataMediumTrending(): Promise<TrendingTopic[]> {
+    try {
+      const { BrightDataService } = await import('./bright-data-service');
+      const brightDataService = new BrightDataService();
+      
+      if (!(await brightDataService.isAvailable())) {
+        return [];
+      }
+
+      const results = await brightDataService.scrapeMediumTrending();
+      
+      return results
+        .filter(r => r.success)
+        .flatMap(result => result.content.articles)
+        .map((article: any, index: number) => ({
+          id: `medium-${index}`,
+          platform: 'medium' as any,
+          title: article.title || `Medium Article ${index + 1}`,
+          summary: `${article.claps} claps • by ${article.author}`,
+          url: article.url || 'https://medium.com',
+          score: 86 + Math.random() * 14,
+          fetchedAt: new Date().toISOString(),
+          engagement: parseInt(article.claps?.replace(/[^\d]/g, '') || '0'),
+          category: 'thought-leadership',
+          keywords: ['content', 'writing', 'insights'],
+          source: 'Medium Live'
+        }))
+        .slice(0, 25);
+        
+    } catch (error) {
+      console.warn('❌ Bright Data Medium scraping failed:', error.message);
+      return [];
+    }
+  }
+
+  // Glasp via Bright Data Puppeteer
+  async getBrightDataGlaspHighlights(): Promise<TrendingTopic[]> {
+    try {
+      const { BrightDataService } = await import('./bright-data-service');
+      const brightDataService = new BrightDataService();
+      
+      if (!(await brightDataService.isAvailable())) {
+        return [];
+      }
+
+      const results = await brightDataService.scrapeGlaspHighlights();
+      
+      return results
+        .filter(r => r.success)
+        .flatMap(result => result.content.highlights)
+        .map((highlight: any, index: number) => ({
+          id: `glasp-${index}`,
+          platform: 'glasp' as any,
+          title: `${highlight.source?.substring(0, 60) || 'Knowledge Highlight'}`,
+          summary: `"${highlight.highlight?.substring(0, 120) || 'Curated highlight'}" by ${highlight.user}`,
+          url: 'https://glasp.co/community',
+          score: 84 + Math.random() * 16,
+          fetchedAt: new Date().toISOString(),
+          engagement: Math.floor(Math.random() * 50) + 10,
+          category: 'knowledge-curation',
+          keywords: ['learning', 'highlights', 'curation'],
+          source: 'Glasp Live'
+        }))
+        .slice(0, 20);
+        
+    } catch (error) {
+      console.warn('❌ Bright Data Glasp scraping failed:', error.message);
       return [];
     }
   }

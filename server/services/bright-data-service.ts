@@ -615,6 +615,307 @@ export class BrightDataService {
     }
   }
 
+  // Product Hunt Daily Launches (innovation and startup trends)
+  async scrapeProductHunt(): Promise<ScrapingResult[]> {
+    if (!this.isConfigured) {
+      throw new Error('BRIGHT DATA CREDENTIALS REQUIRED - NO FALLBACK AVAILABLE');
+    }
+
+    try {
+      debugLogger.info(`🚀 Live Product Hunt scraping`);
+      
+      const browser = await puppeteer.connect({
+        browserWSEndpoint: this.browserEndpoint,
+        defaultViewport: null
+      });
+      
+      const page = await browser.newPage();
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+      
+      try {
+        await page.goto('https://www.producthunt.com/', { 
+          waitUntil: 'networkidle2', 
+          timeout: 15000 
+        });
+
+        // Wait for products to load
+        await page.waitForSelector('[data-test="homepage-section-content"]', { timeout: 10000 }).catch(() => {});
+        
+        // Extract Product Hunt launches
+        const products = await page.evaluate(() => {
+          const productElements = Array.from(document.querySelectorAll('[data-test="homepage-section-content"] > div'));
+          return productElements.slice(0, 20).map((element, index) => {
+            const title = element.querySelector('h3, h2, h4');
+            const description = element.querySelector('p');
+            const votes = element.querySelector('[data-test="vote-button"]');
+            const link = element.querySelector('a');
+            
+            return {
+              id: `ph_${index}`,
+              title: title ? title.textContent?.trim() : `Product ${index + 1}`,
+              description: description ? description.textContent?.trim().substring(0, 150) : '',
+              votes: votes ? votes.textContent?.trim() : '0',
+              url: link ? `https://www.producthunt.com${link.getAttribute('href')}` : '',
+              platform: 'product_hunt',
+              timestamp: new Date().toISOString()
+            };
+          });
+        });
+
+        await page.close();
+        await browser.disconnect();
+
+        debugLogger.info(`✅ Product Hunt: ${products.length} products scraped`);
+
+        return [{
+          url: 'https://www.producthunt.com/',
+          content: {
+            platform: 'product_hunt',
+            products: products,
+            totalProducts: products.length,
+            scrapedAt: new Date().toISOString()
+          },
+          success: true,
+          timestamp: new Date().toISOString()
+        }];
+        
+      } catch (error) {
+        await page.close();
+        await browser.disconnect();
+        throw error;
+      }
+      
+    } catch (error) {
+      debugLogger.error('Product Hunt scraping failed:', (error as Error).message);
+      return [];
+    }
+  }
+
+  // Hacker News Trending (tech and startup discussions)
+  async scrapeHackerNews(): Promise<ScrapingResult[]> {
+    if (!this.isConfigured) {
+      throw new Error('BRIGHT DATA CREDENTIALS REQUIRED - NO FALLBACK AVAILABLE');
+    }
+
+    try {
+      debugLogger.info(`💻 Live Hacker News scraping`);
+      
+      const browser = await puppeteer.connect({
+        browserWSEndpoint: this.browserEndpoint,
+        defaultViewport: null
+      });
+      
+      const page = await browser.newPage();
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+      
+      try {
+        await page.goto('https://news.ycombinator.com/', { 
+          waitUntil: 'networkidle2', 
+          timeout: 15000 
+        });
+
+        // Wait for stories to load
+        await page.waitForSelector('.athing', { timeout: 10000 }).catch(() => {});
+        
+        // Extract Hacker News stories
+        const stories = await page.evaluate(() => {
+          const storyElements = Array.from(document.querySelectorAll('.athing'));
+          return storyElements.slice(0, 30).map((element, index) => {
+            const titleLink = element.querySelector('.titleline > a');
+            const scoreElement = document.querySelector(`#score_${element.id}`);
+            const commentsElement = document.querySelector(`tr:has(#score_${element.id}) a:last-child`);
+            
+            return {
+              id: `hn_${element.id || index}`,
+              title: titleLink ? titleLink.textContent?.trim() : `HN Story ${index + 1}`,
+              url: titleLink ? titleLink.getAttribute('href') : '',
+              score: scoreElement ? scoreElement.textContent?.trim() : '0 points',
+              comments: commentsElement ? commentsElement.textContent?.trim() : '0 comments',
+              platform: 'hacker_news',
+              timestamp: new Date().toISOString()
+            };
+          });
+        });
+
+        await page.close();
+        await browser.disconnect();
+
+        debugLogger.info(`✅ Hacker News: ${stories.length} stories scraped`);
+
+        return [{
+          url: 'https://news.ycombinator.com/',
+          content: {
+            platform: 'hacker_news',
+            stories: stories,
+            totalStories: stories.length,
+            scrapedAt: new Date().toISOString()
+          },
+          success: true,
+          timestamp: new Date().toISOString()
+        }];
+        
+      } catch (error) {
+        await page.close();
+        await browser.disconnect();
+        throw error;
+      }
+      
+    } catch (error) {
+      debugLogger.error('Hacker News scraping failed:', (error as Error).message);
+      return [];
+    }
+  }
+
+  // Medium Trending Stories (content and thought leadership)
+  async scrapeMediumTrending(): Promise<ScrapingResult[]> {
+    if (!this.isConfigured) {
+      throw new Error('BRIGHT DATA CREDENTIALS REQUIRED - NO FALLBACK AVAILABLE');
+    }
+
+    try {
+      debugLogger.info(`📝 Live Medium trending scraping`);
+      
+      const browser = await puppeteer.connect({
+        browserWSEndpoint: this.browserEndpoint,
+        defaultViewport: null
+      });
+      
+      const page = await browser.newPage();
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+      
+      try {
+        await page.goto('https://medium.com/tag/technology', { 
+          waitUntil: 'networkidle2', 
+          timeout: 15000 
+        });
+
+        // Wait for articles to load
+        await page.waitForSelector('article', { timeout: 10000 }).catch(() => {});
+        
+        // Extract Medium articles
+        const articles = await page.evaluate(() => {
+          const articleElements = Array.from(document.querySelectorAll('article'));
+          return articleElements.slice(0, 25).map((element, index) => {
+            const title = element.querySelector('h2, h3');
+            const author = element.querySelector('[data-testid="authorName"]');
+            const claps = element.querySelector('[aria-label*="clap"]');
+            const link = element.querySelector('a[aria-labelledby]');
+            
+            return {
+              id: `medium_${index}`,
+              title: title ? title.textContent?.trim() : `Medium Article ${index + 1}`,
+              author: author ? author.textContent?.trim() : 'Unknown Author',
+              claps: claps ? claps.textContent?.trim() : '0',
+              url: link ? link.getAttribute('href') : '',
+              platform: 'medium',
+              timestamp: new Date().toISOString()
+            };
+          });
+        });
+
+        await page.close();
+        await browser.disconnect();
+
+        debugLogger.info(`✅ Medium: ${articles.length} articles scraped`);
+
+        return [{
+          url: 'https://medium.com/tag/technology',
+          content: {
+            platform: 'medium',
+            articles: articles,
+            totalArticles: articles.length,
+            scrapedAt: new Date().toISOString()
+          },
+          success: true,
+          timestamp: new Date().toISOString()
+        }];
+        
+      } catch (error) {
+        await page.close();
+        await browser.disconnect();
+        throw error;
+      }
+      
+    } catch (error) {
+      debugLogger.error('Medium scraping failed:', (error as Error).message);
+      return [];
+    }
+  }
+
+  // Glasp Social Highlights (knowledge curation trends)
+  async scrapeGlaspHighlights(): Promise<ScrapingResult[]> {
+    if (!this.isConfigured) {
+      throw new Error('BRIGHT DATA CREDENTIALS REQUIRED - NO FALLBACK AVAILABLE');
+    }
+
+    try {
+      debugLogger.info(`✨ Live Glasp highlights scraping`);
+      
+      const browser = await puppeteer.connect({
+        browserWSEndpoint: this.browserEndpoint,
+        defaultViewport: null
+      });
+      
+      const page = await browser.newPage();
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+      
+      try {
+        await page.goto('https://glasp.co/community', { 
+          waitUntil: 'networkidle2', 
+          timeout: 15000 
+        });
+
+        // Wait for highlights to load
+        await page.waitForSelector('.highlight-card, .community-highlight', { timeout: 10000 }).catch(() => {});
+        
+        // Extract Glasp highlights
+        const highlights = await page.evaluate(() => {
+          const highlightElements = Array.from(document.querySelectorAll('.highlight-card, .community-highlight, [data-testid="highlight"]'));
+          return highlightElements.slice(0, 20).map((element, index) => {
+            const text = element.querySelector('.highlight-text, .highlighted-text, p');
+            const source = element.querySelector('.source-title, .article-title, h3');
+            const author = element.querySelector('.user-name, .author');
+            
+            return {
+              id: `glasp_${index}`,
+              highlight: text ? text.textContent?.trim().substring(0, 200) : `Highlight ${index + 1}`,
+              source: source ? source.textContent?.trim() : 'Unknown Source',
+              user: author ? author.textContent?.trim() : 'Anonymous',
+              platform: 'glasp',
+              timestamp: new Date().toISOString()
+            };
+          });
+        });
+
+        await page.close();
+        await browser.disconnect();
+
+        debugLogger.info(`✅ Glasp: ${highlights.length} highlights scraped`);
+
+        return [{
+          url: 'https://glasp.co/community',
+          content: {
+            platform: 'glasp',
+            highlights: highlights,
+            totalHighlights: highlights.length,
+            scrapedAt: new Date().toISOString()
+          },
+          success: true,
+          timestamp: new Date().toISOString()
+        }];
+        
+      } catch (error) {
+        await page.close();
+        await browser.disconnect();
+        throw error;
+      }
+      
+    } catch (error) {
+      debugLogger.error('Glasp scraping failed:', (error as Error).message);
+      return [];
+    }
+  }
+
   async scrapeLinkedInContent(keywords: string[]): Promise<ScrapingResult[]> {
     if (!this.isConfigured) {
       throw new Error('BRIGHT DATA CREDENTIALS REQUIRED - NO FALLBACK AVAILABLE');
