@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Use development config for now (change to production when deployed)
     const currentConfig = config.development;
+    console.log('Extension using config:', currentConfig);
 
     // State management
     let currentPageInfo = null;

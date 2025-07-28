@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body {
+            width: 350px;
+            min-height: 400px;
+            padding: 16px;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        .capture-btn {
+            width: 100%;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .capture-btn:hover {
+            background: #45a049;
+        }
+        .capture-btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 12px;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 14px;
+            text-align: center;
+        }
+        .status.success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4CAF50;
+        }
+        .status.error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid #f44336;
+        }
+        .page-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+        }
+        .page-info h3 {
+            margin: 0 0 4px 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .page-info p {
+            margin: 0;
+            font-size: 12px;
+            opacity: 0.8;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Content Capture</h2>
+    </div>
+
+    <div class="page-info">
+        <h3 id="pageTitle">Loading...</h3>
+        <p id="pageUrl">...</p>
+    </div>
+
+    <form id="captureForm">
+        <div class="form-group">
+            <label for="projectSelect">Project:</label>
+            <select id="projectSelect">
+                <option value="">Select a project...</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="notesInput">Notes:</label>
+            <textarea id="notesInput" placeholder="Add your observations and insights..."></textarea>
+        </div>
+
+        <button type="submit" class="capture-btn" id="captureBtn">
+            Capture Content
+        </button>
+    </form>
+
+    <div id="status" class="status" style="display: none;"></div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
