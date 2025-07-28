@@ -11,11 +11,11 @@ interface MobileNavProps {
 }
 
 const NAV_ITEMS = [
-  { id: 'briefing', label: 'Briefing', icon: Home },
   { id: 'workspaces', label: 'Workspaces', icon: FolderOpen },
   { id: 'capture', label: 'Capture', icon: Plus },
   { id: 'explore', label: 'Explore', icon: Search },
   { id: 'brief', label: 'Brief', icon: Target },
+  { id: 'briefing', label: 'Briefing', icon: Home },
   { id: 'manage', label: 'Manage', icon: Settings }
 ];
 

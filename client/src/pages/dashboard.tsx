@@ -31,7 +31,7 @@ interface DashboardProps {
 
 export default function Dashboard({ user, onLogout, onPageChange, currentPage }: DashboardProps) {
   const [location] = useLocation();
-  const [activeTab, setActiveTab] = useState(currentPage || "capture");
+  const [activeTab, setActiveTab] = useState(currentPage || "workspaces");
   
   // Update active tab when route changes
   React.useEffect(() => {
@@ -46,7 +46,7 @@ export default function Dashboard({ user, onLogout, onPageChange, currentPage }:
       '/admin': 'admin'
     };
     
-    const newTab = pathToTab[location] || currentPage || 'capture';
+    const newTab = pathToTab[location] || currentPage || 'workspaces';
     setActiveTab(newTab);
   }, [location, currentPage]);
   const [activeSubTab, setActiveSubTab] = useState("");
