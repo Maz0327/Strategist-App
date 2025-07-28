@@ -13,6 +13,7 @@ import cohortRoutes from './routes/cohortRoutes';
 import insightsRoutes from './routes/insightsRoutes';
 import projectRoutes from './routes/projects';
 import briefRoutes from './routes/briefs';
+import workspaceRoutes from './routes/workspace';
 import { systemMonitor } from './services/system-monitor';
 import { setupVite, serveStatic, log } from "./vite";
 import { debugLogger, errorHandler } from "./services/debug-logger";
@@ -205,11 +206,12 @@ app.use((req, res, next) => {
   app.use('/api/trending', trendingRoutes);
   app.use('/api/projects', projectRoutes);
   app.use('/api/briefs', briefRoutes);
+  app.use('/api/workspace', workspaceRoutes);
   app.use('/', cohortRoutes);
   app.use('/', insightsRoutes);
 
   debugLogger.info('All modular routes registered successfully', {
-    routes: ['auth', 'signals', 'analyze', 'admin', 'user', 'traceability', 'trending', 'projects', 'briefs', 'cohorts', 'insights']
+    routes: ['auth', 'signals', 'analyze', 'admin', 'user', 'traceability', 'trending', 'projects', 'briefs', 'workspace', 'cohorts', 'insights']
   });
   
   const http = await import("http");

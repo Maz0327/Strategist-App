@@ -10,8 +10,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, FolderOpen, Calendar, Tag, Search, Filter } from 'lucide-react';
+import { Plus, FolderOpen, Calendar, Tag, Search, Filter, Settings } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
+import { Link } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
 
 const createProjectSchema = z.object({
@@ -249,9 +250,14 @@ export function ProjectGallery() {
                 <span className="text-xs text-gray-500 dark:text-gray-400">
                   {project.lastActivity ? `Active ${project.lastActivity}` : 'No recent activity'}
                 </span>
-                <Button size="sm" variant="ghost" className="text-xs">
-                  Open →
-                </Button>
+                <div className="flex gap-2">
+                  <Button asChild size="sm" variant="ghost" className="text-xs">
+                    <Link href={`/projects/${project.id}/workspace`}>
+                      <Settings className="w-3 h-3 mr-1" />
+                      Workspace
+                    </Link>
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

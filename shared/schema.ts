@@ -59,6 +59,12 @@ export const signals = pgTable("signals", {
   qualScore: text("qual_score"),
   // Tagging system for batch processing (tags field already exists at line 23)
   autoTags: text("auto_tags").array().default([]),
+  // Workspace integration fields
+  workspaceNotes: text("workspace_notes"),
+  analysisStatus: text("analysis_status").default("pending"), // "pending", "analyzing", "completed", "error"
+  briefSectionAssignment: text("brief_section_assignment"), // "define", "shift", "deliver"
+  batchQueueStatus: boolean("batch_queue_status").default(false),
+  workspacePriority: integer("workspace_priority").default(0),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -338,6 +344,17 @@ export const rssArticles = pgTable("rss_articles", {
   metadata: jsonb("metadata"), // Additional RSS item data
 });
 
+// Workspace management table for user session state
+export const workspaceSessions = pgTable("workspace_sessions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  projectId: integer("project_id").notNull().references(() => projects.id),
+  activeCaptures: jsonb("active_captures").default([]),
+  batchQueue: jsonb("batch_queue").default([]),
+  lastAccessed: timestamp("last_accessed").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Admin schemas
 export const insertUserAnalyticsSchema = createInsertSchema(userAnalytics).omit({
   id: true,
@@ -394,6 +411,16 @@ export const insertRssArticleSchema = createInsertSchema(rssArticles).omit({
   id: true,
   extractedAt: true,
 });
+
+// Workspace session schema
+export const insertWorkspaceSessionSchema = createInsertSchema(workspaceSessions).omit({
+  id: true,
+  createdAt: true,
+  lastAccessed: true,
+});
+
+export type InsertWorkspaceSession = z.infer<typeof insertWorkspaceSessionSchema>;
+export type SelectWorkspaceSession = typeof workspaceSessions.$inferSelect;
 
 export const loginSchema = z.object({
   email: z.string().email(),

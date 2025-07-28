@@ -10,6 +10,7 @@ import AuthPage from './pages/auth';
 import Dashboard from './pages/dashboard';
 import AdminRegister from './components/admin-register';
 import NotFound from './pages/not-found';
+import Workspace from './pages/workspace';
 import { DebugPanel } from './components/debug-panel';
 import { TutorialOverlay } from './components/tutorial-overlay';
 import { useTutorial } from './hooks/use-tutorial';
@@ -107,6 +108,12 @@ function AppContent() {
       <Route path="/projects">
         {user
           ? <Dashboard user={user} onLogout={() => setUser(null)} currentPage="projects" />
+          : <AuthPage onAuthSuccess={setUser} />
+        }
+      </Route>
+      <Route path="/projects/:projectId/workspace">
+        {user
+          ? <Workspace />
           : <AuthPage onAuthSuccess={setUser} />
         }
       </Route>

@@ -1,4 +1,4 @@
-import { users, signals, sources, signalSources, userFeedSources, userTopicProfiles, feedItems, rssFeeds, rssArticles, projects, briefTemplates, generatedBriefs, type User, type InsertUser, type Signal, type InsertSignal, type Source, type InsertSource, type SignalSource, type InsertSignalSource, type UserFeedSource, type InsertUserFeedSource, type UserTopicProfile, type InsertUserTopicProfile, type FeedItem, type InsertFeedItem, type RssFeed, type InsertRssFeed, type RssArticle, type InsertRssArticle, type Project, type InsertProject, type BriefTemplate, type InsertBriefTemplate, type GeneratedBrief, type InsertGeneratedBrief } from "@shared/schema";
+import { users, signals, sources, signalSources, userFeedSources, userTopicProfiles, feedItems, rssFeeds, rssArticles, projects, briefTemplates, generatedBriefs, workspaceSessions, type User, type InsertUser, type Signal, type InsertSignal, type Source, type InsertSource, type SignalSource, type InsertSignalSource, type UserFeedSource, type InsertUserFeedSource, type UserTopicProfile, type InsertUserTopicProfile, type FeedItem, type InsertFeedItem, type RssFeed, type InsertRssFeed, type RssArticle, type InsertRssArticle, type Project, type InsertProject, type BriefTemplate, type InsertBriefTemplate, type GeneratedBrief, type InsertGeneratedBrief, type SelectWorkspaceSession, type InsertWorkspaceSession } from "@shared/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -88,6 +88,11 @@ export interface IStorage {
   createGeneratedBrief(brief: InsertGeneratedBrief): Promise<GeneratedBrief>;
   updateGeneratedBrief(id: number, updates: Partial<InsertGeneratedBrief>): Promise<GeneratedBrief | undefined>;
   deleteGeneratedBrief(id: number): Promise<void>;
+
+  // Workspace Sessions - Phase 2 Implementation
+  getWorkspaceSession(userId: number, projectId: number): Promise<SelectWorkspaceSession | undefined>;
+  upsertWorkspaceSession(session: InsertWorkspaceSession): Promise<SelectWorkspaceSession>;
+  getSignalsByProject(projectId: number): Promise<Signal[]>;
 }
 
 export class DbStorage implements IStorage {
@@ -510,6 +515,35 @@ export class DbStorage implements IStorage {
 
   async deleteGeneratedBrief(id: number): Promise<void> {
     await db.delete(generatedBriefs).where(eq(generatedBriefs.id, id));
+  }
+
+  // Workspace Sessions Implementation - Phase 2
+  async getWorkspaceSession(userId: number, projectId: number): Promise<SelectWorkspaceSession | undefined> {
+    const result = await db.select().from(workspaceSessions)
+      .where(and(eq(workspaceSessions.userId, userId), eq(workspaceSessions.projectId, projectId)))
+      .limit(1);
+    return result[0];
+  }
+
+  async upsertWorkspaceSession(session: InsertWorkspaceSession): Promise<SelectWorkspaceSession> {
+    const existing = await this.getWorkspaceSession(session.userId, session.projectId);
+    
+    if (existing) {
+      const result = await db.update(workspaceSessions)
+        .set({ ...session, lastAccessed: new Date() })
+        .where(and(eq(workspaceSessions.userId, session.userId), eq(workspaceSessions.projectId, session.projectId)))
+        .returning();
+      return result[0];
+    } else {
+      const result = await db.insert(workspaceSessions).values(session).returning();
+      return result[0];
+    }
+  }
+
+  async getSignalsByProject(projectId: number): Promise<Signal[]> {
+    return await db.select().from(signals)
+      .where(eq(signals.projectId, projectId))
+      .orderBy(desc(signals.createdAt));
   }
 }
 
