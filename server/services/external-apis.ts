@@ -945,32 +945,7 @@ export class ExternalAPIsService {
 
   // Reddit Trending via Bright Data (bypasses Reddit API rate limits)
   async getBrightDataRedditTrends(): Promise<TrendingTopic[]> {
-    try {
-      const { brightDataService } = await import('./bright-data-service');
-      
-      if (!(await brightDataService.isAvailable())) {
-        return [];
-      }
-
-      // Scrape multiple Reddit trending sources
-      const [popular, all, news] = await Promise.all([
-        brightDataService.makeProxyRequest('https://www.reddit.com/r/popular.json'),
-        brightDataService.makeProxyRequest('https://www.reddit.com/r/all.json'),
-        brightDataService.makeProxyRequest('https://www.reddit.com/r/news.json')
-      ]);
-
-      const allPosts = [
-        ...this.parseRedditJSON(popular.data, 'popular'),
-        ...this.parseRedditJSON(all.data, 'all'),
-        ...this.parseRedditJSON(news.data, 'news')
-      ];
-
-      return allPosts.slice(0, 15);
-      
-    } catch (error) {
-      console.warn('❌ Bright Data Reddit scraping failed:', error.message);
-      return [];
-    }
+    return await this.getBrightDataRedditTrending();
   }
 
   // News Trending via Bright Data (bypasses news API limitations)
@@ -1006,25 +981,149 @@ export class ExternalAPIsService {
     }
   }
 
-  // Individual platform trending methods via Bright Data
+  // Individual platform trending methods via Bright Data - Direct scraping approach
   async getBrightDataInstagramTrends(): Promise<TrendingTopic[]> {
-    const comprehensive = await this.getBrightDataComprehensiveTrends();
-    return comprehensive.filter(t => t.platform === 'Instagram');
+    try {
+      const { BrightDataService } = await import('./bright-data-service');
+      const brightDataService = new BrightDataService();
+      
+      if (!(await brightDataService.isAvailable())) {
+        return [];
+      }
+
+      // Use Puppeteer browser automation for live Instagram data
+      const results = await brightDataService.scrapeInstagramPosts(['ai', 'trending', 'viral']);
+      
+      return results
+        .filter(r => r.success)
+        .flatMap(result => result.content.posts || [])
+        .map((post: any, index: number) => ({
+          id: `instagram-${index}`,
+          platform: 'instagram' as any,
+          title: post.caption || `Instagram Post ${index + 1}`,
+          summary: `${post.likes} likes • ${post.comments} comments • by @${post.username}`,
+          url: post.url || 'https://instagram.com',
+          score: 88 + Math.random() * 12,
+          fetchedAt: new Date().toISOString(),
+          engagement: parseInt(post.likes?.replace(/[^\d]/g, '') || '0'),
+          category: 'instagram-trending',
+          keywords: ['instagram', 'social', 'visual'],
+          source: 'Instagram Live'
+        }))
+        .slice(0, 15);
+      
+    } catch (error) {
+      console.warn('❌ Bright Data Instagram scraping failed:', error.message);
+      return [];
+    }
   }
 
   async getBrightDataTwitterTrends(): Promise<TrendingTopic[]> {
-    const comprehensive = await this.getBrightDataComprehensiveTrends();
-    return comprehensive.filter(t => t.platform === 'Twitter');
+    try {
+      const { BrightDataService } = await import('./bright-data-service');
+      const brightDataService = new BrightDataService();
+      
+      if (!(await brightDataService.isAvailable())) {
+        return [];
+      }
+
+      // Use Puppeteer browser automation for live Twitter trends
+      const results = await brightDataService.scrapeTwitterTrends('worldwide');
+      
+      return results
+        .filter(r => r.success)
+        .flatMap(result => result.content.trends || [])
+        .map((trend: any, index: number) => ({
+          id: `twitter-${index}`,
+          platform: 'twitter' as any,
+          title: trend.name || `Twitter Trend ${index + 1}`,
+          summary: trend.tweet_volume ? `${trend.tweet_volume} tweets` : 'Trending on Twitter',
+          url: `https://twitter.com/search?q=${encodeURIComponent(trend.name || '')}`,
+          score: 89 + Math.random() * 11,
+          fetchedAt: new Date().toISOString(),
+          engagement: parseInt(trend.tweet_volume?.replace(/[^\d]/g, '') || '0'),
+          category: 'twitter-trending',
+          keywords: ['twitter', 'social', 'trending'],
+          source: 'Twitter Live'
+        }))
+        .slice(0, 15);
+      
+    } catch (error) {
+      console.warn('❌ Bright Data Twitter scraping failed:', error.message);
+      return [];
+    }
   }
 
   async getBrightDataTikTokTrends(): Promise<TrendingTopic[]> {
-    const comprehensive = await this.getBrightDataComprehensiveTrends();
-    return comprehensive.filter(t => t.platform === 'TikTok');
+    try {
+      const { BrightDataService } = await import('./bright-data-service');
+      const brightDataService = new BrightDataService();
+      
+      if (!(await brightDataService.isAvailable())) {
+        return [];
+      }
+
+      // Use Puppeteer browser automation for live TikTok trending data
+      const results = await brightDataService.scrapeTikTokTrends();
+      
+      return results
+        .filter(r => r.success)
+        .flatMap(result => result.content.videos || [])
+        .map((video: any, index: number) => ({
+          id: `tiktok-${index}`,
+          platform: 'tiktok' as any,
+          title: video.description || `TikTok Video ${index + 1}`,
+          summary: `${video.likes} likes • ${video.views} views • by @${video.username}`,
+          url: video.url || 'https://tiktok.com/trending',
+          score: 91 + Math.random() * 9,
+          fetchedAt: new Date().toISOString(),
+          engagement: parseInt(video.likes?.replace(/[^\d]/g, '') || '0'),
+          category: 'tiktok-trending',
+          keywords: ['tiktok', 'video', 'viral'],
+          source: 'TikTok Live'
+        }))
+        .slice(0, 15);
+      
+    } catch (error) {
+      console.warn('❌ Bright Data TikTok scraping failed:', error.message);
+      return [];
+    }
   }
 
   async getBrightDataLinkedInTrends(): Promise<TrendingTopic[]> {
-    const comprehensive = await this.getBrightDataComprehensiveTrends();
-    return comprehensive.filter(t => t.platform === 'LinkedIn');
+    try {
+      const { BrightDataService } = await import('./bright-data-service');
+      const brightDataService = new BrightDataService();
+      
+      if (!(await brightDataService.isAvailable())) {
+        return [];
+      }
+
+      // Use Puppeteer browser automation for live LinkedIn content
+      const results = await brightDataService.scrapeLinkedInContent(['artificial intelligence', 'startup trends', 'innovation']);
+      
+      return results
+        .filter(r => r.success)
+        .flatMap(result => result.content.posts || [])
+        .map((post: any, index: number) => ({
+          id: `linkedin-${index}`,
+          platform: 'linkedin' as any,
+          title: post.title || `LinkedIn Post ${index + 1}`,
+          summary: `${post.reactions} reactions • ${post.comments} comments • by ${post.author}`,
+          url: post.url || 'https://linkedin.com',
+          score: 87 + Math.random() * 13,
+          fetchedAt: new Date().toISOString(),
+          engagement: parseInt(post.reactions?.replace(/[^\d]/g, '') || '0'),
+          category: 'linkedin-trending',
+          keywords: ['linkedin', 'professional', 'business'],
+          source: 'LinkedIn Live'
+        }))
+        .slice(0, 15);
+      
+    } catch (error) {
+      console.warn('❌ Bright Data LinkedIn scraping failed:', error.message);
+      return [];
+    }
   }
 
   // 🔧 BRIGHT DATA UTILITY METHODS
