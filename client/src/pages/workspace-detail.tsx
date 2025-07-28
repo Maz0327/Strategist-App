@@ -215,7 +215,7 @@ export function WorkspaceDetail() {
   const signals: Signal[] = signalsData?.data?.signals || [];
   
   // Handle both project response formats: direct object vs wrapped in data field
-  const projectData: Project = project && typeof project === 'object' 
+  const projectData: Project | null = project && typeof project === 'object' 
     ? ('data' in project ? (project as any).data : project) as Project
     : null;
 
