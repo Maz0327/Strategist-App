@@ -12,8 +12,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { FileText, Download, Share, Eye, Plus, Trash2, Edit, Save, Calendar, TrendingUp, ChevronDown, Presentation } from "lucide-react";
+import { FileText, Download, Share, Eye, Plus, Trash2, Edit, Save, Calendar, TrendingUp, ChevronDown, Presentation, ArrowLeft } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { ContentSelectionForBrief } from "@/components/content-selection-for-brief";
 import type { Signal } from "@shared/schema";
 
 interface Brief {
