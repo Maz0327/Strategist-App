@@ -653,23 +653,113 @@ export class ExternalAPIsService {
     }
   }
 
-  // Google Trends via Bright Data Web Scraping (bypasses rate limits)
+  // Google Trends via Bright Data Puppeteer (bypasses rate limits and API restrictions)
   async getBrightDataGoogleTrends(): Promise<TrendingTopic[]> {
     try {
-      const { brightDataService } = await import('./bright-data-service');
+      const { BrightDataService } = await import('./bright-data-service');
+      const brightDataService = new BrightDataService();
       
       if (!(await brightDataService.isAvailable())) {
         return [];
       }
 
-      // Scrape Google Trends directly - bypasses API limitations
-      const response = await brightDataService.makeProxyRequest('https://trends.google.com/trends/trendingsearches/daily/rss?geo=US');
+      // Use Puppeteer browser automation for live Google Trends data
+      const results = await brightDataService.scrapeGoogleTrends('US');
       
-      // Parse RSS and convert to trending topics
-      return this.parseGoogleTrendsRSS(response.data).slice(0, 50);
+      return results
+        .filter(r => r.success)
+        .flatMap(result => result.content.trends)
+        .map((trend: any, index: number) => ({
+          id: `google-trends-${index}`,
+          platform: 'google_trends' as any,
+          title: trend.title || `Google Trend ${index + 1}`,
+          summary: trend.searches ? `${trend.searches} searches` : 'Trending Google search',
+          url: trend.url || 'https://trends.google.com',
+          score: 95 + Math.random() * 5,
+          fetchedAt: new Date().toISOString(),
+          engagement: parseInt(trend.searches?.replace(/[^\d]/g, '') || '0'),
+          category: 'google-trends',
+          keywords: ['trending', 'google', 'search'],
+          source: 'Google Trends Live'
+        }))
+        .slice(0, 20);
       
     } catch (error) {
       console.warn('❌ Bright Data Google Trends scraping failed:', error.message);
+      return [];
+    }
+  }
+
+  // Reddit Trending via Bright Data Puppeteer
+  async getBrightDataRedditTrending(): Promise<TrendingTopic[]> {
+    try {
+      const { BrightDataService } = await import('./bright-data-service');
+      const brightDataService = new BrightDataService();
+      
+      if (!(await brightDataService.isAvailable())) {
+        return [];
+      }
+
+      // Use Puppeteer browser automation for live Reddit data
+      const results = await brightDataService.scrapeRedditTrending(['all', 'popular']);
+      
+      return results
+        .filter(r => r.success)
+        .flatMap(result => result.content.posts)
+        .map((post: any, index: number) => ({
+          id: `reddit-${index}`,
+          platform: 'reddit' as any,
+          title: post.title || `Reddit Post ${index + 1}`,
+          summary: `${post.upvotes} upvotes • ${post.comments} • by ${post.author}`,
+          url: `https://reddit.com${post.url || ''}`,
+          score: 85 + Math.random() * 15,
+          fetchedAt: new Date().toISOString(),
+          engagement: parseInt(post.upvotes?.replace(/[^\d]/g, '') || '0'),
+          category: 'reddit-trending',
+          keywords: ['reddit', 'discussion', 'community'],
+          source: 'Reddit Live'
+        }))
+        .slice(0, 25);
+      
+    } catch (error) {
+      console.warn('❌ Bright Data Reddit scraping failed:', error.message);
+      return [];
+    }
+  }
+
+  // YouTube Trending via Bright Data Puppeteer  
+  async getBrightDataYouTubeTrending(): Promise<TrendingTopic[]> {
+    try {
+      const { BrightDataService } = await import('./bright-data-service');
+      const brightDataService = new BrightDataService();
+      
+      if (!(await brightDataService.isAvailable())) {
+        return [];
+      }
+
+      // Use Puppeteer browser automation for live YouTube trending data
+      const results = await brightDataService.scrapeYouTubeTrending('US');
+      
+      return results
+        .filter(r => r.success)
+        .flatMap(result => result.content.videos)
+        .map((video: any, index: number) => ({
+          id: `youtube-${index}`,
+          platform: 'youtube' as any,
+          title: video.title || `Trending Video ${index + 1}`,
+          summary: `${video.views} • ${video.channel} • ${video.duration}`,
+          url: video.url || 'https://youtube.com/trending',
+          score: 90 + Math.random() * 10,
+          fetchedAt: new Date().toISOString(),
+          engagement: parseInt(video.views?.replace(/[^\d]/g, '') || '0'),
+          category: 'youtube-trending',
+          keywords: ['youtube', 'video', 'trending'],
+          source: 'YouTube Trending Live'
+        }))
+        .slice(0, 30);
+      
+    } catch (error) {
+      console.warn('❌ Bright Data YouTube scraping failed:', error.message);
       return [];
     }
   }

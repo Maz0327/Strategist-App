@@ -378,6 +378,243 @@ export class BrightDataService {
     }
   }
 
+  // Google Trends Real-Time Scraping (bypasses API limitations)
+  async scrapeGoogleTrends(geo: string = 'US'): Promise<ScrapingResult[]> {
+    if (!this.isConfigured) {
+      throw new Error('BRIGHT DATA CREDENTIALS REQUIRED - NO FALLBACK AVAILABLE');
+    }
+
+    try {
+      debugLogger.info(`📈 Live Google Trends scraping: ${geo}`);
+      
+      const browser = await puppeteer.connect({
+        browserWSEndpoint: this.browserEndpoint,
+        defaultViewport: null
+      });
+      
+      const page = await browser.newPage();
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+      
+      try {
+        await page.goto(`https://trends.google.com/trends/trendingsearches/daily?geo=${geo}`, { 
+          waitUntil: 'networkidle2', 
+          timeout: 15000 
+        });
+
+        // Wait for trending searches to load
+        await page.waitForSelector('.trending-searches-list', { timeout: 10000 }).catch(() => {});
+        
+        // Extract trending searches using JavaScript execution
+        const trends = await page.evaluate(() => {
+          const trendElements = Array.from(document.querySelectorAll('.trending-searches-item'));
+          return trendElements.slice(0, 20).map((element, index) => {
+            const title = element.querySelector('.trending-searches-item-title');
+            const searches = element.querySelector('.trending-searches-item-search-count');
+            const link = element.querySelector('a');
+            
+            return {
+              id: `google_trend_${index}`,
+              title: title ? title.textContent?.trim() : `Trending Search ${index + 1}`,
+              searches: searches ? searches.textContent?.trim() : '',
+              url: link ? link.getAttribute('href') : '',
+              platform: 'google_trends',
+              timestamp: new Date().toISOString()
+            };
+          });
+        });
+
+        await page.close();
+        await browser.disconnect();
+
+        debugLogger.info(`✅ Google Trends: ${trends.length} searches scraped`);
+
+        return [{
+          url: `https://trends.google.com/trends/trendingsearches/daily?geo=${geo}`,
+          content: {
+            platform: 'google_trends',
+            geo: geo,
+            trends: trends,
+            totalTrends: trends.length,
+            scrapedAt: new Date().toISOString()
+          },
+          success: true,
+          timestamp: new Date().toISOString()
+        }];
+        
+      } catch (error) {
+        await page.close();
+        await browser.disconnect();
+        throw error;
+      }
+      
+    } catch (error) {
+      debugLogger.error('Google Trends scraping failed:', (error as Error).message);
+      return [];
+    }
+  }
+
+  // Reddit Live Trending Scraping
+  async scrapeRedditTrending(subreddits: string[] = ['all', 'popular']): Promise<ScrapingResult[]> {
+    if (!this.isConfigured) {
+      throw new Error('BRIGHT DATA CREDENTIALS REQUIRED - NO FALLBACK AVAILABLE');
+    }
+
+    try {
+      debugLogger.info(`🔥 Live Reddit trending scraping`);
+      
+      const browser = await puppeteer.connect({
+        browserWSEndpoint: this.browserEndpoint,
+        defaultViewport: null
+      });
+      
+      const results: ScrapingResult[] = [];
+      
+      for (const subreddit of subreddits.slice(0, 2)) {
+        const page = await browser.newPage();
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+        
+        try {
+          debugLogger.info(`🔥 Scraping Reddit r/${subreddit}`);
+          
+          await page.goto(`https://www.reddit.com/r/${subreddit}/hot/`, { 
+            waitUntil: 'networkidle2', 
+            timeout: 15000 
+          });
+
+          // Wait for posts to load
+          await page.waitForSelector('[data-testid="post-container"]', { timeout: 10000 }).catch(() => {});
+          
+          // Extract Reddit posts using JavaScript execution
+          const posts = await page.evaluate(() => {
+            const postElements = Array.from(document.querySelectorAll('[data-testid="post-container"]'));
+            return postElements.slice(0, 25).map((element, index) => {
+              const title = element.querySelector('h3');
+              const upvotes = element.querySelector('[data-testid="vote-arrows"] button');
+              const comments = element.querySelector('a[href*="/comments/"]');
+              const author = element.querySelector('[data-testid="post_author_link"]');
+              
+              return {
+                id: `reddit_${index}`,
+                title: title ? title.textContent?.trim() : `Reddit Post ${index + 1}`,
+                upvotes: upvotes ? upvotes.textContent?.trim() : '0',
+                comments: comments ? comments.textContent?.trim() : '0 comments',
+                author: author ? author.textContent?.trim() : 'Unknown',
+                platform: 'reddit',
+                timestamp: new Date().toISOString()
+              };
+            });
+          });
+
+          results.push({
+            url: `https://www.reddit.com/r/${subreddit}/hot/`,
+            content: {
+              platform: 'reddit',
+              subreddit: subreddit,
+              posts: posts,
+              totalPosts: posts.length,
+              scrapedAt: new Date().toISOString()
+            },
+            success: true,
+            timestamp: new Date().toISOString()
+          });
+
+          debugLogger.info(`✅ Reddit r/${subreddit}: ${posts.length} posts scraped`);
+          
+        } catch (error) {
+          debugLogger.error(`Reddit r/${subreddit} failed:`, (error as Error).message);
+        } finally {
+          await page.close();
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+      
+      await browser.disconnect();
+      return results;
+      
+    } catch (error) {
+      debugLogger.error('Reddit scraping failed:', (error as Error).message);
+      return [];
+    }
+  }
+
+  // YouTube Trending Real-Time Scraping
+  async scrapeYouTubeTrending(region: string = 'US'): Promise<ScrapingResult[]> {
+    if (!this.isConfigured) {
+      throw new Error('BRIGHT DATA CREDENTIALS REQUIRED - NO FALLBACK AVAILABLE');
+    }
+
+    try {
+      debugLogger.info(`📺 Live YouTube trending scraping: ${region}`);
+      
+      const browser = await puppeteer.connect({
+        browserWSEndpoint: this.browserEndpoint,
+        defaultViewport: null
+      });
+      
+      const page = await browser.newPage();
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+      
+      try {
+        await page.goto(`https://www.youtube.com/feed/trending?gl=${region}`, { 
+          waitUntil: 'networkidle2', 
+          timeout: 15000 
+        });
+
+        // Wait for videos to load
+        await page.waitForSelector('ytd-video-renderer', { timeout: 10000 }).catch(() => {});
+        
+        // Extract trending videos using JavaScript execution
+        const videos = await page.evaluate(() => {
+          const videoElements = Array.from(document.querySelectorAll('ytd-video-renderer'));
+          return videoElements.slice(0, 30).map((element, index) => {
+            const title = element.querySelector('#video-title');
+            const channel = element.querySelector('.ytd-channel-name a');
+            const views = element.querySelector('#metadata-line span:first-child');
+            const duration = element.querySelector('.ytd-thumbnail-overlay-time-status-renderer');
+            
+            return {
+              id: `youtube_${index}`,
+              title: title ? title.textContent?.trim() : `Trending Video ${index + 1}`,
+              channel: channel ? channel.textContent?.trim() : 'Unknown Channel',
+              views: views ? views.textContent?.trim() : '0 views',
+              duration: duration ? duration.textContent?.trim() : '',
+              platform: 'youtube',
+              timestamp: new Date().toISOString()
+            };
+          });
+        });
+
+        await page.close();
+        await browser.disconnect();
+
+        debugLogger.info(`✅ YouTube trending: ${videos.length} videos scraped`);
+
+        return [{
+          url: `https://www.youtube.com/feed/trending?gl=${region}`,
+          content: {
+            platform: 'youtube',
+            region: region,
+            videos: videos,
+            totalVideos: videos.length,
+            scrapedAt: new Date().toISOString()
+          },
+          success: true,
+          timestamp: new Date().toISOString()
+        }];
+        
+      } catch (error) {
+        await page.close();
+        await browser.disconnect();
+        throw error;
+      }
+      
+    } catch (error) {
+      debugLogger.error('YouTube trending scraping failed:', (error as Error).message);
+      return [];
+    }
+  }
+
   async scrapeLinkedInContent(keywords: string[]): Promise<ScrapingResult[]> {
     if (!this.isConfigured) {
       throw new Error('BRIGHT DATA CREDENTIALS REQUIRED - NO FALLBACK AVAILABLE');
