@@ -1,0 +1,132 @@
+Absolutely — let’s map this out step-by-step, integrating everything we’ve brainstormed into a clear workflow, so you know what to build, how it works, and why it matters.
+
+⸻
+
+✅ STRATEGIC WORKFLOW: CAPTURE TO BRIEF (MVP+)
+
+⸻
+
+🧩 MODULES YOU’LL BE BUILDING
+
+Before diving into the steps, here’s what we’re building piece-by-piece:
+
+Module Name	Purpose
+Chrome Extension	Capture content (screenshots, links, notes, tags) into system
+Capture Workspace	Organize, review, tag, edit captures — the user’s “war room”
+Truth Analysis Engine	Batch or inline analysis using GPT-4o, with tag-aware interpretation
+Gemini Visual Classifier	Classify screenshots (tweet, video, comment, stat, etc.)
+Brief Builder UI	Drag-and-drop or auto-populate content into structured brief
+Google Slides Export	One-click export of finalized brief
+
+
+⸻
+
+🧠 FULL USER WORKFLOW (Step-by-Step)
+
+⸻
+
+1. Start a New Project or Open Existing
+	•	User clicks “New Project” (name, optional tags, goal)
+	•	System creates a container for all content, brief drafts, and export files
+	•	Keeps projects separate and organized
+
+⸻
+
+2. Capture Content via Chrome Extension
+	•	User browses the web and clicks the extension to:
+	•	Take screenshots (auto-time-stamped, site-detected)
+	•	Add optional notes
+	•	Select tags (from simplified list: Define, Shift, Deliver, Cultural Moment, Insight, etc.)
+	•	Add to: active project (dropdown)
+	•	Captures sync to the user’s “Workspace”
+
+🔁 System auto-assigns session_id + metadata (source, time, page)
+💡 Optional: Add Gemini visual classifier behind the scenes to tag screenshot type.
+
+⸻
+
+3. User Organizes Captures in the Workspace
+	•	All captured content appears in card layout:
+	•	Left: screenshot or link preview
+	•	Right: user notes, tags, edit button, truth analysis option
+
+🔧 User can:
+	•	Add or adjust tags
+	•	Edit notes
+	•	Star/favorite key captures
+	•	Choose whether to run Truth Analysis now or later
+
+🧠 Gemini text extraction runs automatically to pull any on-image copy.
+
+⸻
+
+4. Truth Analysis (Inline or Batch Mode)
+
+Two options:
+	1.	Inline: Click “Analyze” on any card → truthAnalysis JSON appears under it
+	2.	Batch: Select captures → run analysis on all selected (use depth mode: Quick or Deep)
+
+📥 Notes + extracted text + tags = passed to GPT-4o
+📊 Output: fact, observation, insight, humanTruth, culturalMoment, etc.
+
+⸻
+
+5. Draft the Brief (Manual + Auto Mode)
+
+User clicks into the Brief Builder for that project.
+
+👷‍♀️ Builder is divided into sections (based on Define → Shift → Deliver):
+
+Section	Populated By
+Define	User-selected captures tagged as Define or containing insights
+Shift	Cultural Moments, Strategic tensions, Observations
+Deliver	Human Truths, hooks, meme formats, references from captures
+Add-ons	Favorites, Stats, Trends, Competitive content
+
+✳️ Users can:
+	•	Drag cards from workspace into sections
+	•	Let the system auto-suggest placement based on tags + truthAnalysis
+
+⸻
+
+6. Final Review + Google Slides Export
+
+Once brief is complete:
+	•	User previews all sections (editable content)
+	•	Finalize → click “Export as Google Slides”
+	•	System uses Slide template based on brief type (Kickoff, Sprint, Trend, etc.)
+
+Slides auto-fill with:
+	•	Title + section headers
+	•	Text from analysis
+	•	Captures + screenshots in layout
+	•	Attribution (source, platform)
+
+⸻
+
+🛠️ Optional (For Future Phase)
+
+Feature	Description
+Smart Sorting	Auto-prioritize “high-attention” or high-engagement captures
+Custom Brief Templates	Let users upload GSlides file to train structure preferences
+AI Summary Card	Gemini generates 1-slide brief summary with TL;DR + visual references
+Team Collaboration	Allow team comments, editing, shared workspaces
+
+
+⸻
+
+✅ NEXT STEPS FOR YOU TO BUILD
+	1.	Build the Workspace UI
+	•	Cards for each capture with edit, tag, truth analysis, star
+	2.	Batch / Inline Truth Analysis
+	•	Use your routing + depth model (Speed/Quick/Deep Dive)
+	3.	Linking System
+	•	Ensure each capture is clearly tied to project → brief → export
+	4.	Brief Builder UI
+	•	Drag-and-drop cards into brief sections, editable fields
+	5.	GSlides Export Logic
+	•	Format match + content injection into Slide template
+
+⸻
+
+Would you like me to write Replit Agent Instructions for any of these modules to get you started? Or help design the actual frontend flow for the workspace/brief builder?
