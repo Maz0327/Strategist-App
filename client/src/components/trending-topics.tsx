@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,30 @@ export function TrendingTopics() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [analyzingTopics, setAnalyzingTopics] = useState<Set<string>>(new Set());
   const { toast } = useToast();
+
+  // Manual refresh mutation
+  const refreshMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('/api/trending/refresh', {
+        method: 'POST'
+      });
+      return response;
+    },
+    onSuccess: () => {
+      refetch(); // Refetch the trending data query
+      toast({
+        title: "Trending data refreshed",
+        description: "Latest trending topics have been loaded from all platforms"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Refresh failed",
+        description: error.message || "Failed to refresh trending data. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
 
   const { data: trendingData, isLoading, refetch, error } = useQuery<{ 
     success: boolean;
@@ -127,17 +151,9 @@ export function TrendingTopics() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await refetch();
-      toast({
-        title: "Topics Refreshed",
-        description: "Latest trending topics have been fetched",
-      });
+      await refreshMutation.mutateAsync();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to refresh topics",
-        variant: "destructive",
-      });
+      // Error handling is done in the mutation's onError
     } finally {
       setIsRefreshing(false);
     }

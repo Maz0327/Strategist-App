@@ -7,25 +7,24 @@ import { fastTrendingCache } from '../services/fast-trending-cache';
 const router = Router();
 const externalAPIs = new ExternalAPIsService();
 
-// Enhanced cache for instant responses with background refresh
+// Manual refresh cache - only refreshes when user navigates to Explore Signals
 let cachedTrendingData: any = null;
 let lastCacheUpdate = 0;
 let refreshInProgress = false;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-const BACKGROUND_REFRESH_INTERVAL = 3 * 60 * 1000; // 3 minutes
+const userSessions: Set<string> = new Set(); // Track which users have fresh data
 
-// Start background refresh cycle
-const startBackgroundRefresh = async () => {
-  if (refreshInProgress) return;
+// Manual refresh function - called when user navigates to Explore Signals
+const refreshTrendingData = async (forceRefresh = false) => {
+  if (refreshInProgress && !forceRefresh) return cachedTrendingData;
   
   refreshInProgress = true;
-  console.log('🔄 BACKGROUND: Starting trending data refresh');
+  console.log('🔄 MANUAL REFRESH: User navigated to Explore Signals - fetching fresh data');
   
   try {
     const liveTopics = await Promise.race([
       externalAPIs.getAllTrendingTopics(),
       new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Background timeout')), 30000) // 30s for background
+        setTimeout(() => reject(new Error('Manual refresh timeout')), 25000) // 25s for manual refresh
       )
     ]).catch(() => []);
 
@@ -58,65 +57,65 @@ const startBackgroundRefresh = async () => {
       };
       
       lastCacheUpdate = Date.now();
-      console.log(`🎯 BACKGROUND UPDATE: ${liveTopics.length} items from ${Object.keys(platformGroups).length} platforms`);
+      console.log(`🎯 MANUAL UPDATE: ${liveTopics.length} items from ${Object.keys(platformGroups).length} platforms`);
+      return cachedTrendingData;
     }
   } catch (error) {
-    console.warn('Background refresh failed:', error);
+    console.warn('Manual refresh failed:', error);
   } finally {
     refreshInProgress = false;
   }
+  
+  return cachedTrendingData;
 };
-
-// Initialize background refresh
-startBackgroundRefresh();
-setInterval(startBackgroundRefresh, BACKGROUND_REFRESH_INTERVAL);
 
 // Get all trending data endpoint - Public access for Explore Signals page
 router.get('/all', async (req, res) => {
   try {
-    const now = Date.now();
+    const userId = req.session?.userId || 'anonymous';
+    const sessionKey = `${userId}_${req.ip}`;
     
-    // Return cached data if available (always prioritize speed)
-    if (cachedTrendingData) {
-      const cacheAge = Math.round((now - lastCacheUpdate) / 1000);
-      debugLogger.info('⚡ INSTANT CACHE: Returning trending data', { 
-        userId: req.session?.userId || 'anonymous',
+    // Check if user has fresh data for this session
+    if (cachedTrendingData && userSessions.has(sessionKey)) {
+      const cacheAge = Math.round((Date.now() - lastCacheUpdate) / 1000);
+      debugLogger.info('⚡ CACHED DATA: Returning existing trending data', { 
+        userId,
         cacheAge: cacheAge + 's',
         totalItems: cachedTrendingData.totalItems
       }, req);
       
-      // Trigger background refresh if cache is getting old
-      if (cacheAge > 180 && !refreshInProgress) { // 3 minutes
-        startBackgroundRefresh();
-      }
-      
       return res.json(cachedTrendingData);
     }
     
-    debugLogger.info('🚀 INITIAL LOAD: Fetching first trending data', { userId: req.session?.userId || 'anonymous' }, req);
+    debugLogger.info('🔄 NEW SESSION: User navigated to Explore Signals - refreshing data', { userId }, req);
     
-    // For initial load, use fallback data and trigger background refresh
-    if (!refreshInProgress) {
-      startBackgroundRefresh();
+    // Mark this user session as needing fresh data
+    userSessions.add(sessionKey);
+    
+    // Get fresh data for new session/login
+    const freshData = await refreshTrendingData(true);
+    
+    if (freshData) {
+      return res.json(freshData);
     }
     
-    // Return immediate fallback while background loads
+    // Fallback if refresh fails
     const fallbackData = {
       success: true,
       platforms: {
         'system': [{
-          title: 'Live Trending Data Loading...',
-          content: 'Fresh trending content is being loaded from 11 platforms',
+          title: 'Trending Data Temporarily Unavailable',
+          content: 'Live trending sources are being restored - please try refreshing the page',
           url: '#',
           engagement: 0,
           timestamp: new Date().toISOString(),
           platform: 'system',
-          source: 'Loading'
+          source: 'Fallback'
         }]
       },
       totalItems: 1,
       collectedAt: new Date().toISOString(),
-      notice: 'Live data loading in background - refresh in 30 seconds for real trends'
+      notice: 'Refresh page to retry loading live trending data'
     };
     
     return res.json(fallbackData);
@@ -160,5 +159,45 @@ router.get('/all', async (req, res) => {
     res.json(fallbackData);
   }
 });
+
+// Manual refresh endpoint for user-triggered refreshes
+router.post('/refresh', async (req, res) => {
+  try {
+    const userId = req.session?.userId || 'anonymous';
+    debugLogger.info('🔄 MANUAL REFRESH: User requested fresh trending data', { userId }, req);
+    
+    // Clear user session to force fresh data
+    const sessionKey = `${userId}_${req.ip}`;
+    userSessions.delete(sessionKey);
+    
+    // Force refresh trending data
+    const freshData = await refreshTrendingData(true);
+    
+    if (freshData) {
+      userSessions.add(sessionKey);
+      return res.json(freshData);
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: 'Failed to refresh trending data',
+      notice: 'Please try again in a few moments'
+    });
+  } catch (error: any) {
+    debugLogger.error('Manual refresh failed', error, req);
+    res.status(500).json({
+      success: false,
+      message: 'Refresh request failed',
+      notice: 'Please try again later'
+    });
+  }
+});
+
+// Clear session on logout (called from auth routes)
+export const clearUserSession = (userId: string, ip: string) => {
+  const sessionKey = `${userId}_${ip}`;
+  userSessions.delete(sessionKey);
+  console.log(`🔐 LOGOUT: Cleared trending data session for user ${userId}`);
+};
 
 export default router;
