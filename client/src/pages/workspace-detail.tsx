@@ -214,10 +214,8 @@ export function WorkspaceDetail() {
 
   const signals: Signal[] = signalsData?.data?.signals || [];
   
-  // Handle both project response formats: direct object vs wrapped in data field
-  const projectData: Project | null = project && typeof project === 'object' 
-    ? ('data' in project ? (project as any).data : project) as Project
-    : null;
+  // Use project directly - no need for projectData
+  // const projectData removed - using 'project' variable directly
 
   // Available tags from all signals
   const availableTags = useMemo(() => {
@@ -306,7 +304,7 @@ export function WorkspaceDetail() {
     );
   }
 
-  if (!projectData) {
+  if (!project) {
     return (
       <div className="max-w-6xl mx-auto p-6">
         <div className="text-center">
@@ -334,9 +332,9 @@ export function WorkspaceDetail() {
             </Button>
           </Link>
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-bold text-gray-900 truncate">{projectData.name}</h1>
-            {projectData.description && (
-              <p className="text-sm text-gray-600 truncate">{projectData.description}</p>
+            <h1 className="text-lg font-bold text-gray-900 truncate">{project.name}</h1>
+            {project.description && (
+              <p className="text-sm text-gray-600 truncate">{project.description}</p>
             )}
           </div>
         </div>
@@ -427,8 +425,8 @@ export function WorkspaceDetail() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{projectData.name}</h1>
-            <p className="text-gray-600">{projectData.description}</p>
+            <h1 className="text-2xl font-bold text-gray-900">{project.name}</h1>
+            <p className="text-gray-600">{project.description}</p>
           </div>
         </div>
 
@@ -631,15 +629,6 @@ export function WorkspaceDetail() {
 
         {/* Main Content Area */}
         <div className="flex-1">
-          {/* DEBUG INFO */}
-          <div className="mb-4 p-4 bg-yellow-100 border border-yellow-300 rounded">
-            <p><strong>Debug Info:</strong></p>
-            <p>signalsLoading: {signalsLoading ? 'true' : 'false'}</p>
-            <p>signals.length: {signals.length}</p>
-            <p>filteredSignals.length: {filteredSignals.length}</p>
-            <p>Should show empty state: {!signalsLoading && filteredSignals.length === 0 ? 'YES' : 'NO'}</p>
-          </div>
-          
           {signalsLoading ? (
             <div className={viewMode === 'grid' 
               ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" 
