@@ -137,15 +137,35 @@ export class BrightDataService {
             timeout: 30000 
           });
 
-          // Wait for posts to load
-          await page.waitForSelector('article', { timeout: 30000 }).catch(() => {});
+          // Wait for posts to load with multiple selector options
+          await page.waitForSelector('article, [data-testid="post"], div[class*="post"], ._aagw', { timeout: 30000 }).catch(() => {});
           
-          // Extract post data using JavaScript execution
+          // Extract post data with updated selectors
           const posts = await page.evaluate(() => {
-            const articles = Array.from(document.querySelectorAll('article'));
+            // Try multiple selector patterns for Instagram
+            let articles = Array.from(document.querySelectorAll('article'));
+            
+            if (articles.length === 0) {
+              articles = Array.from(document.querySelectorAll('[data-testid="post"]'));
+            }
+            
+            if (articles.length === 0) {
+              articles = Array.from(document.querySelectorAll('div[class*="post"]'));
+            }
+            
+            if (articles.length === 0) {
+              articles = Array.from(document.querySelectorAll('._aagw')); // Instagram grid item class
+            }
+            
+            if (articles.length === 0) {
+              articles = Array.from(document.querySelectorAll('div')).filter(el => 
+                el.querySelector('img') && el.querySelector('a')
+              );
+            }
+            
             return articles.slice(0, 25).map((article, index) => {
               const img = article.querySelector('img');
-              const link = article.querySelector('a');
+              const link = article.querySelector('a') || article.closest('a');
               
               return {
                 id: `post_${index}`,
@@ -253,26 +273,53 @@ export class BrightDataService {
           timeout: 30000 
         });
 
-        // Wait for trending topics to load
-        await page.waitForSelector('[data-testid="trend"]', { timeout: 30000 }).catch(() => {});
+        // Wait for trending topics with multiple selector options
+        await page.waitForSelector('[data-testid="trend"], [data-testid="cellInnerDiv"], [role="link"], div[class*="trend"]', { timeout: 30000 }).catch(() => {});
         
-        // Extract trending topics using JavaScript execution
+        // Extract trending topics with updated selectors
         const trends = await page.evaluate(() => {
-          const trendElements = Array.from(document.querySelectorAll('[data-testid="trend"]'));
+          // Try multiple selector patterns for Twitter/X trends
+          let trendElements = Array.from(document.querySelectorAll('[data-testid="trend"]'));
+          
+          if (trendElements.length === 0) {
+            trendElements = Array.from(document.querySelectorAll('[data-testid="cellInnerDiv"]')).filter(el => 
+              el.textContent && el.textContent.includes('#') || el.textContent.length < 100
+            );
+          }
+          
+          if (trendElements.length === 0) {
+            trendElements = Array.from(document.querySelectorAll('[role="link"]')).filter(el => 
+              el.textContent && (el.textContent.includes('#') || el.textContent.includes('Trending'))
+            );
+          }
+          
+          if (trendElements.length === 0) {
+            trendElements = Array.from(document.querySelectorAll('div')).filter(el => 
+              el.textContent && el.textContent.startsWith('#') && el.textContent.length < 50
+            );
+          }
+          
           return trendElements.slice(0, 25).map((element, index) => {
             const trendText = element.textContent || '';
             const links = element.querySelectorAll('a');
-            const url = links.length > 0 ? links[0].getAttribute('href') : '';
+            const parentLink = element.closest('a');
+            const url = links.length > 0 ? links[0].getAttribute('href') : 
+                       parentLink ? parentLink.getAttribute('href') : '';
+            
+            // Extract hashtag or trend name
+            const lines = trendText.split('\n').filter(line => line.trim());
+            const mainTrend = lines.find(line => line.startsWith('#')) || lines[0] || `Trend ${index + 1}`;
             
             return {
               id: `trend_${index}`,
-              topic: trendText.split('\n')[0] || `Trend ${index + 1}`,
-              tweets: trendText.includes('Tweets') ? trendText.match(/[\d,]+/)?.[0] || '0' : '0',
+              topic: mainTrend.trim(),
+              tweets: trendText.includes('Tweets') ? trendText.match(/[\d,]+/)?.[0] || '0' : 
+                     trendText.includes('posts') ? trendText.match(/[\d,]+/)?.[0] || '0' : '0',
               url: url ? `https://twitter.com${url}` : '',
               platform: 'twitter',
               timestamp: new Date().toISOString()
             };
-          });
+          }).filter(trend => trend.topic && !trend.topic.includes('Trend '));
         });
 
         await page.close();
@@ -327,15 +374,34 @@ export class BrightDataService {
           timeout: 30000 
         });
 
-        // Wait for content to load
-        await page.waitForSelector('div[data-e2e="recommend-list-item"]', { timeout: 30000 }).catch(() => {});
+        // Wait for content to load with multiple selector options
+        await page.waitForSelector('div[data-e2e="recommend-list-item"], [data-testid="video-item"], div[class*="video"], article', { timeout: 30000 }).catch(() => {});
         
-        // Extract trending videos using JavaScript execution
+        // Extract trending videos with updated selectors
         const trends = await page.evaluate(() => {
-          const videoElements = Array.from(document.querySelectorAll('div[data-e2e="recommend-list-item"]'));
+          // Try multiple selector patterns for TikTok
+          let videoElements = Array.from(document.querySelectorAll('div[data-e2e="recommend-list-item"]'));
+          
+          if (videoElements.length === 0) {
+            videoElements = Array.from(document.querySelectorAll('[data-testid="video-item"]'));
+          }
+          
+          if (videoElements.length === 0) {
+            videoElements = Array.from(document.querySelectorAll('div[class*="video"]'));
+          }
+          
+          if (videoElements.length === 0) {
+            videoElements = Array.from(document.querySelectorAll('article, div')).filter(el => 
+              el.querySelector('video') || el.textContent?.includes('#')
+            );
+          }
+          
           return videoElements.slice(0, 30).map((element, index) => {
-            const videoLink = element.querySelector('a');
-            const description = element.querySelector('[data-e2e="browse-video-desc"]');
+            const videoLink = element.querySelector('a') || element.closest('a');
+            const description = element.querySelector('[data-e2e="browse-video-desc"]') ||
+                              element.querySelector('[class*="desc"]') ||
+                              element.querySelector('[class*="caption"]') ||
+                              element;
             const hashtags = Array.from(element.querySelectorAll('strong')).map(el => el.textContent);
             
             return {
@@ -401,26 +467,51 @@ export class BrightDataService {
           timeout: 30000 
         });
 
-        // Wait for trending searches to load
-        await page.waitForSelector('.trending-searches-list', { timeout: 30000 }).catch(() => {});
+        // Wait for trending searches to load with multiple selector options
+        await page.waitForSelector('div[class*="trending"], .feed-item, [data-testid*="trend"], .trending-searches-item', { timeout: 30000 }).catch(() => {});
         
-        // Extract trending searches using JavaScript execution
+        // Extract trending searches with updated selectors
         const trends = await page.evaluate(() => {
-          const trendElements = Array.from(document.querySelectorAll('.trending-searches-item'));
+          // Try multiple selector patterns for Google Trends
+          let trendElements = Array.from(document.querySelectorAll('.trending-searches-item'));
+          
+          if (trendElements.length === 0) {
+            trendElements = Array.from(document.querySelectorAll('.feed-item'));
+          }
+          
+          if (trendElements.length === 0) {
+            trendElements = Array.from(document.querySelectorAll('div[class*="trending"]'));
+          }
+          
+          if (trendElements.length === 0) {
+            // Fallback: look for any text content that might be trends
+            trendElements = Array.from(document.querySelectorAll('div')).filter(el => 
+              el.textContent && el.textContent.length > 5 && el.textContent.length < 100
+            );
+          }
+          
           return trendElements.slice(0, 20).map((element, index) => {
-            const title = element.querySelector('.trending-searches-item-title');
-            const searches = element.querySelector('.trending-searches-item-search-count');
-            const link = element.querySelector('a');
+            const titleElement = element.querySelector('.trending-searches-item-title') || 
+                               element.querySelector('h3') || 
+                               element.querySelector('h2') || 
+                               element.querySelector('[class*="title"]') ||
+                               element;
+            
+            const searchElement = element.querySelector('.trending-searches-item-search-count') ||
+                                element.querySelector('[class*="count"]') ||
+                                element.querySelector('[class*="search"]');
+            
+            const linkElement = element.querySelector('a') || element.closest('a');
             
             return {
               id: `google_trend_${index}`,
-              title: title ? title.textContent?.trim() : `Trending Search ${index + 1}`,
-              searches: searches ? searches.textContent?.trim() : '',
-              url: link ? link.getAttribute('href') : '',
+              title: titleElement ? (titleElement.textContent?.trim() || `Trending Search ${index + 1}`) : `Trending Search ${index + 1}`,
+              searches: searchElement ? searchElement.textContent?.trim() : '',
+              url: linkElement ? linkElement.getAttribute('href') : '',
               platform: 'google_trends',
               timestamp: new Date().toISOString()
             };
-          });
+          }).filter(trend => trend.title && trend.title !== `Trending Search ${trendElements.indexOf(trend) + 1}`);
         });
 
         await page.close();
@@ -943,16 +1034,42 @@ export class BrightDataService {
             timeout: 30000 
           });
 
-          // Wait for content to load
-          await page.waitForSelector('.feed-shared-update-v2', { timeout: 30000 }).catch(() => {});
+          // Wait for content to load with multiple selector options
+          await page.waitForSelector('.feed-shared-update-v2, [data-testid="post"], .update-components-text, article', { timeout: 30000 }).catch(() => {});
           
-          // Extract LinkedIn posts using JavaScript execution
+          // Extract LinkedIn posts with updated selectors
           const posts = await page.evaluate(() => {
-            const postElements = Array.from(document.querySelectorAll('.feed-shared-update-v2'));
+            // Try multiple selector patterns for LinkedIn
+            let postElements = Array.from(document.querySelectorAll('.feed-shared-update-v2'));
+            
+            if (postElements.length === 0) {
+              postElements = Array.from(document.querySelectorAll('[data-testid="post"]'));
+            }
+            
+            if (postElements.length === 0) {
+              postElements = Array.from(document.querySelectorAll('.update-components-text'));
+            }
+            
+            if (postElements.length === 0) {
+              postElements = Array.from(document.querySelectorAll('article')).filter(el => 
+                el.textContent && el.textContent.length > 50
+              );
+            }
+            
             return postElements.slice(0, 15).map((element, index) => {
-              const author = element.querySelector('.feed-shared-actor__name');
-              const content = element.querySelector('.feed-shared-text');
-              const reactions = element.querySelector('.social-counts-reactions__count');
+              const author = element.querySelector('.feed-shared-actor__name') ||
+                           element.querySelector('[data-testid="author"]') ||
+                           element.querySelector('.actor-name') ||
+                           element.querySelector('span[class*="name"]');
+              
+              const content = element.querySelector('.feed-shared-text') ||
+                            element.querySelector('[data-testid="post-text"]') ||
+                            element.querySelector('.update-components-text') ||
+                            element.querySelector('div[class*="text"]');
+              
+              const reactions = element.querySelector('.social-counts-reactions__count') ||
+                              element.querySelector('[data-testid="reactions"]') ||
+                              element.querySelector('[class*="reaction"]');
               
               return {
                 id: `linkedin_${index}`,
