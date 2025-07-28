@@ -109,11 +109,11 @@ export function TrendingTopics() {
             allTopics.push({
               id: `${platform}-${index}`,
               platform,
-              title: item.title || `${platform.charAt(0).toUpperCase() + platform.slice(1)} Content`,
-              summary: item.content?.substring(0, 150) + '...' || '',
-              url: item.url || '#',
+              title: item.title || `${platform} Item ${index + 1}`,
+              summary: item.description || item.summary || `Trending ${platform} content with ${item.engagement || 0} interactions`,
+              url: item.url || item.link || '#',
               score: item.engagement || 0,
-              fetchedAt: item.timestamp || trendingData.collectedAt,
+              fetchedAt: item.timestamp || item.created_at || trendingData.collectedAt,
               engagement: item.engagement || 0,
               source: platform
             });
