@@ -83,13 +83,13 @@ export class ExternalAPIsService {
         // 🔥 OPTIMIZED FAST TRENDING - Parallel with 10s timeout per platform
         console.log('🚀 FAST TRENDING: Fetching data from top 5 fastest platforms');
         
-        // Use Promise.allSettled with original working timeouts (40s was working!)
+        // Use Promise.allSettled with extended timeouts to capture ALL working platforms
         const fastPromises = [
-          this.withTimeout(this.getBrightDataHackerNews(), 30000, 'Hacker News'),
-          this.withTimeout(this.getBrightDataYouTubeTrending(), 30000, 'YouTube'),
-          this.withTimeout(this.getBrightDataMediumTrending(), 40000, 'Medium'),
-          this.withTimeout(this.getBrightDataGoogleTrends(), 30000, 'Google Trends'),
-          this.withTimeout(this.getBrightDataComprehensiveTrends(), 40000, 'Social Media')
+          this.withTimeout(this.getBrightDataHackerNews(), 35000, 'Hacker News'),
+          this.withTimeout(this.getBrightDataYouTubeTrending(), 35000, 'YouTube'),
+          this.withTimeout(this.getBrightDataMediumTrending(), 50000, 'Medium'),
+          this.withTimeout(this.getBrightDataGoogleTrends(), 50000, 'Google Trends'),
+          this.withTimeout(this.getBrightDataComprehensiveTrends(), 50000, 'Social Media')
         ];
 
         const results_settled = await Promise.allSettled(fastPromises);
