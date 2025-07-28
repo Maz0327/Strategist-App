@@ -83,14 +83,14 @@ export class ExternalAPIsService {
         // 🔄 SEQUENTIAL SCRAPING - Prevent resource conflicts, get multiple platforms
         console.log('🚀 SEQUENTIAL SCRAPING: Fetching 6 priority platforms with extended timeouts');
         
-        // Sequential scraping with 35s timeout per platform for quality results
+        // Sequential scraping with enhanced error handling and 40s timeout per platform
         const platformConfigs = [
-          { name: 'YouTube', fn: () => this.getBrightDataYouTubeTrending(), timeout: 35000 },
-          { name: 'TikTok', fn: () => this.getBrightDataTikTokTrends(), timeout: 35000 },
-          { name: 'Google Trends', fn: () => this.getBrightDataGoogleTrends(), timeout: 35000 },
-          { name: 'LinkedIn', fn: () => this.getBrightDataLinkedInTrends(), timeout: 35000 },
-          { name: 'Reddit', fn: () => this.getBrightDataRedditTrends(), timeout: 35000 },
-          { name: 'Instagram', fn: () => this.getBrightDataInstagramTrends(), timeout: 35000 }
+          { name: 'YouTube', fn: () => this.getBrightDataYouTubeTrending(), timeout: 40000 },
+          { name: 'TikTok', fn: () => this.getBrightDataTikTokTrends(), timeout: 40000 },
+          { name: 'Google Trends', fn: () => this.getBrightDataGoogleTrends(), timeout: 40000 },
+          { name: 'LinkedIn', fn: () => this.getBrightDataLinkedInTrends(), timeout: 40000 },
+          { name: 'Instagram', fn: () => this.getBrightDataInstagramTrends(), timeout: 40000 },
+          { name: 'Reddit', fn: () => this.getBrightDataRedditTrending(), timeout: 40000 }
         ];
 
         let successfulPlatforms = 0;
@@ -1006,7 +1006,7 @@ export class ExternalAPIsService {
         return [];
       }
 
-      // Use Puppeteer browser automation for live Instagram data
+      // Use enhanced Puppeteer browser automation with retry mechanism for connection issues
       const results = await brightDataService.scrapeInstagramPosts(['ai', 'trending', 'viral']);
       
       return results
@@ -1023,12 +1023,12 @@ export class ExternalAPIsService {
           engagement: parseInt(post.likes?.replace(/[^\d]/g, '') || '0'),
           category: 'instagram-trending',
           keywords: ['instagram', 'social', 'visual'],
-          source: 'Instagram Live'
+          source: 'Instagram Live (Enhanced Connection)'
         }))
         .slice(0, 15);
       
     } catch (error) {
-      console.warn('❌ Bright Data Instagram scraping failed:', error.message);
+      console.warn('❌ Bright Data Instagram scraping failed (enhanced retry exhausted):', error.message);
       return [];
     }
   }

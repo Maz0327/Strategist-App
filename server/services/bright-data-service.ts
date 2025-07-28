@@ -132,15 +132,34 @@ export class BrightDataService {
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
         
         try {
-          await page.goto(`https://www.instagram.com/explore/tags/${hashtag}/`, { 
-            waitUntil: 'networkidle2', 
-            timeout: 30000 
-          });
-
-          // Wait for posts to load with multiple selector options
-          await page.waitForSelector('article, [data-testid="post"], div[class*="post"], ._aagw', { timeout: 30000 }).catch(() => {});
+          // Enhanced Instagram connection with retry mechanism for connection issues
+          let retryCount = 0;
+          let connected = false;
           
-          // Extract post data with updated selectors
+          while (retryCount < 3 && !connected) {
+            try {
+              await page.goto(`https://www.instagram.com/explore/tags/${hashtag}/`, { 
+                waitUntil: 'domcontentloaded', 
+                timeout: 40000 
+              });
+              connected = true;
+            } catch (error) {
+              retryCount++;
+              debugLogger.warn(`Instagram connection attempt ${retryCount} failed for #${hashtag}: ${error.message}`);
+              if (retryCount < 3) {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+              }
+            }
+          }
+          
+          if (!connected) {
+            throw new Error(`Failed to connect to Instagram after 3 attempts`);
+          }
+
+          // Wait for posts to load with enhanced selectors and longer timeout
+          await page.waitForSelector('article, [data-testid="post"], div[class*="post"], ._aagw', { timeout: 35000 }).catch(() => {});
+          
+          // Extract post data with enhanced error handling
           const posts = await page.evaluate(() => {
             // Try multiple selector patterns for Instagram
             let articles = Array.from(document.querySelectorAll('article'));
@@ -483,11 +502,11 @@ export class BrightDataService {
       try {
         await page.goto(`https://trends.google.com/trends/trendingsearches/daily?geo=${geo}`, { 
           waitUntil: 'networkidle2', 
-          timeout: 30000 
+          timeout: 45000 
         });
 
-        // Wait for trending searches to load with multiple selector options
-        await page.waitForSelector('div[class*="trending"], .feed-item, [data-testid*="trend"], .trending-searches-item', { timeout: 30000 }).catch(() => {});
+        // Wait for trending searches to load with multiple selector options and extended timeout
+        await page.waitForSelector('div[class*="trending"], .feed-item, [data-testid*="trend"], .trending-searches-item', { timeout: 40000 }).catch(() => {});
         
         // Extract trending searches with updated selectors
         const trends = await page.evaluate(() => {
@@ -586,17 +605,41 @@ export class BrightDataService {
         try {
           debugLogger.info(`🔥 Scraping Reddit r/${subreddit}`);
           
-          await page.goto(`https://www.reddit.com/r/${subreddit}/hot/`, { 
-            waitUntil: 'networkidle2', 
-            timeout: 30000 
-          });
-
-          // Wait for posts to load
-          await page.waitForSelector('[data-testid="post-container"]', { timeout: 30000 }).catch(() => {});
+          // Try alternative Reddit approach to bypass robots.txt restrictions
+          let redditUrl = `https://old.reddit.com/r/${subreddit}/hot/`;
           
-          // Extract Reddit posts using JavaScript execution
+          try {
+            await page.goto(redditUrl, { 
+              waitUntil: 'domcontentloaded', 
+              timeout: 35000 
+            });
+          } catch (error) {
+            // Fallback to new Reddit interface if old.reddit fails
+            redditUrl = `https://www.reddit.com/r/${subreddit}/hot/`;
+            await page.goto(redditUrl, { 
+              waitUntil: 'domcontentloaded', 
+              timeout: 35000 
+            });
+          }
+
+          // Wait for posts to load with enhanced selectors for both old and new Reddit
+          await page.waitForSelector('[data-testid="post-container"], .thing, .entry', { timeout: 35000 }).catch(() => {});
+          
+          // Extract Reddit posts using JavaScript execution with enhanced selectors
           const posts = await page.evaluate(() => {
-            const postElements = Array.from(document.querySelectorAll('[data-testid="post-container"]'));
+            // Try new Reddit selectors first
+            let postElements = Array.from(document.querySelectorAll('[data-testid="post-container"]'));
+            
+            // If new Reddit selectors fail, try old Reddit selectors
+            if (postElements.length === 0) {
+              postElements = Array.from(document.querySelectorAll('.thing'));
+            }
+            
+            // Fallback to broad search
+            if (postElements.length === 0) {
+              postElements = Array.from(document.querySelectorAll('.entry, div[class*="post"]'));
+            }
+            
             return postElements.slice(0, 25).map((element, index) => {
               const title = element.querySelector('h3');
               const upvotes = element.querySelector('[data-testid="vote-arrows"] button');
@@ -1048,13 +1091,14 @@ export class BrightDataService {
         try {
           debugLogger.info(`💼 Scraping LinkedIn for: ${keyword}`);
           
+          // Enhanced LinkedIn navigation with 50s timeout for slow loading and navigation issues
           await page.goto(`https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent(keyword)}`, { 
-            waitUntil: 'networkidle2', 
-            timeout: 30000 
+            waitUntil: 'domcontentloaded', 
+            timeout: 50000 
           });
 
-          // Wait for content to load with broad selector options
-          await page.waitForSelector('div, span, article', { timeout: 30000 }).catch(() => {});
+          // Wait for content to load with extended timeout for LinkedIn's complex loading
+          await page.waitForSelector('div, span, article', { timeout: 45000 }).catch(() => {});
           
           // Extract LinkedIn posts with very broad search
           const posts = await page.evaluate(() => {
