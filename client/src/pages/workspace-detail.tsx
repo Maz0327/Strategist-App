@@ -116,7 +116,7 @@ export function WorkspaceDetail() {
   const [editingTags, setEditingTags] = useState<{ [key: number]: boolean }>({});
 
   // Fetch project details
-  const { data: project, isLoading: projectLoading } = useQuery({
+  const { data: project, isLoading: projectLoading } = useQuery<Project>({
     queryKey: ['/api/projects', projectId],
     enabled: !!projectId
   });
@@ -213,7 +213,11 @@ export function WorkspaceDetail() {
   });
 
   const signals: Signal[] = signalsData?.data?.signals || [];
-  const projectData: Project = (project as any)?.data || project;
+  
+  // Handle both project response formats: direct object vs wrapped in data field
+  const projectData: Project = project && typeof project === 'object' 
+    ? ('data' in project ? (project as any).data : project) as Project
+    : null;
 
   // Available tags from all signals
   const availableTags = useMemo(() => {
@@ -302,7 +306,7 @@ export function WorkspaceDetail() {
     );
   }
 
-  if (!project) {
+  if (!projectData) {
     return (
       <div className="max-w-6xl mx-auto p-6">
         <div className="text-center">
@@ -330,8 +334,8 @@ export function WorkspaceDetail() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{project.name}</h1>
-            <p className="text-gray-600">{project.description}</p>
+            <h1 className="text-2xl font-bold text-gray-900">{projectData.name}</h1>
+            <p className="text-gray-600">{projectData.description}</p>
           </div>
         </div>
 

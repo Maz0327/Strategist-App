@@ -51,7 +51,18 @@ const signalIdSchema = z.object({
 // Signal routes
 router.get("/", requireAuth, async (req, res) => {
   try {
-    const signals = await storage.getSignalsByUserId(req.session.userId!);
+    const { projectId } = req.query;
+    
+    let signals;
+    if (projectId) {
+      // Filter by project if projectId is provided
+      const allSignals = await storage.getSignalsByUserId(req.session.userId!);
+      signals = allSignals.filter(signal => signal.projectId?.toString() === projectId.toString());
+    } else {
+      // Get all signals for user
+      signals = await storage.getSignalsByUserId(req.session.userId!);
+    }
+    
     res.json({ 
       success: true, 
       data: { 
