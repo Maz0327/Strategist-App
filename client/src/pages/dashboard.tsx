@@ -13,6 +13,7 @@ import { AdminDashboard } from "@/components/admin-dashboard";
 import { FeedbackWidget } from "@/components/feedback-widget";
 import { FeedsHub } from "@/components/feeds-hub";
 import { ProjectGallery } from "@/components/project-gallery";
+import { MyWorkspaces } from "@/components/my-workspaces";
 import { BriefTemplateEngine } from "@/components/brief-template-engine";
 import { authService } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -37,6 +38,7 @@ export default function Dashboard({ user, onLogout, onPageChange, currentPage }:
       '/dashboard': 'briefing',
       '/capture': 'capture',
       '/projects': 'projects',
+      '/workspaces': 'workspaces',
       '/explore': 'explore',
       '/brief': 'brief',
       '/manage': 'manage',
@@ -94,39 +96,26 @@ export default function Dashboard({ user, onLogout, onPageChange, currentPage }:
   
   const isAdmin = (currentUser as any)?.role === 'admin';
 
-  // Sidebar navigation items
+  // Sidebar navigation items - WORKSPACE-FIRST DESIGN
   const navigationItems = [
-    // {
-    //   id: "briefing",
-    //   label: "Today's Briefing",
-    //   icon: Home,
-    //   subItems: []
-    // },
     {
-      id: "capture",
-      label: "Signal Capture",
-      icon: Plus,
+      id: "briefing",
+      label: "Today's Briefing",
+      icon: Home,
       subItems: []
     },
     {
-      id: "projects",
-      label: "Project Gallery",
+      id: "workspaces",
+      label: "My Workspaces",
       icon: FolderOpen,
       subItems: []
     },
-
-    // TEMPORARILY HIDDEN - Explore Signals section (trending data needs work)
-    // {
-    //   id: "explore", 
-    //   label: "Explore Signals",
-    //   icon: Search,
-    //   subItems: [
-    //     { id: "trending", label: "Trending Topics" },
-    //     { id: "mining", label: "Signal Mining" },
-    //     { id: "opportunities", label: "Reactive Opportunities" },
-    //     { id: "cultural", label: "Cultural Moments" }
-    //   ]
-    // },
+    {
+      id: "capture",
+      label: "Quick Capture",
+      icon: Plus,
+      subItems: []
+    },
     {
       id: "brief",
       label: "Strategic Brief Lab",
@@ -377,6 +366,10 @@ export default function Dashboard({ user, onLogout, onPageChange, currentPage }:
             
             {activeTab === "projects" && (
               <ProjectGallery />
+            )}
+
+            {activeTab === "workspaces" && (
+              <MyWorkspaces />
             )}
             
             {activeTab === "brief" && activeSubTab === "builder" && (

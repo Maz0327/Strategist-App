@@ -111,6 +111,12 @@ function AppContent() {
           : <AuthPage onAuthSuccess={setUser} />
         }
       </Route>
+      <Route path="/workspaces">
+        {user
+          ? <Dashboard user={user} onLogout={() => setUser(null)} currentPage="workspaces" />
+          : <AuthPage onAuthSuccess={setUser} />
+        }
+      </Route>
       <Route path="/projects/:projectId/workspace">
         {user
           ? <Workspace />
