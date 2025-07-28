@@ -200,6 +200,7 @@ export function TrendingTopics() {
       case 'reddit':
         return <MessageSquare className="text-orange-500" size={16} />;
       case 'google':
+      case 'google-trends':
         return <Search className="text-blue-500" size={16} />;
       case 'twitter':
         return <MessageSquare className="text-blue-400" size={16} />;
@@ -212,7 +213,17 @@ export function TrendingTopics() {
       case 'mediastack':
         return <Globe className="text-green-600" size={16} />;
       case 'youtube':
+      case 'youtube-trending':
         return <Globe className="text-red-500" size={16} />;
+      case 'tiktok':
+      case 'tiktok-trends':
+        return <Globe className="text-black" size={16} />;
+      case 'instagram':
+      case 'instagram-trends':
+        return <Globe className="text-pink-600" size={16} />;
+      case 'linkedin':
+      case 'linkedin-trends':
+        return <Globe className="text-blue-700" size={16} />;
       case 'spotify':
       case 'lastfm':
       case 'genius':
@@ -226,14 +237,8 @@ export function TrendingTopics() {
         return <Globe className="text-pink-500" size={16} />;
       case 'urbandictionary':
         return <Globe className="text-yellow-500" size={16} />;
-      case 'youtube-trending':
-        return <Globe className="text-red-600" size={16} />;
       case 'reddit-cultural':
         return <MessageSquare className="text-orange-600" size={16} />;
-      case 'tiktok-trends':
-        return <Globe className="text-black" size={16} />;
-      case 'instagram-trends':
-        return <Globe className="text-pink-600" size={16} />;
       default:
         return <Globe className="text-gray-500" size={16} />;
     }
@@ -244,6 +249,7 @@ export function TrendingTopics() {
       case 'reddit':
         return 'bg-orange-100 text-orange-800 border-orange-200';
       case 'google':
+      case 'google-trends':
         return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'twitter':
         return 'bg-sky-100 text-sky-800 border-sky-200';
@@ -260,7 +266,17 @@ export function TrendingTopics() {
       case 'mediastack':
         return 'bg-teal-100 text-teal-800 border-teal-200';
       case 'youtube':
+      case 'youtube-trending':
         return 'bg-red-100 text-red-800 border-red-200';
+      case 'tiktok':
+      case 'tiktok-trends':
+        return 'bg-black text-white border-gray-800';
+      case 'instagram':
+      case 'instagram-trends':
+        return 'bg-pink-100 text-pink-800 border-pink-200';
+      case 'linkedin':
+      case 'linkedin-trends':
+        return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'spotify':
         return 'bg-green-100 text-green-800 border-green-200';
       case 'lastfm':
@@ -277,14 +293,8 @@ export function TrendingTopics() {
         return 'bg-pink-100 text-pink-800 border-pink-200';
       case 'urbandictionary':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'youtube-trending':
-        return 'bg-red-100 text-red-800 border-red-200';
       case 'reddit-cultural':
         return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'tiktok-trends':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-      case 'instagram-trends':
-        return 'bg-pink-100 text-pink-800 border-pink-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -297,8 +307,9 @@ export function TrendingTopics() {
   };
 
   const getCategoryFromPlatform = (platform: string): string => {
-    switch (platform) {
+    switch (platform.toLowerCase()) {
       case 'google':
+      case 'google-trends':
         return 'search';
       case 'reddit':
       case 'twitter':
@@ -311,7 +322,16 @@ export function TrendingTopics() {
       case 'mediastack':
         return 'news';
       case 'youtube':
+      case 'youtube-trending':
         return 'video';
+      case 'tiktok':
+      case 'tiktok-trends':
+      case 'instagram':
+      case 'instagram-trends':
+        return 'social-media';
+      case 'linkedin':
+      case 'linkedin-trends':
+        return 'professional';
       case 'spotify':
       case 'lastfm':
       case 'genius':
@@ -323,10 +343,7 @@ export function TrendingTopics() {
         return 'knowledge';
       case 'knowyourmeme':
       case 'urbandictionary':
-      case 'youtube-trending':
       case 'reddit-cultural':
-      case 'tiktok-trends':
-      case 'instagram-trends':
         return 'cultural';
       default:
         return 'other';
