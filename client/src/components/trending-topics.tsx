@@ -32,9 +32,7 @@ export function TrendingTopics() {
   // Manual refresh mutation
   const refreshMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('/api/trending/refresh', {
-        method: 'POST'
-      });
+      const response = await apiRequest('/api/trending/refresh', 'POST');
       return response;
     },
     onSuccess: () => {
@@ -59,9 +57,9 @@ export function TrendingTopics() {
     totalItems: number;
     collectedAt: string;
   }>({
-    queryKey: ["/api/trending/all", selectedCategory],
+    queryKey: ["/api/trending/all"],
     staleTime: 5 * 60 * 1000, // 5 minutes - real-time social data
-    refetchInterval: 15 * 60 * 1000, // 15 minutes - more frequent updates
+    refetchInterval: false, // Manual refresh only - no automatic intervals
     retry: 2,
     refetchOnWindowFocus: false,
     gcTime: 15 * 60 * 1000, // 15 minutes cache time
@@ -104,9 +102,10 @@ export function TrendingTopics() {
     const allTopics: Topic[] = [];
     
     try {
-      Object.entries(trendingData.platforms).forEach(([platform, platformData]: [string, any]) => {
-        if (platformData && platformData.data && Array.isArray(platformData.data)) {
-          platformData.data.forEach((item: any, index: number) => {
+      Object.entries(trendingData.platforms).forEach(([platform, platformItems]: [string, any]) => {
+        // Handle direct array format from Bright Data
+        if (Array.isArray(platformItems)) {
+          platformItems.forEach((item: any, index: number) => {
             allTopics.push({
               id: `${platform}-${index}`,
               platform,
@@ -126,13 +125,13 @@ export function TrendingTopics() {
       return [];
     }
     
-    // Filter by selected category
-    const filtered = selectedCategory === "all" 
-      ? allTopics 
-      : allTopics.filter(topic => topic.platform === selectedCategory);
+    // Sort by engagement first, then filter
+    const sorted = allTopics.sort((a, b) => (b.engagement || 0) - (a.engagement || 0));
     
-    // Sort by engagement
-    return filtered.sort((a, b) => (b.engagement || 0) - (a.engagement || 0));
+    // Filter by selected category
+    return selectedCategory === "all" 
+      ? sorted 
+      : sorted.filter(topic => topic.platform === selectedCategory);
   }, [trendingData, selectedCategory]);
 
   // Enhanced loading state with AnimatedLoadingState
@@ -396,7 +395,7 @@ export function TrendingTopics() {
             <SelectItem value="news">📰 News Sources (Bright Data)</SelectItem>
             
             {/* ✅ WORKING APIs (Verified) */}
-            <SelectItem value="hackernews">🔶 Hacker News (API)</SelectItem>
+            <SelectItem value="hacker_news">🔶 Hacker News (API)</SelectItem>
           </SelectContent>
         </Select>
       </div>
