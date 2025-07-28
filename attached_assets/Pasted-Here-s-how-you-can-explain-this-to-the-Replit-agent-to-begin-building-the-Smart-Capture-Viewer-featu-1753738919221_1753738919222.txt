@@ -1,0 +1,109 @@
+Here’s how you can explain this to the Replit agent to begin building the Smart Capture Viewer feature for your strategist platform:
+
+⸻
+
+🧠 Replit Agent Instructions: Smart Capture Viewer UI
+
+🛠️ Goal:
+
+Build a smart, seamless interface that lets users view, tag, organize, and manage their captured content from either the Chrome extension or the file upload system. This interface lives within the web app and connects to the backend system you’ve already started.
+
+⸻
+
+✅ Key Features to Build:
+
+1. Capture Viewer Page (Frontend React Component)
+
+a. Main Layout
+
+Use a responsive layout with two columns:
+	•	Left Sidebar (Project selector, filters, tags)
+	•	Main Workspace (Grid or list of capture cards)
+
+Use Tailwind + Radix UI.
+
+b. Capture Card Component
+
+Each capture card should contain:
+	•	Screenshot/file thumbnail (or fallback icon for non-images)
+	•	Source info (e.g., domain, platform, URL)
+	•	Notes (inline editable)
+	•	Tag input (use select dropdown + allow custom tags)
+	•	Toggle: “Include in Analysis?”
+	•	Collapsible panel: “Truth Analysis” (pre-filled JSON if available)
+
+Allow the user to:
+	•	Tag captures
+	•	Write/edit notes
+	•	Toggle analysis
+	•	Select multiple captures
+
+⸻
+
+2. Tagging & Filtering
+
+In the sidebar, include:
+	•	Project/session filter
+	•	Tag filter (multi-select dropdown)
+	•	Toggles for:
+	•	Show only analyzed
+	•	Show only with notes
+	•	Show only screenshots
+
+⸻
+
+3. API Integration
+
+Use the existing database to:
+	•	Fetch all captures related to a project/session
+	•	Save user notes and tags
+	•	Update analyzed status
+	•	Fetch/save truth analysis results (JSON)
+
+Capture data format (example schema):
+
+{
+  id: string;
+  user_id: string;
+  project_id: string;
+  session_id: string;
+  file_url: string;
+  file_type: 'image' | 'pdf' | 'text' | 'url';
+  notes: string;
+  tags: string[];
+  analyzed: boolean;
+  truth_analysis: {
+    fact: string;
+    observation: string;
+    insight: string;
+    humanTruth: string;
+    culturalMoment: string;
+  };
+  created_at: string;
+}
+
+
+⸻
+
+4. Design/UX Philosophy
+	•	Everything should be editable inline.
+	•	Don’t interrupt the user’s flow—make tagging and notes feel effortless.
+	•	System should assist the user, not force structure.
+
+⸻
+
+🧪 Test Plan
+	•	Create mock capture data for testing
+	•	Test uploading a file → display in Capture Viewer
+	•	Ensure notes and tags save properly
+	•	Simulate truth analysis (mock JSON) and show in expandable view
+
+⸻
+
+📦 Bonus Feature (optional):
+
+Create a “Select for Brief” mode that lets user bulk-select captures and send them to the next pipeline step (automated draft building).
+
+⸻
+
+Let me know when you’re ready to add truth analysis trigger buttons or wire this to batch brief generation.

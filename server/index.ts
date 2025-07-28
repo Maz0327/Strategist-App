@@ -4,6 +4,7 @@ import MemoryStore from "memorystore";
 // Import modular routes
 import authRoutes from './routes/authRoutes';
 import signalRoutes from './routes/signalRoutes';
+import signalsUploadRoutes from './routes/signals-upload';
 import analysisRoutes from './routes/analysisRoutes';
 import adminRoutes from './routes/adminRoutes';
 import userRoutes from './routes/userRoutes';
@@ -199,6 +200,7 @@ app.use((req, res, next) => {
   // Setup modular routes with comprehensive validation
   app.use('/api/auth', authRoutes);
   app.use('/api/signals', signalRoutes);
+  app.use('/api/signals/upload', signalsUploadRoutes);
   app.use('/api/analyze', analysisRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/user', userRoutes);
