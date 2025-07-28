@@ -142,10 +142,12 @@ const batchUpload = multer({
 
 router.post("/batch-upload", requireAuth, batchUpload.array('files', 20), async (req: any, res) => {
   try {
-    console.log('🔥 Batch upload request:', req.body);
+    console.log('🔥 Batch upload request body:', req.body);
     console.log('📸 Files received:', req.files?.length || 0);
+    console.log('📋 Request files object:', req.files);
 
     if (!req.files || req.files.length === 0) {
+      console.log('❌ No files in request');
       return res.status(400).json({
         success: false,
         error: 'No files provided'

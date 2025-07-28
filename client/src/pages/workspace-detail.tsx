@@ -236,74 +236,60 @@ export function WorkspaceDetail() {
   // Batch screenshot upload mutation
   const batchUploadMutation = useMutation({
     mutationFn: async (files: File[]) => {
-      const results = [];
+      console.log('🚀 Starting batch upload for', files.length, 'files');
       
-      for (const file of files) {
-        const fileId = `${file.name}-${Date.now()}`;
-        setProcessingStatus(prev => ({ ...prev, [fileId]: 'uploading' }));
-        setUploadProgress(prev => ({ ...prev, [fileId]: 0 }));
+      // Create FormData with ALL files at once
+      const formData = new FormData();
+      
+      // Add all files to the same FormData
+      files.forEach((file, index) => {
+        console.log(`Adding file ${index + 1}:`, file.name, file.type, file.size);
+        formData.append('files', file);
+      });
+      
+      // Add project metadata
+      formData.append('projectId', projectId!);
+      formData.append('extractText', 'true');
+      formData.append('isDraft', 'true');
+      formData.append('status', 'capture');
+      
+      console.log('📤 Sending batch upload request...');
+      
+      try {
+        const response = await fetch('/api/signals/batch-upload', {
+          method: 'POST',
+          credentials: 'include',
+          body: formData
+        });
 
-        try {
-          const formData = new FormData();
-          formData.append('files', file);
-          formData.append('projectId', projectId!);
-          formData.append('extractText', 'true');
-          formData.append('isDraft', 'true');
-          formData.append('status', 'capture');
-
-          setUploadProgress(prev => ({ ...prev, [fileId]: 50 }));
-          setProcessingStatus(prev => ({ ...prev, [fileId]: 'extracting' }));
-
-          const response = await fetch('/api/signals/batch-upload', {
-            method: 'POST',
-            credentials: 'include',
-            body: formData
-          });
-
-          const result = await response.json();
-          
-          if (result.success) {
-            setProcessingStatus(prev => ({ ...prev, [fileId]: 'complete' }));
-            setUploadProgress(prev => ({ ...prev, [fileId]: 100 }));
-            
-            // Store extracted text data
-            if (result.data?.extractedText) {
-              setExtractedData(prev => ({
-                ...prev,
-                [fileId]: {
-                  text: result.data.extractedText,
-                  isTextHeavy: result.data.isTextHeavy || false
-                }
-              }));
-            }
-            
-            results.push(result);
-          } else {
-            throw new Error(result.error || 'Upload failed');
-          }
-        } catch (error) {
-          setProcessingStatus(prev => ({ ...prev, [fileId]: 'error' }));
-          console.error(`Failed to upload ${file.name}:`, error);
-          results.push({ success: false, error: error.message, fileName: file.name });
+        const result = await response.json();
+        console.log('📥 Batch upload response:', result);
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Batch upload failed');
         }
+        
+        return result;
+        
+      } catch (error) {
+        console.error('❌ Batch upload error:', error);
+        throw error;
       }
-      
-      return results;
     },
-    onSuccess: (results) => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['/api/signals', 'project', projectId] });
       
-      const successCount = results.filter(r => r.success).length;
-      const errorCount = results.filter(r => !r.success).length;
+      const uploadedCount = result.data?.uploadedCount || 0;
+      const errorCount = result.data?.errorCount || 0;
       
-      if (successCount > 0) {
+      if (uploadedCount > 0) {
         toast({
-          title: `${successCount} screenshot(s) uploaded`,
-          description: errorCount > 0 ? `${errorCount} failed to upload` : "All screenshots processed successfully"
+          title: `${uploadedCount} screenshot(s) uploaded`,
+          description: errorCount > 0 ? `${errorCount} failed to upload` : "All screenshots processed with Gemini OCR"
         });
       }
       
-      if (errorCount === results.length) {
+      if (errorCount > 0 && uploadedCount === 0) {
         toast({
           title: "Upload failed",
           description: "All screenshots failed to upload",

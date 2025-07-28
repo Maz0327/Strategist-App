@@ -14,7 +14,26 @@ export interface OCRResult {
 
 export async function analyzeScreenshotWithGemini(imagePath: string): Promise<OCRResult> {
   try {
+    console.log(`🔍 Reading image file: ${imagePath}`);
+    
+    if (!fs.existsSync(imagePath)) {
+      throw new Error(`Image file not found: ${imagePath}`);
+    }
+    
     const imageBytes = fs.readFileSync(imagePath);
+    console.log(`📷 Image size: ${imageBytes.length} bytes`);
+    
+    // Detect actual mime type from file extension
+    let mimeType = "image/jpeg";
+    if (imagePath.toLowerCase().includes('.png')) {
+      mimeType = "image/png";
+    } else if (imagePath.toLowerCase().includes('.gif')) {
+      mimeType = "image/gif";
+    } else if (imagePath.toLowerCase().includes('.webp')) {
+      mimeType = "image/webp";
+    }
+    
+    console.log(`🎨 Using mime type: ${mimeType}`);
 
     const systemPrompt = `You are an expert at analyzing screenshots and extracting text. 
 Analyze this screenshot and provide:
@@ -39,7 +58,7 @@ Respond with JSON in this exact format:
       {
         inlineData: {
           data: imageBytes.toString("base64"),
-          mimeType: "image/jpeg",
+          mimeType: mimeType,
         },
       },
       systemPrompt
