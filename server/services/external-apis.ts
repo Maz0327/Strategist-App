@@ -90,11 +90,11 @@ export class ExternalAPIsService {
           { name: 'Google Trends', fn: () => this.getBrightDataGoogleTrends(), timeout: 40000 },
           { name: 'LinkedIn', fn: () => this.getBrightDataLinkedInTrends(), timeout: 40000 },
           { name: 'Instagram', fn: () => this.getBrightDataInstagramTrends(), timeout: 40000 },
-          { name: 'Reddit', fn: () => this.getBrightDataRedditTrending(), timeout: 40000 }
+          { name: 'Reddit', fn: () => this.getBrightDataRedditTrends(), timeout: 40000 }
         ];
 
         let successfulPlatforms = 0;
-        const maxPlatforms = 3; // Limit to first 3 successful platforms for speed
+        const maxPlatforms = 6; // Get data from all available platforms
 
         for (const platform of platformConfigs) {
           if (successfulPlatforms >= maxPlatforms) break;
@@ -114,9 +114,15 @@ export class ExternalAPIsService {
             console.warn(`⏱️ ${platform.name} timeout: ${error}`);
           }
           
+          // Return immediately when we have good data from working platforms
+          if (successfulPlatforms >= 2 && results.length >= 25) {
+            console.log(`🎯 EARLY SUCCESS: Got ${successfulPlatforms} platforms with ${results.length} items, returning immediately`);
+            break;
+          }
+          
           // Small delay between platforms to prevent resource conflicts
           if (successfulPlatforms < maxPlatforms) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 500));
           }
         }
 

@@ -230,11 +230,14 @@ export class BrightDataService {
         } catch (error) {
           debugLogger.error(`Instagram hashtag ${hashtag} failed:`, (error as Error).message);
         } finally {
-          // **FIX: Safe page closure to prevent connection errors**
+          // **FIX: Enhanced connection stability to prevent "detached Frame" errors**
           try {
-            await page.close();
+            if (!page.isClosed()) {
+              await page.close();
+            }
           } catch (e) {
-            // Ignore close errors - page may already be closed
+            // Ignore close errors - page may already be closed or detached
+            debugLogger.warn(`Safe Instagram page closure: ${e.message}`);
           }
         }
         
@@ -1290,11 +1293,14 @@ export class BrightDataService {
         } catch (error) {
           debugLogger.error(`LinkedIn keyword ${keyword} failed:`, error.message);
         } finally {
-          // **FIX: Safe page closure to prevent LinkedIn connection errors**
+          // **FIX: Enhanced connection stability to prevent "detached Frame" errors**
           try {
-            await page.close();
+            if (!page.isClosed()) {
+              await page.close();
+            }
           } catch (e) {
-            // Ignore close errors - page may already be closed
+            // Ignore close errors - page may already be closed or detached
+            debugLogger.warn(`Safe page closure warning: ${e.message}`);
           }
         }
         
