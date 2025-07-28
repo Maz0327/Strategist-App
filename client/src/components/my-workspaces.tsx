@@ -46,22 +46,30 @@ export function MyWorkspaces() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   // Fetch user's projects
-  const { data: projects, isLoading } = useQuery({
+  const { data: projects, isLoading, refetch } = useQuery({
     queryKey: ['/api/projects'],
-    staleTime: 30000
+    staleTime: 1000, // Reduced stale time for better real-time updates
+    refetchOnWindowFocus: true
   });
 
   // Create project mutation
   const createProjectMutation = useMutation({
     mutationFn: async (projectData: { name: string; description: string }) => {
       const response = await apiRequest('/api/projects', 'POST', projectData);
-      return response.json();
+      const result = await response.json();
+      console.log('Create project response:', result);
+      return result;
     },
     onSuccess: (data) => {
+      console.log('Project created successfully:', data);
+      // Force refresh the projects list to show new workspace immediately
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      queryClient.refetchQueries({ queryKey: ['/api/projects'] });
+      
+      const projectName = data?.data?.name || data?.name || 'New workspace';
       toast({
         title: "Workspace created",
-        description: `"${data.data.name}" is ready for content capture`
+        description: `"${projectName}" is ready for content capture`
       });
       setIsCreateDialogOpen(false);
       setNewProjectName('');
@@ -92,7 +100,12 @@ export function MyWorkspaces() {
     });
   };
 
-  const projectList: Project[] = (projects as any)?.data || [];
+  // Handle both direct array and wrapped response formats
+  const projectList: Project[] = Array.isArray(projects) ? projects : (projects as any)?.data || [];
+  
+  // Debug logging
+  console.log('Projects data:', projects);
+  console.log('Project list:', projectList);
 
   // Filter projects based on search
   const filteredProjects = projectList.filter(project =>
