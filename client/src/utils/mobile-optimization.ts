@@ -122,7 +122,7 @@ export function optimizeForMobile() {
 // Mobile-friendly modal positioning
 export function getMobileModalPosition() {
   const viewportHeight = window.innerHeight;
-  const keyboardHeight = viewportHeight - window.visualViewport?.height || 0;
+  const keyboardHeight = viewportHeight - (window.visualViewport?.height || viewportHeight);
   
   return {
     maxHeight: `${viewportHeight - keyboardHeight - 40}px`, // 40px for padding

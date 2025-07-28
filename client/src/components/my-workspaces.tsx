@@ -144,19 +144,20 @@ export function MyWorkspaces() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="space-y-4 sm:space-y-6 pb-20 sm:pb-0">
+      {/* Header Section - Mobile Optimized */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Workspaces</h1>
-          <p className="text-gray-600">Organize your content capture and analysis by project</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">My Workspaces</h1>
+          <p className="text-sm sm:text-base text-gray-600">Organize your content capture and analysis by project</p>
         </div>
         
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="flex items-center gap-2">
+            <Button className="flex items-center gap-2 w-full sm:w-auto min-h-[44px]">
               <Plus className="w-4 h-4" />
-              New Workspace
+              <span className="hidden sm:inline">New Workspace</span>
+              <span className="sm:hidden">New</span>
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -202,18 +203,18 @@ export function MyWorkspaces() {
         </Dialog>
       </div>
 
-      {/* Search Bar */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-md">
+      {/* Search Bar - Mobile Optimized */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+        <div className="relative flex-1 max-w-full sm:max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input
             placeholder="Search workspaces..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 min-h-[44px]"
           />
         </div>
-        <Badge variant="secondary" className="text-sm">
+        <Badge variant="secondary" className="text-sm self-start sm:self-center whitespace-nowrap">
           {filteredProjects.length} workspace{filteredProjects.length !== 1 ? 's' : ''}
         </Badge>
       </div>
@@ -241,7 +242,7 @@ export function MyWorkspaces() {
           </div>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {filteredProjects.map((project) => (
             <Card key={project.id} className="hover:shadow-md transition-shadow cursor-pointer group">
               <CardHeader className="pb-3">

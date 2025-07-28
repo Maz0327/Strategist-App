@@ -15,6 +15,7 @@ import { FeedsHub } from "@/components/feeds-hub";
 import { ProjectGallery } from "@/components/project-gallery";
 import { MyWorkspaces } from "@/components/my-workspaces";
 import { BriefTemplateEngine } from "@/components/brief-template-engine";
+import { MobileNav } from "@/components/ui/mobile-nav";
 import { authService } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -179,74 +180,7 @@ export default function Dashboard({ user, onLogout, onPageChange, currentPage }:
         </div>
       </header>
 
-      {/* Mobile-Only Persistent Navigation Bar */}
-      {isMobile && (
-        <div className="bg-white border-b border-gray-200 px-4 py-2">
-          <div className="flex overflow-x-auto pb-2 scrollbar-hide">
-            <div className="flex space-x-2 min-w-max">
-              <Button
-                variant={activeTab === "briefing" ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  setActiveTab("briefing");
-                  setActiveSubTab("");
-                }}
-                className="whitespace-nowrap flex-shrink-0"
-              >
-                <Home className="w-4 h-4 mr-1" />
-                Briefing
-              </Button>
-              <Button
-                variant={activeTab === "explore" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setActiveTab("explore")}
-                className="whitespace-nowrap flex-shrink-0"
-              >
-                <Search className="w-4 h-4 mr-1" />
-                Explore
-              </Button>
-              <Button
-                variant={activeTab === "capture" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setActiveTab("capture")}
-                className="whitespace-nowrap flex-shrink-0"
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Capture
-              </Button>
-              <Button
-                variant={activeTab === "projects" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setActiveTab("projects")}
-                className="whitespace-nowrap flex-shrink-0"
-              >
-                <FolderOpen className="w-4 h-4 mr-1" />
-                Projects
-              </Button>
-              <Button
-                variant={activeTab === "brief" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setActiveTab("brief")}
-                className="whitespace-nowrap flex-shrink-0"
-              >
-                <Target className="w-4 h-4 mr-1" />
-                Brief Lab
-              </Button>
-              <Button
-                variant={activeTab === "manage" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setActiveTab("manage")}
-                className="whitespace-nowrap flex-shrink-0"
-              >
-                <Settings className="w-4 h-4 mr-1" />
-                Manage
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="flex-1 flex overflow-hidden mobile-safe">
+      <div className="flex-1 flex overflow-hidden mobile-safe pb-16 sm:pb-0">
         {/* Mobile Menu Overlay */}
         {isMobile && mobileMenuOpen && (
           <div 
@@ -400,6 +334,16 @@ export default function Dashboard({ user, onLogout, onPageChange, currentPage }:
 
         </div>
       </div>
+      
+      {/* Mobile Bottom Navigation */}
+      <MobileNav
+        activeTab={activeTab}
+        onTabChange={(tab) => {
+          setActiveTab(tab);
+          setActiveSubTab("");
+          setMobileMenuOpen(false);
+        }}
+      />
       
       {/* Feedback Widget */}
       <FeedbackWidget />
