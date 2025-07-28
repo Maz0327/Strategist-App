@@ -80,41 +80,27 @@ export class ExternalAPIsService {
 
     try {
       if (!platform || platform === 'all') {
-        // 🔥 BRIGHT DATA PRIMARY ARCHITECTURE - All trending via enhanced scraping
-        console.log('🚀 BRIGHT DATA PRIMARY: Fetching trending data from enhanced web scraping');
+        // 🔥 OPTIMIZED FAST TRENDING - Parallel with 10s timeout per platform
+        console.log('🚀 FAST TRENDING: Fetching data from top 5 fastest platforms');
         
-        const [
-          brightDataSocial, brightDataGoogle, brightDataYouTube, brightDataReddit,
-          brightDataNews, brightDataProductHunt, brightDataHackerNews, brightDataMedium, brightDataGlasp
-        ] = await Promise.allSettled([
-          this.getBrightDataComprehensiveTrends(), // 4 social platforms via Bright Data
-          this.getBrightDataGoogleTrends(),        // Google Trends live scraping
-          this.getBrightDataYouTubeTrending(),     // YouTube trending videos  
-          this.getBrightDataRedditTrending(),      // Reddit live trending posts
-          this.getBrightDataNewsTrends(),          // News trending bypass
-          this.getBrightDataProductHunt(),         // Product Hunt daily launches
-          this.getBrightDataHackerNews(),          // Hacker News tech discussions
-          this.getBrightDataMediumTrending(),      // Medium thought leadership
-          this.getBrightDataGlaspHighlights()     // Glasp knowledge curation
-        ]);
-
-        // Process Bright Data enhanced sources - BLOCK-RESISTANT ARCHITECTURE
-        const allPromises = [
-          brightDataSocial, brightDataGoogle, brightDataYouTube, brightDataReddit,
-          brightDataNews, brightDataProductHunt, brightDataHackerNews, brightDataMedium, brightDataGlasp
+        // Use Promise.allSettled with individual timeouts for speed
+        const fastPromises = [
+          this.withTimeout(this.getBrightDataHackerNews(), 10000, 'Hacker News'),
+          this.withTimeout(this.getBrightDataYouTubeTrending(), 10000, 'YouTube'),
+          this.withTimeout(this.getBrightDataMediumTrending(), 10000, 'Medium'),
+          this.withTimeout(this.getBrightDataGoogleTrends(), 8000, 'Google Trends'),
+          this.withTimeout(this.getBrightDataComprehensiveTrends(), 12000, 'Social Media')
         ];
 
-        allPromises.forEach((promise, index) => {
-          const platformNames = [
-            'bright-data-social', 'bright-data-google', 'bright-data-youtube', 
-            'bright-data-reddit', 'bright-data-news', 'product-hunt', 'hacker-news', 'medium', 'glasp'
-          ];
-          
+        const results_settled = await Promise.allSettled(fastPromises);
+        const platformNames = ['hacker-news', 'youtube', 'medium', 'google-trends', 'social-media'];
+
+        results_settled.forEach((promise, index) => {
           if (promise.status === 'fulfilled') {
             results.push(...promise.value);
-            console.log(`🔥 ${platformNames[index]}: ${promise.value.length} trending items`);
+            console.log(`⚡ ${platformNames[index]}: ${promise.value.length} items (${promise.value.length > 0 ? 'LIVE' : 'empty'})`);
           } else {
-            console.warn(`❌ Failed to fetch from ${platformNames[index]}:`, promise.reason);
+            console.warn(`⏱️ ${platformNames[index]} timeout: ${promise.reason}`);
           }
         });
 
@@ -207,13 +193,23 @@ export class ExternalAPIsService {
           .slice(0, 20);
       }
 
-      // UNLIMITED FLOW - Return ALL trending data from all platforms
+      // FAST FLOW - Return top trending data optimized for speed
       return results
         .sort((a, b) => (b.score || 0) - (a.score || 0))
-        .slice(0, 200); // Massive increase: up to 200 total trending items
+        .slice(0, 100); // Optimized: up to 100 trending items for faster loading
     } catch (error) {
+      console.warn('Fast trending fallback due to error:', error);
       return [];
     }
+  }
+
+  // Utility method to add timeout to any promise
+  private async withTimeout<T>(promise: Promise<T>, timeoutMs: number, name: string): Promise<T> {
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error(`${name} timeout after ${timeoutMs}ms`)), timeoutMs);
+    });
+    
+    return Promise.race([promise, timeoutPromise]);
   }
 
   async getGoogleTrends(): Promise<TrendingTopic[]> {
