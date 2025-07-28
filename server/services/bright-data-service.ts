@@ -786,11 +786,11 @@ export class BrightDataService {
       try {
         await page.goto('https://medium.com/tag/technology', { 
           waitUntil: 'networkidle2', 
-          timeout: 30000 
+          timeout: 45000 
         });
 
-        // Wait for articles to load
-        await page.waitForSelector('article', { timeout: 30000 }).catch(() => {});
+        // Wait for articles to load  
+        await page.waitForSelector('article', { timeout: 45000 }).catch(() => {});
         
         // Extract Medium articles
         const articles = await page.evaluate(() => {
