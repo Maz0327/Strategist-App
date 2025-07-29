@@ -44,8 +44,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Core strategic tags
     const CORE_TAGS = [
         'cultural-moment', 'human-behavior', 'rival-content', 
-        'visual-hook', 'insight-cue', 'trend-signal'
+        'visual-hook', 'insight-cue', 'trend-signal',
+        'attention-arbitrage', 'bridge-worthy', 'consumer-shift', 'platform-native'
     ];
+
+    // Domain-based auto-tagging patterns
+    const DOMAIN_PATTERNS = {
+        'tiktok.com': ['cultural-moment', 'trend-signal', 'platform-native'],
+        'instagram.com': ['visual-hook', 'cultural-moment', 'human-behavior'],
+        'linkedin.com': ['insight-cue', 'rival-content', 'bridge-worthy'],
+        'youtube.com': ['trend-signal', 'visual-hook', 'attention-arbitrage'],
+        'twitter.com': ['cultural-moment', 'trend-signal', 'consumer-shift'],
+        'x.com': ['cultural-moment', 'trend-signal', 'consumer-shift'],
+        'reddit.com': ['human-behavior', 'insight-cue', 'cultural-moment'],
+        'news.': ['insight-cue', 'bridge-worthy', 'trend-signal'],
+        'medium.com': ['insight-cue', 'human-behavior', 'bridge-worthy']
+    };
+
+    // Content-based keyword patterns
+    const CONTENT_KEYWORDS = {
+        'cultural-moment': ['viral', 'trending', 'moment', 'culture', 'zeitgeist', 'phenomenon'],
+        'human-behavior': ['behavior', 'psychology', 'habits', 'patterns', 'consumer', 'user'],
+        'rival-content': ['competitor', 'brand', 'campaign', 'marketing', 'advertising', 'strategy'],
+        'visual-hook': ['design', 'visual', 'aesthetic', 'creative', 'art', 'graphics'],
+        'insight-cue': ['insight', 'data', 'research', 'study', 'analysis', 'findings'],
+        'trend-signal': ['trend', 'emerging', 'future', 'prediction', 'forecast', 'shift'],
+        'attention-arbitrage': ['attention', 'engagement', 'views', 'reach', 'audience', 'growth'],
+        'bridge-worthy': ['strategy', 'opportunity', 'business', 'market', 'potential', 'value'],
+        'consumer-shift': ['generation', 'demographic', 'preference', 'change', 'evolution'],
+        'platform-native': ['platform', 'algorithm', 'feature', 'format', 'native', 'organic']
+    };
 
     // Initialize
     await initializeExtension();
@@ -296,21 +324,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function autoDetectTags() {
         try {
             const url = currentTab.url.toLowerCase();
-            const title = currentTab.title.toLowerCase();
+            const title = (currentTab.title || '').toLowerCase();
             
-            // Auto-select tags based on content
-            if (url.includes('tiktok') || url.includes('instagram') || title.includes('viral')) {
-                selectTag('cultural-moment');
+            let suggestedTags = [];
+            
+            // Domain-based tagging
+            for (const [domain, tags] of Object.entries(DOMAIN_PATTERNS)) {
+                if (url.includes(domain)) {
+                    suggestedTags.push(...tags);
+                    break;
+                }
             }
-            if (url.includes('linkedin') || title.includes('professional') || title.includes('business')) {
-                selectTag('human-behavior');
+            
+            // Content-based tagging
+            for (const [tag, keywords] of Object.entries(CONTENT_KEYWORDS)) {
+                for (const keyword of keywords) {
+                    if (title.includes(keyword)) {
+                        if (!suggestedTags.includes(tag)) {
+                            suggestedTags.push(tag);
+                        }
+                    }
+                }
             }
-            if (url.includes('competitor') || title.includes('vs ') || title.includes('comparison')) {
-                selectTag('rival-content');
-            }
-            if (url.includes('design') || url.includes('visual') || title.includes('creative')) {
-                selectTag('visual-hook');
-            }
+            
+            // Apply suggestions (limit to top 3)
+            suggestedTags.slice(0, 3).forEach(tag => {
+                selectTag(tag);
+            });
+            
         } catch (error) {
             console.log('Auto-tag detection error:', error);
         }
@@ -338,22 +379,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         const title = currentTab.title;
         const suggestionList = [];
 
-        // Domain-based suggestions
+        // Enhanced domain-based suggestions
         if (url.includes('tiktok.com')) {
-            suggestionList.push('Viral potential analysis', 'Gen Z behavior insight', 'Trend adaptation opportunity');
+            suggestionList.push('Viral potential analysis', 'Gen Z behavior insight', 'Algorithm gaming strategy', 'Cultural moment timing');
         } else if (url.includes('linkedin.com')) {
-            suggestionList.push('Professional insight', 'Industry trend signal', 'Thought leadership content');
+            suggestionList.push('Professional insight', 'B2B thought leadership', 'Industry trend signal', 'Executive perspective');
         } else if (url.includes('instagram.com')) {
-            suggestionList.push('Visual storytelling technique', 'Brand engagement strategy', 'Aesthetic trend');
+            suggestionList.push('Visual storytelling technique', 'Aesthetic trend analysis', 'Creator economy insight', 'Brand positioning');
         } else if (url.includes('youtube.com')) {
-            suggestionList.push('Content format innovation', 'Creator strategy insight', 'Audience engagement pattern');
+            suggestionList.push('Content format innovation', 'Creator strategy insight', 'Audience engagement pattern', 'Algorithm optimization');
+        } else if (url.includes('twitter.com') || url.includes('x.com')) {
+            suggestionList.push('Real-time cultural signal', 'Conversation trend', 'Viral moment analysis', 'Public sentiment shift');
+        } else if (url.includes('reddit.com')) {
+            suggestionList.push('Community behavior insight', 'Organic conversation pattern', 'Grassroots trend signal', 'User psychology');
+        } else if (url.includes('news.') || url.includes('article')) {
+            suggestionList.push('Media narrative analysis', 'Public opinion shift', 'Industry development', 'Bridge-worthy opportunity');
         } else {
-            suggestionList.push('Strategic insight', 'Market signal', 'Consumer behavior pattern');
+            suggestionList.push('Strategic insight', 'Market signal', 'Consumer behavior pattern', 'Competitive intelligence');
         }
+
+        // Add strategic questioning prompts
+        suggestionList.push('What makes this Bridge Worthy?', 'How does this shift consumer behavior?', 'What attention arbitrage opportunity exists?');
 
         // Display suggestions
         suggestions.innerHTML = '';
-        suggestionList.forEach(suggestion => {
+        suggestionList.slice(0, 6).forEach(suggestion => {
             const chip = document.createElement('button');
             chip.className = 'suggestion-chip';
             chip.textContent = suggestion;
@@ -368,6 +418,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 break;
             case 'screen':
                 captureBtnText.textContent = 'Select & Capture Screen';
+                break;
+            case 'selection':
+                captureBtnText.textContent = 'Capture Selection';
                 break;
             case 'full':
                 captureBtnText.textContent = 'Capture Full Page';
@@ -395,10 +448,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 isDraft: true,
                 status: 'capture',
                 captureMode: captureMode,
+                analysisMode: document.getElementById('analysisMode').value,
+                priorityLevel: document.getElementById('priorityLevel').value,
                 browserContext: {
                     userAgent: navigator.userAgent,
                     timestamp: new Date().toISOString(),
-                    domain: new URL(currentTab.url).hostname
+                    domain: new URL(currentTab.url).hostname,
+                    captureMethod: 'chrome-extension',
+                    extensionVersion: '2.0.0'
                 }
             };
 
@@ -509,10 +566,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             body: JSON.stringify(captureData)
         });
 
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-            showStatus('Content captured successfully!', 'success');
+        if (response.ok) {
+            const result = await response.json();
+            console.log('Capture saved:', result);
+            
+            // Enhanced success messaging based on priority
+            let successMessage = 'Content captured successfully!';
+            if (captureData.priorityLevel === 'urgent') {
+                successMessage = '🚨 Urgent content captured - ready for immediate analysis!';
+            } else if (captureData.priorityLevel === 'high') {
+                successMessage = '⚡ High priority content captured!';
+            }
+            
+            showStatus(successMessage, 'success');
+            
+            // Show additional actions based on mode
+            if (captureData.analysisMode === 'deep') {
+                setTimeout(() => {
+                    showStatus('Deep analysis mode selected - GPT-4o will provide strategic insights', 'info');
+                }, 1000);
+            }
             
             // Clear form
             notesInput.value = '';
@@ -521,12 +594,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 chip.classList.remove('selected');
             });
             
-            // Close popup after success
+            // Close extension after delay
             setTimeout(() => {
                 window.close();
-            }, 1500);
+            }, 2500);
         } else {
-            throw new Error(result.error || 'Capture failed');
+            const errorData = await response.json().catch(() => ({ error: 'Network error' }));
+            throw new Error(errorData.error || 'Failed to save capture');
         }
     }
 
@@ -535,8 +609,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         status.className = `status ${type}`;
         status.style.display = 'block';
         
+        // Auto-hide after delay (except for info messages which stay longer)
+        const hideDelay = type === 'info' ? 2000 : 3000;
         setTimeout(() => {
             status.style.display = 'none';
-        }, 3000);
+        }, hideDelay);
     }
 });

@@ -127,6 +127,8 @@
             grid-template-columns: 1fr 1fr;
             gap: 6px;
             margin-top: 8px;
+            max-height: 120px;
+            overflow-y: auto;
         }
         .tag-chip {
             background: rgba(255,255,255,0.2);
@@ -221,6 +223,7 @@
         <div class="capture-modes">
             <button class="mode-btn active" data-mode="text">📝 Text</button>
             <button class="mode-btn" data-mode="screen">📸 Screen</button>
+            <button class="mode-btn" data-mode="selection">✂️ Selection</button>
             <button class="mode-btn" data-mode="full">📄 Full Page</button>
         </div>
 
@@ -247,6 +250,29 @@
                 <option value="platform">Platform Signals</option>
                 <option value="competitive">Competitive Intelligence</option>
                 <option value="consumer">Consumer Behavior</option>
+                <option value="market">Market Intelligence</option>
+                <option value="trend">Trend Analysis</option>
+                <option value="insight">Strategic Insights</option>
+            </select>
+        </div>
+
+        <!-- Analysis Mode -->
+        <div class="form-group">
+            <label for="analysisMode">Analysis Depth:</label>
+            <select id="analysisMode">
+                <option value="quick">Quick Mode (GPT-4o-mini)</option>
+                <option value="deep">Deep Mode (GPT-4o)</option>
+            </select>
+        </div>
+
+        <!-- Priority Level -->
+        <div class="form-group">
+            <label for="priorityLevel">Priority Level:</label>
+            <select id="priorityLevel">
+                <option value="low">Low Priority</option>
+                <option value="medium" selected>Medium Priority</option>
+                <option value="high">High Priority</option>
+                <option value="urgent">Urgent</option>
             </select>
         </div>
 
@@ -260,6 +286,10 @@
                 <button class="tag-chip" data-tag="visual-hook">Visual Hook</button>
                 <button class="tag-chip" data-tag="insight-cue">Insight Cue</button>
                 <button class="tag-chip" data-tag="trend-signal">Trend Signal</button>
+                <button class="tag-chip" data-tag="attention-arbitrage">Attention Arbitrage</button>
+                <button class="tag-chip" data-tag="bridge-worthy">Bridge Worthy</button>
+                <button class="tag-chip" data-tag="consumer-shift">Consumer Shift</button>
+                <button class="tag-chip" data-tag="platform-native">Platform Native</button>
             </div>
         </div>
 
