@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Strategic Content Capture</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="config.js"></script>
 </head>
 <body>
     <!-- Header -->
@@ -23,7 +24,7 @@
     <div class="main-content">
         <!-- Page Info Card -->
         <div class="info-card">
-            <div class="page-favicon" id="pageFavicon"></div>
+            <div class="page-favicon" id="pageFavicon">🌐</div>
             <div class="page-details">
                 <h3 id="pageTitle">Loading page...</h3>
                 <p id="pageUrl">...</p>
@@ -142,18 +143,13 @@
         <!-- Notes Input -->
         <div class="notes-section">
             <label class="setting-label">Personal Notes</label>
-            <textarea 
-                id="notesInput" 
-                class="notes-textarea" 
-                placeholder="Add your insights and observations..."
-                rows="3"
-            ></textarea>
+            <textarea id="notesInput" class="notes-textarea" placeholder="Add your strategic insights..."></textarea>
             <div class="notes-suggestions" id="notesSuggestions">
-                <!-- Smart suggestions will appear here -->
+                <!-- Suggestions will be populated by JavaScript -->
             </div>
         </div>
 
-        <!-- Selected Content Preview -->
+        <!-- Content Preview -->
         <div class="content-preview hidden" id="contentPreview">
             <div class="section-header">
                 <h4>Selected Content</h4>
@@ -164,30 +160,28 @@
             </div>
         </div>
 
+        <!-- Status Messages -->
+        <div class="status-message hidden" id="statusMessage">
+            <div class="status-content">
+                <span class="status-icon">ℹ️</span>
+                <span class="status-text">Status message</span>
+            </div>
+        </div>
+
         <!-- Action Buttons -->
         <div class="action-buttons">
             <button class="capture-btn" id="captureBtn">
                 <div class="btn-content">
-                    <span class="btn-icon">📎</span>
-                    <span class="btn-text" id="captureBtnText">Capture Content</span>
+                    <span id="captureBtnText">Capture Content</span>
                 </div>
                 <div class="btn-loader hidden" id="btnLoader">
                     <div class="spinner"></div>
                 </div>
             </button>
         </div>
-
-        <!-- Status Messages -->
-        <div class="status-message hidden" id="statusMessage">
-            <div class="status-content">
-                <span class="status-icon"></span>
-                <span class="status-text"></span>
-            </div>
-        </div>
     </div>
 
-    <!-- Modals -->
-    <!-- Create Project Modal -->
+    <!-- Project Creation Modal -->
     <div class="modal-overlay hidden" id="projectModalOverlay">
         <div class="modal">
             <div class="modal-header">
@@ -196,12 +190,12 @@
             </div>
             <div class="modal-content">
                 <div class="form-group">
-                    <label>Project Name</label>
+                    <label for="newProjectName">Project Name</label>
                     <input type="text" id="newProjectName" placeholder="Enter project name..." />
                 </div>
                 <div class="form-group">
-                    <label>Description</label>
-                    <textarea id="newProjectDesc" placeholder="Brief description..." rows="3"></textarea>
+                    <label for="newProjectDesc">Description (Optional)</label>
+                    <textarea id="newProjectDesc" placeholder="Brief project description..."></textarea>
                 </div>
             </div>
             <div class="modal-actions">
@@ -215,32 +209,32 @@
     <div class="modal-overlay hidden" id="setupModalOverlay">
         <div class="modal setup-modal">
             <div class="modal-header">
-                <h3>Connection Setup</h3>
+                <h3>Setup Connection</h3>
             </div>
             <div class="modal-content">
                 <div class="setup-steps">
-                    <div class="setup-step" id="step1">
+                    <div class="setup-step active">
                         <div class="step-number">1</div>
                         <div class="step-content">
                             <h4>Open Platform</h4>
-                            <p>Click below to open the Strategic Content Platform</p>
+                            <p>Click the button below to open your Strategic Content Platform in a new tab.</p>
                             <button class="btn-primary" id="openPlatformBtn">Open Platform</button>
                         </div>
                     </div>
-                    <div class="setup-step" id="step2">
+                    <div class="setup-step">
                         <div class="step-number">2</div>
                         <div class="step-content">
                             <h4>Log In</h4>
-                            <p>Sign in to your account on the platform</p>
-                            <div class="step-indicator" id="loginIndicator">Waiting...</div>
+                            <p>Sign in to your account on the platform.</p>
+                            <div class="step-indicator">Platform login required</div>
                         </div>
                     </div>
-                    <div class="setup-step" id="step3">
+                    <div class="setup-step">
                         <div class="step-number">3</div>
                         <div class="step-content">
-                            <h4>Verify Connection</h4>
-                            <p>Extension will automatically connect</p>
-                            <button class="btn-primary hidden" id="verifyConnectionBtn">Test Connection</button>
+                            <h4>Return Here</h4>
+                            <p>Come back to this extension to start capturing content.</p>
+                            <div class="step-indicator">Extension will auto-connect</div>
                         </div>
                     </div>
                 </div>
@@ -248,7 +242,6 @@
         </div>
     </div>
 
-    <script src="config.js"></script>
     <script src="popup.js"></script>
 </body>
 </html>
