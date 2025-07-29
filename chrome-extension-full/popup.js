@@ -1,6 +1,8 @@
 // Strategic Content Capture Extension - Full Featured
 document.addEventListener('DOMContentLoaded', async () => {
-    const API_BASE = 'http://localhost:5000';
+    // Get API base URL using configuration
+    let API_BASE = await window.ExtensionConfig.discoverApiUrl();
+    console.log('Extension using API_BASE:', API_BASE);
     
     // DOM elements
     const pageTitle = document.getElementById('pageTitle');
@@ -44,6 +46,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Event Listeners
     setupEventListeners();
+    
+    // Add setup button functionality
+    const setupBtn = document.createElement('button');
+    setupBtn.textContent = '⚙️ Setup URL';
+    setupBtn.style.cssText = 'background: #2196F3; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; margin-bottom: 10px;';
+    setupBtn.onclick = () => {
+        chrome.tabs.create({ url: chrome.runtime.getURL('setup.html') });
+    };
+    document.querySelector('.container').insertBefore(setupBtn, document.querySelector('.container').firstChild);
 
     async function initializeExtension() {
         try {
