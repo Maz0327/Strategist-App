@@ -12,14 +12,24 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentApiUrl = '';
     let currentTabInfo = null;
 
-    // Load stored configuration
-    chrome.storage.local.get(['apiBase'], function(result) {
-        if (result.apiBase) {
-            currentUrl.textContent = result.apiBase;
-            apiUrlInput.value = result.apiBase;
-            currentApiUrl = result.apiBase;
-            testConnection(result.apiBase);
+    // Check if connection is verified, otherwise redirect to login
+    chrome.storage.local.get(['apiBase', 'connectionVerified', 'lastConnectionTest'], function(result) {
+        const now = Date.now();
+        const testExpired = !result.lastConnectionTest || (now - result.lastConnectionTest > 24 * 60 * 60 * 1000); // 24 hours
+        
+        if (!result.apiBase || !result.connectionVerified || testExpired) {
+            // Redirect to login screen
+            window.location.href = 'login.html';
+            return;
         }
+        
+        // Connection verified, proceed with main popup
+        currentUrl.textContent = result.apiBase;
+        if (apiUrlInput) apiUrlInput.value = result.apiBase;
+        currentApiUrl = result.apiBase;
+        
+        // Quick auth check
+        quickAuthCheck(result.apiBase);
     });
 
     // Get current tab info
@@ -144,6 +154,34 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (e) {
             return 'unknown';
         }
+    }
+
+    function quickAuthCheck(url) {
+        fetch(url + '/api/auth/me', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(function(response) {
+            if (response.status === 200) {
+                setupSection.classList.add('hidden');
+                captureSection.classList.remove('hidden');
+            } else {
+                showStatus('Please log in to your main app first', 'error');
+                openAppBtn.classList.remove('hidden');
+            }
+        })
+        .catch(function() {
+            showStatus('Connection issue - please reconfigure', 'error');
+            // Clear verification and redirect to login
+            chrome.storage.local.remove(['connectionVerified'], function() {
+                setTimeout(function() {
+                    window.location.href = 'login.html';
+                }, 2000);
+            });
+        });
     }
 
     function showStatus(message, type) {
