@@ -155,12 +155,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             if (response.ok) {
-                const data = await response.json();
-                if (data.success && data.data) {
-                    currentProjects = data.data;
-                    populateProjectDropdown();
+                const projects = await response.json();
+                console.log('Projects response:', projects);
+                
+                // Handle different response formats
+                if (Array.isArray(projects)) {
+                    currentProjects = projects;
+                } else if (projects.success && projects.data) {
+                    currentProjects = projects.data;
+                } else if (projects.data && Array.isArray(projects.data)) {
+                    currentProjects = projects.data;
+                } else {
+                    currentProjects = projects || [];
                 }
+                
+                populateProjectDropdown();
             } else {
+                const errorData = await response.json().catch(() => ({ error: 'Network error' }));
+                console.error('Projects loading error:', errorData);
                 showStatus('Please log into the main app first', 'error');
             }
         } catch (error) {
@@ -207,7 +219,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (response.ok) {
                 const data = await response.json();
-                if (data.success) {
+                console.log('Create project response:', data);
+                
+                if (data.success && data.data) {
                     // Add to projects list
                     currentProjects.push(data.data);
                     populateProjectDropdown();
@@ -224,9 +238,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     newProjectDesc.value = '';
                     
                     showStatus('Project created successfully!', 'success');
+                } else {
+                    showStatus(data.error || 'Failed to create project', 'error');
                 }
             } else {
-                showStatus('Failed to create project', 'error');
+                const errorData = await response.json().catch(() => ({ error: 'Network error' }));
+                console.error('Project creation error:', errorData);
+                showStatus(errorData.error || 'Failed to create project', 'error');
             }
         } catch (error) {
             console.error('Error creating project:', error);
