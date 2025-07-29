@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Strategic Content Capture",
+  "version": "2.1.0",
+  "description": "Capture strategic content and insights directly from your browser",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://*.replit.dev/*",
+    "https://*.replit.app/*",
+    "http://localhost:*/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}

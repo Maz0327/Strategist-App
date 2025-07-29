@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Strategic Content Capture</title>
+    <style>
+        body {
+            width: 380px;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin: 0;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+        h2 {
+            margin: 0 0 20px 0;
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
+        }
+        .config-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .config-section h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .current-url {
+            font-size: 12px;
+            word-break: break-all;
+            opacity: 0.8;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 8px;
+        }
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+        .btn-secondary {
+            background: #2196F3;
+            color: white;
+        }
+        .btn-info {
+            background: #FF9800;
+            color: white;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 10px;
+            display: none;
+        }
+        .status.success {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid #4CAF50;
+        }
+        .status.error {
+            background: rgba(244, 67, 54, 0.3);
+            border: 1px solid #f44336;
+        }
+        .status.info {
+            background: rgba(33, 150, 243, 0.3);
+            border: 1px solid #2196F3;
+        }
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Strategic Content Capture</h2>
+        
+        <div class="config-section">
+            <h3>App Configuration</h3>
+            <div class="current-url" id="currentUrl">URL not set</div>
+        </div>
+
+        <div id="setupSection">
+            <input type="url" id="apiUrl" placeholder="Paste your Replit app URL here">
+            <button class="btn-secondary" id="testBtn">Test Connection</button>
+        </div>
+
+        <div id="captureSection" class="hidden">
+            <h3>Capture Content</h3>
+            <textarea id="notes" placeholder="Add your strategic insights about this content..."></textarea>
+            <button class="btn-primary" id="captureBtn">Capture Content</button>
+        </div>
+
+        <button class="btn-info" id="openAppBtn" class="hidden">Open Main App</button>
+
+        <div id="status" class="status"></div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
