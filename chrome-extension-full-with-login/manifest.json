@@ -32,6 +32,7 @@
     "http://127.0.0.1:5000/*",
     "https://*.replit.app/*",
     "https://*.replit.dev/*",
+    "https://60011746-76d1-4a07-8b52-69bb642792b8-00-7v62f6wvgff1.worf.replit.dev/*",
     "http://*/*",
     "https://*/*"
   ],

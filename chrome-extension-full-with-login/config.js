@@ -19,8 +19,8 @@ const ExtensionConfig = {
             'https://{workspace-name}.{username}.replit.dev'
         ];
         
-        // For now, try common localhost first, then fallback
-        return 'http://localhost:5000';
+        // Default to the actual Replit URL
+        return 'https://60011746-76d1-4a07-8b52-69bb642792b8-00-7v62f6wvgff1.worf.replit.dev';
     },
     
     // Set the API base URL (useful for when user provides the correct URL)
@@ -48,16 +48,17 @@ const ExtensionConfig = {
     async discoverApiUrl() {
         // First check if we have a stored URL
         const stored = this.getApiBase();
-        if (stored && stored !== 'http://localhost:5000') {
+        if (stored && stored !== 'https://60011746-76d1-4a07-8b52-69bb642792b8-00-7v62f6wvgff1.worf.replit.dev') {
             console.log(`Using stored URL: ${stored}`);
             if (await this.testConnection(stored)) {
                 return stored;
             }
         }
         
-        // Show setup message if no working URL found
-        console.warn('No working API endpoint configured. Please use the Setup URL button.');
-        return stored || 'http://localhost:5000';
+        // Use the production Replit URL
+        const productionUrl = 'https://60011746-76d1-4a07-8b52-69bb642792b8-00-7v62f6wvgff1.worf.replit.dev';
+        console.log(`Using production URL: ${productionUrl}`);
+        return productionUrl;
     }
 };
 
