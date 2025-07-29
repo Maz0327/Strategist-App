@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strategic Content Capture</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-brand">
+            <div class="brand-icon">⚡</div>
+            <h1>Strategic Capture</h1>
+        </div>
+        <div class="connection-status" id="connectionStatus">
+            <div class="status-dot"></div>
+            <span>Connecting...</span>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Page Info Card -->
+        <div class="info-card">
+            <div class="page-favicon" id="pageFavicon"></div>
+            <div class="page-details">
+                <h3 id="pageTitle">Loading page...</h3>
+                <p id="pageUrl">...</p>
+            </div>
+        </div>
+
+        <!-- Capture Mode Selection -->
+        <div class="capture-modes">
+            <div class="section-header">
+                <h4>Capture Mode</h4>
+                <div class="mode-indicator" id="modeIndicator">Text</div>
+            </div>
+            <div class="mode-buttons">
+                <button class="mode-btn active" data-mode="text">
+                    <div class="mode-icon">📝</div>
+                    <span>Text</span>
+                </button>
+                <button class="mode-btn" data-mode="selection">
+                    <div class="mode-icon">🖼️</div>
+                    <span>Screen</span>
+                </button>
+                <button class="mode-btn" data-mode="full">
+                    <div class="mode-icon">📄</div>
+                    <span>Full Page</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Analysis Settings -->
+        <div class="analysis-settings">
+            <div class="setting-group">
+                <label class="setting-label">Analysis Depth</label>
+                <div class="depth-selector">
+                    <button class="depth-btn active" data-depth="quick">
+                        <div class="depth-info">
+                            <span class="depth-title">Quick</span>
+                            <span class="depth-desc">Fast insights</span>
+                        </div>
+                        <div class="depth-badge">GPT-4o-mini</div>
+                    </button>
+                    <button class="depth-btn" data-depth="deep">
+                        <div class="depth-info">
+                            <span class="depth-title">Deep</span>
+                            <span class="depth-desc">Strategic analysis</span>
+                        </div>
+                        <div class="depth-badge">GPT-4o</div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">Priority Level</label>
+                <div class="priority-selector">
+                    <button class="priority-btn" data-priority="low">
+                        <div class="priority-dot low"></div>
+                        <span>Low</span>
+                    </button>
+                    <button class="priority-btn active" data-priority="medium">
+                        <div class="priority-dot medium"></div>
+                        <span>Medium</span>
+                    </button>
+                    <button class="priority-btn" data-priority="high">
+                        <div class="priority-dot high"></div>
+                        <span>High</span>
+                    </button>
+                    <button class="priority-btn" data-priority="urgent">
+                        <div class="priority-dot urgent"></div>
+                        <span>Urgent</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Strategic Tags -->
+        <div class="tags-section">
+            <div class="section-header">
+                <h4>Strategic Tags</h4>
+                <button class="auto-tag-btn" id="autoTagBtn">
+                    <span>✨ Auto-Tag</span>
+                </button>
+            </div>
+            <div class="tags-grid" id="tagsGrid">
+                <!-- Tags will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Project Integration -->
+        <div class="project-section">
+            <div class="section-header">
+                <h4>Project Assignment</h4>
+                <button class="create-project-btn" id="createProjectBtn">
+                    <span>+ New</span>
+                </button>
+            </div>
+            <div class="project-selector">
+                <select id="projectSelect" class="project-dropdown">
+                    <option value="">Select project...</option>
+                </select>
+                <button class="workspace-btn hidden" id="workspaceBtn">
+                    <span>🚀 Open Workspace</span>
+                </button>
+            </div>
+            <div class="template-section hidden" id="templateSection">
+                <label class="setting-label">Brief Section</label>
+                <select id="templateSectionSelect" class="template-dropdown">
+                    <option value="">Select section...</option>
+                    <option value="performance">Performance Analysis</option>
+                    <option value="cultural">Cultural Signals</option>
+                    <option value="competitive">Competitive Intelligence</option>
+                    <option value="consumer">Consumer Insights</option>
+                    <option value="opportunity">Opportunity Mapping</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Notes Input -->
+        <div class="notes-section">
+            <label class="setting-label">Personal Notes</label>
+            <textarea 
+                id="notesInput" 
+                class="notes-textarea" 
+                placeholder="Add your insights and observations..."
+                rows="3"
+            ></textarea>
+            <div class="notes-suggestions" id="notesSuggestions">
+                <!-- Smart suggestions will appear here -->
+            </div>
+        </div>
+
+        <!-- Selected Content Preview -->
+        <div class="content-preview hidden" id="contentPreview">
+            <div class="section-header">
+                <h4>Selected Content</h4>
+                <button class="clear-selection-btn" id="clearSelectionBtn">Clear</button>
+            </div>
+            <div class="preview-content" id="previewContent">
+                <!-- Selected content will appear here -->
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="capture-btn" id="captureBtn">
+                <div class="btn-content">
+                    <span class="btn-icon">📎</span>
+                    <span class="btn-text" id="captureBtnText">Capture Content</span>
+                </div>
+                <div class="btn-loader hidden" id="btnLoader">
+                    <div class="spinner"></div>
+                </div>
+            </button>
+        </div>
+
+        <!-- Status Messages -->
+        <div class="status-message hidden" id="statusMessage">
+            <div class="status-content">
+                <span class="status-icon"></span>
+                <span class="status-text"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Create Project Modal -->
+    <div class="modal-overlay hidden" id="projectModalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Create New Project</h3>
+                <button class="modal-close" id="closeProjectModal">×</button>
+            </div>
+            <div class="modal-content">
+                <div class="form-group">
+                    <label>Project Name</label>
+                    <input type="text" id="newProjectName" placeholder="Enter project name..." />
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="newProjectDesc" placeholder="Brief description..." rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" id="cancelProjectBtn">Cancel</button>
+                <button class="btn-primary" id="saveProjectBtn">Create Project</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Connection Setup Modal -->
+    <div class="modal-overlay hidden" id="setupModalOverlay">
+        <div class="modal setup-modal">
+            <div class="modal-header">
+                <h3>Connection Setup</h3>
+            </div>
+            <div class="modal-content">
+                <div class="setup-steps">
+                    <div class="setup-step" id="step1">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>Open Platform</h4>
+                            <p>Click below to open the Strategic Content Platform</p>
+                            <button class="btn-primary" id="openPlatformBtn">Open Platform</button>
+                        </div>
+                    </div>
+                    <div class="setup-step" id="step2">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>Log In</h4>
+                            <p>Sign in to your account on the platform</p>
+                            <div class="step-indicator" id="loginIndicator">Waiting...</div>
+                        </div>
+                    </div>
+                    <div class="setup-step" id="step3">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>Verify Connection</h4>
+                            <p>Extension will automatically connect</p>
+                            <button class="btn-primary hidden" id="verifyConnectionBtn">Test Connection</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="popup.js"></script>
+</body>
+</html>
