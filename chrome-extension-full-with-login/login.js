@@ -127,15 +127,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateConnectionIndicator(connected, authenticated) {
+        connectionDot.classList.remove('connected', 'testing');
         if (connected && authenticated) {
             connectionDot.classList.add('connected');
-            connectionDot.style.background = '#4CAF50';
         } else if (connected) {
-            connectionDot.classList.remove('connected');
-            connectionDot.style.background = '#FF9800'; // Orange for connected but not authenticated
-        } else {
-            connectionDot.classList.remove('connected');
-            connectionDot.style.background = '#f44336'; // Red for not connected
+            connectionDot.classList.add('testing');
         }
     }
 

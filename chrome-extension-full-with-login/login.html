@@ -1,100 +1,97 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>Connect to Strategic Platform</title>
+    <meta charset="utf-8">
     <style>
         body {
-            width: 400px;
-            padding: 20px;
+            width: 380px;
+            min-height: 400px;
+            padding: 0;
+            margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            margin: 0;
         }
-        .container {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 25px;
-            border-radius: 16px;
-            backdrop-filter: blur(10px);
+        .header {
+            padding: 16px;
             text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
-        .logo {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 8px;
+        .header h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
         }
-        .subtitle {
+        .content {
+            padding: 16px;
+        }
+        .connection-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .connection-info h3 {
+            margin: 0 0 4px 0;
             font-size: 14px;
+            font-weight: 600;
+        }
+        .connection-info p {
+            margin: 0;
+            font-size: 12px;
             opacity: 0.8;
-            margin-bottom: 30px;
+        }
+        .setup-steps {
+            margin-bottom: 16px;
         }
         .step {
+            margin-bottom: 12px;
+            padding: 8px;
             background: rgba(255, 255, 255, 0.05);
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            text-align: left;
+            border-radius: 6px;
+            font-size: 12px;
         }
         .step-number {
             background: #4CAF50;
             color: white;
             border-radius: 50%;
-            width: 24px;
-            height: 24px;
+            width: 16px;
+            height: 16px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
+            font-size: 10px;
             font-weight: bold;
-            margin-right: 12px;
-            vertical-align: middle;
+            margin-right: 8px;
         }
-        .step-title {
-            font-weight: 600;
+        .form-group {
+            margin-bottom: 16px;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
             font-size: 14px;
-            margin-bottom: 8px;
-        }
-        .step-desc {
-            font-size: 12px;
-            opacity: 0.8;
-            line-height: 1.4;
-        }
-        .url-section {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 20px;
-            border-radius: 12px;
-            margin: 20px 0;
-        }
-        .url-label {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 10px;
-            text-align: left;
         }
         input {
             width: 100%;
-            padding: 12px;
+            padding: 10px;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             font-size: 14px;
             background: rgba(255, 255, 255, 0.9);
             color: #333;
             box-sizing: border-box;
-            margin-bottom: 15px;
         }
-        input:focus {
-            outline: 2px solid #4CAF50;
-        }
-        button {
+        .btn {
             width: 100%;
-            padding: 14px;
+            padding: 10px;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             font-size: 14px;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             transition: all 0.2s;
         }
         .btn-primary {
@@ -103,6 +100,10 @@
         }
         .btn-primary:hover {
             background: #45a049;
+        }
+        .btn-primary:disabled {
+            background: #666;
+            cursor: not-allowed;
         }
         .btn-secondary {
             background: #2196F3;
@@ -116,10 +117,10 @@
             cursor: not-allowed;
         }
         .status {
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 13px;
-            margin-top: 15px;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            margin-top: 8px;
             display: none;
         }
         .status.success {
@@ -136,14 +137,17 @@
         }
         .connection-indicator {
             display: inline-block;
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
             background: #f44336;
-            margin-right: 8px;
+            margin-right: 6px;
         }
         .connection-indicator.connected {
             background: #4CAF50;
+        }
+        .connection-indicator.testing {
+            background: #FF9800;
         }
         .hidden {
             display: none !important;
@@ -151,45 +155,42 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="logo">Strategic Content Capture</div>
-        <div class="subtitle">Connect to your Replit workspace</div>
-        
-        <div class="step">
-            <span class="step-number">1</span>
-            <div style="display: inline-block; vertical-align: top; width: calc(100% - 36px);">
-                <div class="step-title">Open Your Main App</div>
-                <div class="step-desc">Navigate to your Strategic Platform in another tab and make sure you're logged in</div>
-            </div>
-        </div>
-
-        <div class="step">
-            <span class="step-number">2</span>
-            <div style="display: inline-block; vertical-align: top; width: calc(100% - 36px);">
-                <div class="step-title">Copy Your App URL</div>
-                <div class="step-desc">Copy the full URL from your browser's address bar (starts with https://...replit.dev)</div>
-            </div>
-        </div>
-
-        <div class="url-section">
-            <div class="url-label">
+    <div class="header">
+        <h2>Strategic Content Capture</h2>
+    </div>
+    
+    <div class="content">
+        <div class="connection-info">
+            <h3>
                 <span class="connection-indicator" id="connectionDot"></span>
-                App URL
+                Connection Setup
+            </h3>
+            <p>Connect to your Strategic Platform workspace</p>
+        </div>
+
+        <div class="setup-steps">
+            <div class="step">
+                <span class="step-number">1</span>
+                Open your main app and log in
             </div>
+            <div class="step">
+                <span class="step-number">2</span>
+                Copy your app URL from the address bar
+            </div>
+            <div class="step">
+                <span class="step-number">3</span>
+                Paste URL below and test connection
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>App URL</label>
             <input type="url" id="apiUrl" placeholder="https://your-workspace.replit.dev">
-            <button class="btn-primary" id="testBtn">Test Connection</button>
-            <button class="btn-secondary" id="openAppBtn" class="hidden" disabled>Open Main App to Login</button>
         </div>
 
-        <div class="step">
-            <span class="step-number">3</span>
-            <div style="display: inline-block; vertical-align: top; width: calc(100% - 36px);">
-                <div class="step-title">Verify Connection</div>
-                <div class="step-desc">Click "Test Connection" to verify you can reach your app and are logged in</div>
-            </div>
-        </div>
-
-        <button class="btn-primary hidden" id="continueBtn">Continue to Extension</button>
+        <button class="btn btn-primary" id="testBtn">Test Connection</button>
+        <button class="btn btn-secondary hidden" id="openAppBtn" disabled>Open Main App to Login</button>
+        <button class="btn btn-primary hidden" id="continueBtn">Continue to Extension</button>
 
         <div id="status" class="status"></div>
     </div>
