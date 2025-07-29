@@ -4,6 +4,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     let API_BASE = await window.ExtensionConfig.discoverApiUrl();
     console.log('Extension using API_BASE:', API_BASE);
     
+    // Show connection status
+    const connectionWorking = await window.ExtensionConfig.testConnection(API_BASE);
+    if (!connectionWorking) {
+        showStatus('❌ Cannot connect to server. Click "⚙️ Setup URL" to configure.', 'error');
+    }
+    
     // DOM elements
     const pageTitle = document.getElementById('pageTitle');
     const pageUrl = document.getElementById('pageUrl');

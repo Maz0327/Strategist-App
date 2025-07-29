@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Setup Extension</title>
+    <style>
+        body {
+            width: 400px;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin: 0;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+        h2 {
+            margin: 0 0 20px 0;
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            box-sizing: border-box;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button.secondary {
+            background: #2196F3;
+        }
+        button.secondary:hover {
+            background: #1976D2;
+        }
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 14px;
+            text-align: center;
+            display: none;
+        }
+        .status.success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4CAF50;
+        }
+        .status.error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid #f44336;
+        }
+        .current-config {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 12px;
+        }
+        .step {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .step-number {
+            background: #4CAF50;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🚀 Strategic Content Capture</h2>
+        
+        <div class="current-config">
+            <strong>Current URL:</strong> <span id="currentUrl">Not configured</span>
+        </div>
+
+        <div class="step">
+            <span class="step-number">1</span>
+            <strong>Get your app URL:</strong> Copy the URL from your main app's browser tab
+        </div>
+
+        <div class="input-group">
+            <label for="apiUrl">Paste your Replit app URL here:</label>
+            <input type="url" id="apiUrl" placeholder="https://your-workspace.username.replit.dev">
+        </div>
+
+        <div class="step">
+            <span class="step-number">2</span>
+            <strong>Make sure you're logged in:</strong> Open your main app and log in first
+        </div>
+
+        <button id="testBtn">Test Connection</button>
+        <button id="saveBtn" class="secondary" style="display: none;">Save Configuration</button>
+        <button id="openMainApp" class="secondary" style="display: none;">Open Main App</button>
+
+        <div class="step">
+            <span class="step-number">3</span>
+            <strong>Capture content:</strong> Once connected, add your notes and capture content
+        </div>
+
+        <div class="input-group">
+            <label for="notes">Content Notes:</label>
+            <textarea id="notes" placeholder="Add your strategic insights about this content..."></textarea>
+        </div>
+
+        <button id="captureBtn" style="display: none;">📝 Capture Content</button>
+
+        <div id="status" class="status"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const apiUrlInput = document.getElementById('apiUrl');
+            const testBtn = document.getElementById('testBtn');
+            const saveBtn = document.getElementById('saveBtn');
+            const openMainApp = document.getElementById('openMainApp');
+            const captureBtn = document.getElementById('captureBtn');
+            const notesTextarea = document.getElementById('notes');
+            const status = document.getElementById('status');
+            const currentUrl = document.getElementById('currentUrl');
+            
+            let currentApiUrl = '';
+            let currentTabInfo = null;
+
+            // Load stored configuration
+            const stored = localStorage.getItem('apiBase');
+            if (stored) {
+                currentUrl.textContent = stored;
+                apiUrlInput.value = stored;
+                currentApiUrl = stored;
+                testConnection(stored);
+            }
+
+            // Get current tab info
+            getCurrentTab();
+
+            testBtn.addEventListener('click', () => {
+                const url = apiUrlInput.value.trim();
+                if (!url) {
+                    showStatus('Please enter your app URL', 'error');
+                    return;
+                }
+                testConnection(url);
+            });
+
+            saveBtn.addEventListener('click', () => {
+                const url = apiUrlInput.value.trim();
+                if (url) {
+                    localStorage.setItem('apiBase', url);
+                    currentUrl.textContent = url;
+                    currentApiUrl = url;
+                    showStatus('Configuration saved!', 'success');
+                }
+            });
+
+            openMainApp.addEventListener('click', () => {
+                if (currentApiUrl) {
+                    chrome.tabs.create({ url: currentApiUrl });
+                }
+            });
+
+            captureBtn.addEventListener('click', async () => {
+                if (!currentTabInfo || !currentApiUrl) {
+                    showStatus('Please configure URL and test connection first', 'error');
+                    return;
+                }
+
+                const notes = notesTextarea.value.trim();
+                if (!notes) {
+                    showStatus('Please add some notes about this content', 'error');
+                    return;
+                }
+
+                try {
+                    showStatus('Capturing content...', 'info');
+                    
+                    const response = await fetch(`${currentApiUrl}/api/signals/draft`, {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            title: currentTabInfo.title,
+                            url: currentTabInfo.url,
+                            content: currentTabInfo.title,
+                            user_notes: notes,
+                            tags: ['chrome-extension'],
+                            browser_context: {
+                                domain: new URL(currentTabInfo.url).hostname,
+                                timestamp: new Date().toISOString()
+                            }
+                        })
+                    });
+
+                    if (response.ok) {
+                        showStatus('✅ Content captured successfully!', 'success');
+                        notesTextarea.value = '';
+                        setTimeout(() => {
+                            window.close();
+                        }, 2000);
+                    } else {
+                        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                        showStatus(`❌ Capture failed: ${errorData.error || 'Please log in to main app first'}`, 'error');
+                    }
+                } catch (error) {
+                    showStatus('❌ Connection failed. Please check your setup.', 'error');
+                    console.error('Capture error:', error);
+                }
+            });
+
+            async function getCurrentTab() {
+                try {
+                    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+                    currentTabInfo = tab;
+                } catch (error) {
+                    console.error('Error getting current tab:', error);
+                }
+            }
+
+            async function testConnection(url) {
+                const cleanUrl = url.replace(/\/$/, '');
+                showStatus('Testing connection...', 'info');
+
+                try {
+                    const response = await fetch(`${cleanUrl}/api/auth/me`, {
+                        method: 'GET',
+                        credentials: 'include',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (response.status === 200) {
+                        showStatus('✅ Connected and logged in!', 'success');
+                        saveBtn.style.display = 'block';
+                        captureBtn.style.display = 'block';
+                        currentApiUrl = cleanUrl;
+                    } else if (response.status === 401) {
+                        showStatus('✅ Server reachable, but you need to log in first', 'error');
+                        openMainApp.style.display = 'block';
+                        saveBtn.style.display = 'block';
+                        currentApiUrl = cleanUrl;
+                    } else {
+                        showStatus('❌ Server responded but something is wrong', 'error');
+                    }
+                } catch (error) {
+                    showStatus('❌ Cannot connect. Check if your app is running.', 'error');
+                    console.error('Connection test failed:', error);
+                }
+            }
+
+            function showStatus(message, type) {
+                status.textContent = message;
+                status.className = `status ${type}`;
+                status.style.display = 'block';
+                
+                if (type !== 'success' && type !== 'info') {
+                    setTimeout(() => {
+                        status.style.display = 'none';
+                    }, 5000);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

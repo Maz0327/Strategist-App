@@ -46,24 +46,18 @@ const ExtensionConfig = {
     
     // Auto-discover the correct API URL
     async discoverApiUrl() {
-        const urlsToTry = [
-            'http://localhost:5000',
-            'http://127.0.0.1:5000',
-            // Add your Replit URL here when known
-        ];
-        
-        for (const url of urlsToTry) {
-            console.log(`Testing connection to: ${url}`);
-            if (await this.testConnection(url)) {
-                console.log(`Successfully connected to: ${url}`);
-                this.setApiBase(url);
-                return url;
+        // First check if we have a stored URL
+        const stored = this.getApiBase();
+        if (stored && stored !== 'http://localhost:5000') {
+            console.log(`Using stored URL: ${stored}`);
+            if (await this.testConnection(stored)) {
+                return stored;
             }
         }
         
-        // If nothing works, return localhost as fallback
-        console.warn('No working API endpoint found, using localhost fallback');
-        return 'http://localhost:5000';
+        // Show setup message if no working URL found
+        console.warn('No working API endpoint configured. Please use the Setup URL button.');
+        return stored || 'http://localhost:5000';
     }
 };
 
