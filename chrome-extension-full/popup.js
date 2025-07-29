@@ -146,8 +146,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function loadProjects() {
         try {
             const response = await fetch(`${API_BASE}/api/projects`, {
+                method: 'GET',
                 credentials: 'include',
-                headers: { 'Content-Type': 'application/json' }
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                }
             });
 
             if (response.ok) {
@@ -190,7 +194,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const response = await fetch(`${API_BASE}/api/projects`, {
                 method: 'POST',
                 credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
                 body: JSON.stringify({
                     name,
                     description,
@@ -460,7 +467,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const response = await fetch(`${API_BASE}/api/signals/draft`, {
             method: 'POST',
             credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
             body: JSON.stringify(captureData)
         });
 
