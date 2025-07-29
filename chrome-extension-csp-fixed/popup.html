@@ -103,6 +103,58 @@
         .hidden {
             display: none !important;
         }
+        .capture-options {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .capture-mode {
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .capture-mode input {
+            margin-right: 5px;
+            width: auto;
+        }
+        select {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+        .tag-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .tag-option {
+            display: flex;
+            align-items: center;
+            font-size: 11px;
+            cursor: pointer;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        .tag-option:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .tag-option input {
+            margin: 0 6px 0 0;
+            width: auto;
+        }
+        .tag-option span {
+            flex: 1;
+        }
     </style>
 </head>
 <body>
@@ -120,9 +172,66 @@
         </div>
 
         <div id="captureSection" class="hidden">
-            <h3>Capture Content</h3>
-            <textarea id="notes" placeholder="Add your strategic insights about this content..."></textarea>
-            <button class="btn-primary" id="captureBtn">Capture Content</button>
+            <div class="config-section">
+                <h3>📄 Current Page</h3>
+                <div id="pageInfo" class="current-url">Loading page info...</div>
+                <div class="capture-options">
+                    <label class="capture-mode">
+                        <input type="radio" name="captureMode" value="page" checked> Full Page
+                    </label>
+                    <label class="capture-mode">
+                        <input type="radio" name="captureMode" value="selection"> Selected Text
+                    </label>
+                </div>
+            </div>
+
+            <div class="config-section">
+                <h3>📁 Project Assignment</h3>
+                <select id="projectSelect">
+                    <option value="">Select Project...</option>
+                    <option value="new">+ Create New Project</option>
+                </select>
+                <input type="text" id="newProjectName" placeholder="New project name..." style="display: none;">
+            </div>
+
+            <div class="config-section">
+                <h3>🏷️ Strategic Tags</h3>
+                <div class="tag-container">
+                    <label class="tag-option">
+                        <input type="checkbox" id="tag-cultural" value="cultural-moment">
+                        <span>Cultural Moment</span>
+                    </label>
+                    <label class="tag-option">
+                        <input type="checkbox" id="tag-behavior" value="human-behavior">
+                        <span>Human Behavior</span>
+                    </label>
+                    <label class="tag-option">
+                        <input type="checkbox" id="tag-rival" value="rival-content">
+                        <span>Rival Content</span>
+                    </label>
+                    <label class="tag-option">
+                        <input type="checkbox" id="tag-visual" value="visual-hook">
+                        <span>Visual Hook</span>
+                    </label>
+                    <label class="tag-option">
+                        <input type="checkbox" id="tag-insight" value="insight-cue">
+                        <span>Insight Cue</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="config-section">
+                <h3>📝 Strategic Notes</h3>
+                <textarea id="notes" placeholder="What makes this content strategically interesting?
+
+• Cultural significance?
+• Behavioral insights?
+• Competitive intelligence?
+• Visual/creative inspiration?"></textarea>
+            </div>
+
+            <button class="btn-primary" id="captureBtn">📎 Capture to Project</button>
+            <button class="btn-secondary" id="workspaceBtn" style="display: none;">🚀 Open Workspace</button>
         </div>
 
         <button class="btn-info" id="openAppBtn" class="hidden">Open Main App</button>

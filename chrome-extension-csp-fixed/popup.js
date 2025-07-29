@@ -2,15 +2,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const apiUrlInput = document.getElementById('apiUrl');
     const testBtn = document.getElementById('testBtn');
     const captureBtn = document.getElementById('captureBtn');
+    const workspaceBtn = document.getElementById('workspaceBtn');
     const openAppBtn = document.getElementById('openAppBtn');
     const notesTextarea = document.getElementById('notes');
+    const projectSelect = document.getElementById('projectSelect');
+    const newProjectName = document.getElementById('newProjectName');
     const status = document.getElementById('status');
     const currentUrl = document.getElementById('currentUrl');
     const setupSection = document.getElementById('setupSection');
     const captureSection = document.getElementById('captureSection');
+    const pageInfo = document.getElementById('pageInfo');
     
     let currentApiUrl = '';
     let currentTabInfo = null;
+    let projects = [];
 
     // Check if connection is verified, otherwise redirect to login
     chrome.storage.local.get(['apiBase', 'connectionVerified', 'lastConnectionTest'], function(result) {
@@ -101,17 +106,37 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function captureContent() {
+        const selectedProject = projectSelect.value;
+        const projectName = selectedProject === 'new' ? newProjectName.value.trim() : selectedProject;
+        
+        if (!projectName) {
+            showStatus('Please select or create a project', 'error');
+            return;
+        }
+
         showStatus('Capturing content...', 'info');
+        
+        // Get selected tags
+        const selectedTags = Array.from(document.querySelectorAll('.tag-option input:checked')).map(checkbox => checkbox.value);
+        selectedTags.push('chrome-extension');
+        
+        // Get capture mode
+        const captureMode = document.querySelector('input[name="captureMode"]:checked').value;
         
         const captureData = {
             title: currentTabInfo.title,
             url: currentTabInfo.url,
-            content: currentTabInfo.title,
+            content: currentTabInfo.title + (currentTabInfo.description ? '\n\n' + currentTabInfo.description : ''),
             user_notes: notesTextarea.value.trim(),
-            tags: ['chrome-extension'],
+            tags: selectedTags,
+            project_id: selectedProject !== 'new' ? selectedProject : null,
+            project_name: selectedProject === 'new' ? projectName : null,
+            capture_mode: captureMode,
             browser_context: {
                 domain: getDomain(currentTabInfo.url),
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                capture_mode: captureMode,
+                user_agent: navigator.userAgent
             }
         };
 
@@ -125,19 +150,34 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(function(response) {
             if (response.ok) {
-                showStatus('Content captured successfully!', 'success');
-                notesTextarea.value = '';
-                setTimeout(function() {
-                    window.close();
-                }, 2000);
+                return response.json();
             } else {
                 return response.json().then(function(errorData) {
-                    showStatus('Capture failed: ' + (errorData.error || 'Please log in to main app first'), 'error');
+                    throw new Error(errorData.error || 'Capture failed');
                 });
             }
         })
+        .then(function(data) {
+            showStatus('Content captured successfully!', 'success');
+            
+            // Show workspace button if project was created/selected
+            if (data.project_id) {
+                workspaceBtn.style.display = 'block';
+                workspaceBtn.onclick = function() {
+                    chrome.tabs.create({url: currentApiUrl + '/projects/' + data.project_id + '/workspace'});
+                };
+            }
+            
+            // Clear form
+            notesTextarea.value = '';
+            document.querySelectorAll('.tag-option input:checked').forEach(checkbox => checkbox.checked = false);
+            
+            setTimeout(function() {
+                window.close();
+            }, 3000);
+        })
         .catch(function(error) {
-            showStatus('Connection failed. Please check your setup.', 'error');
+            showStatus('Capture failed: ' + error.message, 'error');
             console.error('Capture error:', error);
         });
     }
@@ -168,6 +208,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (response.status === 200) {
                 setupSection.classList.add('hidden');
                 captureSection.classList.remove('hidden');
+                loadCurrentPageInfo();
+                loadProjects();
             } else {
                 showStatus('Please log in to your main app first', 'error');
                 openAppBtn.classList.remove('hidden');
@@ -181,6 +223,87 @@ document.addEventListener('DOMContentLoaded', function() {
                     window.location.href = 'login.html';
                 }, 2000);
             });
+        });
+    }
+
+    function loadCurrentPageInfo() {
+        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+            currentTabInfo = tabs[0];
+            const domain = getDomain(currentTabInfo.url);
+            pageInfo.innerHTML = `
+                <div style="font-weight: 600; margin-bottom: 4px;">${currentTabInfo.title}</div>
+                <div style="font-size: 11px; opacity: 0.7;">${domain}</div>
+            `;
+            
+            // Auto-suggest tags based on domain
+            autoSuggestTags(domain);
+        });
+    }
+
+    function autoSuggestTags(domain) {
+        const suggestions = {
+            'tiktok.com': ['cultural-moment', 'visual-hook'],
+            'instagram.com': ['visual-hook', 'cultural-moment'],
+            'linkedin.com': ['human-behavior', 'insight-cue'],
+            'youtube.com': ['cultural-moment', 'visual-hook'],
+            'twitter.com': ['cultural-moment', 'human-behavior'],
+            'reddit.com': ['human-behavior', 'insight-cue']
+        };
+        
+        const domainSuggestions = suggestions[domain] || [];
+        domainSuggestions.forEach(tag => {
+            const checkbox = document.getElementById('tag-' + tag.split('-')[0]);
+            if (checkbox) checkbox.checked = true;
+        });
+    }
+
+    function loadProjects() {
+        fetch(currentApiUrl + '/api/projects', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(function(response) {
+            if (response.ok) {
+                return response.json();
+            }
+            return [];
+        })
+        .then(function(data) {
+            projects = data.data || [];
+            updateProjectSelect();
+        })
+        .catch(function(error) {
+            console.error('Failed to load projects:', error);
+        });
+    }
+
+    function updateProjectSelect() {
+        // Clear existing options except first two
+        while (projectSelect.children.length > 2) {
+            projectSelect.removeChild(projectSelect.lastChild);
+        }
+        
+        // Add projects
+        projects.forEach(function(project) {
+            const option = document.createElement('option');
+            option.value = project.id;
+            option.textContent = project.name;
+            projectSelect.appendChild(option);
+        });
+    }
+
+    // Project select change handler
+    if (projectSelect) {
+        projectSelect.addEventListener('change', function() {
+            if (this.value === 'new') {
+                newProjectName.style.display = 'block';
+                newProjectName.focus();
+            } else {
+                newProjectName.style.display = 'none';
+            }
         });
     }
 
